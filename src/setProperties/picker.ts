@@ -110,13 +110,16 @@ export function pickerChoices(rows: readonly PropertyRow[], state: PropertyState
 	];
 }
 
-export function writeProperties(frontmatter: Frontmatter, state: PropertyState): void {
+export function writeProperties(frontmatter: Frontmatter, initial: PropertyState, state: PropertyState): void {
 	state.flags.forEach((selected, flag) => {
+		if (selected === initial.flags.get(flag)) return;
 		if (selected) frontmatter[flag] = true;
 		else delete frontmatter[flag];
 	});
 	state.links.forEach((link, property) => {
 		const values = link.values.map((value) => value.raw);
+		const initialValues = initial.links.get(property)?.values.map((value) => value.raw) ?? [];
+		if (values.length === initialValues.length && values.every((value, index) => value === initialValues[index])) return;
 		if (!values.length) delete frontmatter[property];
 		else frontmatter[property] = link.mode === "single" && values.length === 1 ? values[0] : values;
 	});
