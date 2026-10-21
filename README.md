@@ -4,7 +4,7 @@ An Obsidian plugin that opens one quick-switcher-style picker from anywhere in t
 
 ## What it does
 
-The plugin adds a "Jump to note" command. It replaces a Templater script that did the same job but needed an open editor to run, so the command now works from any tab, from the sidebar, or with no tab open at all.
+The plugin adds a "Jump to note" command, and a "Set properties" command described below. It replaces a Templater script that did the same job but needed an open editor to run, so the command now works from any tab, from the sidebar, or with no tab open at all.
 
 With a markdown note in focus, the picker can show that note's relation lists: its adjacent date notes, the notes it links to (links in properties included), the notes that link to it, and the notes from the same day. The other lists do not depend on the note in focus. The picker shows the lists in the order you set, and with anything else in focus, or no tab at all, it leaves out the relation lists.
 
@@ -40,9 +40,19 @@ A property list asks for the property, suggesting the vault's properties with th
 - Number properties can be equal to, less than or greater than a number, or be set.
 - Date properties can be on, before or after a fixed date, today, or a number of days ago or from now, or be set. A relative date is worked out each time the picker opens.
 
-"Is not set" also matches a property left blank. If a property later changes type, its list keeps the old condition and its page says the condition no longer applies; the list shows nothing until you pick a new one.
+"Is not set" also matches a property left blank. If a property later changes type, its list keeps the old condition and its page says the condition no longer applies; the list shows nothing until you pick a new one. Lists saved by an earlier version with an "equals" condition on a number, checkbox or date property show it as "(does not apply)" in the same way, until you edit it.
 
 The "Date notes" page chooses where the formats come from. "Automatic" uses the Periodic Notes plugin when it is enabled, then the core Daily notes plugin, then the plugin's own Custom formats, and the row on the main page says which one it is using. With Periodic Notes or Daily notes the page shows the folder and format each period reads, without letting you change them there; Daily notes covers days only, and the other periods come from Custom. With "Custom" you set each period's folder and format, as a [Moment format](https://momentjs.com/docs/#/displaying/format/), and switch it on or off. By default every period lives in `on/`, as `2024-03-05`, `2024-W10`, `2024-03` and `2024`, with quarters such as `2024-Q1` switched off.
+
+## Set properties
+
+The "Set properties" command edits the properties of the markdown note in focus from one picker, and only appears in the command palette when such a note has focus. It replaces the Templater script that set a note's flags and links.
+
+The first two rows are always `🏁 Save & close` and `🛑 Cancel`. Every other row reads `<mark> <prefix> | <name>`, where the mark is `✓` for a selected row, and is either a flag, a checkbox property, or a note offered by a link list. Selected rows come first, then the flags, then each enabled link list in settings order, each sorted with the most recently modified notes first. A note offered by two lists shows only under the first one. The note in focus, notes in the templates folder and notes with `archived: true` are never offered.
+
+Choosing a row switches it and reopens the picker, and nothing is written until you choose "Save & close". Escape or "Cancel" discards every change. Saving sets a selected flag to `true` and removes an unselected one, so it never writes `false`. A multi link list keeps a list of links such as `["[[Alice]]", "[[Bob]]"]`, and a single link list keeps one link, so choosing another note replaces it and choosing the same note again clears it; a property left empty is removed. Saving writes only the properties you changed, so a flag holding something other than `true` keeps its saved form until you switch it, and links the lists do not offer are kept.
+
+Its settings sit under "Set properties", after the jump lists. "Flags prefix" sets the text every flag row starts with, `🎛️ meta` by default. "Flags" holds one row per flag, suggesting the vault's checkbox properties while accepting any name; drag a row to reorder the flags, delete it, or use "Add flag". "Templates folder", `templates` by default, chooses the folder whose notes the link lists leave out. "Link lists" works like the jump lists: drag, delete or add a row, and a new list starts switched off. A link list's page has the same fields as a jump list's page, followed by "Name", "Writes to", the property the chosen links go in, and "Mode", multi or single. The defaults list people, trackers, collections, categories, evergreen and active notes, companies and notes modified today.
 
 ## Differences from the Templater script
 
