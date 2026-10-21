@@ -5,12 +5,13 @@ import { buildJumpList } from "../src/lists/jumpList.ts";
 import type { Frontmatter, JumpListVault, VaultNote } from "../src/lists/vault.ts";
 import type { Condition } from "../src/lists/conditions.ts";
 import { defaultSettings } from "../src/settings.ts";
-import type { NoteList, RelationSourceKind } from "../src/settings.ts";
+import type { ListSource, NoteList, RelationSourceKind } from "../src/settings.ts";
 import { moment } from "./moment.ts";
 
 interface FakeNote {
 	path: string;
 	ctime?: number;
+	mtime?: number;
 	frontmatter?: Frontmatter;
 	links?: string[];
 }
@@ -37,6 +38,7 @@ function fakeVault(fakes: FakeNote[], plugins: FakePlugins = {}): JumpListVault 
 		frontmatter: (path) => byPath.get(path)?.frontmatter,
 		linksFrom: (path) => byPath.get(path)?.links ?? [],
 		linksTo: (path) => fakes.filter((fake) => fake.links?.includes(path)).map((fake) => fake.path),
+		mtime: (path) => byPath.get(path)?.mtime ?? MARCH_5,
 		periodicNotesSettings: () => plugins.periodicNotes,
 		dailyNotesOptions: () => plugins.dailyNotes,
 		propertyTypes: () => plugins.propertyTypes ?? {},
@@ -52,6 +54,10 @@ function onlyList(kind: RelationSourceKind): NoteList[] {
 
 function propertyList(prefix: string, property: string, condition: Condition): NoteList {
 	return { id: `list-${prefix}`, enabled: true, prefix, source: { kind: "frontmatter", property, condition } };
+}
+
+function sourceList(source: ListSource): NoteList[] {
+	return [{ id: "list-1", enabled: true, prefix: "src", source }];
 }
 
 const describe = (entries: { name: string; prefix: string; suffix?: string }[]) =>
@@ -270,4 +276,66 @@ test("property lists follow the property's type and evaluate relative dates agai
 test("every property reads as text when the vault reports no types", () => {
 	const vault = fakeVault([{ path: "a.md", frontmatter: { area: "home" } }]);
 	assert.deepEqual(describe(buildJumpList([propertyList("🏠", "area", { operator: "contains", value: "om" })], vault)), ["🏠 | a"]);
+});
+
+test("links to note lists the notes linking to the chosen note, without the note itself or the current note", () => {
+	const vault = fakeVault([
+		{ path: "types/Person 👤.md", links: ["types/Person 👤.md"] },
+		{ path: "people/Zoe.md", links: ["types/Person 👤.md"] },
+		{ path: "people/Ann.md", links: ["types/Person 👤.md"] },
+		{ path: "unrelated.md", links: ["people/Zoe.md"] },
+	]);
+	const zoeAndAnn = ["src | Ann", "src | Zoe"];
+	assert.deepEqual(describe(buildJumpList(sourceList({ kind: "linksToNote", note: "types/Person 👤.md" }), vault)), [
+		"src | Person 👤",
+		...zoeAndAnn,
+	]);
+	assert.deepEqual(describe(buildJumpList(sourceList({ kind: "linksToNote", note: "types/Person 👤" }), vault, vault.note("types/Person 👤.md"))), zoeAndAnn);
+	assert.deepEqual(describe(buildJumpList(sourceList({ kind: "linksToNote", note: "Person 👤" }), vault, vault.note("people/Zoe.md"))), [
+		"src | Ann",
+		"src | Person 👤",
+	]);
+});
+
+test("links to note lists nothing for a note that does not exist or is not chosen", () => {
+	const vault = fakeVault([{ path: "people/Zoe.md", links: ["Gone.md"] }]);
+	assert.deepEqual(buildJumpList(sourceList({ kind: "linksToNote", note: "Gone.md" }), vault), []);
+	assert.deepEqual(buildJumpList(sourceList({ kind: "linksToNote", note: "" }), vault), []);
+});
+
+test("in folder lists the notes under the folder, subfolders included, but not the current note", () => {
+	const vault = fakeVault([
+		{ path: "categories/Work.md" },
+		{ path: "categories/home/Garden.md" },
+		{ path: "categories-old/Leisure.md" },
+		{ path: "Work.md" },
+	]);
+	assert.deepEqual(describe(buildJumpList(sourceList({ kind: "inFolder", folder: "categories" }), vault, vault.note("categories/Work.md"))), [
+		"src | Garden",
+	]);
+	assert.deepEqual(describe(buildJumpList(sourceList({ kind: "inFolder", folder: "/categories/home/" }), vault)), ["src | Garden"]);
+});
+
+test("in folder lists nothing for a missing, empty or unchosen folder", () => {
+	const vault = fakeVault([{ path: "notes/A.md" }]);
+	for (const folder of ["missing", "", "/"]) {
+		assert.deepEqual(buildJumpList(sourceList({ kind: "inFolder", folder }), vault), []);
+	}
+});
+
+test("modified today lists notes changed since local midnight of the vault's clock", () => {
+	const now = new Date(2024, 2, 9, 10).getTime();
+	const vault = fakeVault(
+		[
+			{ path: "midnight.md", mtime: new Date(2024, 2, 9, 0, 0).getTime() },
+			{ path: "late-yesterday.md", mtime: new Date(2024, 2, 8, 23, 59, 59).getTime() },
+			{ path: "this-morning.md", mtime: new Date(2024, 2, 9, 9).getTime() },
+			{ path: "current.md", mtime: now },
+		],
+		{ now },
+	);
+	assert.deepEqual(describe(buildJumpList(sourceList({ kind: "modifiedToday" }), vault, vault.note("current.md"))), [
+		"src | midnight",
+		"src | this-morning",
+	]);
 });

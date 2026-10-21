@@ -97,6 +97,9 @@ test("mergeSettings keeps saved lists in their order and round-trips its own out
 				source: { kind: "frontmatter", property: "due", condition: { operator: "before", value: { kind: "relative", days: 3 } } },
 			},
 			{ id: "list-2", enabled: true, prefix: "🔗", source: { kind: "linksIn" } },
+			{ id: "list-3", enabled: true, prefix: "👤", source: { kind: "linksToNote", note: "types/Person 👤.md" } },
+			{ id: "list-4", enabled: true, prefix: "📂", source: { kind: "inFolder", folder: "categories" } },
+			{ id: "list-5", enabled: false, prefix: "🔅", source: { kind: "modifiedToday" } },
 		],
 		dateNotes: { from: "custom", custom: { ...defaultDateNoteSettings().custom, quarter: { enabled: true, folder: "q", format: "YYYY-[Q]Q" } } },
 	};
@@ -117,6 +120,7 @@ test("mergeSettings drops unreadable saved lists and mints ids that are missing 
 			{ id: "list-3", enabled: true, prefix: "b", source: { kind: "sameDay" } },
 			{ enabled: true, prefix: "c", source: { kind: "linksIn" } },
 			{ id: "list-7", enabled: true, prefix: "d", source: { kind: "inFolder" } },
+			{ id: "list-7", enabled: true, prefix: "d", source: { kind: "linksToNote", note: 3 } },
 			{ id: "list-8", enabled: true, prefix: "e", source: { kind: "frontmatter", property: "p", condition: { operator: "is" } } },
 			{ id: "list-9", source: { kind: "adjacentDates" } },
 		],

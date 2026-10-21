@@ -24,6 +24,7 @@ export function createObsidianVault(app: App): JumpListVault {
 			Object.entries(app.metadataCache.resolvedLinks)
 				.filter(([, targets]) => path in targets)
 				.map(([source]) => source),
+		mtime: (path) => app.vault.getFileByPath(path)?.stat.mtime ?? 0,
 		periodicNotesSettings: () => readSafely(() => registries.plugins?.getPlugin("periodic-notes")?.settings),
 		dailyNotesOptions: () =>
 			readSafely(() => {

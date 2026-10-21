@@ -4,7 +4,15 @@ import { defaultDateNoteSettings, resolveDateNotes } from "./dateNotes.ts";
 import type { DateNoteSettings, ResolvedDateNotes } from "./dateNotes.ts";
 import { dateNoteSuffix, parseDateNote } from "./dates.ts";
 import { matchesCondition } from "./matchers.ts";
-import { adjacentDateNotes, inboundNotes, outboundNotes, sameDayNotes } from "./sources.ts";
+import {
+	adjacentDateNotes,
+	inboundNotes,
+	notesInFolder,
+	notesLinkingTo,
+	notesModifiedSince,
+	outboundNotes,
+	sameDayNotes,
+} from "./sources.ts";
 import type { ListedNote } from "./sources.ts";
 import type { JumpListEntry, JumpListVault, MomentDate, VaultNote } from "./vault";
 
@@ -60,6 +68,9 @@ function sourceNotes(source: ListSource, context: ListContext): ListedNote[] {
 			.filter((note) => matchesCondition(vault.frontmatter(note.path), check))
 			.map((file) => ({ file }));
 	}
+	if (source.kind === "linksToNote") return notesLinkingTo(vault, source.note);
+	if (source.kind === "inFolder") return notesInFolder(vault, source.folder);
+	if (source.kind === "modifiedToday") return notesModifiedSince(vault, context.today.valueOf());
 	if (!current) return [];
 	switch (source.kind) {
 		case "adjacentDates":

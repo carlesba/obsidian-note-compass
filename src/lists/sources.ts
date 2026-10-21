@@ -38,6 +38,31 @@ export function sameDayNotes(vault: JumpListVault, current: VaultNote, dateNotes
 		.map((file) => ({ file }));
 }
 
+export function notesLinkingTo(vault: JumpListVault, note: string): ListedNote[] {
+	const notes = vault.notes();
+	const target =
+		notes.find((candidate) => candidate.path === note) ??
+		notes.find((candidate) => candidate.path === `${note}.md`) ??
+		notes.find((candidate) => candidate.basename === note);
+	return target ? notesAtPaths(vault, vault.linksTo(target.path)) : [];
+}
+
+export function notesInFolder(vault: JumpListVault, folder: string): ListedNote[] {
+	const trimmed = folder.replace(/^\/+|\/+$/g, "");
+	if (trimmed === "") return [];
+	return vault
+		.notes()
+		.filter((note) => note.path.startsWith(`${trimmed}/`))
+		.map((file) => ({ file }));
+}
+
+export function notesModifiedSince(vault: JumpListVault, since: number): ListedNote[] {
+	return vault
+		.notes()
+		.filter((note) => vault.mtime(note.path) >= since)
+		.map((file) => ({ file }));
+}
+
 function notesAtPaths(vault: JumpListVault, paths: string[]): ListedNote[] {
 	const wanted = new Set(paths);
 	return vault
