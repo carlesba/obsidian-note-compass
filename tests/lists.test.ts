@@ -1,9 +1,11 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
+import { defaultDateNoteSettings } from "../src/lists/dateNotes.ts";
 import { buildJumpList } from "../src/lists/jumpList.ts";
 import type { Frontmatter, JumpListVault, VaultNote } from "../src/lists/vault.ts";
 import { defaultSettings } from "../src/settings.ts";
 import type { JumpListSettings } from "../src/settings.ts";
+import { moment } from "./moment.ts";
 
 interface FakeNote {
 	path: string;
@@ -15,7 +17,12 @@ interface FakeNote {
 const MARCH_5 = new Date(2024, 2, 5, 10).getTime();
 const MARCH_9 = new Date(2024, 2, 9, 10).getTime();
 
-function fakeVault(fakes: FakeNote[]): JumpListVault & { note(path: string): VaultNote } {
+interface FakePlugins {
+	periodicNotes?: unknown;
+	dailyNotes?: unknown;
+}
+
+function fakeVault(fakes: FakeNote[], plugins: FakePlugins = {}): JumpListVault & { note(path: string): VaultNote } {
 	const notes = fakes.map((fake) => ({
 		path: fake.path,
 		basename: fake.path.split("/").pop()!.replace(/\.md$/, ""),
@@ -27,6 +34,9 @@ function fakeVault(fakes: FakeNote[]): JumpListVault & { note(path: string): Vau
 		frontmatter: (path) => byPath.get(path)?.frontmatter,
 		linksFrom: (path) => byPath.get(path)?.links ?? [],
 		linksTo: (path) => fakes.filter((fake) => fake.links?.includes(path)).map((fake) => fake.path),
+		periodicNotesSettings: () => plugins.periodicNotes,
+		dailyNotesOptions: () => plugins.dailyNotes,
+		moment,
 		note: (path) => notes.find((note) => note.path === path)!,
 	};
 }
@@ -56,7 +66,7 @@ test("adjacent days lists the previous and next date notes with direction and da
 	]);
 });
 
-test("adjacent days covers weeks and months and labels non-date neighbours by direction only", () => {
+test("adjacent days covers weeks and months and looks neighbours up only in the period's folder", () => {
 	const vault = fakeVault([
 		{ path: "on/2024-W10.md" },
 		{ path: "on/2024-W11.md" },
@@ -66,11 +76,47 @@ test("adjacent days covers weeks and months and labels non-date neighbours by di
 	]);
 	const settings = onlyBuiltIn("adjacentDays");
 	assert.deepEqual(describe(buildJumpList(settings, vault, vault.note("on/2024-W10.md"))), [
-		"📅 day | 2024-W09 | prev week",
 		"📅 day | 2024-W11 | next week - week 11",
 	]);
 	assert.deepEqual(describe(buildJumpList(settings, vault, vault.note("on/2024-03.md"))), [
 		"📅 day | 2024-02 | prev month - month - February",
+	]);
+});
+
+test("adjacent days covers quarters and years from the Custom formats", () => {
+	const vault = fakeVault([{ path: "on/2024-Q1.md" }, { path: "on/2023-Q4.md" }, { path: "on/2024.md" }, { path: "on/2025.md" }]);
+	const dateNotes = defaultDateNoteSettings();
+	dateNotes.custom.quarter.enabled = true;
+	const settings = onlyBuiltIn("adjacentDays");
+	assert.deepEqual(describe(buildJumpList(settings, vault, vault.note("on/2024-Q1.md"), dateNotes)), [
+		"📅 day | 2023-Q4 | prev quarter - quarter 4",
+	]);
+	assert.deepEqual(describe(buildJumpList(settings, vault, vault.note("on/2024.md"), dateNotes)), [
+		"📅 day | 2025 | next year - year",
+	]);
+});
+
+test("date notes follow Periodic Notes when it is installed", () => {
+	const periodicNotes = {
+		daily: { enabled: true, folder: "journal", format: "DD.MM.YYYY" },
+		weekly: { enabled: false, folder: "on", format: "" },
+	};
+	const vault = fakeVault(
+		[{ path: "journal/05.03.2024.md" }, { path: "journal/06.03.2024.md" }, { path: "on/2024-W10.md" }, { path: "on/2024-03-04.md" }],
+		{ periodicNotes, dailyNotes: { folder: "on", format: "" } },
+	);
+	assert.deepEqual(describe(buildJumpList(onlyBuiltIn("adjacentDays"), vault, vault.note("journal/05.03.2024.md"))), [
+		"📅 day | 06.03.2024 | next day - Wednesday",
+	]);
+	assert.deepEqual(buildJumpList(onlyBuiltIn("adjacentDays"), vault, vault.note("on/2024-W10.md")), []);
+});
+
+test("date notes follow the Daily notes folder and format for days", () => {
+	const vault = fakeVault([{ path: "daily/2024.03.05.md" }, { path: "daily/2024.03.04.md" }, { path: "on/2024-03-04.md" }], {
+		dailyNotes: { folder: "daily", format: "YYYY.MM.DD" },
+	});
+	assert.deepEqual(describe(buildJumpList(onlyBuiltIn("adjacentDays"), vault, vault.note("daily/2024.03.05.md"))), [
+		"📅 day | 2024.03.04 | prev day - Monday",
 	]);
 });
 
