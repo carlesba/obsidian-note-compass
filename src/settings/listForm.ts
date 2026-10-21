@@ -9,7 +9,7 @@ import {
 } from "../lists/conditions.ts";
 import type { Condition, ConditionOperator, DateValue, PropertyType } from "../lists/conditions.ts";
 import type { JumpListVault } from "../lists/vault.ts";
-import { newListId } from "../settings.ts";
+import { RELATION_SOURCE_KINDS, newListId } from "../settings.ts";
 import type { ListSource, NoteList } from "../settings.ts";
 
 export type SourceChoice = ListSource["kind"];
@@ -20,6 +20,9 @@ export const SOURCE_OPTIONS: Record<SourceChoice, string> = {
 	linksIn: "Inbound links",
 	sameDay: "Same day",
 	frontmatter: "Property",
+	linksToNote: "Links to note",
+	inFolder: "In folder",
+	modifiedToday: "Modified today",
 };
 
 export const DATE_MODE_OPTIONS = { fixed: "Fixed date", relative: "Relative to today" };
@@ -37,7 +40,9 @@ export type ListField =
 	| "dateMode"
 	| "date"
 	| "days"
-	| "direction";
+	| "direction"
+	| "note"
+	| "folder";
 
 export type ValueShape = "none" | "text" | "number" | "date";
 
@@ -59,6 +64,11 @@ export function listName(list: NoteList): string {
 }
 
 export function sourceSummary(source: ListSource): string {
+	if (source.kind === "linksToNote") {
+		const name = source.note.split("/").pop()?.replace(/\.md$/, "") ?? "";
+		return name === "" ? "Note not chosen" : `Links to ${name}`;
+	}
+	if (source.kind === "inFolder") return source.folder === "" ? "Folder not chosen" : `In ${source.folder}`;
 	if (source.kind !== "frontmatter") return SOURCE_OPTIONS[source.kind];
 	if (source.property.trim() === "") return "Property not chosen";
 	const { condition } = source;
@@ -118,6 +128,8 @@ export function readListField(list: NoteList, field: ListField): unknown {
 	if (field === "prefix") return list.prefix;
 	if (field === "source") return list.source.kind;
 	const { source } = list;
+	if (source.kind === "linksToNote") return field === "note" ? source.note : undefined;
+	if (source.kind === "inFolder") return field === "folder" ? source.folder : undefined;
 	if (source.kind !== "frontmatter") return undefined;
 	const { condition } = source;
 	if (field === "property") return source.property;
@@ -138,6 +150,8 @@ export function writeListField(list: NoteList, field: ListField, value: unknown)
 	if (field === "enabled") list.enabled = value === true;
 	else if (field === "prefix") list.prefix = typeof value === "string" ? value : "";
 	else if (field === "source") list.source = sourceFor(value, list.source);
+	else if (field === "note" && list.source.kind === "linksToNote") list.source.note = typeof value === "string" ? value.trim() : "";
+	else if (field === "folder" && list.source.kind === "inFolder") list.source.folder = typeof value === "string" ? value.trim() : "";
 	else if (list.source.kind === "frontmatter") writeConditionField(list.source, field, value);
 }
 
@@ -176,8 +190,11 @@ function dateFor(date: DateValue, field: ListField, value: unknown): DateValue {
 function sourceFor(kind: unknown, current: ListSource): ListSource {
 	if (kind === current.kind) return current;
 	if (kind === "frontmatter") return propertySource();
-	const relation = (Object.keys(SOURCE_OPTIONS) as SourceChoice[]).find((choice) => choice === kind);
-	return relation && relation !== "frontmatter" ? { kind: relation } : current;
+	if (kind === "linksToNote") return { kind, note: "" };
+	if (kind === "inFolder") return { kind, folder: "" };
+	if (kind === "modifiedToday") return { kind };
+	const relation = RELATION_SOURCE_KINDS.find((choice) => choice === kind);
+	return relation ? { kind: relation } : current;
 }
 
 function conditionFor(operator: string, previous: Condition): Condition {

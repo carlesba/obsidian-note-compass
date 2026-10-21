@@ -37,6 +37,7 @@ function fakeVault(fakes: FakeVault = {}): JumpListVault {
 		frontmatter: (path) => frontmatter[path],
 		linksFrom: () => [],
 		linksTo: () => [],
+		mtime: () => 0,
 		periodicNotesSettings: () => fakes.periodicNotes,
 		dailyNotesOptions: () => fakes.dailyNotes,
 		propertyTypes: () => fakes.propertyTypes ?? {},
@@ -70,6 +71,11 @@ test("a row is named by its prefix and a summary of its source, and says off whe
 	assert.equal(listName(propertyList("due", { operator: "after", value: { kind: "relative", days: 1 } })), "⭐ due after 1 day from now");
 	assert.equal(listName(propertyList("due", { operator: "on", value: { kind: "relative", days: 0 } })), "⭐ due on today");
 	assert.equal(listName({ ...newList(lists), prefix: "" }), "Property not chosen");
+	assert.equal(listName({ ...lists[0], prefix: "👤", source: { kind: "linksToNote", note: "types/Person 👤.md" } }), "👤 Links to Person 👤");
+	assert.equal(listName({ ...lists[0], prefix: "👤", source: { kind: "linksToNote", note: "" } }), "👤 Note not chosen");
+	assert.equal(listName({ ...lists[0], prefix: "📂", source: { kind: "inFolder", folder: "areas/categories" } }), "📂 In areas/categories");
+	assert.equal(listName({ ...lists[0], prefix: "📂", source: { kind: "inFolder", folder: "" } }), "📂 Folder not chosen");
+	assert.equal(listName({ ...lists[0], prefix: "🔅", source: { kind: "modifiedToday" } }), "🔅 Modified today");
 	assert.equal(listDisplayValue(propertyList("favorite", { operator: "is true" }, false)), "off");
 	assert.equal(listDisplayValue(lists[0]), "");
 });
@@ -149,6 +155,24 @@ test("switching the source to a relation and back starts a fresh property condit
 	assert.deepEqual(list.source, { kind: "frontmatter", property: "", condition: { operator: "is set" } });
 	writeListField(list, "source", "unknown");
 	assert.equal(list.source.kind, "frontmatter");
+});
+
+test("switching to a note or folder source starts it unchosen, and its field reads and writes only for that kind", () => {
+	const list = propertyList("status", { operator: "is", value: "active" });
+	writeListField(list, "source", "linksToNote");
+	assert.deepEqual(list.source, { kind: "linksToNote", note: "" });
+	writeListField(list, "note", " types/Person 👤.md ");
+	writeListField(list, "folder", "categories");
+	assert.equal(readListField(list, "note"), "types/Person 👤.md");
+	assert.equal(readListField(list, "folder"), undefined);
+	writeListField(list, "source", "inFolder");
+	assert.deepEqual(list.source, { kind: "inFolder", folder: "" });
+	writeListField(list, "folder", "categories");
+	writeListField(list, "source", "inFolder");
+	assert.deepEqual(list.source, { kind: "inFolder", folder: "categories" });
+	writeListField(list, "source", "modifiedToday");
+	assert.deepEqual(list.source, { kind: "modifiedToday" });
+	assert.equal(readListField(list, "folder"), undefined);
 });
 
 test("property suggestions keep the vault's spelling and show each property's type", () => {

@@ -17,7 +17,7 @@ import { newList, propertySuggestions } from "./settings/listForm";
 import type { PropertySuggestion } from "./settings/listForm";
 import { listPage } from "./settings/listPage";
 
-const TYPED_FIELDS = ["prefix", "property", "text", "number", "date", "days", "folder", "format"];
+const TYPED_FIELDS = ["prefix", "property", "text", "number", "date", "days", "folder", "format", "note"];
 
 const TYPING_PAUSE_MS = 800;
 
