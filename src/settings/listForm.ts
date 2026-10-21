@@ -24,7 +24,7 @@ export const SOURCE_OPTIONS: Record<SourceChoice, string> = {
 
 export const DATE_MODE_OPTIONS = { fixed: "Fixed date", relative: "Relative to today" };
 
-export const DIRECTION_OPTIONS = { ago: "Ago", fromNow: "From now" };
+export const DIRECTION_OPTIONS = { ago: "Days ago", today: "Today", fromNow: "Days from now" };
 
 export type ListField =
 	| "enabled"
@@ -129,8 +129,9 @@ export function readListField(list: NoteList, field: ListField): unknown {
 	if (typeof value !== "object") return undefined;
 	if (field === "dateMode") return value.kind;
 	if (field === "date") return value.kind === "fixed" ? value.date : "";
-	if (field === "days") return value.kind === "relative" ? Math.abs(value.days) : 0;
-	return value.kind === "relative" && value.days < 0 ? "ago" : "fromNow";
+	const days = value.kind === "relative" ? value.days : 0;
+	if (field === "days") return Math.abs(days);
+	return days < 0 ? "ago" : days > 0 ? "fromNow" : "today";
 }
 
 export function writeListField(list: NoteList, field: ListField, value: unknown): void {
@@ -162,11 +163,12 @@ function dateFor(date: DateValue, field: ListField, value: unknown): DateValue {
 	const days = date.kind === "relative" ? date.days : 0;
 	if (field === "dateMode") return value === "fixed" ? { kind: "fixed", date: "" } : { kind: "relative", days: 0 };
 	if (field === "date" && typeof value === "string" && date.kind === "fixed") return { kind: "fixed", date: value.trim() };
-	if (field === "days" && typeof value === "number" && Number.isInteger(value) && date.kind === "relative") {
-		return { kind: "relative", days: days < 0 ? -Math.abs(value) : Math.abs(value) };
+	if (field === "days" && typeof value === "number" && Number.isInteger(value) && value >= 1 && date.kind === "relative") {
+		return { kind: "relative", days: days < 0 ? -value : value };
 	}
 	if (field === "direction" && date.kind === "relative") {
-		return { kind: "relative", days: value === "ago" ? -Math.abs(days) : Math.abs(days) };
+		const count = Math.max(1, Math.abs(days));
+		return { kind: "relative", days: value === "ago" ? -count : value === "fromNow" ? count : 0 };
 	}
 	return date;
 }

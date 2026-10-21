@@ -36,7 +36,7 @@ A property list asks for the property, suggesting the vault's properties with th
 - Text properties can be equal to a value, contain it, be set or not set.
 - List, tag and alias properties can have an item equal to the value, be set or not set. Wiki-links are compared by their link text, so `[[Project]]` matches the value `Project`.
 - Number properties can be equal to, less than or greater than a number, or be set.
-- Date properties can be on, before or after a fixed date or a number of days ago or from now, or be set. A relative date is worked out each time the picker opens.
+- Date properties can be on, before or after a fixed date, today, or a number of days ago or from now, or be set. A relative date is worked out each time the picker opens.
 
 "Is not set" also matches a property left blank. If a property later changes type, its list keeps the old condition and its page says the condition no longer applies; the list shows nothing until you pick a new one.
 
