@@ -1,10 +1,17 @@
 import { App, PluginSettingTab, debounce } from "obsidian";
-import type { SettingDefinitionItem, SettingDefinitionPage } from "obsidian";
+import type { SettingDefinitionItem, SettingDefinitionList, SettingDefinitionPage } from "obsidian";
 import { PERIODS } from "./lists/dateNotes";
 import { createObsidianVault } from "./lists/obsidianVault";
 import type { JumpListVault } from "./lists/vault";
 import type NoteLauncherPlugin from "./main";
-import { DATE_NOTE_SOURCE_KEY, periodKey, readControl, writeControl } from "./settings/controlKeys";
+import {
+	DATE_NOTE_SOURCE_KEY,
+	FLAGS_PREFIX_KEY,
+	TEMPLATES_FOLDER_KEY,
+	periodKey,
+	readControl,
+	writeControl,
+} from "./settings/controlKeys";
 import {
 	DATE_NOTE_SOURCE_OPTIONS,
 	PERIOD_NAMES,
@@ -15,9 +22,24 @@ import {
 } from "./settings/dateNotesForm";
 import { newList, propertySuggestions } from "./settings/listForm";
 import type { PropertySuggestion } from "./settings/listForm";
-import { listPage } from "./settings/listPage";
+import { flagRow, linkListPage, listPage } from "./settings/listPage";
+import { newLinkList } from "./settings/setPropertiesForm";
 
-const TYPED_FIELDS = ["prefix", "property", "text", "number", "date", "days", "folder", "format", "note"];
+const TYPED_FIELDS = [
+	"prefix",
+	"property",
+	"text",
+	"number",
+	"date",
+	"days",
+	"folder",
+	"format",
+	"note",
+	"name",
+	"writesTo",
+	"flagsPrefix",
+	"templatesFolder",
+];
 
 const TYPING_PAUSE_MS = 800;
 
@@ -31,7 +53,8 @@ export class NoteLauncherSettingTab extends PluginSettingTab {
 	}
 
 	getSettingDefinitions(): SettingDefinitionItem[] {
-		const { lists } = this.plugin.settings;
+		const { lists, setProperties } = this.plugin.settings;
+		const { flags, linkLists } = setProperties;
 		const vault = createObsidianVault(this.app);
 		let suggestions: PropertySuggestion[] | undefined;
 		const context = {
@@ -46,12 +69,55 @@ export class NoteLauncherSettingTab extends PluginSettingTab {
 				heading: "Jump to note",
 				emptyState: "No lists yet. Add one to show notes in the picker.",
 				items: lists.map((list) => listPage(list, context)),
-				onReorder: (from, to) => this.changeLists(() => lists.splice(to, 0, ...lists.splice(from, 1))),
-				onDelete: (index) => this.changeLists(() => lists.splice(index, 1)),
+				...this.editableEntries(lists),
 				addItem: { name: "Add list", action: () => this.changeLists(() => lists.push(newList(lists))) },
 			},
 			{ type: "group", items: [this.dateNotesPage(vault)] },
+			{
+				type: "group",
+				heading: "Set properties",
+				items: [
+					{
+						name: "Flags prefix",
+						desc: "Every flag row in the picker starts with it.",
+						control: { type: "text", key: FLAGS_PREFIX_KEY },
+					},
+				],
+			},
+			{
+				type: "list",
+				heading: "Flags",
+				emptyState: "No flags yet. Add one to switch a checkbox property from the picker.",
+				items: flags.map((flag, index) => flagRow(flag, index, context)),
+				...this.editableEntries(flags),
+				addItem: { name: "Add flag", action: () => this.changeLists(() => flags.push("")) },
+			},
+			{
+				type: "group",
+				items: [
+					{
+						name: "Templates folder",
+						desc: "Notes in this folder are never offered by the link lists.",
+						control: { type: "folder", key: TEMPLATES_FOLDER_KEY },
+					},
+				],
+			},
+			{
+				type: "list",
+				heading: "Link lists",
+				emptyState: "No link lists yet. Add one to link notes from the picker.",
+				items: linkLists.map((list) => linkListPage(list, context)),
+				...this.editableEntries(linkLists),
+				addItem: { name: "Add link list", action: () => this.changeLists(() => linkLists.push(newLinkList(linkLists))) },
+			},
 		];
+	}
+
+	private editableEntries(entries: unknown[]): Pick<SettingDefinitionList, "onReorder" | "onDelete"> {
+		return {
+			onReorder: (from, to) => this.changeLists(() => entries.splice(to, 0, ...entries.splice(from, 1))),
+			onDelete: (index) => this.changeLists(() => entries.splice(index, 1)),
+		};
 	}
 
 	getControlValue(key: string): unknown {
