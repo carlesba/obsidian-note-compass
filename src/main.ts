@@ -3,11 +3,11 @@ import { buildJumpList } from "./lists/jumpList";
 import { createObsidianVault } from "./lists/obsidianVault";
 import type { VaultNote } from "./lists/vault";
 import { JumpModal } from "./modal";
-import { JumpListSettings, defaultSettings, mergeSettings } from "./settings";
+import { JumpSettings, defaultSettings, mergeSettings } from "./settings";
 import { JumpListSettingTab } from "./settingsTab";
 
 export default class NoteLauncherPlugin extends Plugin {
-	settings: JumpListSettings = defaultSettings();
+	settings: JumpSettings = defaultSettings();
 
 	async onload(): Promise<void> {
 		this.settings = mergeSettings(await this.loadData());
@@ -25,7 +25,12 @@ export default class NoteLauncherPlugin extends Plugin {
 	}
 
 	private openJumpModal(): void {
-		const entries = buildJumpList(this.settings, createObsidianVault(this.app), this.currentNote());
+		const entries = buildJumpList(
+			this.settings.lists,
+			createObsidianVault(this.app),
+			this.currentNote(),
+			this.settings.dateNotes,
+		);
 		if (!entries.length) {
 			new Notice("No notes to jump to.");
 			return;

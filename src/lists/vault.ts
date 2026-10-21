@@ -19,6 +19,8 @@ export interface JumpListVault {
 	linksTo(path: string): string[];
 	periodicNotesSettings(): unknown;
 	dailyNotesOptions(): unknown;
+	propertyTypes(): Record<string, string>;
+	now(): number;
 	moment: MomentFactory;
 }
 

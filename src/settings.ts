@@ -1,76 +1,139 @@
-export interface BuiltInList {
+import { readCondition } from "./lists/conditions.ts";
+import type { Condition } from "./lists/conditions.ts";
+import { DEFAULT_CUSTOM_DATE_NOTES, PERIODS, defaultDateNoteSettings } from "./lists/dateNotes.ts";
+import type { DateNoteSettings, PeriodFormat } from "./lists/dateNotes.ts";
+
+export type RelationSourceKind = "adjacentDates" | "linksOut" | "linksIn" | "sameDay";
+
+export const RELATION_SOURCE_KINDS: readonly RelationSourceKind[] = ["adjacentDates", "linksOut", "linksIn", "sameDay"];
+
+export type ListSource = { kind: RelationSourceKind } | { kind: "frontmatter"; property: string; condition: Condition };
+
+export interface NoteList {
+	id: string;
 	enabled: boolean;
 	prefix: string;
+	source: ListSource;
 }
 
-export interface BuiltInLists {
-	linksIn: BuiltInList;
-	linksOut: BuiltInList;
-	sameDay: BuiltInList;
-	adjacentDays: BuiltInList;
+export interface JumpSettings {
+	lists: NoteList[];
+	dateNotes: DateNoteSettings;
 }
 
-export const OPERATORS = ["is true", "equals", "contains", "exists"] as const;
+const DEFAULT_PREFIXES: Record<RelationSourceKind, string> = {
+	adjacentDates: "📅 day",
+	linksOut: "🔗 out",
+	linksIn: "🔗 in ",
+	sameDay: "🔅 ctx",
+};
 
-export type CustomListOperator = (typeof OPERATORS)[number];
+const LEGACY_BUILT_IN_KEYS: Record<RelationSourceKind, string> = {
+	adjacentDates: "adjacentDays",
+	linksOut: "linksOut",
+	linksIn: "linksIn",
+	sameDay: "sameDay",
+};
 
-export interface CustomList {
-	prefix: string;
-	property: string;
-	operator: CustomListOperator;
-	value: string;
+const LEGACY_OPERATORS: Record<string, (value: string) => Condition> = {
+	"is true": () => ({ operator: "is true" }),
+	equals: (value) => ({ operator: "is", value }),
+	contains: (value) => ({ operator: "has item", value }),
+	exists: () => ({ operator: "is set" }),
+};
+
+const DATE_NOTE_SOURCES: readonly DateNoteSettings["from"][] = ["auto", "periodicNotes", "dailyNotes", "custom"];
+
+export function defaultSettings(): JumpSettings {
+	return mergeSettings(undefined);
 }
 
-export interface JumpListSettings {
-	builtIns: BuiltInLists;
-	customLists: CustomList[];
+export function newListId(lists: readonly { id: string }[]): string {
+	const highest = Math.max(0, ...lists.map((list) => Number(list.id.match(/^list-(\d+)$/)?.[1] ?? 0)));
+	return `list-${highest + 1}`;
 }
 
-export function operatorTakesValue(operator: CustomListOperator): boolean {
-	return operator === "equals" || operator === "contains";
-}
-
-export function isOperator(value: string): value is CustomListOperator {
-	return (OPERATORS as readonly string[]).includes(value);
-}
-
-export function newCustomList(): CustomList {
-	return { prefix: "", property: "", operator: "is true", value: "" };
-}
-
-export function defaultSettings(): JumpListSettings {
-	return {
-		builtIns: {
-			linksIn: { enabled: true, prefix: "🔗 in " },
-			linksOut: { enabled: true, prefix: "🔗 out" },
-			sameDay: { enabled: true, prefix: "🔅 ctx" },
-			adjacentDays: { enabled: true, prefix: "📅 day" },
-		},
-		customLists: [],
-	};
-}
-
-export function mergeSettings(stored: unknown): JumpListSettings {
-	const defaults = defaultSettings();
+export function mergeSettings(stored: unknown): JumpSettings {
 	const data = isRecord(stored) ? stored : {};
-	const builtIns = isRecord(data.builtIns) ? data.builtIns : {};
-
 	return {
-		builtIns: {
-			linksIn: readBuiltInList(builtIns.linksIn, defaults.builtIns.linksIn),
-			linksOut: readBuiltInList(builtIns.linksOut, defaults.builtIns.linksOut),
-			sameDay: readBuiltInList(builtIns.sameDay, defaults.builtIns.sameDay),
-			adjacentDays: readBuiltInList(builtIns.adjacentDays, defaults.builtIns.adjacentDays),
-		},
-		customLists: Array.isArray(data.customLists) ? (data.customLists as CustomList[]) : defaults.customLists,
+		lists: Array.isArray(data.lists) ? readLists(data.lists) : migrateLegacyLists(data),
+		dateNotes: readDateNotes(data.dateNotes),
 	};
 }
 
-function readBuiltInList(stored: unknown, fallback: BuiltInList): BuiltInList {
-	const list = isRecord(stored) ? stored : {};
+function readLists(stored: unknown[]): NoteList[] {
+	const storedIds = stored.filter(isRecord).map((entry) => ({ id: typeof entry.id === "string" ? entry.id : "" }));
+	const lists: NoteList[] = [];
+	for (const entry of stored) {
+		if (!isRecord(entry)) continue;
+		const source = readSource(entry.source);
+		if (!source) continue;
+		const id =
+			typeof entry.id === "string" && entry.id !== "" && !lists.some((list) => list.id === entry.id)
+				? entry.id
+				: newListId([...storedIds, ...lists]);
+		lists.push({
+			id,
+			enabled: typeof entry.enabled === "boolean" ? entry.enabled : false,
+			prefix: typeof entry.prefix === "string" ? entry.prefix : "",
+			source,
+		});
+	}
+	return lists;
+}
+
+function readSource(stored: unknown): ListSource | undefined {
+	if (!isRecord(stored) || typeof stored.kind !== "string") return undefined;
+	const kind = RELATION_SOURCE_KINDS.find((relation) => relation === stored.kind);
+	if (kind) return { kind };
+	if (stored.kind !== "frontmatter" || typeof stored.property !== "string") return undefined;
+	const condition = readCondition(stored.condition);
+	return condition ? { kind: "frontmatter", property: stored.property, condition } : undefined;
+}
+
+function migrateLegacyLists(data: Record<string, unknown>): NoteList[] {
+	const builtIns = isRecord(data.builtIns) ? data.builtIns : {};
+	const lists: NoteList[] = [];
+	const add = (enabled: boolean, prefix: string, source: ListSource) =>
+		lists.push({ id: newListId(lists), enabled, prefix, source });
+
+	for (const kind of RELATION_SOURCE_KINDS) {
+		const legacy = builtIns[LEGACY_BUILT_IN_KEYS[kind]];
+		const list = isRecord(legacy) ? legacy : {};
+		add(
+			typeof list.enabled === "boolean" ? list.enabled : true,
+			typeof list.prefix === "string" ? list.prefix : DEFAULT_PREFIXES[kind],
+			{ kind },
+		);
+	}
+
+	for (const legacy of Array.isArray(data.customLists) ? data.customLists : []) {
+		if (!isRecord(legacy) || typeof legacy.property !== "string" || typeof legacy.operator !== "string") continue;
+		if (!Object.prototype.hasOwnProperty.call(LEGACY_OPERATORS, legacy.operator)) continue;
+		const toCondition = LEGACY_OPERATORS[legacy.operator];
+		const value = typeof legacy.value === "string" ? legacy.value : "";
+		const prefix = typeof legacy.prefix === "string" ? legacy.prefix : "";
+		add(true, prefix, { kind: "frontmatter", property: legacy.property, condition: toCondition(value) });
+	}
+	return lists;
+}
+
+function readDateNotes(stored: unknown): DateNoteSettings {
+	const defaults = defaultDateNoteSettings();
+	if (!isRecord(stored)) return defaults;
+	const from = DATE_NOTE_SOURCES.find((source) => source === stored.from) ?? defaults.from;
+	const custom = isRecord(stored.custom) ? stored.custom : {};
+	const formats = { ...defaults.custom };
+	for (const period of PERIODS) formats[period] = readPeriodFormat(custom[period], DEFAULT_CUSTOM_DATE_NOTES[period]);
+	return { from, custom: formats };
+}
+
+function readPeriodFormat(stored: unknown, fallback: PeriodFormat): PeriodFormat {
+	const format = isRecord(stored) ? stored : {};
 	return {
-		enabled: typeof list.enabled === "boolean" ? list.enabled : fallback.enabled,
-		prefix: typeof list.prefix === "string" ? list.prefix : fallback.prefix,
+		enabled: typeof format.enabled === "boolean" ? format.enabled : fallback.enabled,
+		folder: typeof format.folder === "string" ? format.folder : fallback.folder,
+		format: typeof format.format === "string" ? format.format : fallback.format,
 	};
 }
 

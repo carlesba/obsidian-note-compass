@@ -1,33 +1,18 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
+import type { DateValue } from "./lists/conditions";
 import type JumpListPlugin from "./main";
-import { BuiltInList, BuiltInLists, CustomList, CustomListOperator, isOperator, newCustomList, operatorTakesValue } from "./settings";
+import type { ListSource, NoteList, RelationSourceKind } from "./settings";
 
-const BUILT_IN_LISTS_HEADING = "Built-in lists";
+const LISTS_HEADING = "Jump to note";
 
-const BUILT_IN_LIST_NAMES = [
-	["adjacentDays", "Adjacent dates"],
-	["linksOut", "Outbound links"],
-	["linksIn", "Inbound links"],
-	["sameDay", "Same day"],
-] as const satisfies ReadonlyArray<readonly [keyof BuiltInLists, string]>;
+const LIST_DESC = "Show this list in the picker, with its rows starting with the prefix.";
 
-const BUILT_IN_LIST_DESC = "Show this list in the picker, with its rows starting with the prefix.";
-
-const CUSTOM_LISTS_HEADING = "Custom lists";
-
-const CUSTOM_LISTS_DESC =
-	"Each custom list shows the notes whose frontmatter property matches, with its rows starting with the prefix.";
-
-const OPERATOR_LABELS = {
-	"is true": "Is true",
-	equals: "Equals",
-	contains: "Contains",
-	exists: "Exists",
-} satisfies Record<CustomListOperator, string>;
-
-const ADD_CUSTOM_LIST = "Add custom list";
-
-const REMOVE_CUSTOM_LIST = "Remove custom list";
+const RELATION_SOURCE_NAMES: Record<RelationSourceKind, string> = {
+	adjacentDates: "Adjacent dates",
+	linksOut: "Outbound links",
+	linksIn: "Inbound links",
+	sameDay: "Same day",
+};
 
 export class JumpListSettingTab extends PluginSettingTab {
 	private plugin: JumpListPlugin;
@@ -39,30 +24,16 @@ export class JumpListSettingTab extends PluginSettingTab {
 
 	display(): void {
 		const { containerEl } = this;
-		const { settings } = this.plugin;
 		containerEl.empty();
 
-		new Setting(containerEl).setName(BUILT_IN_LISTS_HEADING).setHeading();
-		for (const [key, name] of BUILT_IN_LIST_NAMES) this.addBuiltInList(name, settings.builtIns[key]);
-
-		new Setting(containerEl).setName(CUSTOM_LISTS_HEADING).setDesc(CUSTOM_LISTS_DESC).setHeading();
-		settings.customLists.forEach((list, index) => this.addCustomList(list, index));
-
-		new Setting(containerEl).addButton((button) =>
-			button
-				.setButtonText(ADD_CUSTOM_LIST)
-				.setCta()
-				.onClick(() => {
-					settings.customLists.push(newCustomList());
-					this.saveAndRedisplay();
-				}),
-		);
+		new Setting(containerEl).setName(LISTS_HEADING).setHeading();
+		for (const list of this.plugin.settings.lists) this.addList(list);
 	}
 
-	private addBuiltInList(name: string, list: BuiltInList): void {
+	private addList(list: NoteList): void {
 		new Setting(this.containerEl)
-			.setName(name)
-			.setDesc(BUILT_IN_LIST_DESC)
+			.setName(sourceName(list.source))
+			.setDesc(LIST_DESC)
 			.addText((text) =>
 				text
 					.setPlaceholder("Prefix")
@@ -79,64 +50,17 @@ export class JumpListSettingTab extends PluginSettingTab {
 				}),
 			);
 	}
+}
 
-	private addCustomList(list: CustomList, index: number): void {
-		const setting = new Setting(this.containerEl)
-			.setName(`Custom list ${index + 1}`)
-			.addText((text) =>
-				text
-					.setPlaceholder("Prefix")
-					.setValue(list.prefix)
-					.onChange((value) => {
-						list.prefix = value;
-						void this.plugin.saveSettings();
-					}),
-			)
-			.addText((text) =>
-				text
-					.setPlaceholder("Property")
-					.setValue(list.property)
-					.onChange((value) => {
-						list.property = value;
-						void this.plugin.saveSettings();
-					}),
-			)
-			.addDropdown((dropdown) =>
-				dropdown
-					.addOptions(OPERATOR_LABELS)
-					.setValue(list.operator)
-					.onChange((value) => {
-						if (!isOperator(value)) return;
-						list.operator = value;
-						this.saveAndRedisplay();
-					}),
-			);
+function sourceName(source: ListSource): string {
+	if (source.kind !== "frontmatter") return RELATION_SOURCE_NAMES[source.kind];
+	const { property, condition } = source;
+	const value = "value" in condition ? ` ${describeValue(condition.value)}` : "";
+	return `Property ${property} ${condition.operator}${value}`;
+}
 
-		if (operatorTakesValue(list.operator)) {
-			setting.addText((text) =>
-				text
-					.setPlaceholder("Value")
-					.setValue(list.value)
-					.onChange((value) => {
-						list.value = value;
-						void this.plugin.saveSettings();
-					}),
-			);
-		}
-
-		setting.addExtraButton((button) =>
-			button
-				.setIcon("trash")
-				.setTooltip(REMOVE_CUSTOM_LIST)
-				.onClick(() => {
-					this.plugin.settings.customLists.splice(index, 1);
-					this.saveAndRedisplay();
-				}),
-		);
-	}
-
-	private saveAndRedisplay(): void {
-		void this.plugin.saveSettings();
-		this.display();
-	}
+function describeValue(value: string | number | DateValue): string {
+	if (typeof value !== "object") return String(value);
+	if (value.kind === "fixed") return value.date;
+	return value.days === 0 ? "today" : `today ${value.days > 0 ? "+" : "-"} ${Math.abs(value.days)} days`;
 }
