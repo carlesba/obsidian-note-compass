@@ -2,7 +2,7 @@
 	"id": "note-launcher",
 	"name": "Note Launcher",
 	"version": "0.1.0",
-	"minAppVersion": "1.7.2",
+	"minAppVersion": "1.13.0",
 	"description": "Opens a picker of the notes linked to and from the note in focus, its adjacent date notes, notes from the same day and lists you define by frontmatter, from anywhere in the app.",
 	"author": "Carles Ballester",
 	"authorUrl": "https://github.com/carlesba",
