@@ -44,7 +44,7 @@ function fakeVault(fakes: FakeNote[]): JumpListVault & { note(path: string): Vau
 		mtime: (path) => byPath.get(path)?.mtime ?? HOURS_AGO(48),
 		periodicNotesSettings: () => undefined,
 		dailyNotesOptions: () => undefined,
-		propertyTypes: () => ({}),
+		propertyTypes: () => ({ active: "checkbox", evergreen: "checkbox", archived: "checkbox" }),
 		now: () => NOW,
 		moment,
 		note: (path) => notes.find((note) => note.path === path)!,
