@@ -12,7 +12,7 @@ Each note appears once, under the first list that holds it, and the note in focu
 
 ## Rows and matching
 
-Every row reads `<prefix> | <note name>`, where the prefix is the one set for its list. A date note adds its period in brackets: the weekday for a day note, `week N` for a week note, `month - <Month>` for a month note and `year` for a year note, as in `🔗 out | 2024-03-05 (Tuesday)`. Rows in the adjacent dates list also say which way they point, as in `📅 day | 2024-03-06 (next day - Wednesday)` or `📅 day | 2024-W09 (prev week - week 9)`.
+Every row reads `<prefix> | <note name>`, where the prefix is the one set for its list. A date note adds its period in parentheses: the weekday for a day note, `week N` for a week note, `month - <Month>` for a month note and `year` for a year note, as in `🔗 out | 2024-03-05 (Tuesday)`. Rows in the adjacent dates list also say which way they point, as in `📅 day | 2024-03-06 (next day - Wednesday)` or `📅 day | 2024-W09 (prev week - week 9)`.
 
 Typing filters the rows by in-order matching: a row stays when the characters you typed appear in it in the same order, ignoring case, with anything in between. Because the prefix is part of the row, typing part of a prefix narrows the picker towards that list. Picking a row opens the note in the active tab, or in a new tab when none is open.
 

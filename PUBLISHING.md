@@ -99,7 +99,8 @@ within 24 hours until a passing release exists.
 
 ## Releasing an update later
 
-Bump `version` in both `manifest.json` and `package.json`, raise `minAppVersion` if the update needs a
+Bump `version` in both `manifest.json` and `package.json`, run `npm install --package-lock-only` so
+`package-lock.json` follows, raise `minAppVersion` if the update needs a
 newer Obsidian, and add the matching line to `versions.json`. Then check locally what the workflow and
 the review will check:
 
