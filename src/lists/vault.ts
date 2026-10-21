@@ -17,6 +17,7 @@ export interface JumpListVault {
 	frontmatter(path: string): Frontmatter | undefined;
 	linksFrom(path: string): string[];
 	linksTo(path: string): string[];
+	mtime(path: string): number;
 	periodicNotesSettings(): unknown;
 	dailyNotesOptions(): unknown;
 	propertyTypes(): Record<string, string>;

@@ -7,7 +7,12 @@ export type RelationSourceKind = "adjacentDates" | "linksOut" | "linksIn" | "sam
 
 export const RELATION_SOURCE_KINDS: readonly RelationSourceKind[] = ["adjacentDates", "linksOut", "linksIn", "sameDay"];
 
-export type ListSource = { kind: RelationSourceKind } | { kind: "frontmatter"; property: string; condition: Condition };
+export type ListSource =
+	| { kind: RelationSourceKind }
+	| { kind: "frontmatter"; property: string; condition: Condition }
+	| { kind: "linksToNote"; note: string }
+	| { kind: "inFolder"; folder: string }
+	| { kind: "modifiedToday" };
 
 export interface NoteList {
 	id: string;
@@ -86,6 +91,9 @@ function readSource(stored: unknown): ListSource | undefined {
 	if (!isRecord(stored) || typeof stored.kind !== "string") return undefined;
 	const kind = RELATION_SOURCE_KINDS.find((relation) => relation === stored.kind);
 	if (kind) return { kind };
+	if (stored.kind === "modifiedToday") return { kind: "modifiedToday" };
+	if (stored.kind === "linksToNote") return typeof stored.note === "string" ? { kind: "linksToNote", note: stored.note } : undefined;
+	if (stored.kind === "inFolder") return typeof stored.folder === "string" ? { kind: "inFolder", folder: stored.folder } : undefined;
 	if (stored.kind !== "frontmatter" || typeof stored.property !== "string") return undefined;
 	const condition = readCondition(stored.condition);
 	return condition ? { kind: "frontmatter", property: stored.property, condition } : undefined;
