@@ -35,6 +35,7 @@ function fakeVault(fakes: FakeVault = {}): JumpListVault {
 	return {
 		notes: () => Object.keys(frontmatter).map((path) => ({ path, basename: path.replace(/\.md$/, ""), ctime: 0 })),
 		frontmatter: (path) => frontmatter[path],
+		updateFrontmatter: async () => {},
 		linksFrom: () => [],
 		linksTo: () => [],
 		mtime: () => 0,

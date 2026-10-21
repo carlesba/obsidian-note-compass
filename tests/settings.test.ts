@@ -2,7 +2,7 @@ import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { defaultDateNoteSettings } from "../src/lists/dateNotes.ts";
 import { defaultSettings, mergeSettings, newListId } from "../src/settings.ts";
-import type { NoteList } from "../src/settings.ts";
+import type { NoteList, SetPropertiesSettings } from "../src/settings.ts";
 
 const relationLists = (enabled = [true, true, true, true]): NoteList[] => [
 	{ id: "list-1", enabled: enabled[0], prefix: "📅 day", source: { kind: "adjacentDates" } },
@@ -11,8 +11,75 @@ const relationLists = (enabled = [true, true, true, true]): NoteList[] => [
 	{ id: "list-4", enabled: enabled[3], prefix: "🔅 ctx", source: { kind: "sameDay" } },
 ];
 
+const isTrue = (property: string) => ({ kind: "frontmatter", property, condition: { operator: "is true" } }) as const;
+
+const linksTo = (note: string) => ({ kind: "linksToNote", note }) as const;
+
+const setPropertiesDefaults = (): SetPropertiesSettings => ({
+	flagsPrefix: "🎛️ meta",
+	flags: ["active", "someday", "evergreen", "blocked", "archived"],
+	templatesFolder: "templates",
+	linkLists: [
+		{ id: "list-1", enabled: true, prefix: "👤 peop", name: "People", source: linksTo("Person 👤"), property: "people", mode: "multi" },
+		{ id: "list-2", enabled: true, prefix: "📍 trak", name: "Trackers", source: linksTo("Tracker 📍"), property: "trackers", mode: "multi" },
+		{ id: "list-3", enabled: true, prefix: "📚 coll", name: "Collections", source: linksTo("Collection 📚"), property: "collections", mode: "multi" },
+		{ id: "list-4", enabled: true, prefix: "📂 catg", name: "Category", source: { kind: "inFolder", folder: "categories" }, property: "category", mode: "single" },
+		{ id: "list-5", enabled: true, prefix: "🏷️ ever", name: "Evergreen", source: isTrue("evergreen"), property: "related", mode: "multi" },
+		{ id: "list-6", enabled: true, prefix: "📍 actv", name: "Active", source: isTrue("active"), property: "related", mode: "multi" },
+		{ id: "list-7", enabled: true, prefix: "🏢 comp", name: "Companies", source: linksTo("Org 🏢"), property: "related", mode: "multi" },
+		{ id: "list-8", enabled: true, prefix: "🔅 tday", name: "Today", source: { kind: "modifiedToday" }, property: "related", mode: "multi" },
+	],
+});
+
 test("defaultSettings enables every relation list in picker order and reads date notes automatically", () => {
-	assert.deepEqual(defaultSettings(), { lists: relationLists(), dateNotes: defaultDateNoteSettings() });
+	assert.deepEqual(defaultSettings(), {
+		lists: relationLists(),
+		dateNotes: defaultDateNoteSettings(),
+		setProperties: setPropertiesDefaults(),
+	});
+});
+
+test("mergeSettings gives saved jump settings without set-properties data the default flags and link lists", () => {
+	const lists = [{ id: "list-1", enabled: true, prefix: "🔗", source: { kind: "linksIn" } }];
+	const merged = mergeSettings({ lists });
+	assert.deepEqual(merged.lists, lists);
+	assert.deepEqual(merged.setProperties, setPropertiesDefaults());
+});
+
+test("mergeSettings keeps saved set-properties data and round-trips it", () => {
+	const setProperties = {
+		flagsPrefix: "⚑",
+		flags: ["pinned"],
+		templatesFolder: "_templates",
+		linkLists: [{ id: "list-4", enabled: false, prefix: "🧭", name: "Areas", source: { kind: "inFolder", folder: "areas" }, property: "area", mode: "single" }],
+	};
+	const merged = mergeSettings({ setProperties });
+	assert.deepEqual(merged.setProperties, setProperties);
+	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(merged))), merged);
+});
+
+test("mergeSettings replaces mistyped set-properties fields one by one and drops unreadable link lists", () => {
+	const merged = mergeSettings({
+		setProperties: {
+			flagsPrefix: 4,
+			flags: ["done", 7, null],
+			templatesFolder: ["t"],
+			linkLists: [
+				{ id: "list-1", enabled: true, prefix: "a", name: 3, source: { kind: "modifiedToday" }, property: "seen", mode: "both" },
+				{ id: "list-2", enabled: true, prefix: "b", name: "B", source: { kind: "modifiedToday" } },
+				{ id: "list-3", enabled: true, prefix: "c", name: "C", source: { kind: "nowhere" }, property: "c", mode: "single" },
+			],
+		},
+	});
+	const defaults = setPropertiesDefaults();
+	assert.deepEqual(merged.setProperties, {
+		flagsPrefix: defaults.flagsPrefix,
+		flags: ["done"],
+		templatesFolder: defaults.templatesFolder,
+		linkLists: [{ id: "list-1", enabled: true, prefix: "a", name: "", source: { kind: "modifiedToday" }, property: "seen", mode: "multi" }],
+	});
+	assert.deepEqual(mergeSettings({ setProperties: "nonsense" }).setProperties, defaults);
+	assert.deepEqual(mergeSettings({ setProperties: { linkLists: [] } }).setProperties.linkLists, []);
 });
 
 test("mergeSettings falls back to the defaults when nothing is stored", () => {
@@ -104,7 +171,7 @@ test("mergeSettings keeps saved lists in their order and round-trips its own out
 		dateNotes: { from: "custom", custom: { ...defaultDateNoteSettings().custom, quarter: { enabled: true, folder: "q", format: "YYYY-[Q]Q" } } },
 	};
 	const merged = mergeSettings(saved);
-	assert.deepEqual(merged, saved);
+	assert.deepEqual(merged, { ...saved, setProperties: setPropertiesDefaults() });
 	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(merged))), merged);
 });
 
@@ -147,6 +214,8 @@ test("mergeSettings returns fresh defaults that callers can change without affec
 	const first = mergeSettings(undefined);
 	first.lists[0].prefix = "changed";
 	first.dateNotes.custom.day.folder = "changed";
+	first.setProperties.flags.push("changed");
+	first.setProperties.linkLists[4].source = { kind: "modifiedToday" };
 	assert.deepEqual(mergeSettings(undefined), defaultSettings());
 });
 

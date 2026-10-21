@@ -15,6 +15,7 @@ export type MomentDate = ReturnType<MomentFactory>;
 export interface JumpListVault {
 	notes(): VaultNote[];
 	frontmatter(path: string): Frontmatter | undefined;
+	updateFrontmatter(path: string, update: (frontmatter: Frontmatter) => void): Promise<void>;
 	linksFrom(path: string): string[];
 	linksTo(path: string): string[];
 	mtime(path: string): number;
