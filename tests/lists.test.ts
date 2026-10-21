@@ -278,22 +278,18 @@ test("every property reads as text when the vault reports no types", () => {
 	assert.deepEqual(describe(buildJumpList([propertyList("🏠", "area", { operator: "contains", value: "om" })], vault)), ["🏠 | a"]);
 });
 
-test("links to note lists the notes linking to the chosen note, without the note itself or the current note", () => {
+test("links to note lists the notes linking to the chosen note by path or name, without the current note", () => {
 	const vault = fakeVault([
-		{ path: "types/Person 👤.md", links: ["types/Person 👤.md"] },
+		{ path: "types/Person 👤.md" },
 		{ path: "people/Zoe.md", links: ["types/Person 👤.md"] },
 		{ path: "people/Ann.md", links: ["types/Person 👤.md"] },
 		{ path: "unrelated.md", links: ["people/Zoe.md"] },
 	]);
-	const zoeAndAnn = ["src | Ann", "src | Zoe"];
-	assert.deepEqual(describe(buildJumpList(sourceList({ kind: "linksToNote", note: "types/Person 👤.md" }), vault)), [
-		"src | Person 👤",
-		...zoeAndAnn,
-	]);
-	assert.deepEqual(describe(buildJumpList(sourceList({ kind: "linksToNote", note: "types/Person 👤" }), vault, vault.note("types/Person 👤.md"))), zoeAndAnn);
+	for (const note of ["types/Person 👤.md", "types/Person 👤", "Person 👤"]) {
+		assert.deepEqual(describe(buildJumpList(sourceList({ kind: "linksToNote", note }), vault)), ["src | Ann", "src | Zoe"]);
+	}
 	assert.deepEqual(describe(buildJumpList(sourceList({ kind: "linksToNote", note: "Person 👤" }), vault, vault.note("people/Zoe.md"))), [
 		"src | Ann",
-		"src | Person 👤",
 	]);
 });
 
