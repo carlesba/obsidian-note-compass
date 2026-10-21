@@ -8,7 +8,7 @@ export function matchesCustomList(frontmatter: Frontmatter | undefined, list: Cu
 		case "is true":
 			return property === true || property === "true";
 		case "equals":
-			return property !== null && property !== undefined && String(property) === list.value;
+			return scalarText(property) === list.value;
 		case "contains":
 			return containsValue(property, linkText(list.value));
 		case "exists":
@@ -20,7 +20,10 @@ export function matchesCustomList(frontmatter: Frontmatter | undefined, list: Cu
 
 function containsValue(property: unknown, value: string): boolean {
 	if (Array.isArray(property)) {
-		return property.some((element) => element !== null && element !== undefined && linkText(String(element)) === value);
+		return property.some((element) => {
+			const text = scalarText(element);
+			return text !== undefined && linkText(text) === value;
+		});
 	}
 	if (typeof property === "string") return property.includes(value) || linkText(property) === value;
 	return false;
@@ -29,4 +32,10 @@ function containsValue(property: unknown, value: string): boolean {
 function linkText(value: string): string {
 	const wikiLink = value.trim().match(/^\[\[([^\]|]*)(?:\|[^\]]*)?\]\]$/);
 	return wikiLink ? wikiLink[1].trim() : value;
+}
+
+function scalarText(value: unknown): string | undefined {
+	if (typeof value === "string") return value;
+	if (typeof value === "number" || typeof value === "boolean") return String(value);
+	return undefined;
 }
