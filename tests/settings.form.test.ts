@@ -124,8 +124,13 @@ test("date values map onto a mode, a date, a number of days and a direction", ()
 	writeListField(list, "direction", "fromNow");
 	assert.equal(readListField(list, "direction"), "fromNow");
 	writeListField(list, "days", 5);
+	writeListField(list, "days", 0);
 	assert.deepEqual(readListField(list, "days"), 5);
+	writeListField(list, "direction", "today");
+	assert.deepEqual(["direction", "days"].map((field) => readListField(list, field as "days")), ["today", 0]);
 	writeListField(list, "direction", "ago");
+	assert.deepEqual(list.source.kind === "frontmatter" && list.source.condition, { operator: "before", value: { kind: "relative", days: -1 } });
+	writeListField(list, "days", 5);
 	assert.deepEqual(list.source.kind === "frontmatter" && list.source.condition, { operator: "before", value: { kind: "relative", days: -5 } });
 	writeListField(list, "dateMode", "fixed");
 	writeListField(list, "date", " 2024-03-05 ");

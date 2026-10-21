@@ -61,6 +61,10 @@ export function listPageItems(list: NoteList, context: ListPageContext): Setting
 		const condition = property()?.condition;
 		return condition && "value" in condition && typeof condition.value === "object" ? condition.value.kind : undefined;
 	};
+	const relativeToday = () => {
+		const condition = property()?.condition;
+		return condition !== undefined && "value" in condition && typeof condition.value === "object" && condition.value.kind === "relative" && condition.value.days === 0;
+	};
 	const source = property();
 	const type = propertyType(context.propertyTypes, source?.property ?? "");
 	const inapplicable = inapplicableCondition(list.source, context.propertyTypes);
@@ -109,14 +113,14 @@ export function listPageItems(list: NoteList, context: ListPageContext): Setting
 			control: { type: "text", key: key("date"), placeholder: "YYYY-MM-DD", validate: fixedDateError },
 		},
 		{
-			name: "Days from today",
-			visible: () => shape() === "date" && dateMode() === "relative",
-			control: { type: "number", key: key("days"), min: 0, step: 1 },
-		},
-		{
-			name: "Direction",
+			name: "When",
 			visible: () => shape() === "date" && dateMode() === "relative",
 			control: { type: "dropdown", key: key("direction"), options: DIRECTION_OPTIONS },
+		},
+		{
+			name: "Number of days",
+			visible: () => shape() === "date" && dateMode() === "relative" && !relativeToday(),
+			control: { type: "number", key: key("days"), min: 1, step: 1 },
 		},
 	];
 }
