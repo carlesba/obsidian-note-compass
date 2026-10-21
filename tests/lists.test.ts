@@ -36,6 +36,7 @@ function fakeVault(fakes: FakeNote[], plugins: FakePlugins = {}): JumpListVault 
 	return {
 		notes: () => notes,
 		frontmatter: (path) => byPath.get(path)?.frontmatter,
+		updateFrontmatter: async () => {},
 		linksFrom: (path) => byPath.get(path)?.links ?? [],
 		linksTo: (path) => fakes.filter((fake) => fake.links?.includes(path)).map((fake) => fake.path),
 		mtime: (path) => byPath.get(path)?.mtime ?? MARCH_5,

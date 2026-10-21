@@ -19,6 +19,11 @@ export function createObsidianVault(app: App): JumpListVault {
 			const file = app.vault.getFileByPath(path);
 			return file ? app.metadataCache.getFileCache(file)?.frontmatter : undefined;
 		},
+		updateFrontmatter: async (path, update) => {
+			const file = app.vault.getFileByPath(path);
+			if (!file) throw new Error(`No note at ${path}`);
+			await app.fileManager.processFrontMatter(file, update);
+		},
 		linksFrom: (path) => Object.keys(app.metadataCache.resolvedLinks[path] ?? {}),
 		linksTo: (path) =>
 			Object.entries(app.metadataCache.resolvedLinks)

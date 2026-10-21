@@ -21,9 +21,27 @@ export interface NoteList {
 	source: ListSource;
 }
 
+export type LinkListMode = "multi" | "single";
+
+export const LINK_LIST_MODES: readonly LinkListMode[] = ["multi", "single"];
+
+export interface LinkList extends NoteList {
+	name: string;
+	property: string;
+	mode: LinkListMode;
+}
+
+export interface SetPropertiesSettings {
+	flagsPrefix: string;
+	flags: string[];
+	templatesFolder: string;
+	linkLists: LinkList[];
+}
+
 export interface JumpSettings {
 	lists: NoteList[];
 	dateNotes: DateNoteSettings;
+	setProperties: SetPropertiesSettings;
 }
 
 const DEFAULT_PREFIXES: Record<RelationSourceKind, string> = {
@@ -49,6 +67,43 @@ const LEGACY_OPERATORS: Record<string, (value: string) => Condition> = {
 
 const DATE_NOTE_SOURCES: readonly DateNoteSettings["from"][] = ["auto", "periodicNotes", "dailyNotes", "custom"];
 
+const DEFAULT_FLAGS_PREFIX = "🎛️ meta";
+
+const DEFAULT_FLAGS = ["active", "someday", "evergreen", "blocked", "archived"];
+
+const DEFAULT_TEMPLATES_FOLDER = "templates";
+
+function defaultLinkListFields(): Omit<LinkList, "id" | "enabled">[] {
+	return [
+		{ prefix: "👤 peop", name: "People", source: { kind: "linksToNote", note: "Person 👤" }, property: "people", mode: "multi" },
+		{ prefix: "📍 trak", name: "Trackers", source: { kind: "linksToNote", note: "Tracker 📍" }, property: "trackers", mode: "multi" },
+		{
+			prefix: "📚 coll",
+			name: "Collections",
+			source: { kind: "linksToNote", note: "Collection 📚" },
+			property: "collections",
+			mode: "multi",
+		},
+		{ prefix: "📂 catg", name: "Category", source: { kind: "inFolder", folder: "categories" }, property: "category", mode: "single" },
+		{
+			prefix: "🏷️ ever",
+			name: "Evergreen",
+			source: { kind: "frontmatter", property: "evergreen", condition: { operator: "is true" } },
+			property: "related",
+			mode: "multi",
+		},
+		{
+			prefix: "📍 actv",
+			name: "Active",
+			source: { kind: "frontmatter", property: "active", condition: { operator: "is true" } },
+			property: "related",
+			mode: "multi",
+		},
+		{ prefix: "🏢 comp", name: "Companies", source: { kind: "linksToNote", note: "Org 🏢" }, property: "related", mode: "multi" },
+		{ prefix: "🔅 tday", name: "Today", source: { kind: "modifiedToday" }, property: "related", mode: "multi" },
+	];
+}
+
 export function defaultSettings(): JumpSettings {
 	return mergeSettings(undefined);
 }
@@ -61,23 +116,54 @@ export function newListId(lists: readonly { id: string }[]): string {
 export function mergeSettings(stored: unknown): JumpSettings {
 	const data = isRecord(stored) ? stored : {};
 	return {
-		lists: Array.isArray(data.lists) ? readLists(data.lists) : migrateLegacyLists(data),
+		lists: Array.isArray(data.lists) ? readLists(data.lists, () => ({})) : migrateLegacyLists(data),
 		dateNotes: readDateNotes(data.dateNotes),
+		setProperties: readSetProperties(data.setProperties),
 	};
 }
 
-function readLists(stored: unknown[]): NoteList[] {
+function readSetProperties(stored: unknown): SetPropertiesSettings {
+	const data = isRecord(stored) ? stored : {};
+	return {
+		flagsPrefix: typeof data.flagsPrefix === "string" ? data.flagsPrefix : DEFAULT_FLAGS_PREFIX,
+		flags: Array.isArray(data.flags)
+			? data.flags.filter((flag): flag is string => typeof flag === "string")
+			: [...DEFAULT_FLAGS],
+		templatesFolder: typeof data.templatesFolder === "string" ? data.templatesFolder : DEFAULT_TEMPLATES_FOLDER,
+		linkLists: Array.isArray(data.linkLists) ? readLists(data.linkLists, readLinkListFields) : defaultLinkLists(),
+	};
+}
+
+function defaultLinkLists(): LinkList[] {
+	return defaultLinkListFields().map((list, index) => ({ id: `list-${index + 1}`, enabled: true, ...list }));
+}
+
+function readLinkListFields(entry: Record<string, unknown>): Omit<LinkList, keyof NoteList> | undefined {
+	if (typeof entry.property !== "string") return undefined;
+	return {
+		name: typeof entry.name === "string" ? entry.name : "",
+		property: entry.property,
+		mode: LINK_LIST_MODES.find((mode) => mode === entry.mode) ?? "multi",
+	};
+}
+
+function readLists<Fields extends object>(
+	stored: unknown[],
+	readFields: (entry: Record<string, unknown>) => Fields | undefined,
+): (NoteList & Fields)[] {
 	const storedIds = stored.filter(isRecord).map((entry) => ({ id: typeof entry.id === "string" ? entry.id : "" }));
-	const lists: NoteList[] = [];
+	const lists: (NoteList & Fields)[] = [];
 	for (const entry of stored) {
 		if (!isRecord(entry)) continue;
 		const source = readSource(entry.source);
-		if (!source) continue;
+		const fields = readFields(entry);
+		if (!source || !fields) continue;
 		const id =
 			typeof entry.id === "string" && entry.id !== "" && !lists.some((list) => list.id === entry.id)
 				? entry.id
 				: newListId([...storedIds, ...lists]);
 		lists.push({
+			...fields,
 			id,
 			enabled: typeof entry.enabled === "boolean" ? entry.enabled : false,
 			prefix: typeof entry.prefix === "string" ? entry.prefix : "",
@@ -87,7 +173,7 @@ function readLists(stored: unknown[]): NoteList[] {
 	return lists;
 }
 
-function readSource(stored: unknown): ListSource | undefined {
+export function readSource(stored: unknown): ListSource | undefined {
 	if (!isRecord(stored) || typeof stored.kind !== "string") return undefined;
 	const kind = RELATION_SOURCE_KINDS.find((relation) => relation === stored.kind);
 	if (kind) return { kind };
