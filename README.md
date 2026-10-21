@@ -18,22 +18,29 @@ Typing filters the rows by in-order matching: a row stays when the characters yo
 
 ## Date notes
 
-A note counts as a date note when its frontmatter `period` is `day`, `week`, `month` or `year`, or when it sits under `on/` and its name is a day (`2024-03-05`), an ISO week (`2024-W10`) or a month (`2024-03`).
+A note is a date note when it sits directly in the folder set for its period and its name matches that period's format exactly. There are five periods, day, week, month, quarter and year, and each has its own folder, format and on/off switch.
 
-The adjacent dates list holds the previous and next day, week or month of the date note in focus, when those notes exist anywhere in the vault. The same day list holds the notes created on the same day as the note in focus; for a day note it uses the date in its name rather than when the file was created.
+The adjacent dates list holds the previous and next note of the same period as the date note in focus, when those notes exist. The same day list holds the notes created on the same day as the note in focus; for a day note it uses the date in its name rather than when the file was created.
+
+Two limits follow from matching the name inside the period's folder. A day format containing `/`, such as `YYYY/MM/DD`, never matches, because the name is compared without its folders. And with the default formats, year notes such as `on/2024` count as date notes too, so turn the year period off under Custom if you keep other notes named after a year in that folder.
 
 ## Settings
 
-Under "Built-in lists" there is one row per relation list, in picker order: "Adjacent dates", "Outbound links", "Inbound links" and "Same day". Each row has a prefix text field and a toggle that shows or hides the list. The default prefixes are `📅 day`, `🔗 out`, `🔗 in ` and `🔅 ctx`.
+Settings fit a narrow window and work the same on mobile. Under "Jump to note" there is one row per list, in the order the picker shows them. Each row shows the list's prefix and what it lists, and says "off" when the list is hidden from the picker. Drag a row to reorder the lists, delete it to remove the list, or use "Add list" to add one; a new list starts switched off, so it stays out of the picker until you open it and fill it in.
 
-Under "Custom lists" each list shows every note in the vault whose frontmatter property matches. A list has a prefix, a property name and an operator:
+Opening a row shows the list's page. "Enabled" shows or hides the list, "Prefix" sets the text each of its rows starts with, and "Source" chooses what it lists: adjacent dates, outbound links, inbound links, same day, or notes with a property. The default lists are the four relations, with the prefixes `📅 day`, `🔗 out`, `🔗 in ` and `🔅 ctx`.
 
-- "Is true" matches when the property is `true` or the text `"true"`.
-- "Equals" matches when the property equals the value.
-- "Contains" matches when the property is a list with an item equal to the value, or text that contains the value. Wiki-links are compared by their link text, so `[[Project]]` matches the value `Project`.
-- "Exists" matches when the note has the property with any value; a property left blank does not count.
+A property list asks for the property, suggesting the vault's properties with their types, then a condition offered for that type:
 
-The value field appears only for "Equals" and "Contains". The trash button removes a list, and "Add custom list" below the lists adds one.
+- Checkbox properties can be true, false, set or not set. "Is false" needs an explicit `false`.
+- Text properties can be equal to a value, contain it, be set or not set.
+- List, tag and alias properties can have an item equal to the value, be set or not set. Wiki-links are compared by their link text, so `[[Project]]` matches the value `Project`.
+- Number properties can be equal to, less than or greater than a number, or be set.
+- Date properties can be on, before or after a fixed date or a number of days ago or from now, or be set. A relative date is worked out each time the picker opens.
+
+"Is not set" also matches a property left blank. If a property later changes type, its list keeps the old condition and its page says the condition no longer applies; the list shows nothing until you pick a new one.
+
+The "Date notes" page chooses where the formats come from. "Automatic" uses the Periodic Notes plugin when it is enabled, then the core Daily notes plugin, then the plugin's own Custom formats, and the row on the main page says which one it is using. With Periodic Notes or Daily notes the page shows the folder and format each period reads, without letting you change them there; Daily notes covers days only, and the other periods come from Custom. With "Custom" you set each period's folder and format, as a [Moment format](https://momentjs.com/docs/#/displaying/format/), and switch it on or off. By default every period lives in `on/`, as `2024-03-05`, `2024-W10`, `2024-03` and `2024`, with quarters such as `2024-Q1` switched off.
 
 ## Differences from the Templater script
 
@@ -43,7 +50,7 @@ The command runs without an editor, so it works from any view. The category colu
 
 Once the plugin is listed in the community browser, open Settings → Community plugins → Browse, search for Note Launcher, then install and enable it.
 
-To install it by hand, download `main.js`, `manifest.json` and `styles.css` from a release, put them in `<vault>/.obsidian/plugins/note-launcher/`, and enable Note Launcher under Settings → Community plugins. It needs Obsidian 1.7.2 or later and runs on both desktop and mobile.
+To install it by hand, download `main.js`, `manifest.json` and `styles.css` from a release, put them in `<vault>/.obsidian/plugins/note-launcher/`, and enable Note Launcher under Settings → Community plugins. It needs Obsidian 1.13.0 or later and runs on both desktop and mobile.
 
 ## Development
 
