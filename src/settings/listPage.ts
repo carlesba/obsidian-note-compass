@@ -73,6 +73,18 @@ export function listPageItems(list: NoteList, context: ListPageContext): Setting
 		{ name: "Prefix", desc: "Every row from this list starts with it.", control: { type: "text", key: key("prefix") } },
 		{ name: "Source", control: { type: "dropdown", key: key("source"), options: SOURCE_OPTIONS } },
 		{
+			name: "Note",
+			desc: "Notes that link to this note, in the text or in a property, are listed.",
+			visible: () => list.source.kind === "linksToNote",
+			control: { type: "file", key: key("note"), placeholder: "Person", filter: (file) => file.extension === "md" },
+		},
+		{
+			name: "Folder",
+			desc: "Notes in this folder and its subfolders are listed.",
+			visible: () => list.source.kind === "inFolder",
+			control: { type: "folder", key: key("folder") },
+		},
+		{
 			name: "Property",
 			desc: "Notes whose property meets the condition are listed.",
 			visible: () => property() !== undefined,

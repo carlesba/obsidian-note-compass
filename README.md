@@ -1,12 +1,12 @@
 # Note Launcher
 
-An Obsidian plugin that opens one quick-switcher-style picker from anywhere in the app, listing the notes related to the note in focus alongside lists you define by frontmatter.
+An Obsidian plugin that opens one quick-switcher-style picker from anywhere in the app, listing the notes related to the note in focus alongside lists you define by property, folder or link.
 
 ## What it does
 
 The plugin adds a "Jump to note" command. It replaces a Templater script that did the same job but needed an open editor to run, so the command now works from any tab, from the sidebar, or with no tab open at all.
 
-With a markdown note in focus, the picker shows that note's relation lists first: its adjacent date notes, the notes it links to (frontmatter links included), the notes that link to it, and the notes from the same day. Your custom lists follow. With anything else in focus, or no tab at all, the picker shows only the custom lists.
+With a markdown note in focus, the picker can show that note's relation lists: its adjacent date notes, the notes it links to (links in properties included), the notes that link to it, and the notes from the same day. The other lists do not depend on the note in focus. The picker shows the lists in the order you set, and with anything else in focus, or no tab at all, it leaves out the relation lists.
 
 Each note appears once, under the first list that holds it, and the note in focus is left out. Within a list the notes are sorted by name. When no list has any note, the command says "No notes to jump to." instead of opening an empty picker.
 
@@ -28,7 +28,9 @@ Two limits follow from matching the name inside the period's folder. A day forma
 
 Settings fit a narrow window and work the same on mobile. Under "Jump to note" there is one row per list, in the order the picker shows them. Each row shows the list's prefix and what it lists, and says "off" when the list is hidden from the picker. Drag a row to reorder the lists, delete it to remove the list, or use "Add list" to add one; a new list starts switched off, so it stays out of the picker until you open it and fill it in.
 
-Opening a row shows the list's page. "Enabled" shows or hides the list, "Prefix" sets the text each of its rows starts with, and "Source" chooses what it lists: adjacent dates, outbound links, inbound links, same day, or notes with a property. The default lists are the four relations, with the prefixes `📅 day`, `🔗 out`, `🔗 in ` and `🔅 ctx`.
+Opening a row shows the list's page. "Enabled" shows or hides the list, "Prefix" sets the text each of its rows starts with, and "Source" chooses what it lists: adjacent dates, outbound links, inbound links, same day, notes with a property, notes linking to a note, notes in a folder, or notes modified today. The default lists are the four relations, with the prefixes `📅 day`, `🔗 out`, `🔗 in ` and `🔅 ctx`.
+
+A "Links to note" list asks for a note and lists the notes that link to it, in their text or in a property. An "In folder" list asks for a folder and lists the notes in it and in its subfolders. A "Modified today" list asks for nothing and lists the notes changed since midnight.
 
 A property list asks for the property, suggesting the vault's properties with their types, then a condition offered for that type:
 
