@@ -57,12 +57,13 @@ export function defaultDateNoteSettings(): DateNoteSettings {
 }
 
 export function resolveDateNotes(settings: DateNoteSettings, vault: DateNoteVault): ResolvedDateNotes {
+	const custom = mapPeriods((period) => ({ ...settings.custom[period], folder: normalizeFolder(settings.custom[period].folder) }));
 	const candidates: DateNoteSource[] = settings.from === "auto" ? ["periodicNotes", "dailyNotes"] : [settings.from];
 	for (const source of candidates) {
-		const periods = readSource(source, settings.custom, vault);
+		const periods = readSource(source, custom, vault);
 		if (periods) return { from: source, periods };
 	}
-	return { from: "custom", periods: settings.custom };
+	return { from: "custom", periods: custom };
 }
 
 function readSource(source: DateNoteSource, custom: DateNoteFormats, vault: DateNoteVault): DateNoteFormats | undefined {
