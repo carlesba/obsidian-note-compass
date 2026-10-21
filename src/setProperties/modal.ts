@@ -51,9 +51,10 @@ class SetPropertiesModal extends SuggestModal<LabelledChoice> {
 export function setProperties(app: App, vault: JumpListVault, settings: JumpSettings, target: VaultNote): void {
 	const rows = propertyRows(settings, vault, target);
 	const cancel = () => new Notice("Property changes cancelled.");
+	const initial = initialPropertyState(settings.setProperties, vault.frontmatter(target.path));
 	const save = async (state: PropertyState) => {
 		try {
-			await vault.updateFrontmatter(target.path, (frontmatter) => writeProperties(frontmatter, state));
+			await vault.updateFrontmatter(target.path, (frontmatter) => writeProperties(frontmatter, initial, state));
 			new Notice("Properties saved.");
 		} catch {
 			new Notice("Could not save the properties.");
@@ -68,5 +69,5 @@ export function setProperties(app: App, vault: JumpListVault, settings: JumpSett
 			},
 			dismiss: cancel,
 		}).open();
-	open(initialPropertyState(settings.setProperties, vault.frontmatter(target.path)));
+	open(initial);
 }

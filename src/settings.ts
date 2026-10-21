@@ -23,7 +23,7 @@ export interface NoteList {
 
 export type LinkListMode = "multi" | "single";
 
-export const LINK_LIST_MODES: readonly LinkListMode[] = ["multi", "single"];
+const LINK_LIST_MODES: readonly LinkListMode[] = ["multi", "single"];
 
 export interface LinkList extends NoteList {
 	name: string;
@@ -173,7 +173,7 @@ function readLists<Fields extends object>(
 	return lists;
 }
 
-export function readSource(stored: unknown): ListSource | undefined {
+function readSource(stored: unknown): ListSource | undefined {
 	if (!isRecord(stored) || typeof stored.kind !== "string") return undefined;
 	const kind = RELATION_SOURCE_KINDS.find((relation) => relation === stored.kind);
 	if (kind) return { kind };

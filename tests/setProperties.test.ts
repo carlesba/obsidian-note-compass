@@ -84,9 +84,9 @@ const labels = (rows: PropertyRow[], state: PropertyState) => pickerChoices(rows
 const row = (rows: PropertyRow[], prefix: string, name: string) =>
 	rows.find((candidate) => candidate.prefix === prefix && candidate.name === name)!;
 
-function saved(state: PropertyState, frontmatter: Frontmatter = {}): Frontmatter {
+function saved(initial: PropertyState, state: PropertyState, frontmatter: Frontmatter = {}): Frontmatter {
 	const written = { ...frontmatter };
-	writeProperties(written, state);
+	writeProperties(written, initial, state);
 	return written;
 }
 
@@ -148,48 +148,52 @@ test("choosing a row toggles it and the reopened picker moves it among the selec
 test("a flag writes true when selected and deletes its key when not, never false", () => {
 	const { rows, state } = setup();
 	const flipped = toggleRow(toggleRow(state, row(rows, "🎛️ meta", "active")), row(rows, "🎛️ meta", "someday"));
-	assert.deepEqual(saved(flipped, { active: true, someday: false }), {
-		someday: true,
-		people: ["[[people/Ann|Ann]]", "[[Stranger]]"],
-	});
-	assert.deepEqual(saved(state, { someday: false }).someday, undefined);
+	assert.deepEqual(saved(state, flipped, { active: true }), { someday: true });
+});
+
+test("a property the picker did not change keeps its saved value", () => {
+	const { rows, state } = setup();
+	const someday = row(rows, "🎛️ meta", "someday");
+	const untouched = toggleRow(toggleRow(state, someday), someday);
+	const original = { someday: "later", people: "[[people/Ann|Ann]]" };
+	assert.deepEqual(saved(state, untouched, original), original);
 });
 
 test("a multi list adds and removes links and keeps the values it does not offer", () => {
 	const { rows, state } = setup();
 	const withBob = toggleRow(state, row(rows, "👤 peop", "Bob"));
-	assert.deepEqual(saved(withBob).people, ["[[people/Ann|Ann]]", "[[Stranger]]", "[[Bob]]"]);
+	assert.deepEqual(saved(state, withBob).people, ["[[people/Ann|Ann]]", "[[Stranger]]", "[[Bob]]"]);
 	const withoutAnn = toggleRow(withBob, row(rows, "👤 peop", "Ann"));
-	assert.deepEqual(saved(withoutAnn).people, ["[[Stranger]]", "[[Bob]]"]);
+	assert.deepEqual(saved(state, withoutAnn).people, ["[[Stranger]]", "[[Bob]]"]);
 });
 
 test("a multi list deletes its key when nothing is selected", () => {
-	const { rows, state } = setup();
-	const written = saved(toggleRow(state, row(rows, "🏷️ ever", "Acme")), { related: [] });
-	assert.deepEqual(written.related, ["[[Acme]]"]);
-	assert.ok(!("related" in saved(state, { related: [] })));
-	const onlyAnn = initialPropertyState(defaultSettings().setProperties, { people: ["[[Ann]]"] });
-	assert.ok(!("people" in saved(toggleRow(onlyAnn, row(rows, "👤 peop", "Ann")), { people: ["[[Ann]]"] })));
+	const { settings, rows, state } = setup();
+	assert.deepEqual(saved(state, toggleRow(state, row(rows, "🏷️ ever", "Acme")), { related: [] }).related, ["[[Acme]]"]);
+	const onlyAnn = initialPropertyState(settings.setProperties, { people: ["[[Ann]]"] });
+	assert.ok(!("people" in saved(onlyAnn, toggleRow(onlyAnn, row(rows, "👤 peop", "Ann")), { people: ["[[Ann]]"] })));
 });
 
 test("a single list writes one link, replaces it with another row and clears it when chosen again", () => {
-	const { rows, state } = setup();
+	const { settings, rows, state } = setup();
 	const work = toggleRow(state, row(rows, "📂 catg", "Work"));
-	assert.equal(saved(work).category, "[[Work]]");
+	assert.equal(saved(state, work).category, "[[Work]]");
 	const home = toggleRow(work, row(rows, "📂 catg", "Home"));
-	assert.equal(saved(home).category, "[[Home]]");
-	assert.ok(!("category" in saved(toggleRow(home, row(rows, "📂 catg", "Home")), { category: "[[Home]]" })));
+	assert.equal(saved(state, home).category, "[[Home]]");
+	const atHome = initialPropertyState(settings.setProperties, { category: "[[Home]]" });
+	assert.ok(!("category" in saved(atHome, toggleRow(atHome, row(rows, "📂 catg", "Home")), { category: "[[Home]]" })));
 });
 
 test("the initial state matches saved links by alias or link text and keeps unmatched values on save", () => {
 	const { settings, rows } = setup();
-	const state = initialPropertyState(settings.setProperties, {
+	const original = {
 		someday: true,
 		category: "[[categories/Work|Work]]",
 		people: "[[Ann]]",
 		related: ["Ideas", 42],
 		archived: true,
-	});
+	};
+	const state = initialPropertyState(settings.setProperties, original);
 	assert.deepEqual(labels(rows, state).slice(2, 7), [
 		"✓ 🎛️ meta | someday",
 		"✓ 👤 peop | Ann",
@@ -197,23 +201,21 @@ test("the initial state matches saved links by alias or link text and keeps unma
 		"✓ 🏷️ ever | Ideas",
 		"\u2003 🎛️ meta | active",
 	]);
-	assert.deepEqual(saved(state, { archived: true }), {
-		someday: true,
-		archived: true,
-		category: "[[categories/Work|Work]]",
-		people: ["[[Ann]]"],
-		related: ["Ideas", 42],
+	const withAcme = toggleRow(toggleRow(state, row(rows, "🏷️ ever", "Acme")), row(rows, "👤 peop", "Bob"));
+	assert.deepEqual(saved(state, withAcme, original), {
+		...original,
+		people: ["[[Ann]]", "[[Bob]]"],
+		related: ["Ideas", 42, "[[Acme]]"],
 	});
 });
 
-test("properties outside every list and links no row offers survive a save untouched", async () => {
-	const { vault, target, state } = setup();
-	await vault.updateFrontmatter(target.path, (frontmatter) => writeProperties(frontmatter, state));
-	assert.deepEqual(vault.saved[0], {
-		active: true,
-		people: ["[[people/Ann|Ann]]", "[[Stranger]]"],
-		topic: "x",
-	});
+test("properties outside every list and links no row offers survive a save through the vault", async () => {
+	const { vault, target, rows, state } = setup();
+	const changed = toggleRow(toggleRow(state, row(rows, "👤 peop", "Bob")), row(rows, "🎛️ meta", "someday"));
+	await vault.updateFrontmatter(target.path, (frontmatter) => writeProperties(frontmatter, state, changed));
+	assert.deepEqual(vault.saved, [
+		{ active: true, someday: true, people: ["[[people/Ann|Ann]]", "[[Stranger]]", "[[Bob]]"], topic: "x" },
+	]);
 });
 
 test("disabled link lists leave their property alone", () => {
@@ -221,7 +223,7 @@ test("disabled link lists leave their property alone", () => {
 		settings.setProperties.linkLists[3].enabled = false;
 	});
 	assert.ok(!state.links.has("category"));
-	assert.equal(saved(state, { category: "[[Work]]" }).category, "[[Work]]");
+	assert.equal(saved(state, state, { category: "[[Work]]" }).category, "[[Work]]");
 	assert.ok(rows.every((candidate) => candidate.property !== "category"));
 });
 
