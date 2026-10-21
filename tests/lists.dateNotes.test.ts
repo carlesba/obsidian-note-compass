@@ -79,10 +79,10 @@ test("an explicit plugin choice that cannot be read falls back to Custom", () =>
 	assert.equal(resolveDateNotes(readFrom("dailyNotes"), plugins(periodicNotes, undefined)).from, "custom");
 });
 
-test("Custom ignores the installed plugins and uses the plugin's own formats", () => {
+test("Custom ignores the installed plugins and uses the plugin's own formats with trimmed folders", () => {
 	const settings = readFrom("custom");
-	settings.custom.quarter.enabled = true;
+	settings.custom.quarter = { enabled: true, folder: " /journal/ ", format: "YYYY-[Q]Q" };
 	const resolved = resolveDateNotes(settings, plugins(periodicNotes, dailyNotes));
 	assert.equal(resolved.from, "custom");
-	assert.equal(resolved.periods.quarter.enabled, true);
+	assert.deepEqual(resolved.periods.quarter, { enabled: true, folder: "journal", format: "YYYY-[Q]Q" });
 });
