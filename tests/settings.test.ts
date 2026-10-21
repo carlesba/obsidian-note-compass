@@ -1,6 +1,13 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
-import { defaultSettings, mergeSettings } from "../src/settings.ts";
+import {
+	OPERATORS,
+	defaultSettings,
+	isOperator,
+	mergeSettings,
+	newCustomList,
+	operatorTakesValue,
+} from "../src/settings.ts";
 
 test("defaultSettings enables every built-in list with its prefix and has no custom lists", () => {
 	assert.deepEqual(defaultSettings(), {
@@ -51,4 +58,24 @@ test("mergeSettings starts with no custom lists when the saved ones are not a li
 test("mergeSettings returns fresh defaults that callers can change without affecting later merges", () => {
 	mergeSettings(undefined).customLists.push({ prefix: "x", property: "p", operator: "exists", value: "" });
 	assert.deepEqual(mergeSettings(undefined).customLists, []);
+});
+
+test("operatorTakesValue is true only for the operators that compare against a value", () => {
+	assert.deepEqual(
+		OPERATORS.filter((operator) => operatorTakesValue(operator)),
+		["equals", "contains"],
+	);
+});
+
+test("isOperator accepts every listed operator and nothing else", () => {
+	for (const operator of OPERATORS) assert.equal(isOperator(operator), true);
+	assert.equal(isOperator("matches"), false);
+	assert.equal(isOperator(""), false);
+});
+
+test("newCustomList returns an empty list that needs no value and is fresh each time", () => {
+	const list = newCustomList();
+	assert.deepEqual(list, { prefix: "", property: "", operator: "is true", value: "" });
+	assert.equal(operatorTakesValue(list.operator), false);
+	assert.notEqual(newCustomList(), list);
 });

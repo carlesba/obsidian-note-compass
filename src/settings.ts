@@ -10,7 +10,9 @@ export interface BuiltInLists {
 	adjacentDays: BuiltInList;
 }
 
-export type CustomListOperator = "is true" | "equals" | "contains" | "exists";
+export const OPERATORS = ["is true", "equals", "contains", "exists"] as const;
+
+export type CustomListOperator = (typeof OPERATORS)[number];
 
 export interface CustomList {
 	prefix: string;
@@ -22,6 +24,18 @@ export interface CustomList {
 export interface JumpListSettings {
 	builtIns: BuiltInLists;
 	customLists: CustomList[];
+}
+
+export function operatorTakesValue(operator: CustomListOperator): boolean {
+	return operator === "equals" || operator === "contains";
+}
+
+export function isOperator(value: string): value is CustomListOperator {
+	return (OPERATORS as readonly string[]).includes(value);
+}
+
+export function newCustomList(): CustomList {
+	return { prefix: "", property: "", operator: "is true", value: "" };
 }
 
 export function defaultSettings(): JumpListSettings {

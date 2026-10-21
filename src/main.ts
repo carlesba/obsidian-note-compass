@@ -4,12 +4,14 @@ import { createObsidianVault } from "./lists/obsidianVault";
 import type { VaultNote } from "./lists/vault";
 import { JumpModal } from "./modal";
 import { JumpListSettings, defaultSettings, mergeSettings } from "./settings";
+import { JumpListSettingTab } from "./settingsTab";
 
 export default class JumpListPlugin extends Plugin {
 	settings: JumpListSettings = defaultSettings();
 
 	async onload(): Promise<void> {
 		this.settings = mergeSettings(await this.loadData());
+		this.addSettingTab(new JumpListSettingTab(this.app, this));
 
 		this.addCommand({
 			id: "jump-to-note",
