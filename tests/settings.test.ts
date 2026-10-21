@@ -129,6 +129,7 @@ test("mergeSettings migrates the old shape into lists in picker order with custo
 			{ id: "list-8", enabled: true, prefix: "📝", source: { kind: "frontmatter", property: "summary", condition: { operator: "is set" } } },
 		],
 		dateNotes: defaultDateNoteSettings(),
+		setProperties: setPropertiesDefaults(),
 	});
 });
 
