@@ -1,7 +1,7 @@
 {
 	"name": "obsidian-jump-list",
 	"version": "0.1.0",
-	"description": "Opens one list of the notes related to the note in focus, from anywhere in Obsidian.",
+	"description": "Opens one list of the notes related to the note in focus, from anywhere in the app.",
 	"main": "main.js",
 	"private": true,
 	"scripts": {
