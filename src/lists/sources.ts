@@ -1,4 +1,5 @@
-import { adjacentDateNames, dayFromName, isDateNote, isSameLocalDay } from "./dates.ts";
+import type { ResolvedDateNotes } from "./dateNotes.ts";
+import { adjacentDatePaths, isSameLocalDay, parseDateNote } from "./dates.ts";
 import type { JumpListVault, VaultNote } from "./vault";
 
 export interface ListedNote {
@@ -6,16 +7,16 @@ export interface ListedNote {
 	direction?: string;
 }
 
-export function adjacentDateNotes(vault: JumpListVault, current: VaultNote): ListedNote[] {
-	if (!isDateNote(current, vault.frontmatter(current.path))) return [];
-	const adjacent = adjacentDateNames(current.basename);
-	if (!adjacent) return [];
+export function adjacentDateNotes(vault: JumpListVault, current: VaultNote, dateNotes: ResolvedDateNotes): ListedNote[] {
+	const dateNote = parseDateNote(current, dateNotes, vault.moment);
+	if (!dateNote) return [];
+	const adjacent = adjacentDatePaths(dateNote);
 	const notes = vault.notes();
-	const byBasename = (basename: string) => notes.find((note) => note.basename === basename);
+	const atPath = (path: string) => notes.find((note) => note.path === path);
 	const listed: ListedNote[] = [];
-	const next = byBasename(adjacent.next);
+	const next = atPath(adjacent.next);
 	if (next) listed.push({ file: next, direction: adjacent.nextLabel });
-	const previous = byBasename(adjacent.previous);
+	const previous = atPath(adjacent.previous);
 	if (previous) listed.push({ file: previous, direction: adjacent.previousLabel });
 	return listed;
 }
@@ -28,10 +29,9 @@ export function inboundNotes(vault: JumpListVault, current: VaultNote): ListedNo
 	return notesAtPaths(vault, vault.linksTo(current.path));
 }
 
-export function sameDayNotes(vault: JumpListVault, current: VaultNote): ListedNote[] {
-	const reference = isDateNote(current, vault.frontmatter(current.path))
-		? dayFromName(current.basename) ?? current.ctime
-		: current.ctime;
+export function sameDayNotes(vault: JumpListVault, current: VaultNote, dateNotes: ResolvedDateNotes): ListedNote[] {
+	const dateNote = parseDateNote(current, dateNotes, vault.moment);
+	const reference = dateNote?.period === "day" ? dateNote.date.valueOf() : current.ctime;
 	return vault
 		.notes()
 		.filter((note) => isSameLocalDay(reference, note.ctime))

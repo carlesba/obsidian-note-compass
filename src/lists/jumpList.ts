@@ -1,5 +1,7 @@
 import type { JumpListSettings } from "../settings";
-import { dateNoteSuffix, isDateNote } from "./dates.ts";
+import { defaultDateNoteSettings, resolveDateNotes } from "./dateNotes.ts";
+import type { DateNoteSettings, ResolvedDateNotes } from "./dateNotes.ts";
+import { dateNoteSuffix, parseDateNote } from "./dates.ts";
 import { matchesCustomList } from "./matchers.ts";
 import { adjacentDateNotes, inboundNotes, outboundNotes, sameDayNotes } from "./sources.ts";
 import type { ListedNote } from "./sources.ts";
@@ -10,14 +12,20 @@ interface PrefixedList {
 	notes: ListedNote[];
 }
 
-export function buildJumpList(settings: JumpListSettings, vault: JumpListVault, current?: VaultNote): JumpListEntry[] {
+export function buildJumpList(
+	settings: JumpListSettings,
+	vault: JumpListVault,
+	current?: VaultNote,
+	dateNoteSettings: DateNoteSettings = defaultDateNoteSettings(),
+): JumpListEntry[] {
+	const dateNotes = resolveDateNotes(dateNoteSettings, vault);
 	const lists: PrefixedList[] = [];
 	if (current) {
 		const { adjacentDays, linksOut, linksIn, sameDay } = settings.builtIns;
-		if (adjacentDays.enabled) lists.push({ prefix: adjacentDays.prefix, notes: adjacentDateNotes(vault, current) });
+		if (adjacentDays.enabled) lists.push({ prefix: adjacentDays.prefix, notes: adjacentDateNotes(vault, current, dateNotes) });
 		if (linksOut.enabled) lists.push({ prefix: linksOut.prefix, notes: outboundNotes(vault, current) });
 		if (linksIn.enabled) lists.push({ prefix: linksIn.prefix, notes: inboundNotes(vault, current) });
-		if (sameDay.enabled) lists.push({ prefix: sameDay.prefix, notes: sameDayNotes(vault, current) });
+		if (sameDay.enabled) lists.push({ prefix: sameDay.prefix, notes: sameDayNotes(vault, current, dateNotes) });
 	}
 	for (const list of settings.customLists) {
 		const notes = vault
@@ -33,15 +41,16 @@ export function buildJumpList(settings: JumpListSettings, vault: JumpListVault, 
 		for (const listed of [...list.notes].sort(byName)) {
 			if (seen.has(listed.file.path)) continue;
 			seen.add(listed.file.path);
-			entries.push(toEntry(vault, list.prefix, listed));
+			entries.push(toEntry(vault, dateNotes, list.prefix, listed));
 		}
 	}
 	return entries;
 }
 
-function toEntry(vault: JumpListVault, prefix: string, listed: ListedNote): JumpListEntry {
+function toEntry(vault: JumpListVault, dateNotes: ResolvedDateNotes, prefix: string, listed: ListedNote): JumpListEntry {
 	const name = listed.file.basename;
-	const dateSuffix = isDateNote(listed.file, vault.frontmatter(listed.file.path)) ? dateNoteSuffix(name) : undefined;
+	const dateNote = parseDateNote(listed.file, dateNotes, vault.moment);
+	const dateSuffix = dateNote ? dateNoteSuffix(dateNote) : undefined;
 	const suffix = listed.direction && dateSuffix ? `${listed.direction} - ${dateSuffix}` : listed.direction ?? dateSuffix;
 	return suffix ? { file: listed.file, prefix, name, suffix } : { file: listed.file, prefix, name };
 }

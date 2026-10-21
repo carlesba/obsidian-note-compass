@@ -1,3 +1,5 @@
+import type { moment } from "obsidian";
+
 export interface VaultNote {
 	path: string;
 	basename: string;
@@ -6,11 +8,18 @@ export interface VaultNote {
 
 export type Frontmatter = Record<string, unknown>;
 
+export type MomentFactory = typeof moment;
+
+export type MomentDate = ReturnType<MomentFactory>;
+
 export interface JumpListVault {
 	notes(): VaultNote[];
 	frontmatter(path: string): Frontmatter | undefined;
 	linksFrom(path: string): string[];
 	linksTo(path: string): string[];
+	periodicNotesSettings(): unknown;
+	dailyNotesOptions(): unknown;
+	moment: MomentFactory;
 }
 
 export interface JumpListEntry {
