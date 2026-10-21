@@ -6,7 +6,7 @@ import { JumpModal } from "./modal";
 import { JumpListSettings, defaultSettings, mergeSettings } from "./settings";
 import { JumpListSettingTab } from "./settingsTab";
 
-export default class JumpListPlugin extends Plugin {
+export default class NoteLauncherPlugin extends Plugin {
 	settings: JumpListSettings = defaultSettings();
 
 	async onload(): Promise<void> {

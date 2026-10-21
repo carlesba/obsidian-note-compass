@@ -1,9 +1,9 @@
 {
-	"id": "jump-list",
-	"name": "Jump List",
+	"id": "note-launcher",
+	"name": "Note Launcher",
 	"version": "0.1.0",
 	"minAppVersion": "1.7.2",
-	"description": "Opens one list of the notes related to the note in focus, from anywhere in the app.",
+	"description": "Opens a picker of the notes linked to and from the note in focus, its adjacent date notes, notes from the same day and lists you define by frontmatter, from anywhere in the app.",
 	"author": "Carles Ballester",
 	"authorUrl": "https://github.com/carlesba",
 	"isDesktopOnly": false
