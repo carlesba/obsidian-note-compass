@@ -9,9 +9,8 @@ export function matchesInOrder(query: string, label: string): boolean {
 	const wanted = query.toLowerCase();
 	const target = label.toLowerCase();
 	let matched = 0;
-	for (const character of target) {
-		if (matched === wanted.length) break;
-		if (character === wanted[matched]) matched++;
+	for (let index = 0; index < target.length && matched < wanted.length; index++) {
+		if (target[index] === wanted[matched]) matched++;
 	}
 	return matched === wanted.length;
 }
