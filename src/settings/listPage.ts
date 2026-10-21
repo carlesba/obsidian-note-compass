@@ -74,7 +74,7 @@ export function listPageItems(list: NoteList, context: ListPageContext): Setting
 			visible: () => property() !== undefined,
 			render: (setting) => {
 				setting.addText((text) => {
-					text.setPlaceholder("status").setValue(property()?.property ?? "");
+					text.setPlaceholder("Status").setValue(property()?.property ?? "");
 					text.onChange((value) => context.write(key("property"), value));
 					const suggest = new PropertySuggest(context.app, text.inputEl, context.propertySuggestions);
 					suggest.onSelect((suggestion) => {
