@@ -23,7 +23,7 @@ export interface NoteList {
 
 export type LinkListMode = "multi" | "single";
 
-const LINK_LIST_MODES: readonly LinkListMode[] = ["multi", "single"];
+export const LINK_LIST_MODES: readonly LinkListMode[] = ["multi", "single"];
 
 export interface LinkList extends NoteList {
 	name: string;

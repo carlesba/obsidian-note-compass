@@ -1,8 +1,8 @@
 import { AbstractInputSuggest } from "obsidian";
-import type { App, SettingDefinitionItem, SettingDefinitionPage } from "obsidian";
+import type { App, Setting, SettingDefinition, SettingDefinitionItem, SettingDefinitionPage } from "obsidian";
 import { propertyType } from "../lists/conditions";
-import type { NoteList } from "../settings";
-import { listKey } from "./controlKeys";
+import type { LinkList, NoteList } from "../settings";
+import { flagKey, linkListKey, listKey } from "./controlKeys";
 import {
 	DATE_MODE_OPTIONS,
 	DIRECTION_OPTIONS,
@@ -15,7 +15,9 @@ import {
 	operatorOptions,
 	valueShape,
 } from "./listForm";
-import type { PropertySuggestion, ValueShape } from "./listForm";
+import type { ListField, PropertySuggestion, ValueShape } from "./listForm";
+import { LINK_LIST_MODE_OPTIONS, checkboxSuggestions, linkListName } from "./setPropertiesForm";
+import type { LinkListField } from "./setPropertiesForm";
 
 export interface ListPageContext {
 	app: App;
@@ -43,18 +45,37 @@ export class PropertySuggest extends AbstractInputSuggest<PropertySuggestion> {
 }
 
 export function listPage(list: NoteList, context: ListPageContext): SettingDefinitionPage {
-	const inapplicable = inapplicableCondition(list.source, context.propertyTypes);
-	return {
-		type: "page",
-		name: listName(list),
-		displayValue: listDisplayValue(list),
-		status: inapplicable ? "warning" : null,
-		items: listPageItems(list, context),
-	};
+	return pageEntry(listName(list), list, context, listPageItems(list, context));
 }
 
-export function listPageItems(list: NoteList, context: ListPageContext): SettingDefinitionItem[] {
-	const key = (field: Parameters<typeof listKey>[1]) => listKey(list.id, field);
+export function linkListPage(list: LinkList, context: ListPageContext): SettingDefinitionPage {
+	const key = (field: LinkListField) => linkListKey(list.id, field);
+	return pageEntry(linkListName(list), list, context, [
+		...listPageItems(list, context, key),
+		{ name: "Name", desc: "How the picker's rows for this list are named.", control: { type: "text", key: key("name") } },
+		{
+			name: "Writes to",
+			desc: "The property that holds the links chosen from this list.",
+			render: propertyInput(context, key("writesTo"), () => list.property, "Related", context.propertySuggestions),
+		},
+		{
+			name: "Mode",
+			desc: "Multi keeps a list of links in the property; single keeps one link.",
+			control: { type: "dropdown", key: key("mode"), options: LINK_LIST_MODE_OPTIONS },
+		},
+	]);
+}
+
+export function flagRow(flag: string, index: number, context: ListPageContext): SettingDefinition {
+	const suggestions = () => checkboxSuggestions(context.propertySuggestions());
+	return { name: flag === "" ? "New flag" : flag, render: propertyInput(context, flagKey(index), () => flag, "Archived", suggestions) };
+}
+
+export function listPageItems(
+	list: NoteList,
+	context: ListPageContext,
+	key: (field: ListField) => string = (field) => listKey(list.id, field),
+): SettingDefinitionItem[] {
 	const property = () => (list.source.kind === "frontmatter" ? list.source : undefined);
 	const shape = (): ValueShape => valueShape(property()?.condition.operator ?? "is set");
 	const dateMode = () => {
@@ -88,18 +109,7 @@ export function listPageItems(list: NoteList, context: ListPageContext): Setting
 			name: "Property",
 			desc: "Notes whose property meets the condition are listed.",
 			visible: () => property() !== undefined,
-			render: (setting) => {
-				setting.addText((text) => {
-					text.setPlaceholder("Status").setValue(property()?.property ?? "");
-					text.onChange((value) => context.write(key("property"), value));
-					const suggest = new PropertySuggest(context.app, text.inputEl, context.propertySuggestions);
-					suggest.onSelect((suggestion) => {
-						suggest.setValue(suggestion.name);
-						context.write(key("property"), suggestion.name);
-						suggest.close();
-					});
-				});
-			},
+			render: propertyInput(context, key("property"), () => property()?.property ?? "", "Status", context.propertySuggestions),
 		},
 		{
 			name: "Condition",
@@ -135,4 +145,30 @@ export function listPageItems(list: NoteList, context: ListPageContext): Setting
 			control: { type: "number", key: key("days"), min: 1, step: 1 },
 		},
 	];
+}
+
+function pageEntry(name: string, list: NoteList, context: ListPageContext, items: SettingDefinitionItem[]): SettingDefinitionPage {
+	const inapplicable = inapplicableCondition(list.source, context.propertyTypes);
+	return { type: "page", name, displayValue: listDisplayValue(list), status: inapplicable ? "warning" : null, items };
+}
+
+function propertyInput(
+	context: ListPageContext,
+	key: string,
+	value: () => string,
+	placeholder: string,
+	suggestions: () => PropertySuggestion[],
+): (setting: Setting) => void {
+	return (setting) => {
+		setting.addText((text) => {
+			text.setPlaceholder(placeholder).setValue(value());
+			text.onChange((typed) => context.write(key, typed));
+			const suggest = new PropertySuggest(context.app, text.inputEl, suggestions);
+			suggest.onSelect((suggestion) => {
+				suggest.setValue(suggestion.name);
+				context.write(key, suggestion.name);
+				suggest.close();
+			});
+		});
+	};
 }
