@@ -3,6 +3,7 @@ import type { App } from "obsidian";
 import type { JumpListVault } from "./vault";
 
 interface PluginRegistries {
+	metadataTypeManager?: { getAllProperties(): Record<string, { widget?: unknown } | undefined> };
 	plugins?: { getPlugin(id: string): { settings?: unknown } | null | undefined };
 	internalPlugins?: {
 		getPluginById(id: string): { enabled?: boolean; instance?: { options?: unknown } } | null | undefined;
@@ -29,11 +30,21 @@ export function createObsidianVault(app: App): JumpListVault {
 				const dailyNotes = registries.internalPlugins?.getPluginById("daily-notes");
 				return dailyNotes?.enabled ? dailyNotes.instance?.options : undefined;
 			}),
+		propertyTypes: () => readSafely(() => propertyWidgets(registries.metadataTypeManager?.getAllProperties())) ?? {},
+		now: () => Date.now(),
 		moment,
 	};
 }
 
-function readSafely(read: () => unknown): unknown {
+function propertyWidgets(properties: Record<string, { widget?: unknown } | undefined> | undefined): Record<string, string> {
+	const widgets: Record<string, string> = {};
+	for (const [name, property] of Object.entries(properties ?? {})) {
+		if (typeof property?.widget === "string") widgets[name.toLowerCase()] = property.widget;
+	}
+	return widgets;
+}
+
+function readSafely<T>(read: () => T): T | undefined {
 	try {
 		return read();
 	} catch {

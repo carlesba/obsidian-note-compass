@@ -1,21 +1,68 @@
-import type { CustomList } from "../settings";
-import type { Frontmatter } from "./vault";
+import { FIXED_DATE_FORMAT, conditionAppliesTo } from "./conditions.ts";
+import type { Condition, DateValue, PropertyType } from "./conditions.ts";
+import type { Frontmatter, MomentDate } from "./vault";
 
-export function matchesCustomList(frontmatter: Frontmatter | undefined, list: CustomList): boolean {
-	if (!frontmatter || !(list.property in frontmatter)) return false;
-	const property = frontmatter[list.property];
-	switch (list.operator) {
+export interface PropertyCheck {
+	property: string;
+	condition: Condition;
+	type: PropertyType;
+	today: MomentDate;
+}
+
+export function matchesCondition(frontmatter: Frontmatter | undefined, check: PropertyCheck): boolean {
+	const { condition, type } = check;
+	if (!conditionAppliesTo(condition.operator, type)) return false;
+	const present = frontmatter !== undefined && check.property in frontmatter;
+	const property = present ? frontmatter[check.property] : undefined;
+	if (condition.operator === "is not set") return !present || isEmpty(property);
+	if (!present) return false;
+	switch (condition.operator) {
 		case "is true":
 			return property === true || property === "true";
-		case "equals":
-			return scalarText(property) === list.value;
+		case "is false":
+			return property === false;
+		case "is set":
+			return !isEmpty(property);
+		case "is":
+			return scalarText(property) === condition.value;
 		case "contains":
-			return containsValue(property, linkText(list.value));
-		case "exists":
-			return property !== null && property !== undefined;
-		default:
-			return false;
+			return typeof property === "string" && property.includes(condition.value);
+		case "has item":
+			return containsValue(property, linkText(condition.value));
+		case "=":
+		case "<":
+		case ">":
+			return compareNumber(property, condition.operator, condition.value);
+		case "on":
+		case "before":
+		case "after":
+			return compareDay(property, condition.operator, targetDay(condition.value, check.today));
 	}
+}
+
+function isEmpty(property: unknown): boolean {
+	if (property === null || property === undefined) return true;
+	if (typeof property === "string") return property.trim() === "";
+	return Array.isArray(property) && property.length === 0;
+}
+
+function compareNumber(property: unknown, operator: "=" | "<" | ">", value: number): boolean {
+	const number = typeof property === "number" ? property : typeof property === "string" && property.trim() !== "" ? Number(property) : NaN;
+	if (!Number.isFinite(number)) return false;
+	if (operator === "=") return number === value;
+	return operator === "<" ? number < value : number > value;
+}
+
+function compareDay(property: unknown, operator: "on" | "before" | "after", target: string | undefined): boolean {
+	const day = typeof property === "string" ? property.match(/^\d{4}-\d{2}-\d{2}/)?.[0] : undefined;
+	if (!day || !target) return false;
+	if (operator === "on") return day === target;
+	return operator === "before" ? day < target : day > target;
+}
+
+function targetDay(value: DateValue, today: MomentDate): string | undefined {
+	if (value.kind === "relative") return today.clone().add(value.days, "day").format(FIXED_DATE_FORMAT);
+	return /^\d{4}-\d{2}-\d{2}$/.test(value.date) ? value.date : undefined;
 }
 
 function containsValue(property: unknown, value: string): boolean {

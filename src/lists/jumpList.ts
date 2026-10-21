@@ -1,39 +1,43 @@
-import type { JumpListSettings } from "../settings";
+import type { ListSource, NoteList } from "../settings";
+import { propertyType } from "./conditions.ts";
 import { defaultDateNoteSettings, resolveDateNotes } from "./dateNotes.ts";
 import type { DateNoteSettings, ResolvedDateNotes } from "./dateNotes.ts";
 import { dateNoteSuffix, parseDateNote } from "./dates.ts";
-import { matchesCustomList } from "./matchers.ts";
+import { matchesCondition } from "./matchers.ts";
 import { adjacentDateNotes, inboundNotes, outboundNotes, sameDayNotes } from "./sources.ts";
 import type { ListedNote } from "./sources.ts";
-import type { JumpListEntry, JumpListVault, VaultNote } from "./vault";
+import type { JumpListEntry, JumpListVault, MomentDate, VaultNote } from "./vault";
 
 interface PrefixedList {
 	prefix: string;
 	notes: ListedNote[];
 }
 
+interface ListContext {
+	vault: JumpListVault;
+	current?: VaultNote;
+	dateNotes: ResolvedDateNotes;
+	propertyTypes: Record<string, string>;
+	today: MomentDate;
+}
+
 export function buildJumpList(
-	settings: JumpListSettings,
+	noteLists: readonly NoteList[],
 	vault: JumpListVault,
 	current?: VaultNote,
 	dateNoteSettings: DateNoteSettings = defaultDateNoteSettings(),
 ): JumpListEntry[] {
 	const dateNotes = resolveDateNotes(dateNoteSettings, vault);
-	const lists: PrefixedList[] = [];
-	if (current) {
-		const { adjacentDays, linksOut, linksIn, sameDay } = settings.builtIns;
-		if (adjacentDays.enabled) lists.push({ prefix: adjacentDays.prefix, notes: adjacentDateNotes(vault, current, dateNotes) });
-		if (linksOut.enabled) lists.push({ prefix: linksOut.prefix, notes: outboundNotes(vault, current) });
-		if (linksIn.enabled) lists.push({ prefix: linksIn.prefix, notes: inboundNotes(vault, current) });
-		if (sameDay.enabled) lists.push({ prefix: sameDay.prefix, notes: sameDayNotes(vault, current, dateNotes) });
-	}
-	for (const list of settings.customLists) {
-		const notes = vault
-			.notes()
-			.filter((note) => matchesCustomList(vault.frontmatter(note.path), list))
-			.map((file) => ({ file }));
-		lists.push({ prefix: list.prefix, notes });
-	}
+	const context: ListContext = {
+		vault,
+		current,
+		dateNotes,
+		propertyTypes: vault.propertyTypes(),
+		today: vault.moment(vault.now()).startOf("day"),
+	};
+	const lists: PrefixedList[] = noteLists
+		.filter((list) => list.enabled)
+		.map((list) => ({ prefix: list.prefix, notes: sourceNotes(list.source, context) }));
 
 	const seen = new Set<string>(current ? [current.path] : []);
 	const entries: JumpListEntry[] = [];
@@ -45,6 +49,28 @@ export function buildJumpList(
 		}
 	}
 	return entries;
+}
+
+function sourceNotes(source: ListSource, context: ListContext): ListedNote[] {
+	const { vault, current, dateNotes } = context;
+	if (source.kind === "frontmatter") {
+		const check = { ...source, type: propertyType(context.propertyTypes, source.property), today: context.today };
+		return vault
+			.notes()
+			.filter((note) => matchesCondition(vault.frontmatter(note.path), check))
+			.map((file) => ({ file }));
+	}
+	if (!current) return [];
+	switch (source.kind) {
+		case "adjacentDates":
+			return adjacentDateNotes(vault, current, dateNotes);
+		case "linksOut":
+			return outboundNotes(vault, current);
+		case "linksIn":
+			return inboundNotes(vault, current);
+		case "sameDay":
+			return sameDayNotes(vault, current, dateNotes);
+	}
 }
 
 function toEntry(vault: JumpListVault, dateNotes: ResolvedDateNotes, prefix: string, listed: ListedNote): JumpListEntry {
