@@ -35,6 +35,7 @@
 
 .note-launcher-setting-prefix {
 	flex-shrink: 0;
+	min-width: 5.5em;
 	max-width: 12em;
 	overflow: hidden;
 	text-overflow: ellipsis;
