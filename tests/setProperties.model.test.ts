@@ -3,7 +3,7 @@ import { strict as assert } from "node:assert";
 import { readFileSync } from "node:fs";
 import { EDITABLE_PROPERTY_TYPES, defaultSettings, mergeSettings } from "../src/settings.ts";
 import type { EditableProperty } from "../src/settings.ts";
-import { applyLegacyView, editLegacyView, legacyView } from "../src/setProperties/legacyView.ts";
+import { propertyRowName } from "../src/settings/setPropertiesForm.ts";
 import { decidedPropertyType, mixedTypeProperties } from "../src/setProperties/propertyTypes.ts";
 
 const v2Data = () => JSON.parse(readFileSync(new URL("./fixtures/data.v2.json", import.meta.url), "utf8"));
@@ -53,24 +53,23 @@ test("the test vault's v2 data migrates to properties and keeps its jump setting
 });
 
 test("the defaults are the old defaults in the new shape", () => {
-	const { setProperties } = defaultSettings();
-	const view = legacyView(setProperties);
-	assert.equal(view.flagsPrefix, "🎛️ meta |");
-	assert.deepEqual(view.flags, ["active", "someday", "evergreen", "blocked", "archived"]);
-	assert.equal(view.templatesFolder, "templates");
-	assert.deepEqual(
-		view.linkLists.map((list) => `${list.prefix} ${list.property} ${list.mode}`),
-		[
-			"👤 peop | people multi",
-			"📍 trak | trackers multi",
-			"📚 coll | collections multi",
-			"📂 catg | category single",
-			"🏷️ ever | related multi",
-			"📍 actv | related multi",
-			"🏢 comp | related multi",
-			"🔅 tday | related multi",
-		],
-	);
+	const { properties } = defaultSettings().setProperties;
+	assert.deepEqual(properties.map(propertyRowName), [
+		"🎛️ meta | active · checkbox",
+		"🎛️ meta | someday · checkbox",
+		"🎛️ meta | evergreen · checkbox",
+		"🎛️ meta | blocked · checkbox",
+		"🎛️ meta | archived · checkbox",
+		"👤 peop | people · links",
+		"📍 trak | trackers · links",
+		"📚 coll | collections · links",
+		"📂 catg | category · link",
+		"🏷️ ever | related · links",
+		"📍 actv | related · links",
+		"🏢 comp | related · links",
+		"🔅 tday | related · links",
+	]);
+	assert.ok(properties.filter((entry) => entry.source).every((entry) => entry.excludedFolder === "templates"));
 });
 
 test("the first enabled entry for a property decides its type", () => {
@@ -97,37 +96,4 @@ test("properties whose entries disagree on type are found, and shared ones that 
 	];
 	assert.deepEqual(mixedTypeProperties(properties), ["status", "due"]);
 	assert.deepEqual(mixedTypeProperties(defaultSettings().setProperties.properties), []);
-});
-
-test("the legacy view writes back without losing ids, enabled flags or other types", () => {
-	const settings = defaultSettings().setProperties;
-	settings.properties[1].enabled = false;
-	settings.properties.push(entry("list-20", "summary", "text"));
-	const before = JSON.parse(JSON.stringify(settings));
-	applyLegacyView(settings, legacyView(settings));
-	assert.deepEqual(settings, before);
-});
-
-test("legacy edits reach the properties, and a flag never takes a link list's id", () => {
-	const settings = defaultSettings().setProperties;
-	editLegacyView(settings, (view) => {
-		view.flagsPrefix = "⚑";
-		view.templatesFolder = "_t";
-		view.flags.splice(0, 1);
-		view.linkLists.push({ ...view.linkLists[0], id: "list-9", property: "owner", mode: "single" });
-	});
-	const flags = settings.properties.filter((property) => property.type === "checkbox");
-	assert.deepEqual(
-		flags.map((flag) => [flag.id, flag.prefix, flag.property]),
-		[
-			["list-10", "⚑", "someday"],
-			["list-11", "⚑", "evergreen"],
-			["list-12", "⚑", "blocked"],
-			["list-13", "⚑", "archived"],
-		],
-	);
-	const owner = settings.properties.find((property) => property.property === "owner");
-	assert.deepEqual([owner?.id, owner?.type, owner?.excludedFolder], ["list-9", "link", "_t"]);
-	const ids = settings.properties.map((property) => property.id);
-	assert.equal(new Set(ids).size, ids.length);
 });

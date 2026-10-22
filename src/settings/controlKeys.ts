@@ -5,31 +5,25 @@ import type { PeriodField } from "./dateNotesForm.ts";
 import { readListField, writeListField } from "./listForm.ts";
 import type { ListField } from "./listForm.ts";
 import {
-	readLinkListField,
-	readSetPropertiesField,
-	writeFlag,
-	writeLinkListField,
-	writeSetPropertiesField,
+	readPropertyField,
+	readPropertySourceField,
+	writePropertyField,
+	writePropertySourceField,
 } from "./setPropertiesForm.ts";
-import type { LinkListField } from "./setPropertiesForm.ts";
-import { editLegacyView, legacyView } from "../setProperties/legacyView.ts";
+import type { PropertyField } from "./setPropertiesForm.ts";
 
 export const DATE_NOTE_SOURCE_KEY = "dateNotes/from";
-
-export const FLAGS_PREFIX_KEY = "setProperties/flagsPrefix";
-
-export const TEMPLATES_FOLDER_KEY = "setProperties/templatesFolder";
 
 export function listKey(id: string, field: ListField): string {
 	return `list/${id}/${field}`;
 }
 
-export function flagKey(index: number): string {
-	return `flag/${index}/name`;
+export function propertyKey(id: string, field: PropertyField): string {
+	return `property/${id}/${field}`;
 }
 
-export function linkListKey(id: string, field: LinkListField): string {
-	return `linkList/${id}/${field}`;
+export function propertySourceKey(id: string, field: ListField): string {
+	return `propertySource/${id}/${field}`;
 }
 
 export function periodKey(period: Period, field: PeriodField): string {
@@ -44,13 +38,10 @@ export function readControl(settings: JumpSettings, key: string): unknown {
 		return list ? readListField(list, field as ListField) : undefined;
 	}
 	if (scope === "dateNotes" && isPeriod(name)) return readPeriodField(settings.dateNotes, name, field as PeriodField);
-	const view = legacyView(settings.setProperties);
-	if (scope === "setProperties") return readSetPropertiesField(view, name);
-	if (scope === "flag") return view.flags[Number(name)];
-	if (scope === "linkList") {
-		const list = view.linkLists.find((candidate) => candidate.id === name);
-		return list ? readLinkListField(list, field as LinkListField) : undefined;
-	}
+	const entry = settings.setProperties.properties.find((candidate) => candidate.id === name);
+	if (!entry) return undefined;
+	if (scope === "property") return readPropertyField(entry, field as PropertyField);
+	if (scope === "propertySource") return readPropertySourceField(entry, field as ListField);
 	return undefined;
 }
 
@@ -69,12 +60,10 @@ export function writeControl(settings: JumpSettings, key: string, value: unknown
 		writePeriodField(settings.dateNotes, name, field as PeriodField, value);
 		return true;
 	}
-	return editLegacyView(settings.setProperties, (view) => {
-		if (scope === "setProperties") return writeSetPropertiesField(view, name, value);
-		if (scope === "flag") return writeFlag(view, Number(name), value);
-		if (scope !== "linkList") return false;
-		const list = view.linkLists.find((candidate) => candidate.id === name);
-		if (list) writeLinkListField(list, field as LinkListField, value);
-		return list !== undefined;
-	});
+	const entry = settings.setProperties.properties.find((candidate) => candidate.id === name);
+	if (!entry) return false;
+	if (scope === "property") writePropertyField(entry, field as PropertyField, value);
+	else if (scope === "propertySource") writePropertySourceField(entry, field as ListField, value);
+	else return false;
+	return true;
 }

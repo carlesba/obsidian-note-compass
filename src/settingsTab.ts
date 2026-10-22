@@ -4,14 +4,7 @@ import { PERIODS } from "./lists/dateNotes";
 import { createObsidianVault } from "./lists/obsidianVault";
 import type { JumpListVault } from "./lists/vault";
 import type NoteLauncherPlugin from "./main";
-import {
-	DATE_NOTE_SOURCE_KEY,
-	FLAGS_PREFIX_KEY,
-	TEMPLATES_FOLDER_KEY,
-	periodKey,
-	readControl,
-	writeControl,
-} from "./settings/controlKeys";
+import { DATE_NOTE_SOURCE_KEY, periodKey, readControl, writeControl } from "./settings/controlKeys";
 import {
 	DATE_NOTE_SOURCE_OPTIONS,
 	PERIOD_NAMES,
@@ -22,10 +15,8 @@ import {
 } from "./settings/dateNotesForm";
 import { fitConditionToProperty, newList, propertySuggestions } from "./settings/listForm";
 import type { PropertySuggestion } from "./settings/listForm";
-import { flagRow, linkListPage, linkListRow, listPage, listRow } from "./settings/listPage";
-import { newLinkList } from "./settings/setPropertiesForm";
-import { editLegacyView, legacyView } from "./setProperties/legacyView";
-import type { LegacySetPropertiesSettings } from "./settings";
+import { listPage, listRow, propertyPage, propertyRow } from "./settings/listPage";
+import { hasSource, newProperty } from "./settings/setPropertiesForm";
 
 const TYPED_FIELDS = [
 	"prefix",
@@ -38,9 +29,6 @@ const TYPED_FIELDS = [
 	"format",
 	"note",
 	"name",
-	"writesTo",
-	"flagsPrefix",
-	"templatesFolder",
 ];
 
 const TYPING_PAUSE_MS = 800;
@@ -66,7 +54,7 @@ export class NoteLauncherSettingTab extends PluginSettingTab {
 
 	getSettingDefinitions(): SettingDefinitionItem[] {
 		const { lists, setProperties } = this.plugin.settings;
-		const { flags, linkLists } = legacyView(setProperties);
+		const { properties } = setProperties;
 		const vault = createObsidianVault(this.app);
 		let suggestions: PropertySuggestion[] | undefined;
 		const context = {
@@ -77,62 +65,38 @@ export class NoteLauncherSettingTab extends PluginSettingTab {
 			openPage: (pageId: string) => this.openPage(pageId),
 		};
 		return [
+			sectionHeading("Jump to note", "Pick a note related to the one in focus, from the lists below, in this order."),
 			{
 				type: "list",
 				cls: SORTABLE_LIST_CLASS,
-				heading: "Jump to note",
 				emptyState: "No lists yet. Add one to show notes in the picker.",
 				items: lists.map((list) => listRow(list, context)),
 				...this.editableEntries(lists),
 				addItem: { name: "Add list", action: () => this.changeLists(() => lists.push(newList(lists))) },
 			},
 			{ type: "group", items: [this.dateNotesPage(vault)] },
-			{
-				type: "group",
-				heading: "Set properties",
-				items: [
-					{
-						name: "Flags prefix",
-						desc: "Every flag row in the picker starts with it.",
-						control: { type: "text", key: FLAGS_PREFIX_KEY },
-					},
-				],
-			},
+			sectionHeading(
+				"Set properties",
+				"Edit the focused note's properties from a picker. Each row is a property the picker offers.",
+			),
 			{
 				type: "list",
 				cls: SORTABLE_LIST_CLASS,
-				heading: "Flags",
-				emptyState: "No flags yet. Add one to switch a checkbox property from the picker.",
-				items: flags.map((flag, index) => flagRow(flag, index, context)),
-				...this.editableSetProperties((view) => view.flags),
-				addItem: { name: "Add flag", action: () => this.changeSetProperties((view) => view.flags.push("")) },
-			},
-			{
-				type: "group",
-				items: [
-					{
-						name: "Templates folder",
-						desc: "Notes in this folder are never offered by the link lists.",
-						control: { type: "folder", key: TEMPLATES_FOLDER_KEY },
-					},
-				],
-			},
-			{
-				type: "list",
-				cls: SORTABLE_LIST_CLASS,
-				heading: "Link lists",
-				emptyState: "No link lists yet. Add one to link notes from the picker.",
-				items: linkLists.map((list) => linkListRow(list, context)),
-				...this.editableSetProperties((view) => view.linkLists),
+				emptyState: "No properties yet. Add one to edit it from the picker.",
+				items: properties.map((entry) => propertyRow(entry, properties, context)),
+				...this.editableEntries(properties),
 				addItem: {
-					name: "Add link list",
-					action: () => this.changeSetProperties((view) => view.linkLists.push(newLinkList(view.linkLists))),
+					name: "Add property",
+					action: () => this.changeLists(() => properties.push(newProperty(properties))),
 				},
 			},
 			{
 				type: "group",
 				visible: false,
-				items: [...lists.map((list) => listPage(list, context)), ...linkLists.map((list) => linkListPage(list, context))],
+				items: [
+					...lists.map((list) => listPage(list, context)),
+					...properties.map((entry) => propertyPage(entry, properties, context)),
+				],
 			},
 		];
 	}
@@ -151,20 +115,6 @@ export class NoteLauncherSettingTab extends PluginSettingTab {
 			onReorder: (from, to) => this.changeLists(() => entries.splice(to, 0, ...entries.splice(from, 1))),
 			onDelete: (index) => this.changeLists(() => entries.splice(index, 1)),
 		};
-	}
-
-	private editableSetProperties(
-		entriesOf: (view: LegacySetPropertiesSettings) => unknown[],
-	): Pick<SettingDefinitionList, "onReorder" | "onDelete"> {
-		return {
-			onReorder: (from, to) =>
-				this.changeSetProperties((view) => entriesOf(view).splice(to, 0, ...entriesOf(view).splice(from, 1))),
-			onDelete: (index) => this.changeSetProperties((view) => entriesOf(view).splice(index, 1)),
-		};
-	}
-
-	private changeSetProperties(change: (view: LegacySetPropertiesSettings) => unknown): void {
-		this.changeLists(() => editLegacyView(this.plugin.settings.setProperties, change));
 	}
 
 	getControlValue(key: string): unknown {
@@ -189,11 +139,8 @@ export class NoteLauncherSettingTab extends PluginSettingTab {
 		const propertyTypes = createObsidianVault(this.app).propertyTypes();
 		const list = scope === "list" ? lists.find((candidate) => candidate.id === id) : undefined;
 		if (list) fitConditionToProperty(list, propertyTypes);
-		if (scope !== "linkList") return;
-		editLegacyView(setProperties, (view) => {
-			const linkList = view.linkLists.find((candidate) => candidate.id === id);
-			if (linkList) fitConditionToProperty(linkList, propertyTypes);
-		});
+		const entry = scope === "propertySource" ? setProperties.properties.find((candidate) => candidate.id === id) : undefined;
+		if (entry && hasSource(entry)) fitConditionToProperty(entry, propertyTypes);
 	}
 
 	private changeLists(change: () => unknown): void {
@@ -242,4 +189,8 @@ export class NoteLauncherSettingTab extends PluginSettingTab {
 			],
 		};
 	}
+}
+
+function sectionHeading(heading: string, description: string): SettingDefinitionItem {
+	return { type: "group", heading, items: [{ name: "", desc: description, searchable: false }] };
 }

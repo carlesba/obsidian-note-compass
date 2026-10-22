@@ -21,17 +21,17 @@ export interface NoteList {
 	source: ListSource;
 }
 
-export type LinkListMode = "multi" | "single";
+type LinkListMode = "multi" | "single";
 
-export const LINK_LIST_MODES: readonly LinkListMode[] = ["multi", "single"];
+const LINK_LIST_MODES: readonly LinkListMode[] = ["multi", "single"];
 
-export interface LinkList extends NoteList {
+interface LinkList extends NoteList {
 	name: string;
 	property: string;
 	mode: LinkListMode;
 }
 
-export interface LegacySetPropertiesSettings {
+interface LegacySetPropertiesSettings {
 	flagsPrefix: string;
 	flags: string[];
 	templatesFolder: string;
@@ -165,7 +165,7 @@ function readLegacySetProperties(data: Record<string, unknown>): LegacySetProper
 	};
 }
 
-export function migrateLegacySetProperties(legacy: LegacySetPropertiesSettings): EditableProperty[] {
+function migrateLegacySetProperties(legacy: LegacySetPropertiesSettings): EditableProperty[] {
 	const links: EditableProperty[] = legacy.linkLists.map((list) => ({
 		id: list.id,
 		enabled: list.enabled,
