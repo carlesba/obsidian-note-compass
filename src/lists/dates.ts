@@ -44,6 +44,12 @@ export function adjacentDatePaths(dateNote: DateNote): AdjacentDatePaths {
 	};
 }
 
+export function currentDatePath(dateNotes: ResolvedDateNotes, period: Period, today: MomentDate): string | undefined {
+	const settings = dateNotes.periods[period];
+	if (!settings.enabled) return undefined;
+	return notePath(settings.folder, today.format(settings.format));
+}
+
 export function dateNoteSuffix(dateNote: DateNote): string {
 	const { date } = dateNote;
 	switch (dateNote.period) {

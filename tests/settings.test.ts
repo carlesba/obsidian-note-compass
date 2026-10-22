@@ -357,3 +357,19 @@ test("newListId mints one above the highest numbered id", () => {
 	assert.equal(newListId(relationLists()), "list-5");
 	assert.equal(newListId([{ id: "list-12" }, { id: "custom" }, { id: "list-3" }]), "list-13");
 });
+
+test("mergeSettings reads a current date notes list and keeps only known periods in period order", () => {
+	const merged = mergeSettings({
+		lists: [
+			{ id: "list-1", enabled: true, prefix: "🗓️", source: { kind: "currentPeriods", periods: ["year", "day", "decade"] } },
+			{ id: "list-2", enabled: true, prefix: "🗓️", source: { kind: "currentPeriods" } },
+		],
+	});
+	assert.deepEqual(
+		merged.lists.map((list) => list.source),
+		[
+			{ kind: "currentPeriods", periods: ["day", "year"] },
+			{ kind: "currentPeriods", periods: [] },
+		],
+	);
+});

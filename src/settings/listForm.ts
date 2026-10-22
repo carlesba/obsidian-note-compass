@@ -8,6 +8,8 @@ import {
 	propertyType,
 } from "../lists/conditions.ts";
 import type { Condition, ConditionOperator, DateValue, PropertyType } from "../lists/conditions.ts";
+import { PERIODS } from "../lists/dateNotes.ts";
+import type { Period } from "../lists/dateNotes.ts";
 import type { JumpListVault } from "../lists/vault.ts";
 import { RELATION_SOURCE_KINDS, newListId, writePrefixColor } from "../settings.ts";
 import type { ListSource, NoteList } from "../settings.ts";
@@ -23,6 +25,25 @@ export const SOURCE_OPTIONS: Record<SourceChoice, string> = {
 	linksToNote: "Links to note",
 	inFolder: "In folder",
 	modifiedToday: "Modified today",
+	currentPeriods: "Current date notes",
+};
+
+export const CURRENT_PERIOD_NAMES: Record<Period, string> = {
+	day: "Today",
+	week: "This week",
+	month: "This month",
+	quarter: "This quarter",
+	year: "This year",
+};
+
+export type CurrentPeriodField = "currentDay" | "currentWeek" | "currentMonth" | "currentQuarter" | "currentYear";
+
+export const CURRENT_PERIOD_FIELDS: Record<Period, CurrentPeriodField> = {
+	day: "currentDay",
+	week: "currentWeek",
+	month: "currentMonth",
+	quarter: "currentQuarter",
+	year: "currentYear",
 };
 
 export const DATE_MODE_OPTIONS = { fixed: "Fixed date", relative: "Relative to today" };
@@ -43,7 +64,8 @@ export type ListField =
 	| "days"
 	| "direction"
 	| "note"
-	| "folder";
+	| "folder"
+	| CurrentPeriodField;
 
 export type ValueShape = "none" | "text" | "number" | "date";
 
@@ -53,6 +75,8 @@ export interface PropertySuggestion {
 }
 
 type PropertySource = Extract<ListSource, { kind: "frontmatter" }>;
+
+type CurrentPeriodsSource = Extract<ListSource, { kind: "currentPeriods" }>;
 
 const FIXED_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -70,6 +94,10 @@ export function sourceSummary(source: ListSource): string {
 		return name === "" ? "Note not chosen" : `Links to ${name}`;
 	}
 	if (source.kind === "inFolder") return source.folder === "" ? "Folder not chosen" : `In ${source.folder}`;
+	if (source.kind === "currentPeriods") {
+		if (source.periods.length === 0) return "No date notes chosen";
+		return source.periods.map((period, index) => (index === 0 ? CURRENT_PERIOD_NAMES[period] : CURRENT_PERIOD_NAMES[period].toLowerCase())).join(", ");
+	}
 	if (source.kind !== "frontmatter") return SOURCE_OPTIONS[source.kind];
 	if (source.property.trim() === "") return "Property not chosen";
 	const { condition } = source;
@@ -143,6 +171,10 @@ export function readListField(list: NoteList, field: ListField): unknown {
 	const { source } = list;
 	if (source.kind === "linksToNote") return field === "note" ? source.note : undefined;
 	if (source.kind === "inFolder") return field === "folder" ? source.folder : undefined;
+	if (source.kind === "currentPeriods") {
+		const period = currentPeriodOf(field);
+		return period === undefined ? undefined : source.periods.includes(period);
+	}
 	if (source.kind !== "frontmatter") return undefined;
 	const { condition } = source;
 	if (field === "property") return source.property;
@@ -166,7 +198,18 @@ export function writeListField(list: NoteList, field: ListField, value: unknown)
 	else if (field === "source") list.source = sourceFor(value, list.source);
 	else if (field === "note" && list.source.kind === "linksToNote") list.source.note = typeof value === "string" ? value.trim() : "";
 	else if (field === "folder" && list.source.kind === "inFolder") list.source.folder = typeof value === "string" ? value.trim() : "";
+	else if (list.source.kind === "currentPeriods") writeCurrentPeriod(list.source, field, value);
 	else if (list.source.kind === "frontmatter") writeConditionField(list.source, field, value);
+}
+
+function currentPeriodOf(field: ListField): Period | undefined {
+	return PERIODS.find((period) => CURRENT_PERIOD_FIELDS[period] === field);
+}
+
+function writeCurrentPeriod(source: CurrentPeriodsSource, field: ListField, value: unknown): void {
+	const changed = currentPeriodOf(field);
+	if (changed === undefined) return;
+	source.periods = PERIODS.filter((period) => (period === changed ? value === true : source.periods.includes(period)));
 }
 
 export function fixedDateError(value: string): string | undefined {
@@ -207,6 +250,7 @@ function sourceFor(kind: unknown, current: ListSource): ListSource {
 	if (kind === "linksToNote") return { kind, note: "" };
 	if (kind === "inFolder") return { kind, folder: "" };
 	if (kind === "modifiedToday") return { kind };
+	if (kind === "currentPeriods") return { kind, periods: [...PERIODS] };
 	const relation = RELATION_SOURCE_KINDS.find((choice) => choice === kind);
 	return relation ? { kind: relation } : current;
 }

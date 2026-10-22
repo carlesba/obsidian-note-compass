@@ -355,3 +355,26 @@ test("each entry carries its list's prefix colour, and lists without one leave i
 	const inbound = buildJumpList([lists[1]], vault, vault.note("current.md"));
 	assert.deepEqual(inbound.map((entry) => "prefixColor" in entry), [false]);
 });
+
+test("current date notes lists the chosen periods' notes for today, in period order, when they exist", () => {
+	const vault = fakeVault([
+		{ path: "on/2024.md" },
+		{ path: "on/2024-03.md" },
+		{ path: "on/2024-W10.md" },
+		{ path: "on/2024-03-09.md" },
+		{ path: "on/2024-03-08.md" },
+		{ path: "notes/elsewhere.md" },
+	]);
+	const all = sourceList({ kind: "currentPeriods", periods: ["day", "week", "month", "quarter", "year"] });
+	assert.deepEqual(describe(buildJumpList(all, vault)), [
+		"src 2024-03-09 | today - Saturday",
+		"src 2024-W10 | this week - week 10",
+		"src 2024-03 | this month - month - March",
+		"src 2024 | this year - year",
+	]);
+	const chosen = sourceList({ kind: "currentPeriods", periods: ["month"] });
+	assert.deepEqual(describe(buildJumpList(chosen, vault, vault.note("notes/elsewhere.md"))), [
+		"src 2024-03 | this month - month - March",
+	]);
+	assert.deepEqual(buildJumpList(chosen, vault, vault.note("on/2024-03.md")), []);
+});

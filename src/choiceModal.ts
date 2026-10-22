@@ -5,6 +5,7 @@ import type { RowParts } from "./render";
 export interface ChoiceHandlers<Choice> {
 	choose(choice: Choice, query: string): void;
 	dismiss(): void;
+	save?: () => void;
 }
 
 export class ChoiceModal<Choice extends { parts: RowParts }> extends SuggestModal<Choice> {
@@ -19,6 +20,16 @@ export class ChoiceModal<Choice extends { parts: RowParts }> extends SuggestModa
 		this.limit = Number.MAX_SAFE_INTEGER;
 		this.resultContainerEl.addClass(RESULTS_CLASS, MARK_COLUMN_CLASS);
 		this.setPlaceholder(placeholder);
+		const { save } = handlers;
+		if (save) {
+			this.scope.register(["Mod"], "Enter", (evt) => {
+				evt.preventDefault();
+				this.chosen = true;
+				this.close();
+				save();
+				return false;
+			});
+		}
 	}
 
 	openWithQuery(query: string): void {

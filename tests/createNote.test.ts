@@ -118,6 +118,7 @@ test("a source that cannot create notes says why", () => {
 	for (const kind of ["adjacentDates", "linksOut", "linksIn", "sameDay"] as const) {
 		assert.equal(blocker({ kind }), "it lists notes by how they relate to the note in focus");
 	}
+	assert.equal(blocker({ kind: "currentPeriods", periods: ["day"] }), "it lists the date notes for the current periods");
 	assert.equal(blocker({ kind: "inFolder", folder: " / " }), "choose a folder first");
 	assert.equal(blocker({ kind: "linksToNote", note: "" }), "choose a note first");
 	assert.equal(blocker({ kind: "frontmatter", property: "", condition: { operator: "is true" } }), "choose a property first");

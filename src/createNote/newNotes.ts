@@ -55,6 +55,8 @@ export function noteCreationBlocker(source: ListSource, propertyTypes: Record<st
 			return source.note.trim() === "" ? "choose a note first" : undefined;
 		case "modifiedToday":
 			return undefined;
+		case "currentPeriods":
+			return "it lists the date notes for the current periods";
 		case "frontmatter":
 			if (source.property === "") return "choose a property first";
 			if (satisfyingValue(source, propertyType(propertyTypes, source.property)) !== undefined) return undefined;

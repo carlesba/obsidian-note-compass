@@ -43,6 +43,7 @@ The other lists do not depend on the note in focus:
 - Links to note lists the notes that link to a chosen note, in their text or in a property.
 - In folder lists the notes in a folder and its subfolders.
 - Modified today lists the notes changed since midnight.
+- Current date notes lists the date notes for today, this week, this month, this quarter and this year, each one you switch on, when the note exists. They keep that order instead of being sorted by name, and each row says which period it is, such as `this week - week 10`.
 
 Each note appears once, under the first list that holds it, and the note in focus is left out. Within a list the notes are sorted by name. When no list has any note, the command says "No notes to jump to." instead of opening an empty picker.
 
@@ -64,7 +65,7 @@ By default every period lives in `on/`, as `2024-03-05`, `2024-W10`, `2024-03` a
 
 "Set properties" edits the properties of the markdown note in focus from one picker. It only appears in the command palette when a markdown note has focus.
 
-Nothing is written while you work in the picker. The first two rows are always `🏁 Save & close`, which writes only the properties you changed, and `🛑 Cancel`, which discards every change. Escape does the same as Cancel.
+Nothing is written while you work in the picker. The first two rows are always `🏁 Save & close`, which writes only the properties you changed, and `🛑 Cancel`, which discards every change. Escape does the same as Cancel. ⌘↵, or Ctrl+Enter on Windows and Linux, saves what you have so far and closes the picker from anywhere, including a property's own picker.
 
 Next come the values the note will be saved with, each marked `✓`: one row per linked note, and one row for each checkbox, text, number or date with its value beside it. A value you changed in this session is also marked `•`. Choosing a set link or text removes it, so a links property loses that one note. Choosing a set checkbox, number or date opens its own picker.
 
@@ -74,7 +75,7 @@ Below the set values, each enabled property offers what it can add, in the order
 - A text property lists the values it already has across the vault, most used first, and choosing one replaces the value. When nothing matches what you typed, it also offers `✏️ <property>: use "<what you typed>"`.
 - A checkbox, number, date or datetime property that is not set shows one row with its name, which opens its own picker.
 
-With nothing typed, each property shows at most five values, followed by `… N more, type to filter`, which types the property's prefix for you. Once you type, every matching row is shown. After you choose a value the picker reopens with what you typed, so the value you just chose shows up at the top as set and you can keep going.
+With nothing typed, each property shows at most five values, followed by `… N more, type to filter`, which types the property's prefix for you. Once you type, every matching row is shown. After you choose a value the picker reopens with the filter cleared, so `🏁 Save & close` is back at the top and the value you just chose shows up below it as set.
 
 ![Set properties after typing "joan": Joan Puig is now set and marked as changed, and the status property offers to use "joan" as a new value](docs/images/set-properties-search.png)
 
@@ -136,7 +137,7 @@ To edit a prefix, click its chip, or focus it and press Enter. A colour swatch a
 
 ### List pages
 
-A list's page has "Enabled", "Prefix", "Prefix colour" and "Remove prefix colour", then "Source", which chooses what the list holds: adjacent dates, outbound links, inbound links, same day, notes with a property, notes linking to a note, notes in a folder, or notes modified today.
+A list's page has "Enabled", "Prefix" and "Prefix colour", whose circular arrow removes the colour, then "Source", which chooses what the list holds: adjacent dates, outbound links, inbound links, same day, notes with a property, notes linking to a note, notes in a folder, notes modified today, or current date notes. Current date notes has one switch per period, from "Today" to "This year".
 
 A property list asks for the property, suggesting the vault's properties with their types, then a condition offered for that type:
 

@@ -29,13 +29,14 @@ export function setProperties(
 	const openMain = (state: PickerState, query: string): void => {
 		new ChoiceModal<PickerChoice>(app, "Set properties…", (typed) => pickerChoices(entries, initial, state, typed, settings.showPrefixes), {
 			choose: ({ action }, typed) => {
-				if (action.action === "set") openMain(action.state, typed);
+				if (action.action === "set") openMain(action.state, "");
 				else if (action.action === "expand") openMain(state, action.query);
 				else if (action.action === "edit") openValue(state, action.entry, typed);
 				else if (action.action === "save") void save(state);
 				else cancel();
 			},
 			dismiss: cancel,
+			save: () => void save(state),
 		}).openWithQuery(query);
 	};
 	const openValue = (state: PickerState, entry: EditableProperty, query: string): void => {
@@ -47,8 +48,9 @@ export function setProperties(
 			entry.property,
 			(typed) => valueChoices(picker, state.values.get(entry.property), typed),
 			{
-				choose: (choice) => openMain(withValue(state, entry.property, choice.value), query),
+				choose: (choice) => openMain(withValue(state, entry.property, choice.value), ""),
 				dismiss: () => openMain(state, query),
+				save: () => void save(state),
 			},
 		).openWithQuery("");
 	};

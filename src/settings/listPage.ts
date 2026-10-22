@@ -11,11 +11,15 @@ import type {
 	SettingGroupItem,
 } from "obsidian";
 import { propertyType } from "../lists/conditions";
+import type { Period } from "../lists/dateNotes";
 import { noteCreationBlocker } from "../createNote/newNotes";
 import { isLinkType } from "../settings";
 import type { EditableProperty, NoteList } from "../settings";
 import { excludedFolderKey, listKey, propertyKey, propertySourceKey } from "./controlKeys";
+import { PERIODS } from "../lists/dateNotes";
 import {
+	CURRENT_PERIOD_FIELDS,
+	CURRENT_PERIOD_NAMES,
 	DATE_MODE_OPTIONS,
 	DIRECTION_OPTIONS,
 	SOURCE_OPTIONS,
@@ -56,6 +60,16 @@ export interface ListPageContext {
 }
 
 type IdentifiedPage = SettingDefinitionPage & { id: string };
+
+const NEUTRAL_PREFIX_COLOR = "#888888";
+
+const PERIOD_NOUNS: Record<Period, string> = {
+	day: "daily",
+	week: "weekly",
+	month: "monthly",
+	quarter: "quarterly",
+	year: "yearly",
+};
 
 export function listPageId(list: NoteList): string {
 	return `list-${list.id}`;
@@ -318,19 +332,24 @@ function prefixColorItems(
 	key: string,
 	context: ListPageContext,
 ): SettingDefinitionItem[] {
-	const colored = () => context.showPrefixes && target.prefixColor !== undefined;
 	return [
 		{
 			name: "Prefix colour",
 			desc: target.prefixColor === undefined ? "No colour. Pick one to tint the prefix chip." : "Tints the prefix chip.",
 			visible: context.showPrefixes,
-			control: { type: "color", key },
-		},
-		{
-			name: "Remove prefix colour",
-			desc: "Show the prefix chip in plain grey again.",
-			visible: colored,
-			action: () => context.write(key, ""),
+			render: (setting) => {
+				setting.settingEl.addClass("note-compass-prefix-colour");
+				setting.addColorPicker((picker) =>
+					picker.setValue(target.prefixColor ?? NEUTRAL_PREFIX_COLOR).onChange((color) => context.write(key, color)),
+				);
+				if (target.prefixColor === undefined) return;
+				setting.addExtraButton((button) =>
+					button
+						.setIcon("rotate-ccw")
+						.setTooltip("Remove colour")
+						.onClick(() => context.write(key, "")),
+				);
+			},
 		},
 	];
 }
@@ -367,6 +386,12 @@ function sourceItems(
 			visible: () => list.source.kind === "inFolder",
 			control: { type: "folder", key: key("folder") },
 		},
+		...PERIODS.map((period) => ({
+			name: CURRENT_PERIOD_NAMES[period],
+			desc: `List the ${PERIOD_NOUNS[period]} note for the current ${period}, when it exists.`,
+			visible: () => list.source.kind === "currentPeriods",
+			control: { type: "toggle" as const, key: key(CURRENT_PERIOD_FIELDS[period]) },
+		})),
 		{
 			name: "Property",
 			desc: "Notes whose property meets the condition are listed.",
