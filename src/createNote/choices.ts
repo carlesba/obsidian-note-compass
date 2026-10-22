@@ -31,7 +31,7 @@ const CREATE_MARK = "➕";
 export function creatableEntries(settings: SetPropertiesSettings, vault: JumpListVault): CreatableEntry[] {
 	const creatable: CreatableEntry[] = [];
 	for (const entry of offeredProperties(settings)) {
-		if (!isLinkType(propertyType(settings, entry))) continue;
+		if (entry.createsNotes !== true || !isLinkType(propertyType(settings, entry))) continue;
 		const rule = newNoteRule(entry.source, vault);
 		if (rule) creatable.push({ entry, rule });
 	}

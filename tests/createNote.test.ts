@@ -2,7 +2,7 @@ import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { ENTRY_PLACEHOLDER, TYPE_A_NAME, creatableEntries, entryChoices, nameChoices, namePlaceholder } from "../src/createNote/choices.ts";
 import type { NameChoice } from "../src/createNote/choices.ts";
-import { createNote, createdNotice } from "../src/createNote/newNotes.ts";
+import { createNote, createdNotice, noteCreationBlocker } from "../src/createNote/newNotes.ts";
 import type { EditableProperty, EditablePropertyType, ListSource } from "../src/settings.ts";
 import { fakeVault } from "./fakeVault.ts";
 import type { FakeNote, FakeVaultOptions } from "./fakeVault.ts";
@@ -21,7 +21,7 @@ function vaultNotes(): FakeNote[] {
 }
 
 function entry(property: string, type: EditablePropertyType, extra: Partial<EditableProperty> = {}): EditableProperty {
-	return { id: property + type + (extra.prefix ?? ""), enabled: true, prefix: "", property, type, source: PERSON, ...extra };
+	return { id: property + type + (extra.prefix ?? ""), enabled: true, prefix: "", property, type, source: PERSON, createsNotes: true, ...extra };
 }
 
 function setup(properties: EditableProperty[], options: FakeVaultOptions = {}, fakes: FakeNote[] = vaultNotes(), sourcePath = "Today.md") {
@@ -69,6 +69,39 @@ test("the first step lists each link entry whose source can hold a new note with
 	assert.deepEqual(labels(entryRows("peop people")), ["👤 peop | people vault root"]);
 	assert.deepEqual(labels(entryRows("zzz")), []);
 	assert.equal(ENTRY_PLACEHOLDER, "Create a note for…");
+});
+
+test("the first step lists only the entries that allow creating notes", () => {
+	const { entries } = setup([
+		entry("people", "links", { prefix: "a", createsNotes: false }),
+		entry("people", "links", { prefix: "b", createsNotes: undefined }),
+		entry("people", "links", { prefix: "c" }),
+	]);
+	assert.deepEqual(entries.map((creatable) => creatable.entry.prefix), ["c"]);
+	assert.deepEqual(setup([entry("people", "links", { createsNotes: false })]).entries, []);
+});
+
+test("a source that cannot create notes says why", () => {
+	const types = { rating: "number", flag: "text", done: "checkbox" };
+	const blocker = (source: ListSource) => noteCreationBlocker(source, types);
+	assert.equal(blocker(PERSON), undefined);
+	assert.equal(blocker({ kind: "modifiedToday" }), undefined);
+	assert.equal(blocker({ kind: "inFolder", folder: "people" }), undefined);
+	assert.equal(blocker({ kind: "frontmatter", property: "done", condition: { operator: "is set" } }), undefined);
+	for (const kind of ["adjacentDates", "linksOut", "linksIn", "sameDay"] as const) {
+		assert.equal(blocker({ kind }), "it lists notes by how they relate to the note in focus");
+	}
+	assert.equal(blocker({ kind: "inFolder", folder: " / " }), "choose a folder first");
+	assert.equal(blocker({ kind: "linksToNote", note: "" }), "choose a note first");
+	assert.equal(blocker({ kind: "frontmatter", property: "", condition: { operator: "is true" } }), "choose a property first");
+	assert.equal(
+		blocker({ kind: "frontmatter", property: "rating", condition: { operator: ">", value: 3 } }),
+		'">" gives no value to write into a new note',
+	);
+	assert.equal(
+		blocker({ kind: "frontmatter", property: "flag", condition: { operator: "is set" } }),
+		'"is set" gives no value to write into a new note',
+	);
 });
 
 test("the second step asks for a name and only offers creating a valid, unused one", () => {

@@ -4,10 +4,12 @@ import { PROPERTY_TYPES } from "../src/lists/conditions.ts";
 import type { Frontmatter, JumpListVault } from "../src/lists/vault.ts";
 import { EDITABLE_PROPERTY_TYPES, defaultSettings, mergeSettings } from "../src/settings.ts";
 import type { EditableProperty } from "../src/settings.ts";
-import { propertyKey, propertySourceKey, readControl, writeControl } from "../src/settings/controlKeys.ts";
+import { excludedFolderKey, propertyKey, propertySourceKey, readControl, writeControl } from "../src/settings/controlKeys.ts";
 import { propertySuggestions } from "../src/settings/listForm.ts";
 import {
 	PROPERTY_TYPE_OPTIONS,
+	addExcludedFolder,
+	deleteExcludedFolder,
 	mixedTypeWarning,
 	newProperty,
 	propertyRowName,
@@ -134,14 +136,19 @@ test("property keys never touch the jump list with the same id", () => {
 	assert.equal(JSON.stringify(settings.lists), jumpLists);
 });
 
-test("a link type gets a source, an excluded folder and new note options, and other types drop them", () => {
+test("a link type gets a source, excluded folders and new note options, and other types drop them", () => {
 	const settings = defaultSettings();
 	const key = (field: Parameters<typeof propertyKey>[1]) => propertyKey("list-9", field);
 	writeControl(settings, key("type"), "links");
-	assert.deepEqual(settings.setProperties.properties[0].source, { kind: "modifiedToday" });
-	assert.equal(settings.setProperties.properties[0].excludedFolder, "");
-	writeControl(settings, key("excludedFolder"), " templates ");
-	assert.equal(readControl(settings, key("excludedFolder")), "templates");
+	const [property] = settings.setProperties.properties;
+	assert.deepEqual(property.source, { kind: "modifiedToday" });
+	assert.deepEqual(property.excludedFolders, []);
+	assert.equal(readControl(settings, key("createsNotes")), false);
+	assert.equal(writeControl(settings, key("createsNotes"), true), true);
+	assert.equal(readControl(settings, key("createsNotes")), true);
+	addExcludedFolder(property);
+	writeControl(settings, excludedFolderKey("list-9", 0), " templates ");
+	assert.equal(readControl(settings, excludedFolderKey("list-9", 0)), "templates");
 	writeControl(settings, key("newNoteFolder"), " people ");
 	writeControl(settings, key("newNoteTemplate"), "templates/Person.md");
 	assert.equal(readControl(settings, key("newNoteFolder")), "people");
@@ -155,6 +162,7 @@ test("a link type gets a source, an excluded folder and new note options, and ot
 		property: "active",
 		type: "text",
 	});
+	assert.equal(writeControl(settings, excludedFolderKey("list-9", 0), "x"), false);
 	assert.equal(readControl(settings, propertySourceKey("list-9", "source")), undefined);
 	assert.equal(writeControl(settings, propertySourceKey("list-9", "source"), "linksOut"), false);
 	assert.equal(settings.setProperties.properties[0].source, undefined);
@@ -187,4 +195,59 @@ test("a stored new note folder or template that is not text is left out", () => 
 	const [property] = mergeSettings(stored).setProperties.properties;
 	assert.equal(property.newNoteFolder, undefined);
 	assert.equal(property.newNoteTemplate, "t.md");
+});
+
+test("excluded folder rows are added empty, edited by index and deleted", () => {
+	const settings = defaultSettings();
+	const property = settings.setProperties.properties[5];
+	const key = (index: number) => excludedFolderKey(property.id, index);
+	assert.equal(key(1), `property/${property.id}/excludedFolders/1`);
+	addExcludedFolder(property);
+	assert.deepEqual(property.excludedFolders, ["templates", ""]);
+	assert.equal(readControl(settings, key(1)), "");
+	assert.equal(writeControl(settings, key(1), " archive/ "), true);
+	assert.equal(writeControl(settings, key(2), "nope"), false);
+	assert.equal(writeControl(settings, propertyKey(property.id, "excludedFolders"), "nope"), false);
+	assert.equal(readControl(settings, key(2)), undefined);
+	assert.deepEqual(property.excludedFolders, ["templates", "archive/"]);
+	deleteExcludedFolder(property, 0);
+	assert.deepEqual(property.excludedFolders, ["archive/"]);
+	addExcludedFolder(property);
+	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(settings))).setProperties.properties[5].excludedFolders, ["archive/"]);
+});
+
+test("stored excluded folders are cleaned and an old single folder becomes a list", () => {
+	const link = (fields: Record<string, unknown>) => ({
+		id: "a",
+		enabled: true,
+		prefix: "",
+		property: "people",
+		type: "links",
+		source: { kind: "modifiedToday" },
+		...fields,
+	});
+	const excluded = (fields: Record<string, unknown>) =>
+		mergeSettings({ setProperties: { properties: [link(fields)] } }).setProperties.properties[0].excludedFolders;
+	assert.deepEqual(excluded({ excludedFolders: [" templates ", "", 3, "  ", "archive"] }), ["templates", "archive"]);
+	assert.deepEqual(excluded({ excludedFolders: ["kept"], excludedFolder: "ignored" }), ["kept"]);
+	assert.deepEqual(excluded({ excludedFolder: " templates " }), ["templates"]);
+	assert.deepEqual(excluded({ excludedFolder: "" }), []);
+	assert.deepEqual(excluded({ excludedFolder: 4 }), []);
+	assert.deepEqual(excluded({}), []);
+});
+
+test("stored link properties without the create notes switch get it on only when they set a folder or template", () => {
+	const creates = (fields: Record<string, unknown>) =>
+		mergeSettings({
+			setProperties: {
+				properties: [{ id: "a", enabled: true, prefix: "", property: "people", type: "links", source: { kind: "modifiedToday" }, ...fields }],
+			},
+		}).setProperties.properties[0].createsNotes;
+	assert.equal(creates({}), false);
+	assert.equal(creates({ newNoteFolder: " ", newNoteTemplate: "" }), false);
+	assert.equal(creates({ newNoteFolder: "people" }), true);
+	assert.equal(creates({ newNoteTemplate: "t.md" }), true);
+	assert.equal(creates({ newNoteFolder: "people", createsNotes: false }), false);
+	assert.equal(creates({ createsNotes: true }), true);
+	assert.equal(creates({ createsNotes: "yes" }), false);
 });

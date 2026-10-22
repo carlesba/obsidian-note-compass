@@ -46,7 +46,7 @@ function entry(property: string, type: EditablePropertyType, extra: Partial<Edit
 		prefix: "",
 		property,
 		type,
-		...(linked ? { source: PERSON, excludedFolder: "templates" } : {}),
+		...(linked ? { source: PERSON, excludedFolders: ["templates"] } : {}),
 		...extra,
 	};
 }
@@ -119,6 +119,14 @@ test("a row splits into mark, prefix, content and value parts", () => {
 	assert.deepEqual(pick(choices, SAVE_LABEL).parts, { mark: "🏁", content: "Save & close" });
 	assert.deepEqual(pick(choices, CANCEL_LABEL).parts, { mark: "🛑", content: "Cancel" });
 	assert.deepEqual([SAVE_LABEL, CANCEL_LABEL], ["🏁 Save & close", "🛑 Cancel"]);
+});
+
+test("a link entry leaves out notes inside any of its excluded folders", () => {
+	const offered = (excludedFolders: string[]) =>
+		labels(setup([entry("people", "links", { prefix: "👤", excludedFolders })]).choicesFor()).slice(4);
+	assert.deepEqual(offered([]), ["👤 Bob", "👤 Cy", "👤 Person", "👤 Today too"]);
+	assert.deepEqual(offered(["templates", "", " /people/ "]), ["👤 Today too"]);
+	assert.deepEqual(offered(["peop", "templates/"]), ["👤 Bob", "👤 Cy", "👤 Today too"]);
 });
 
 test("choosing a set link drops only that link and choosing a note adds it", () => {

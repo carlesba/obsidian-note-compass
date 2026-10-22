@@ -1,10 +1,19 @@
 import { AbstractInputSuggest, setIcon } from "obsidian";
-import type { App, Setting, SettingDefinition, SettingDefinitionItem, SettingDefinitionPage, SettingGroupItem } from "obsidian";
+import type {
+	App,
+	Setting,
+	SettingDefinition,
+	SettingDefinitionGroup,
+	SettingDefinitionItem,
+	SettingDefinitionList,
+	SettingDefinitionPage,
+	SettingGroupItem,
+} from "obsidian";
 import { propertyType } from "../lists/conditions";
-import { createsNotes } from "../createNote/newNotes";
+import { noteCreationBlocker } from "../createNote/newNotes";
 import { isLinkType } from "../settings";
 import type { EditableProperty, NoteList } from "../settings";
-import { listKey, propertyKey, propertySourceKey } from "./controlKeys";
+import { excludedFolderKey, listKey, propertyKey, propertySourceKey } from "./controlKeys";
 import {
 	DATE_MODE_OPTIONS,
 	DIRECTION_OPTIONS,
@@ -19,8 +28,16 @@ import {
 	valueShape,
 } from "./listForm";
 import type { ListField, PropertySuggestion, ValueShape } from "./listForm";
-import { PROPERTY_TYPE_OPTIONS, hasSource, mixedTypeWarning, propertyRowName, propertyTypePreset } from "./setPropertiesForm";
-import type { PropertyField } from "./setPropertiesForm";
+import {
+	PROPERTY_TYPE_OPTIONS,
+	addExcludedFolder,
+	deleteExcludedFolder,
+	hasSource,
+	mixedTypeWarning,
+	propertyRowName,
+	propertyTypePreset,
+} from "./setPropertiesForm";
+import type { LinkProperty, PropertyField } from "./setPropertiesForm";
 
 export interface ListPageContext {
 	app: App;
@@ -28,6 +45,7 @@ export interface ListPageContext {
 	propertySuggestions: () => PropertySuggestion[];
 	write: (key: string, value: unknown) => void;
 	openPage: (pageId: string) => void;
+	change: (change: () => unknown) => void;
 }
 
 type IdentifiedPage = SettingDefinitionPage & { id: string };
@@ -184,28 +202,8 @@ export function propertyPage(
 				heading: "Offer notes from",
 				items: sourceItems(entry, context, (field) => propertySourceKey(entry.id, field)),
 			},
-			{
-				type: "group",
-				items: [
-					{
-						name: "Leave out folder",
-						desc: "Notes in this folder are never offered.",
-						control: { type: "folder", key: key("excludedFolder") },
-					},
-					{
-						name: "New note folder",
-						desc: "Notes made with Create note go here. Empty uses the default location for new notes.",
-						visible: () => createsNotes(entry.source, context.propertyTypes) && entry.source.kind !== "inFolder",
-						control: { type: "folder", key: key("newNoteFolder") },
-					},
-					{
-						name: "New note template",
-						desc: "Create note starts new notes from this template. Templater runs it when enabled; otherwise {{title}}, {{date}} and {{time}} are filled in as the core Templates plugin does.",
-						visible: () => createsNotes(entry.source, context.propertyTypes),
-						control: { type: "file", key: key("newNoteTemplate"), filter: (file) => file.extension === "md" },
-					},
-				],
-			},
+			excludedFoldersList(entry, context),
+			createNotesGroup(entry, context),
 		);
 	}
 	const page: IdentifiedPage = {
@@ -217,6 +215,50 @@ export function propertyPage(
 		items,
 	};
 	return page;
+}
+
+function excludedFoldersList(entry: LinkProperty, context: ListPageContext): SettingDefinitionList {
+	const folders = entry.excludedFolders ?? [];
+	return {
+		type: "list",
+		heading: "Excluded folders",
+		emptyState: "No folders are excluded.",
+		items: folders.map((_folder, index) => ({
+			name: `Excluded folder ${index + 1}`,
+			control: { type: "folder", key: excludedFolderKey(entry.id, index) },
+		})),
+		onDelete: (index) => context.change(() => deleteExcludedFolder(entry, index)),
+		addItem: { name: "Add excluded folder", action: () => context.change(() => addExcludedFolder(entry)) },
+	};
+}
+
+function createNotesGroup(entry: LinkProperty, context: ListPageContext): SettingDefinitionGroup {
+	const key = (field: PropertyField) => propertyKey(entry.id, field);
+	const blocker = noteCreationBlocker(entry.source, context.propertyTypes);
+	const creating = () => entry.createsNotes === true && blocker === undefined;
+	return {
+		type: "group",
+		heading: "Create notes",
+		items: [
+			{
+				name: "Allow creating notes",
+				desc: blocker ? `This source cannot create notes: ${blocker}.` : "Offer this property in the Create note command.",
+				control: { type: "toggle", disabled: blocker !== undefined, key: key("createsNotes") },
+			},
+			{
+				name: "Folder",
+				desc: "New notes go here. Empty uses the default location for new notes.",
+				visible: () => creating() && entry.source.kind !== "inFolder",
+				control: { type: "folder", key: key("newNoteFolder") },
+			},
+			{
+				name: "Template",
+				desc: "New notes start from this template. Templater runs it when enabled; otherwise {{title}}, {{date}} and {{time}} are filled in as the core Templates plugin does.",
+				visible: creating,
+				control: { type: "file", key: key("newNoteTemplate"), filter: (file) => file.extension === "md" },
+			},
+		],
+	};
 }
 
 export function listPageItems(list: NoteList, context: ListPageContext): SettingDefinitionItem[] {
