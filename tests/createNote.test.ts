@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
-import { TYPE_A_NAME, creatableEntries, createChoices } from "../src/createNote/choices.ts";
-import type { CreateChoice } from "../src/createNote/choices.ts";
+import { ENTRY_PLACEHOLDER, TYPE_A_NAME, creatableEntries, entryChoices, nameChoices, namePlaceholder } from "../src/createNote/choices.ts";
+import type { NameChoice } from "../src/createNote/choices.ts";
 import { createNote, createdNotice } from "../src/createNote/newNotes.ts";
 import type { EditableProperty, EditablePropertyType, ListSource } from "../src/settings.ts";
 import { fakeVault } from "./fakeVault.ts";
@@ -24,33 +24,34 @@ function entry(property: string, type: EditablePropertyType, extra: Partial<Edit
 	return { id: property + type + (extra.prefix ?? ""), enabled: true, prefix: "", property, type, source: PERSON, ...extra };
 }
 
-function setup(properties: EditableProperty[], options: FakeVaultOptions = {}, fakes: FakeNote[] = vaultNotes()) {
+function setup(properties: EditableProperty[], options: FakeVaultOptions = {}, fakes: FakeNote[] = vaultNotes(), sourcePath = "Today.md") {
 	const vault = fakeVault(fakes, options);
 	const entries = creatableEntries({ properties }, vault);
-	return { vault, choicesFor: (query: string) => createChoices(entries, query) };
+	const entryRows = (query = "") => entryChoices(entries, vault, sourcePath, query);
+	const nameRows = (index: number, query: string) => nameChoices(entryRows()[index].creatable, vault, sourcePath, query);
+	return { vault, entries, entryRows, nameRows };
 }
 
-const labels = (choices: readonly CreateChoice[]) => choices.map((choice) => choice.label);
+const labels = (choices: readonly { label: string }[]) => choices.map((choice) => choice.label);
 
-function pick(choices: readonly CreateChoice[], label: string) {
-	const found = choices.find((choice) => choice.label === label);
-	assert.ok(found, `no row ${label} in ${JSON.stringify(labels(choices))}`);
-	assert.equal(found.action.action, "create");
-	if (found.action.action !== "create") throw new Error("not a create row");
-	return found.action.creation;
+function creation(rows: readonly NameChoice[]) {
+	assert.equal(rows.length, 1);
+	const [row] = rows;
+	if (row.action.action !== "create") throw new Error(`not a create row: ${row.label}`);
+	return row.action.creation;
 }
 
 async function created(source: ListSource, extra: Partial<EditableProperty> = {}, options: FakeVaultOptions = {}, fakes = vaultNotes()) {
-	const { vault, choicesFor } = setup([entry("people", "links", { prefix: "👤", source, ...extra })], options, fakes);
-	const result = await createNote(vault, "Today.md", pick(choicesFor("Zed"), '➕ 👤 people create "Zed"'));
+	const { vault, nameRows } = setup([entry("people", "links", { prefix: "👤", source, ...extra })], options, fakes);
+	const result = await createNote(vault, "Today.md", creation(nameRows(0, "Zed")));
 	return { vault, result, notice: createdNotice("Zed", result) };
 }
 
-test("each link entry whose source can hold a new note offers a row asking for a name", () => {
-	const { choicesFor } = setup(
+test("the first step lists each link entry whose source can hold a new note with where it goes", () => {
+	const { entryRows } = setup(
 		[
 			entry("people", "links", { prefix: "👤 peop |" }),
-			entry("related", "links", { prefix: "🔅", source: { kind: "modifiedToday" } }),
+			entry("related", "links", { prefix: "🔅", source: { kind: "modifiedToday" }, newNoteFolder: "/crm/" }),
 			entry("related", "link", { prefix: "📁", source: { kind: "inFolder", folder: "areas" } }),
 			entry("out", "links", { prefix: "🔗", source: { kind: "linksOut" } }),
 			entry("big", "links", { source: { kind: "frontmatter", property: "rating", condition: { operator: ">", value: 3 } } }),
@@ -59,39 +60,59 @@ test("each link entry whose source can hold a new note offers a row asking for a
 			entry("active", "checkbox", { source: { kind: "modifiedToday" } }),
 			entry("off", "links", { enabled: false }),
 		],
-		{ propertyTypes: { flag: "text" } },
+		{ propertyTypes: { flag: "text" }, defaultNoteFolder: () => "" },
 	);
-	const rows = choicesFor("");
-	assert.deepEqual(labels(rows), [
-		`👤 peop | people ${TYPE_A_NAME}`,
-		`🔅 related ${TYPE_A_NAME}`,
-		`📁 related ${TYPE_A_NAME}`,
-	]);
-	assert.deepEqual(rows[0].parts, { prefix: "👤 peop |", content: "people", value: TYPE_A_NAME });
-	assert.deepEqual(rows[0].action, { action: "reopen" });
+	const rows = entryRows();
+	assert.deepEqual(labels(rows), ["👤 peop | people vault root", "🔅 related crm", "📁 related areas"]);
+	assert.deepEqual(rows[0].parts, { prefix: "👤 peop |", content: "people", value: "vault root" });
+	assert.deepEqual(labels(entryRows("rel")), ["🔅 related crm", "📁 related areas"]);
+	assert.deepEqual(labels(entryRows("peop people")), ["👤 peop | people vault root"]);
+	assert.deepEqual(labels(entryRows("zzz")), []);
+	assert.equal(ENTRY_PLACEHOLDER, "Create a note for…");
 });
 
-test("a typed name offers every entry a create row unless it starts with an entry's prefix", () => {
-	const { choicesFor } = setup([
-		entry("people", "links", { prefix: "👤 peop |" }),
-		entry("related", "links", { prefix: "🔅 ctx |", source: { kind: "modifiedToday" } }),
-	]);
-	assert.deepEqual(labels(choicesFor("Zed")), ['➕ 👤 peop | people create "Zed"', '➕ 🔅 ctx | related create "Zed"']);
-	assert.deepEqual(choicesFor("Zed")[0].parts, { mark: "➕", prefix: "👤 peop |", content: 'people create "Zed"' });
-	assert.deepEqual(labels(choicesFor("peop john")), ['➕ 👤 peop | people create "john"']);
-	assert.deepEqual(labels(choicesFor("👤 PEOP | John Doe")), ['➕ 👤 peop | people create "John Doe"']);
-	assert.equal(pick(choicesFor("peop john"), '➕ 👤 peop | people create "john"').name, "john");
-	assert.deepEqual(labels(choicesFor("people")), ['➕ 👤 peop | people create "people"', '➕ 🔅 ctx | related create "people"']);
-	assert.deepEqual(labels(choicesFor("ctx ")), [`🔅 ctx | related ${TYPE_A_NAME}`]);
-});
-
-test("a name Obsidian cannot use as a file name shows only a row saying so", () => {
-	const { choicesFor } = setup([entry("people", "links", { prefix: "👤" })]);
+test("the second step asks for a name and only offers creating a valid, unused one", () => {
+	const fakes = [...vaultNotes(), { path: "archive/old/Bea.md" }];
+	const { entries, nameRows } = setup([entry("people", "links", { prefix: "👤 peop |" })], {}, fakes);
+	assert.equal(namePlaceholder(entries[0]), "Name of the new people note…");
+	for (const typed of ["", "   "]) {
+		assert.deepEqual(labels(nameRows(0, typed)), [TYPE_A_NAME]);
+		assert.deepEqual(nameRows(0, typed)[0].action, { action: "reopen" });
+	}
+	assert.equal(TYPE_A_NAME, "Type a name");
 	for (const name of ["a/b", "what?", ".hidden", "x#y"]) {
-		const rows = choicesFor(name);
+		const rows = nameRows(0, name);
 		assert.deepEqual(labels(rows), [`"${name}" has characters Obsidian cannot use in a file name.`]);
 		assert.deepEqual(rows[0].action, { action: "reopen" });
 	}
+	for (const [typed, path] of [["Bea", "archive/old/Bea.md"], ["ann", "people/Ann.md"], [" TODAY ", "Today.md"]]) {
+		const rows = nameRows(0, typed);
+		assert.deepEqual(labels(rows), [`"${typed.trim()}" already exists at ${path}.`]);
+		assert.deepEqual(rows[0].action, { action: "reopen" });
+	}
+	const valid = nameRows(0, " John Doe ");
+	assert.deepEqual(labels(valid), ['➕ 👤 peop | Create "John Doe" in inbox']);
+	assert.deepEqual(valid[0].parts, { mark: "➕", prefix: "👤 peop |", content: 'Create "John Doe" in inbox' });
+	assert.equal(creation(valid).name, "John Doe");
+});
+
+test("the second step names the folder the note goes to", () => {
+	const { nameRows } = setup(
+		[
+			entry("people", "links", { prefix: "👤", source: { kind: "inFolder", folder: "people/" } }),
+			entry("related", "links", { prefix: "🔅", source: { kind: "modifiedToday" } }),
+		],
+		{ defaultNoteFolder: () => "" },
+	);
+	assert.deepEqual(labels(nameRows(0, "Zed")), ['➕ 👤 Create "Zed" in people']);
+	assert.deepEqual(labels(nameRows(1, "Zed")), ['➕ 🔅 Create "Zed" in the vault root']);
+});
+
+test("choosing a valid name creates the note with its source's membership", async () => {
+	const { vault, nameRows } = setup([entry("people", "links", { prefix: "👤", newNoteTemplate: "templates/Person.md" })]);
+	const result = await createNote(vault, "Today.md", creation(nameRows(0, "Zed")));
+	assert.equal(createdNotice("Zed", result), 'Created "Zed" in inbox.');
+	assert.equal(vault.content("inbox/Zed.md"), "# Person\n\n[[types/Person]]\n");
 });
 
 test("a created note joins the entry's source", async () => {
@@ -121,15 +142,17 @@ test("a created note goes to the source folder, then the entry's folder, then Ob
 	const root = await created({ kind: "modifiedToday" }, {}, { defaultNoteFolder: (source) => (sources.push(source), "") });
 	assert.ok(root.vault.paths().includes("Zed.md"));
 	assert.equal(root.notice, 'Created "Zed" in the vault root.');
-	assert.deepEqual(sources, ["Today.md"]);
-	const { vault, choicesFor } = setup([entry("people", "links", { prefix: "👤" })], { defaultNoteFolder: (source) => source ?? "root" });
-	await createNote(vault, undefined, pick(choicesFor("Zed"), '➕ 👤 people create "Zed"'));
+	assert.deepEqual([...new Set(sources)], ["Today.md"]);
+	const { vault, entries } = setup([entry("people", "links", { prefix: "👤" })], { defaultNoteFolder: (source) => source ?? "root" });
+	await createNote(vault, undefined, creation(nameChoices(entries[0], vault, undefined, "Zed")));
 	assert.ok(vault.paths().includes("root/Zed.md"));
 });
 
 test("an existing note at the path is left untouched", async () => {
 	const existing = [...vaultNotes(), { path: "inbox/zed.md", content: "mine" }];
-	const { vault, result, notice } = await created(PERSON, {}, {}, existing);
+	const { vault, entries } = setup([entry("people", "links", { prefix: "👤" })], {}, existing);
+	const result = await createNote(vault, "Today.md", { ...entries[0], name: "Zed" });
+	const notice = createdNotice("Zed", result);
 	assert.equal(result.outcome, "exists");
 	assert.equal(notice, '"Zed" already exists.');
 	assert.equal(vault.content("inbox/zed.md"), "mine");

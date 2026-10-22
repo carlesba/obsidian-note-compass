@@ -3,8 +3,8 @@ import type { App } from "obsidian";
 import { ChoiceModal } from "../choiceModal";
 import type { JumpListVault, NewNoteVault } from "../lists/vault";
 import type { JumpSettings } from "../settings";
-import { creatableEntries, createChoices } from "./choices";
-import type { CreateChoice } from "./choices";
+import { ENTRY_PLACEHOLDER, creatableEntries, entryChoices, nameChoices, namePlaceholder } from "./choices";
+import type { CreatableEntry, EntryChoice, NameChoice } from "./choices";
 import { createNote, createdNotice } from "./newNotes";
 import type { NoteCreation } from "./newNotes";
 
@@ -26,14 +26,20 @@ export function createNoteFromEntries(
 			new Notice(`Could not create "${creation.name}".`);
 		}
 	};
-	const open = (query: string): void => {
-		new ChoiceModal<CreateChoice>(app, "Create note…", (typed) => createChoices(entries, typed), {
-			choose: ({ action }, typed) => {
-				if (action.action === "create") void create(action.creation);
-				else open(typed);
-			},
+	const openEntries = (query: string): void => {
+		new ChoiceModal<EntryChoice>(app, ENTRY_PLACEHOLDER, (typed) => entryChoices(entries, vault, sourcePath, typed), {
+			choose: ({ creatable }, typed) => openName(creatable, "", typed),
 			dismiss: () => undefined,
 		}).openWithQuery(query);
 	};
-	open("");
+	const openName = (creatable: CreatableEntry, query: string, entryQuery: string): void => {
+		new ChoiceModal<NameChoice>(app, namePlaceholder(creatable), (typed) => nameChoices(creatable, vault, sourcePath, typed), {
+			choose: ({ action }, typed) => {
+				if (action.action === "create") void create(action.creation);
+				else openName(creatable, typed, entryQuery);
+			},
+			dismiss: () => openEntries(entryQuery),
+		}).openWithQuery(query);
+	};
+	openEntries("");
 }

@@ -1,27 +1,32 @@
-import type { JumpListVault } from "../lists/vault";
-import { rowLabel } from "../render.ts";
+import type { JumpListVault, NewNoteVault } from "../lists/vault";
+import { matchesInOrder, rowLabel } from "../render.ts";
 import type { RowParts } from "../render";
 import { offeredProperties, propertyType } from "../setProperties/offered.ts";
 import { isLinkType } from "../settings.ts";
 import type { SetPropertiesSettings } from "../settings";
-import { isCreatableName, newNoteRule } from "./newNotes.ts";
+import { folderName, isCreatableName, newNoteFolder, newNoteRule } from "./newNotes.ts";
 import type { NoteCreation } from "./newNotes";
 
 export type CreatableEntry = Omit<NoteCreation, "name">;
 
-export type CreateAction = { action: "create"; creation: NoteCreation } | { action: "reopen" };
-
-export interface CreateChoice {
+export interface EntryChoice {
 	label: string;
 	parts: RowParts;
-	action: CreateAction;
+	creatable: CreatableEntry;
 }
 
-export const TYPE_A_NAME = "type a name";
+export type NameAction = { action: "create"; creation: NoteCreation } | { action: "reopen" };
+
+export interface NameChoice {
+	label: string;
+	parts: RowParts;
+	action: NameAction;
+}
+
+export const ENTRY_PLACEHOLDER = "Create a note for…";
+export const TYPE_A_NAME = "Type a name";
 
 const CREATE_MARK = "➕";
-const WORD_CHARACTER = /[\p{L}\p{N}]/u;
-const SPACE = /\s/;
 
 export function creatableEntries(settings: SetPropertiesSettings, vault: JumpListVault): CreatableEntry[] {
 	const creatable: CreatableEntry[] = [];
@@ -33,66 +38,41 @@ export function creatableEntries(settings: SetPropertiesSettings, vault: JumpLis
 	return creatable;
 }
 
-export function createChoices(entries: readonly CreatableEntry[], query: string): CreateChoice[] {
-	const { scope, name } = scopedQuery(entries, query);
-	if (name === "") {
-		return scope.map(({ entry }) =>
-			choice({ prefix: entry.prefix, content: entry.property, value: TYPE_A_NAME }, { action: "reopen" }),
-		);
-	}
-	if (!isCreatableName(name)) {
-		return [choice({ content: `"${name}" has characters Obsidian cannot use in a file name.` }, { action: "reopen" })];
-	}
-	return scope.map(({ entry, rule }) =>
-		choice(
-			{ mark: CREATE_MARK, prefix: entry.prefix, content: `${entry.property} create "${name}"` },
-			{ action: "create", creation: { name, entry, rule } },
-		),
-	);
-}
-
-function scopedQuery(
+export function entryChoices(
 	entries: readonly CreatableEntry[],
+	vault: NewNoteVault,
+	sourcePath: string | undefined,
 	query: string,
-): { scope: readonly CreatableEntry[]; name: string } {
-	let best: { key: string; rest: string } | undefined;
-	for (const { entry } of entries) {
-		const key = prefixKey(entry.prefix);
-		if (key === "" || (best && best.key.length >= key.length)) continue;
-		const rest = afterPrefix(query, key, entry.prefix);
-		if (rest !== undefined) best = { key, rest };
-	}
-	if (!best) return { scope: entries, name: query.trim() };
-	const { key, rest } = best;
-	return { scope: entries.filter(({ entry }) => prefixKey(entry.prefix) === key), name: rest.trim() };
+): EntryChoice[] {
+	const choices = entries.map((creatable) => {
+		const folder = newNoteFolder(vault, sourcePath, creatable);
+		const parts = { prefix: creatable.entry.prefix, content: creatable.entry.property, value: folder || "vault root" };
+		return { label: rowLabel(parts), parts, creatable };
+	});
+	return query ? choices.filter((choice) => matchesInOrder(query, choice.label)) : choices;
 }
 
-function prefixKey(prefix: string): string {
-	return Array.from(prefix)
-		.filter((character) => WORD_CHARACTER.test(character))
-		.join("")
-		.toLowerCase();
+export function namePlaceholder({ entry }: CreatableEntry): string {
+	return `Name of the new ${entry.property} note…`;
 }
 
-function afterPrefix(query: string, key: string, prefix: string): string | undefined {
-	const wanted = Array.from(key);
-	const typed = Array.from(query);
-	let index = 0;
-	let matched = 0;
-	while (matched < wanted.length) {
-		if (index >= typed.length) return undefined;
-		const character = typed[index++];
-		if (!WORD_CHARACTER.test(character)) continue;
-		if (character.toLowerCase() !== wanted[matched++]) return undefined;
-	}
-	if (index < typed.length && WORD_CHARACTER.test(typed[index])) return undefined;
-	const separators = new Set(Array.from(prefix));
-	while (index < typed.length && !WORD_CHARACTER.test(typed[index]) && (separators.has(typed[index]) || SPACE.test(typed[index]))) {
-		index++;
-	}
-	return typed.slice(index).join("");
+export function nameChoices(
+	creatable: CreatableEntry,
+	vault: JumpListVault & NewNoteVault,
+	sourcePath: string | undefined,
+	query: string,
+): NameChoice[] {
+	const name = query.trim();
+	if (name === "") return [reopen({ content: TYPE_A_NAME })];
+	if (!isCreatableName(name)) return [reopen({ content: `"${name}" has characters Obsidian cannot use in a file name.` })];
+	const wanted = name.toLowerCase();
+	const existing = vault.notes().find((note) => note.basename.toLowerCase() === wanted);
+	if (existing) return [reopen({ content: `"${name}" already exists at ${existing.path}.` })];
+	const folder = folderName(newNoteFolder(vault, sourcePath, creatable));
+	const parts = { mark: CREATE_MARK, prefix: creatable.entry.prefix, content: `Create "${name}" in ${folder}` };
+	return [{ label: rowLabel(parts), parts, action: { action: "create", creation: { ...creatable, name } } }];
 }
 
-function choice(parts: RowParts, action: CreateAction): CreateChoice {
-	return { label: rowLabel(parts), parts, action };
+function reopen(parts: RowParts): NameChoice {
+	return { label: rowLabel(parts), parts, action: { action: "reopen" } };
 }
