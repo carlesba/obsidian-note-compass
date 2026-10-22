@@ -1,11 +1,11 @@
 import type { PropertyType } from "../lists/conditions.ts";
-import { EDITABLE_PROPERTY_TYPES, isLinkType, newListId } from "../settings.ts";
+import { EDITABLE_PROPERTY_TYPES, isLinkType, newListId, writePrefixColor } from "../settings.ts";
 import type { EditableProperty, EditablePropertyType, ListSource, NoteList } from "../settings.ts";
 import { mixedTypeProperties } from "../setProperties/propertyTypes.ts";
 import { readListField, writeListField } from "./listForm.ts";
 import type { ListField } from "./listForm.ts";
 
-export type PropertyField = "enabled" | "prefix" | "name" | "type" | LinkPropertyField;
+export type PropertyField = "enabled" | "prefix" | "prefixColor" | "name" | "type" | LinkPropertyField;
 
 type LinkPropertyField = "excludedFolders" | "createsNotes" | "newNoteFolder" | "newNoteTemplate";
 
@@ -66,6 +66,7 @@ export function readPropertyField(entry: EditableProperty, field: PropertyField,
 	if (field === "excludedFolders") return entry.excludedFolders?.[Number(index)];
 	if (field === "enabled") return entry.enabled;
 	if (field === "prefix") return entry.prefix;
+	if (field === "prefixColor") return entry.prefixColor ?? "";
 	if (field === "name") return entry.property;
 	if (field === "type") return entry.type;
 	return entry[field];
@@ -77,6 +78,7 @@ export function writePropertyField(entry: EditableProperty, field: PropertyField
 	if (field === "enabled") entry.enabled = value === true;
 	else if (field === "createsNotes") entry.createsNotes = value === true;
 	else if (field === "prefix") entry.prefix = text;
+	else if (field === "prefixColor") writePrefixColor(entry, value);
 	else if (field === "name") entry.property = text.trim();
 	else if (field === "type") writeType(entry, EDITABLE_PROPERTY_TYPES.find((type) => type === value) ?? entry.type);
 	else entry[field] = text.trim();

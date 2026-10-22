@@ -135,6 +135,18 @@ test("property keys read and write the entry's fields and ignore unknown ids", (
 	assert.equal(readControl(settings, propertyKey("list-99", "name")), undefined);
 });
 
+test("a property's prefix colour key reads blank until set and keeps only valid hex", () => {
+	const settings = defaultSettings();
+	const key = propertyKey("list-9", "prefixColor");
+	assert.equal(readControl(settings, key), "");
+	assert.equal(writeControl(settings, key, "#33aa66"), true);
+	assert.equal(settings.setProperties.properties[0].prefixColor, "#33aa66");
+	assert.equal(readControl(settings, key), "#33aa66");
+	writeControl(settings, key, "nope");
+	assert.equal("prefixColor" in settings.setProperties.properties[0], false);
+	assert.equal(settings.lists.some((list) => "prefixColor" in list), false);
+});
+
 test("property keys never touch the jump list with the same id", () => {
 	const settings = defaultSettings();
 	const jumpLists = JSON.stringify(settings.lists);

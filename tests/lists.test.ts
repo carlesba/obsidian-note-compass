@@ -337,3 +337,21 @@ test("modified today lists notes changed since local midnight of the vault's clo
 		"src this-morning",
 	]);
 });
+
+test("each entry carries its list's prefix colour, and lists without one leave it out", () => {
+	const vault = fakeVault([{ path: "current.md", links: ["Alpha.md", "Beta.md"] }, { path: "Alpha.md" }, { path: "Beta.md", links: ["current.md"] }]);
+	const lists: NoteList[] = [
+		{ id: "list-1", enabled: true, prefix: "🔗 out", prefixColor: "#e0a030", source: { kind: "linksOut" } },
+		{ id: "list-2", enabled: true, prefix: "🔗 in", source: { kind: "linksIn" } },
+	];
+	const entries = buildJumpList(lists, vault, vault.note("current.md"));
+	assert.deepEqual(
+		entries.map((entry) => [entry.name, entry.prefixColor]),
+		[
+			["Alpha", "#e0a030"],
+			["Beta", "#e0a030"],
+		],
+	);
+	const inbound = buildJumpList([lists[1]], vault, vault.note("current.md"));
+	assert.deepEqual(inbound.map((entry) => "prefixColor" in entry), [false]);
+});

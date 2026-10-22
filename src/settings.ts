@@ -18,6 +18,7 @@ export interface NoteList {
 	id: string;
 	enabled: boolean;
 	prefix: string;
+	prefixColor?: string;
 	source: ListSource;
 }
 
@@ -53,6 +54,7 @@ export interface EditableProperty {
 	id: string;
 	enabled: boolean;
 	prefix: string;
+	prefixColor?: string;
 	property: string;
 	type: EditablePropertyType;
 	source?: ListSource;
@@ -134,6 +136,13 @@ export function defaultSettings(): JumpSettings {
 	return mergeSettings(undefined);
 }
 
+const PREFIX_COLOR_PATTERN = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
+
+export function writePrefixColor(target: { prefixColor?: string }, value: unknown): void {
+	if (typeof value === "string" && PREFIX_COLOR_PATTERN.test(value)) target.prefixColor = value;
+	else delete target.prefixColor;
+}
+
 export function newListId(lists: readonly { id: string }[]): string {
 	const highest = Math.max(0, ...lists.map((list) => Number(list.id.match(/^list-(\d+)$/)?.[1] ?? 0)));
 	return `list-${highest + 1}`;
@@ -209,6 +218,7 @@ function readProperties(stored: unknown[]): EditableProperty[] {
 			property: entry.property,
 			type,
 		};
+		writePrefixColor(property, entry.prefixColor);
 		if (source) {
 			property.source = source;
 			property.excludedFolders = readExcludedFolders(entry);
@@ -266,13 +276,15 @@ function readLists<Fields extends object>(
 			typeof entry.id === "string" && entry.id !== "" && !lists.some((list) => list.id === entry.id)
 				? entry.id
 				: newListId([...storedIds, ...lists]);
-		lists.push({
+		const list: NoteList & Fields = {
 			...fields,
 			id,
 			enabled: typeof entry.enabled === "boolean" ? entry.enabled : false,
 			prefix: typeof entry.prefix === "string" ? withoutSeparator(entry.prefix) : "",
 			source,
-		});
+		};
+		writePrefixColor(list, entry.prefixColor);
+		lists.push(list);
 	}
 	return lists;
 }

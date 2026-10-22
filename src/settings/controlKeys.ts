@@ -24,6 +24,10 @@ export function propertyKey(id: string, field: PropertyField): string {
 	return `property/${id}/${field}`;
 }
 
+export function prefixColorKey(prefixKey: string): string {
+	return `${prefixKey}Color`;
+}
+
 export function excludedFolderKey(id: string, index: number): string {
 	return `property/${id}/excludedFolders/${index}`;
 }

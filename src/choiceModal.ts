@@ -1,5 +1,5 @@
 import { App, SuggestModal } from "obsidian";
-import { renderRow } from "./render";
+import { MARK_COLUMN_CLASS, RESULTS_CLASS, renderRow } from "./render";
 import type { RowParts } from "./render";
 
 export interface ChoiceHandlers<Choice> {
@@ -17,6 +17,7 @@ export class ChoiceModal<Choice extends { parts: RowParts }> extends SuggestModa
 		this.suggestions = suggestions;
 		this.handlers = handlers;
 		this.limit = Number.MAX_SAFE_INTEGER;
+		this.resultContainerEl.addClass(RESULTS_CLASS, MARK_COLUMN_CLASS);
 		this.setPlaceholder(placeholder);
 	}
 

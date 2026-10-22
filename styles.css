@@ -35,10 +35,8 @@
 
 .note-launcher-setting-prefix {
 	flex-shrink: 0;
-	min-width: 5.5em;
+	width: var(--note-launcher-prefix-width, auto);
 	max-width: 12em;
-	overflow: hidden;
-	text-overflow: ellipsis;
 	cursor: var(--cursor);
 }
 
@@ -52,16 +50,36 @@
 	box-shadow: inset 0 0 0 1px var(--background-modifier-border-focus);
 }
 
-.note-launcher-setting-prefix-input[type="text"] {
+.note-launcher-setting-prefix-editor {
+	display: inline-flex;
 	flex-shrink: 0;
+	align-items: center;
+	gap: var(--size-4-1);
+	max-width: 70%;
+}
+
+.note-launcher-setting-prefix-input[type="text"] {
 	field-sizing: content;
-	min-width: 4em;
-	max-width: min(12em, 60%);
-	height: auto;
+	min-width: max(4em, var(--note-launcher-prefix-width, 0px));
+	max-width: 12em;
+	height: calc(1.6em + 2px);
+	box-sizing: border-box;
 	font-size: var(--font-ui-smaller);
-	line-height: 1.6;
+	line-height: 1;
+	color: var(--text-normal);
 	padding: 0 var(--size-4-1);
 	border-radius: var(--radius-s);
+}
+
+.note-launcher-setting-prefix-input[type="text"].has-color {
+	background: color-mix(in srgb, var(--note-launcher-chip-color) 28%, var(--background-primary));
+	border-color: color-mix(in srgb, var(--note-launcher-chip-color) 50%, var(--background-modifier-border));
+}
+
+.note-launcher-setting-prefix-color[type="color"] {
+	flex-shrink: 0;
+	width: calc(var(--font-ui-smaller) * 1.6 + 2px);
+	height: calc(var(--font-ui-smaller) * 1.6 + 2px);
 }
 
 .setting-item-description.note-launcher-warning {
@@ -79,34 +97,81 @@
 	--icon-size: var(--icon-xs);
 }
 
-.suggestion-item.note-launcher-row {
-	display: flex;
+.note-launcher-results {
+	display: grid;
+	grid-template-columns: [prefix] fit-content(12em) [body] minmax(0, 1fr);
+	column-gap: var(--size-4-2);
+	align-content: start;
+}
+
+.note-launcher-results.has-mark-column {
+	grid-template-columns: [mark] minmax(1.4em, max-content) [prefix] fit-content(12em) [body] minmax(0, 1fr);
+}
+
+.note-launcher-results > :not(.note-launcher-row) {
+	grid-column: 1 / -1;
+}
+
+.note-launcher-results > .suggestion-item.note-launcher-row {
+	display: grid;
+	grid-column: 1 / -1;
+	grid-template-columns: subgrid;
 	align-items: center;
-	gap: var(--size-4-2);
 	padding-block: var(--size-2-2);
 }
 
 .note-launcher-row-mark {
-	flex: 0 0 1.4em;
+	grid-column: mark;
 	white-space: nowrap;
 	color: var(--text-accent);
 }
 
 .note-launcher-row-prefix {
-	flex: 0 0 auto;
-	min-width: 5.5em;
+	grid-column: prefix;
+	justify-self: stretch;
+	min-width: 0;
+}
+
+.note-launcher-row-body {
+	grid-column: body;
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2);
+	min-width: 0;
+}
+
+.note-launcher-row.no-prefix .note-launcher-row-body {
+	grid-column: prefix / -1;
 }
 
 .note-launcher-row-prefix,
 .note-launcher-setting-prefix {
+	display: inline-flex;
+	align-items: center;
+	box-sizing: border-box;
+	height: calc(1.6em + 2px);
 	font-size: var(--font-ui-smaller);
+	line-height: 1;
 	color: var(--text-muted);
 	background: var(--background-modifier-hover);
 	border: 1px solid var(--background-modifier-border);
 	border-radius: var(--radius-s);
 	padding: 0 var(--size-4-1);
-	line-height: 1.6;
+	overflow: hidden;
+}
+
+.note-launcher-row-prefix.has-color,
+.note-launcher-setting-prefix.has-color {
+	color: var(--text-normal);
+	background: color-mix(in srgb, var(--note-launcher-chip-color) 28%, var(--background-primary));
+	border-color: color-mix(in srgb, var(--note-launcher-chip-color) 50%, var(--background-modifier-border));
+}
+
+.note-launcher-chip-text {
+	min-width: 0;
+	overflow: hidden;
 	white-space: pre;
+	text-overflow: ellipsis;
 }
 
 .note-launcher-row-content {

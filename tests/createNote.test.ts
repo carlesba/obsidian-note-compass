@@ -77,6 +77,17 @@ test("the first step lists each link entry whose source can hold a new note with
 	assert.equal(ENTRY_PLACEHOLDER, "Create a note for…");
 });
 
+test("both steps carry the entry's prefix colour outside the label, and drop it with the prefix", () => {
+	const properties = [entry("people", "links", { prefix: "👤 peop", prefixColor: "#e0a030" })];
+	const { entryRows, nameRows } = setup(properties, { defaultNoteFolder: () => "" });
+	assert.deepEqual(entryRows()[0].parts, { prefix: "👤 peop", prefixColor: "#e0a030", content: "people", value: "vault root" });
+	assert.equal(entryRows()[0].label, "👤 peop people vault root");
+	assert.equal(nameRows(0, "Zed")[0].parts.prefixColor, "#e0a030");
+	const hidden = setup(properties, { defaultNoteFolder: () => "" }, vaultNotes(), "Today.md", false);
+	assert.equal(hidden.entryRows()[0].parts.prefixColor, undefined);
+	assert.equal(hidden.nameRows(0, "Zed")[0].parts.prefixColor, undefined);
+});
+
 test("with prefixes hidden both steps leave the prefix out of their rows", () => {
 	const { entryRows, nameRows } = setup([entry("people", "links", { prefix: "👤 peop" })], { defaultNoteFolder: () => "" }, vaultNotes(), "Today.md", false);
 	assert.deepEqual(labels(entryRows()), ["people vault root"]);

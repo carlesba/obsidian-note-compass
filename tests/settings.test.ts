@@ -160,6 +160,18 @@ test("mergeSettings drops unreadable properties, mints missing ids and keeps sou
 	]);
 });
 
+test("mergeSettings keeps a prefix colour only when it is a #rgb or #rrggbb hex", () => {
+	const list = (prefixColor: unknown) => ({ id: "list-1", enabled: true, prefix: "🔗", prefixColor, source: { kind: "linksOut" } });
+	const property = (prefixColor: unknown) => ({ id: "p-1", enabled: true, prefix: "📝", prefixColor, property: "status", type: "text" });
+	const colors = ["#e0a030", "#ABC", "e0a030", "#e0a03", "#e0a030ff", "red", 12, null];
+	const merged = mergeSettings({ lists: colors.map(list), setProperties: { properties: colors.map(property) } });
+	const kept = ["#e0a030", "#ABC", undefined, undefined, undefined, undefined, undefined, undefined];
+	assert.deepEqual(merged.lists.map((entry) => entry.prefixColor), kept);
+	assert.deepEqual(merged.setProperties.properties.map((entry) => entry.prefixColor), kept);
+	assert.equal("prefixColor" in merged.lists[2], false);
+	assert.equal("prefixColor" in merged.setProperties.properties[2], false);
+});
+
 test("mergeSettings falls back to the defaults when nothing is stored", () => {
 	assert.deepEqual(mergeSettings(undefined), defaultSettings());
 	assert.deepEqual(mergeSettings(null), defaultSettings());

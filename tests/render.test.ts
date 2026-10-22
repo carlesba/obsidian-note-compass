@@ -67,16 +67,66 @@ test("a row's label joins its non-empty parts with spaces", () => {
 	assert.equal(rowLabel({ mark: "", prefix: "", content: "Ann" }), "Ann");
 });
 
+interface FakeElement {
+	cls: string[];
+	text?: string;
+	props: Record<string, string>;
+	children: FakeElement[];
+}
+
+function drawRow(parts: RowParts, reservesMarkColumn = false): FakeElement {
+	const fake = (cls: string[] = [], text?: string): FakeElement => ({ cls, text, props: {}, children: [] });
+	const wrap = (node: FakeElement): unknown => ({
+		addClass: (...classes: string[]) => node.cls.push(...classes),
+		toggleClass: (cls: string, on: boolean) => {
+			node.cls = node.cls.filter((existing) => existing !== cls);
+			if (on) node.cls.push(cls);
+		},
+		setCssProps: (props: Record<string, string>) => Object.assign(node.props, props),
+		createSpan: (span: { cls: string; text?: string }) => {
+			const child = fake([span.cls], span.text);
+			node.children.push(child);
+			return wrap(child);
+		},
+	});
+	const row = fake();
+	renderRow(wrap(row) as HTMLElement, parts, reservesMarkColumn);
+	return row;
+}
+
+const texts = (node: FakeElement): string[] => [
+	...(node.text !== undefined ? [`${node.cls[0]}: ${node.text}`] : []),
+	...node.children.flatMap(texts),
+];
+
 test("a row draws its prefix part trimmed and leaves it out when blank", () => {
-	const spans = (parts: RowParts) => {
-		const drawn: { cls: string; text: string }[] = [];
-		const el = { addClass: () => {}, createSpan: (span: { cls: string; text: string }) => drawn.push(span) };
-		renderRow(el as unknown as HTMLElement, parts);
-		return drawn;
-	};
-	assert.deepEqual(spans({ prefix: " 🔗 out ", content: "Project" }), [
-		{ cls: "note-launcher-row-prefix", text: "🔗 out" },
-		{ cls: "note-launcher-row-content", text: "Project" },
-	]);
-	assert.deepEqual(spans({ prefix: "  ", content: "Project" }), [{ cls: "note-launcher-row-content", text: "Project" }]);
+	const prefixed = drawRow({ prefix: " 🔗 out ", content: "Project", value: "x" });
+	assert.deepEqual(prefixed.cls, ["note-launcher-row", "has-prefix"]);
+	assert.deepEqual(texts(prefixed), ["note-launcher-chip-text: 🔗 out", "note-launcher-row-content: Project", "note-launcher-row-value: x"]);
+	assert.deepEqual(prefixed.children.map((child) => child.cls[0]), ["note-launcher-row-prefix", "note-launcher-row-body"]);
+	const blank = drawRow({ prefix: "  ", content: "Project" });
+	assert.deepEqual(blank.cls, ["note-launcher-row", "no-prefix"]);
+	assert.deepEqual(texts(blank), ["note-launcher-row-content: Project"]);
+});
+
+test("a row reserves an empty mark only when its picker has a mark column", () => {
+	assert.deepEqual(texts(drawRow({ content: "Save" }, true)), ["note-launcher-row-mark: ", "note-launcher-row-content: Save"]);
+	assert.deepEqual(texts(drawRow({ content: "Save" })), ["note-launcher-row-content: Save"]);
+});
+
+test("a coloured prefix tints its chip through a CSS variable and a plain one does not", () => {
+	const [colored] = drawRow({ prefix: "🔗", prefixColor: "#e0a030", content: "Project" }).children;
+	assert.ok(colored.cls.includes("has-color"));
+	assert.equal(colored.props["--note-launcher-chip-color"], "#e0a030");
+	const [plain] = drawRow({ prefix: "🔗", content: "Project" }).children;
+	assert.ok(!plain.cls.includes("has-color"));
+	assert.equal(plain.props["--note-launcher-chip-color"] ?? "", "");
+});
+
+test("an entry's prefix colour joins its parts but never its label, and hides with the prefix", () => {
+	const entry: JumpListEntry = { file, prefix: "🔗 out", prefixColor: "#e0a030", name: "Project" };
+	assert.deepEqual(entryParts(entry, true), { prefix: "🔗 out", prefixColor: "#e0a030", content: "Project" });
+	assert.equal(entryLabel(entry, true), "🔗 out Project");
+	assert.deepEqual(entryParts(entry, false), { content: "Project" });
+	assert.equal(rowLabel({ prefix: "🔗", prefixColor: "#fff", content: "Ann" }), "🔗 Ann");
 });

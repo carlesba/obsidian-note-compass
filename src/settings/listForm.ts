@@ -9,7 +9,7 @@ import {
 } from "../lists/conditions.ts";
 import type { Condition, ConditionOperator, DateValue, PropertyType } from "../lists/conditions.ts";
 import type { JumpListVault } from "../lists/vault.ts";
-import { RELATION_SOURCE_KINDS, newListId } from "../settings.ts";
+import { RELATION_SOURCE_KINDS, newListId, writePrefixColor } from "../settings.ts";
 import type { ListSource, NoteList } from "../settings.ts";
 
 export type SourceChoice = ListSource["kind"];
@@ -32,6 +32,7 @@ export const DIRECTION_OPTIONS = { ago: "Days ago", today: "Today", fromNow: "Da
 export type ListField =
 	| "enabled"
 	| "prefix"
+	| "prefixColor"
 	| "source"
 	| "property"
 	| "operator"
@@ -137,6 +138,7 @@ export function matchingSuggestions(suggestions: readonly PropertySuggestion[], 
 export function readListField(list: NoteList, field: ListField): unknown {
 	if (field === "enabled") return list.enabled;
 	if (field === "prefix") return list.prefix;
+	if (field === "prefixColor") return list.prefixColor ?? "";
 	if (field === "source") return list.source.kind;
 	const { source } = list;
 	if (source.kind === "linksToNote") return field === "note" ? source.note : undefined;
@@ -160,6 +162,7 @@ export function readListField(list: NoteList, field: ListField): unknown {
 export function writeListField(list: NoteList, field: ListField, value: unknown): void {
 	if (field === "enabled") list.enabled = value === true;
 	else if (field === "prefix") list.prefix = typeof value === "string" ? value : "";
+	else if (field === "prefixColor") writePrefixColor(list, value);
 	else if (field === "source") list.source = sourceFor(value, list.source);
 	else if (field === "note" && list.source.kind === "linksToNote") list.source.note = typeof value === "string" ? value.trim() : "";
 	else if (field === "folder" && list.source.kind === "inFolder") list.source.folder = typeof value === "string" ? value.trim() : "";

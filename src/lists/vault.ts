@@ -48,6 +48,7 @@ export interface NewNoteVault {
 export interface JumpListEntry {
 	file: VaultNote;
 	prefix: string;
+	prefixColor?: string;
 	name: string;
 	suffix?: string;
 }
