@@ -163,7 +163,7 @@ export function propertyPage(
 			render: (setting) => warningDescription(setting.descEl, mixed ?? ""),
 		},
 		{ name: "Enabled", desc: "Offer this property in the picker.", control: { type: "toggle", key: key("enabled") } },
-		{ name: "Prefix", desc: "The property's row in the picker starts with it, as in \"🎛️ meta |\".", control: { type: "text", key: key("prefix") } },
+		{ name: "Prefix", desc: "Text shown before this property's rows in the picker, such as an emoji and a short tag.", control: { type: "text", key: key("prefix") } },
 		{
 			name: "Property",
 			desc: "The property the picker writes.",
@@ -223,7 +223,7 @@ export function listPageItems(list: NoteList, context: ListPageContext): Setting
 	const key = (field: ListField) => listKey(list.id, field);
 	return [
 		{ name: "Enabled", desc: "Show this list in the picker.", control: { type: "toggle", key: key("enabled") } },
-		{ name: "Prefix", desc: "Every row from this list starts with it, separator included, as in \"🔗 out |\".", control: { type: "text", key: key("prefix") } },
+		{ name: "Prefix", desc: "Text shown before each note from this list, such as an emoji and a short tag.", control: { type: "text", key: key("prefix") } },
 		...sourceItems(list, context, key),
 	];
 }
