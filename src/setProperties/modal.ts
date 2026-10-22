@@ -1,18 +1,28 @@
 import { App, Notice, SuggestModal } from "obsidian";
-import type { JumpListVault, VaultNote } from "../lists/vault";
-import { matchesInOrder } from "../render";
+import type { JumpListVault, NewNoteVault, VaultNote } from "../lists/vault";
+import { renderRow } from "../render";
+import type { RowParts } from "../render";
 import type { EditableProperty, JumpSettings } from "../settings";
-import { initialPropertyState, pickerChoices, propertyType, withValue, writeProperties } from "./picker";
-import type { LabelledChoice, PropertyState } from "./picker";
-import { valueChoices, valuePicker } from "./valuePicker";
+import { createNotes } from "./newNotes";
+import { offeredEntries, propertyType } from "./offered";
+import {
+	initialPropertyState,
+	pendingCreations,
+	pickerChoices,
+	pickerState,
+	withValue,
+	writeProperties,
+} from "./picker";
+import type { PickerChoice, PickerState } from "./picker";
+import { isScalarType, valueChoices, valuePicker } from "./valuePicker";
 import type { ValueChoice } from "./valuePicker";
 
 interface ChoiceHandlers<Choice> {
-	choose(choice: Choice): void;
+	choose(choice: Choice, query: string): void;
 	dismiss(): void;
 }
 
-class ChoiceModal<Choice extends { label: string }> extends SuggestModal<Choice> {
+class ChoiceModal<Choice extends { parts: RowParts }> extends SuggestModal<Choice> {
 	private readonly suggestions: (query: string) => Choice[];
 	private readonly handlers: ChoiceHandlers<Choice>;
 	private chosen = false;
@@ -21,8 +31,15 @@ class ChoiceModal<Choice extends { label: string }> extends SuggestModal<Choice>
 		super(app);
 		this.suggestions = suggestions;
 		this.handlers = handlers;
-		this.limit = suggestions("").length + 1;
+		this.limit = Number.MAX_SAFE_INTEGER;
 		this.setPlaceholder(placeholder);
+	}
+
+	openWithQuery(query: string): void {
+		this.open();
+		if (!query) return;
+		this.inputEl.value = query;
+		this.inputEl.dispatchEvent(new Event("input"));
 	}
 
 	getSuggestions(query: string): Choice[] {
@@ -30,7 +47,7 @@ class ChoiceModal<Choice extends { label: string }> extends SuggestModal<Choice>
 	}
 
 	renderSuggestion(choice: Choice, el: HTMLElement): void {
-		el.setText(choice.label);
+		renderRow(el, choice.parts);
 	}
 
 	selectSuggestion(choice: Choice, evt: MouseEvent | KeyboardEvent): void {
@@ -41,7 +58,7 @@ class ChoiceModal<Choice extends { label: string }> extends SuggestModal<Choice>
 	}
 
 	onChooseSuggestion(choice: Choice): void {
-		this.handlers.choose(choice);
+		this.handlers.choose(choice, this.inputEl.value);
 	}
 
 	onClose(): void {
@@ -49,46 +66,49 @@ class ChoiceModal<Choice extends { label: string }> extends SuggestModal<Choice>
 	}
 }
 
-export function setProperties(app: App, vault: JumpListVault, settings: JumpSettings, target: VaultNote): void {
-	const properties = settings.setProperties;
-	const initial = initialPropertyState(properties, vault.frontmatter(target.path));
+export function setProperties(
+	app: App,
+	vault: JumpListVault & NewNoteVault,
+	settings: JumpSettings,
+	target: VaultNote,
+): void {
+	const entries = offeredEntries(settings, vault, target);
+	const initial = initialPropertyState(settings.setProperties, vault.frontmatter(target.path));
 	const cancel = () => new Notice("Property changes cancelled.");
-	const save = async (state: PropertyState) => {
+	const save = async (state: PickerState) => {
 		try {
-			await vault.updateFrontmatter(target.path, (frontmatter) => writeProperties(frontmatter, initial, state));
+			await createNotes(vault, target.path, pendingCreations(state));
+			await vault.updateFrontmatter(target.path, (frontmatter) => writeProperties(frontmatter, initial, state.values));
 			new Notice("Properties saved.");
 		} catch {
 			new Notice("Could not save the properties.");
 		}
 	};
-	const openMain = (state: PropertyState): void => {
-		const choices = pickerChoices(properties, initial, state);
-		new ChoiceModal<LabelledChoice>(
-			app,
-			"Set properties…",
-			(query) => (query ? choices.filter((choice) => matchesInOrder(query, choice.label)) : choices),
-			{
-				choose: ({ choice }) => {
-					if (choice.action === "edit") openValue(state, choice.entry);
-					else if (choice.action === "save") void save(state);
-					else cancel();
-				},
-				dismiss: cancel,
+	const openMain = (state: PickerState, query: string): void => {
+		new ChoiceModal<PickerChoice>(app, "Set properties…", (typed) => pickerChoices(entries, initial, state, typed), {
+			choose: ({ action }, typed) => {
+				if (action.action === "set") openMain(action.state, typed);
+				else if (action.action === "expand") openMain(state, action.query);
+				else if (action.action === "edit") openValue(state, action.entry, typed);
+				else if (action.action === "save") void save(state);
+				else cancel();
 			},
-		).open();
+			dismiss: cancel,
+		}).openWithQuery(query);
 	};
-	const openValue = (state: PropertyState, entry: EditableProperty): void => {
-		const picker = valuePicker(settings, vault, target, entry, propertyType(properties, entry));
-		const open = (current: PropertyState): void =>
-			new ChoiceModal<ValueChoice>(app, entry.property, (query) => valueChoices(picker, current.get(entry.property), query), {
-				choose: (choice) => {
-					const next = withValue(current, entry.property, choice.value);
-					if (choice.reopens) open(next);
-					else openMain(next);
-				},
-				dismiss: () => openMain(state),
-			}).open();
-		open(state);
+	const openValue = (state: PickerState, entry: EditableProperty, query: string): void => {
+		const type = propertyType(settings.setProperties, entry);
+		if (!isScalarType(type)) return openMain(state, query);
+		const picker = valuePicker(vault, entry.property, type);
+		new ChoiceModal<ValueChoice>(
+			app,
+			entry.property,
+			(typed) => valueChoices(picker, state.values.get(entry.property), typed),
+			{
+				choose: (choice) => openMain(withValue(state, entry.property, choice.value), query),
+				dismiss: () => openMain(state, query),
+			},
+		).openWithQuery("");
 	};
-	openMain(initial);
+	openMain(pickerState(initial), "");
 }

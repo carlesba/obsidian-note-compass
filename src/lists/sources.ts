@@ -38,12 +38,16 @@ export function sameDayNotes(vault: JumpListVault, current: VaultNote, dateNotes
 		.map((file) => ({ file }));
 }
 
-export function notesLinkingTo(vault: JumpListVault, note: string): ListedNote[] {
-	const notes = vault.notes();
-	const target =
+export function findNote(notes: readonly VaultNote[], note: string): VaultNote | undefined {
+	return (
 		notes.find((candidate) => candidate.path === note) ??
 		notes.find((candidate) => candidate.path === `${note}.md`) ??
-		notes.find((candidate) => candidate.basename === note);
+		notes.find((candidate) => candidate.basename === note)
+	);
+}
+
+export function notesLinkingTo(vault: JumpListVault, note: string): ListedNote[] {
+	const target = findNote(vault.notes(), note);
 	return target ? notesAtPaths(vault, vault.linksTo(target.path)) : [];
 }
 

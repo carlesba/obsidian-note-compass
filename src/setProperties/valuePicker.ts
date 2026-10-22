@@ -1,47 +1,36 @@
-import { buildJumpList } from "../lists/jumpList.ts";
-import type { JumpListVault, PropertyValueCount, VaultNote } from "../lists/vault";
-import { matchesInOrder } from "../render.ts";
-import { isLinkType } from "../settings.ts";
-import type { EditableProperty, EditablePropertyType, JumpSettings } from "../settings";
-import { asList, isUnset, linkTitle, parseDate, parseDateTime, parseNumber, sameValue } from "./values.ts";
+import type { JumpListVault, PropertyValueCount } from "../lists/vault";
+import { matchesInOrder, rowLabel } from "../render.ts";
+import type { RowParts } from "../render";
+import type { EditablePropertyType } from "../settings";
+import { isUnset, parseDate, parseDateTime, parseNumber, sameValue } from "./values.ts";
 
-export interface PickableNote {
-	name: string;
-	path: string;
-	mtime: number;
-}
+export type ScalarPropertyType = Extract<EditablePropertyType, "checkbox" | "number" | "date" | "datetime">;
 
 export interface ValuePicker {
-	type: EditablePropertyType;
-	notes: PickableNote[];
+	type: ScalarPropertyType;
 	counts: PropertyValueCount[];
 	now: number;
 }
 
 export interface ValueChoice {
 	label: string;
+	parts: RowParts;
 	value: unknown;
-	reopens: boolean;
 	typed: boolean;
 }
 
 export const CLEAR_LABEL = "🗑️ Clear";
-export const DONE_LABEL = "↩ Done";
 
 const SELECTED_MARK = "✓";
-const UNSELECTED_MARK = "\u2003";
 
-export function valuePicker(
-	settings: JumpSettings,
-	vault: JumpListVault,
-	target: VaultNote,
-	entry: EditableProperty,
-	type: EditablePropertyType,
-): ValuePicker {
+export function isScalarType(type: EditablePropertyType): type is ScalarPropertyType {
+	return type === "checkbox" || type === "number" || type === "date" || type === "datetime";
+}
+
+export function valuePicker(vault: JumpListVault, property: string, type: ScalarPropertyType): ValuePicker {
 	return {
 		type,
-		notes: isLinkType(type) ? pickableNotes(settings, vault, target, entry) : [],
-		counts: type === "text" || type === "number" ? vault.propertyValueCounts(entry.property) : [],
+		counts: type === "number" ? vault.propertyValueCounts(property) : [],
 		now: vault.now(),
 	};
 }
@@ -54,45 +43,29 @@ export function valueChoices(picker: ValuePicker, pending: unknown, query: strin
 
 function typeChoices(picker: ValuePicker, pending: unknown, query: string): ValueChoice[] {
 	const clear = choice(CLEAR_LABEL, undefined, isUnset(pending));
-	const offer = (label: string, value: unknown) => choice(label, value, sameValue(value, pending));
+	const offer = (label: string, value: unknown, detail?: string) => choice(label, value, sameValue(value, pending), detail);
 	switch (picker.type) {
 		case "checkbox":
 			return [offer("true", true), offer("false", false), clear];
-		case "text":
-			return [...useChoice(query.trim() || undefined, pending), ...vaultValues(picker, "string", pending), clear];
 		case "number":
-			return [...useChoice(parseNumber(query), pending), ...vaultValues(picker, "number", pending), clear];
+			return [...useChoice(parseNumber(query), pending), ...vaultNumbers(picker, pending), clear];
 		case "date":
 			return [
 				...useChoice(parseDate(query), pending),
-				...datePresets(picker.now).map(([name, date]) => offer(`${name} (${date})`, date)),
+				...datePresets(picker.now).map(([name, date]) => offer(name, date, date)),
 				clear,
 			];
 		case "datetime": {
 			const now = `${localDate(picker.now)}T${localTime(picker.now)}`;
-			return [...useChoice(parseDateTime(query), pending), offer(`Now (${now})`, now), clear];
+			return [...useChoice(parseDateTime(query), pending), offer("Now", now, now), clear];
 		}
-		case "link":
-			return [
-				...orderedNotes(picker.notes, pending).map((note) =>
-					isPicked(note, pending) ? choice(note.name, undefined, true) : choice(note.name, wikiLink(note), false),
-				),
-				clear,
-			];
-		case "links":
-			return [
-				{ label: DONE_LABEL, value: pending, reopens: false, typed: false },
-				...orderedNotes(picker.notes, pending).map((note) => ({
-					...choice(note.name, toggled(note, pending), isPicked(note, pending)),
-					reopens: true,
-				})),
-				clear,
-			];
 	}
 }
 
-function choice(label: string, value: unknown, selected: boolean): ValueChoice {
-	return { label: `${selected ? SELECTED_MARK : UNSELECTED_MARK} ${label}`, value, reopens: false, typed: false };
+function choice(content: string, value: unknown, selected: boolean, detail?: string): ValueChoice {
+	const parts: RowParts = { mark: selected ? SELECTED_MARK : "", content };
+	if (detail !== undefined) parts.value = detail;
+	return { label: rowLabel(parts), parts, value, typed: false };
 }
 
 function useChoice(value: string | number | undefined, pending: unknown): ValueChoice[] {
@@ -100,11 +73,11 @@ function useChoice(value: string | number | undefined, pending: unknown): ValueC
 	return [{ ...choice(`✏️ Use "${value}"`, value, sameValue(value, pending)), typed: true }];
 }
 
-function vaultValues(picker: ValuePicker, kind: "string" | "number", pending: unknown): ValueChoice[] {
+function vaultNumbers(picker: ValuePicker, pending: unknown): ValueChoice[] {
 	return picker.counts
-		.filter((count) => typeof count.value === kind)
+		.filter((count) => typeof count.value === "number")
 		.sort((a, b) => b.count - a.count || String(a.value).localeCompare(String(b.value)))
-		.map((count) => choice(`${count.value} (${count.count})`, count.value, sameValue(count.value, pending)));
+		.map((count) => choice(String(count.value), count.value, sameValue(count.value, pending), `×${count.count}`));
 }
 
 function datePresets(now: number): [string, string][] {
@@ -131,49 +104,4 @@ function localTime(time: number): string {
 
 function twoDigits(value: number): string {
 	return String(value).padStart(2, "0");
-}
-
-function orderedNotes(notes: readonly PickableNote[], pending: unknown): PickableNote[] {
-	return [...notes].sort((a, b) => Number(isPicked(b, pending)) - Number(isPicked(a, pending)) || b.mtime - a.mtime);
-}
-
-function isPicked(note: PickableNote, pending: unknown): boolean {
-	return asList(pending).some((value) => linksTo(value, note));
-}
-
-function linksTo(value: unknown, note: PickableNote): boolean {
-	const link = typeof value === "string" ? value.match(/\[\[([^\]|]+)/) : null;
-	const titles = [linkTitle(value), link?.[1]];
-	return titles.some((title) => title === note.name || title === note.path.replace(/\.md$/, ""));
-}
-
-function toggled(note: PickableNote, pending: unknown): unknown[] {
-	const values = asList(pending);
-	if (isPicked(note, pending)) return values.filter((value) => !linksTo(value, note));
-	return [...values, wikiLink(note)];
-}
-
-function wikiLink(note: PickableNote): string {
-	return `[[${note.name}]]`;
-}
-
-function pickableNotes(
-	settings: JumpSettings,
-	vault: JumpListVault,
-	target: VaultNote,
-	entry: EditableProperty,
-): PickableNote[] {
-	if (!entry.source) return [];
-	const list = { id: entry.id, enabled: true, prefix: "", source: entry.source };
-	const excludedFolder = (entry.excludedFolder ?? "").replace(/^\/+|\/+$/g, "");
-	return buildJumpList([list], vault, target, settings.dateNotes)
-		.map((listed) => listed.file)
-		.filter(
-			(file) =>
-				file.path !== target.path &&
-				!(excludedFolder !== "" && file.path.startsWith(`${excludedFolder}/`)) &&
-				vault.frontmatter(file.path)?.archived !== true,
-		)
-		.map((file) => ({ name: file.basename, path: file.path, mtime: vault.mtime(file.path) }))
-		.sort((a, b) => b.mtime - a.mtime);
 }

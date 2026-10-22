@@ -1,0 +1,67 @@
+import { buildJumpList } from "../lists/jumpList.ts";
+import type { JumpListVault, VaultNote } from "../lists/vault";
+import { isLinkType } from "../settings.ts";
+import type { EditableProperty, EditablePropertyType, JumpSettings, SetPropertiesSettings } from "../settings";
+import type { PickableNote } from "./links";
+import { newNoteRule } from "./newNotes.ts";
+import type { NewNoteRule } from "./newNotes";
+import { decidedPropertyType } from "./propertyTypes.ts";
+
+export interface OfferedEntry {
+	entry: EditableProperty;
+	type: EditablePropertyType;
+	notes: PickableNote[];
+	values: string[];
+	newNote?: NewNoteRule;
+}
+
+export function offeredProperties(settings: SetPropertiesSettings): EditableProperty[] {
+	return settings.properties.filter((entry) => entry.enabled && entry.property.trim() !== "");
+}
+
+export function propertyType(settings: SetPropertiesSettings, entry: EditableProperty): EditablePropertyType {
+	return decidedPropertyType(settings.properties, entry.property) ?? entry.type;
+}
+
+export function offeredEntries(settings: JumpSettings, vault: JumpListVault, target: VaultNote): OfferedEntry[] {
+	return offeredProperties(settings.setProperties).map((entry) => {
+		const type = propertyType(settings.setProperties, entry);
+		const offered: OfferedEntry = { entry, type, notes: [], values: [] };
+		if (isLinkType(type)) {
+			offered.notes = pickableNotes(settings, vault, target, entry);
+			const rule = newNoteRule(entry.source, vault);
+			if (rule) offered.newNote = rule;
+		}
+		if (type === "text") offered.values = vaultTexts(vault, entry.property);
+		return offered;
+	});
+}
+
+function vaultTexts(vault: JumpListVault, property: string): string[] {
+	return vault
+		.propertyValueCounts(property)
+		.filter((count) => typeof count.value === "string")
+		.sort((a, b) => b.count - a.count || String(a.value).localeCompare(String(b.value)))
+		.map((count) => String(count.value));
+}
+
+function pickableNotes(
+	settings: JumpSettings,
+	vault: JumpListVault,
+	target: VaultNote,
+	entry: EditableProperty,
+): PickableNote[] {
+	if (!entry.source) return [];
+	const list = { id: entry.id, enabled: true, prefix: "", source: entry.source };
+	const excludedFolder = (entry.excludedFolder ?? "").replace(/^\/+|\/+$/g, "");
+	return buildJumpList([list], vault, target, settings.dateNotes)
+		.map((listed) => listed.file)
+		.filter(
+			(file) =>
+				file.path !== target.path &&
+				!(excludedFolder !== "" && file.path.startsWith(`${excludedFolder}/`)) &&
+				vault.frontmatter(file.path)?.archived !== true,
+		)
+		.map((file) => ({ name: file.basename, path: file.path, mtime: vault.mtime(file.path) }))
+		.sort((a, b) => b.mtime - a.mtime);
+}

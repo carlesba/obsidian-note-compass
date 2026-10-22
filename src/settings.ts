@@ -57,6 +57,8 @@ export interface EditableProperty {
 	type: EditablePropertyType;
 	source?: ListSource;
 	excludedFolder?: string;
+	newNoteFolder?: string;
+	newNoteTemplate?: string;
 }
 
 export interface SetPropertiesSettings {
@@ -206,6 +208,8 @@ function readProperties(stored: unknown[]): EditableProperty[] {
 		if (source) {
 			property.source = source;
 			property.excludedFolder = typeof entry.excludedFolder === "string" ? entry.excludedFolder : "";
+			if (typeof entry.newNoteFolder === "string") property.newNoteFolder = entry.newNoteFolder;
+			if (typeof entry.newNoteTemplate === "string") property.newNoteTemplate = entry.newNoteTemplate;
 		}
 		properties.push(property);
 	}

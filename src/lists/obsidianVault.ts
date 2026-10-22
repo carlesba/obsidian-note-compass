@@ -1,6 +1,6 @@
 import { moment } from "obsidian";
 import type { App } from "obsidian";
-import type { JumpListVault, PropertyValueCount } from "./vault";
+import type { JumpListVault, NewNoteVault, PropertyValueCount } from "./vault";
 
 interface PluginRegistries {
 	metadataTypeManager?: { getAllProperties(): Record<string, { widget?: unknown } | undefined> };
@@ -10,7 +10,7 @@ interface PluginRegistries {
 	};
 }
 
-export function createObsidianVault(app: App): JumpListVault {
+export function createObsidianVault(app: App): JumpListVault & NewNoteVault {
 	const registries = app as App & PluginRegistries;
 	return {
 		notes: () =>
@@ -41,6 +41,16 @@ export function createObsidianVault(app: App): JumpListVault {
 			countValues(
 				app.vault.getMarkdownFiles().map((file): unknown => app.metadataCache.getFileCache(file)?.frontmatter?.[property]),
 			),
+		defaultNoteFolder: (sourcePath) => app.fileManager.getNewFileParent(sourcePath).path,
+		readNote: async (path) => {
+			const file = app.vault.getFileByPath(path);
+			return file ? app.vault.cachedRead(file) : "";
+		},
+		createNote: async (path, content) => {
+			const folder = path.split("/").slice(0, -1).join("/");
+			if (folder !== "" && !app.vault.getFolderByPath(folder)) await app.vault.createFolder(folder);
+			await app.vault.create(path, content);
+		},
 		now: () => Date.now(),
 		moment,
 	};
