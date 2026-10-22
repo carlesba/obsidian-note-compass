@@ -1,6 +1,6 @@
 import { TFile, moment } from "obsidian";
 import type { App, TFolder } from "obsidian";
-import type { JumpListVault, NewNoteVault, NoteTemplater, PropertyValueCount } from "./vault";
+import type { JumpListVault, MomentFactory, NewNoteVault, NoteTemplater, PropertyValueCount } from "./vault";
 
 interface PluginRegistries {
 	metadataTypeManager?: { getAllProperties(): Record<string, { widget?: unknown } | undefined> };
@@ -58,8 +58,12 @@ export function createObsidianVault(app: App): JumpListVault & NewNoteVault {
 		templater: () => readSafely(() => templaterFor(app, registries.plugins?.getPlugin("templater-obsidian")?.templater)),
 		coreTemplatesOptions: () => readSafely(() => registries.internalPlugins?.getPluginById("templates")?.instance?.options),
 		now: () => Date.now(),
-		moment,
+		moment: asMomentFactory(moment),
 	};
+}
+
+function asMomentFactory(obsidianMoment: unknown): MomentFactory {
+	return obsidianMoment as MomentFactory;
 }
 
 interface TemplaterApi {
