@@ -43,6 +43,7 @@ function fakeVault(fakes: FakeNote[], plugins: FakePlugins = {}): JumpListVault 
 		periodicNotesSettings: () => plugins.periodicNotes,
 		dailyNotesOptions: () => plugins.dailyNotes,
 		propertyTypes: () => plugins.propertyTypes ?? {},
+		propertyValueCounts: () => [],
 		now: () => plugins.now ?? MARCH_9,
 		moment,
 		note: (path) => notes.find((note) => note.path === path)!,

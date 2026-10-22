@@ -1,6 +1,6 @@
 import { moment } from "obsidian";
 import type { App } from "obsidian";
-import type { JumpListVault } from "./vault";
+import type { JumpListVault, PropertyValueCount } from "./vault";
 
 interface PluginRegistries {
 	metadataTypeManager?: { getAllProperties(): Record<string, { widget?: unknown } | undefined> };
@@ -37,6 +37,8 @@ export function createObsidianVault(app: App): JumpListVault {
 				return dailyNotes?.enabled ? dailyNotes.instance?.options : undefined;
 			}),
 		propertyTypes: () => readSafely(() => propertyWidgets(registries.metadataTypeManager?.getAllProperties())) ?? {},
+		propertyValueCounts: (property) =>
+			countValues(app.vault.getMarkdownFiles().map((file) => app.metadataCache.getFileCache(file)?.frontmatter?.[property])),
 		now: () => Date.now(),
 		moment,
 	};
@@ -48,6 +50,16 @@ function propertyWidgets(properties: Record<string, { widget?: unknown } | undef
 		if (typeof property?.widget === "string") widgets[name.toLowerCase()] = property.widget;
 	}
 	return widgets;
+}
+
+function countValues(values: unknown[]): PropertyValueCount[] {
+	const counts = new Map<string | number, number>();
+	for (const value of values) {
+		for (const item of Array.isArray(value) ? (value as unknown[]) : [value]) {
+			if ((typeof item === "string" && item !== "") || typeof item === "number") counts.set(item, (counts.get(item) ?? 0) + 1);
+		}
+	}
+	return Array.from(counts, ([value, count]) => ({ value, count }));
 }
 
 function readSafely<T>(read: () => T): T | undefined {

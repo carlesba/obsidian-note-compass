@@ -8,6 +8,11 @@ export interface VaultNote {
 
 export type Frontmatter = Record<string, unknown>;
 
+export interface PropertyValueCount {
+	value: string | number;
+	count: number;
+}
+
 export type MomentFactory = typeof moment;
 
 export type MomentDate = ReturnType<MomentFactory>;
@@ -22,6 +27,7 @@ export interface JumpListVault {
 	periodicNotesSettings(): unknown;
 	dailyNotesOptions(): unknown;
 	propertyTypes(): Record<string, string>;
+	propertyValueCounts(property: string): PropertyValueCount[];
 	now(): number;
 	moment: MomentFactory;
 }

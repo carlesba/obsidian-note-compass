@@ -44,6 +44,7 @@ function fakeVault(fakes: FakeVault = {}): JumpListVault {
 		periodicNotesSettings: () => fakes.periodicNotes,
 		dailyNotesOptions: () => fakes.dailyNotes,
 		propertyTypes: () => fakes.propertyTypes ?? {},
+		propertyValueCounts: () => [],
 		now: () => 0,
 		moment,
 	};
