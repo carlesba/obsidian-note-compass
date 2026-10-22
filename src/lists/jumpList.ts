@@ -6,6 +6,7 @@ import { dateNoteSuffix, parseDateNote } from "./dates.ts";
 import { matchesCondition } from "./matchers.ts";
 import {
 	adjacentDateNotes,
+	currentPeriodNotes,
 	inboundNotes,
 	notesInFolder,
 	notesLinkingTo,
@@ -20,6 +21,7 @@ interface PrefixedList {
 	prefix: string;
 	prefixColor?: string;
 	notes: ListedNote[];
+	keepsOrder: boolean;
 }
 
 interface ListContext {
@@ -46,12 +48,17 @@ export function buildJumpList(
 	};
 	const lists: PrefixedList[] = noteLists
 		.filter((list) => list.enabled)
-		.map((list) => ({ prefix: list.prefix, prefixColor: list.prefixColor, notes: sourceNotes(list.source, context) }));
+		.map((list) => ({
+			prefix: list.prefix,
+			prefixColor: list.prefixColor,
+			notes: sourceNotes(list.source, context),
+			keepsOrder: list.source.kind === "currentPeriods",
+		}));
 
 	const seen = new Set<string>(current ? [current.path] : []);
 	const entries: JumpListEntry[] = [];
 	for (const list of lists) {
-		for (const listed of [...list.notes].sort(byName)) {
+		for (const listed of list.keepsOrder ? list.notes : [...list.notes].sort(byName)) {
 			if (seen.has(listed.file.path)) continue;
 			seen.add(listed.file.path);
 			entries.push(toEntry(vault, dateNotes, list, listed));
@@ -72,6 +79,7 @@ function sourceNotes(source: ListSource, context: ListContext): ListedNote[] {
 	if (source.kind === "linksToNote") return notesLinkingTo(vault, source.note);
 	if (source.kind === "inFolder") return notesInFolder(vault, source.folder);
 	if (source.kind === "modifiedToday") return notesModifiedSince(vault, context.today.valueOf());
+	if (source.kind === "currentPeriods") return currentPeriodNotes(vault, source.periods, dateNotes, context.today);
 	if (!current) return [];
 	switch (source.kind) {
 		case "adjacentDates":

@@ -1,7 +1,7 @@
 import { readCondition } from "./lists/conditions.ts";
 import type { Condition } from "./lists/conditions.ts";
 import { DEFAULT_CUSTOM_DATE_NOTES, PERIODS, defaultDateNoteSettings } from "./lists/dateNotes.ts";
-import type { DateNoteSettings, PeriodFormat } from "./lists/dateNotes.ts";
+import type { DateNoteSettings, Period, PeriodFormat } from "./lists/dateNotes.ts";
 
 export type RelationSourceKind = "adjacentDates" | "linksOut" | "linksIn" | "sameDay";
 
@@ -12,7 +12,8 @@ export type ListSource =
 	| { kind: "frontmatter"; property: string; condition: Condition }
 	| { kind: "linksToNote"; note: string }
 	| { kind: "inFolder"; folder: string }
-	| { kind: "modifiedToday" };
+	| { kind: "modifiedToday" }
+	| { kind: "currentPeriods"; periods: Period[] };
 
 export interface NoteList {
 	id: string;
@@ -294,6 +295,10 @@ function readSource(stored: unknown): ListSource | undefined {
 	const kind = RELATION_SOURCE_KINDS.find((relation) => relation === stored.kind);
 	if (kind) return { kind };
 	if (stored.kind === "modifiedToday") return { kind: "modifiedToday" };
+	if (stored.kind === "currentPeriods") {
+		const periods = Array.isArray(stored.periods) ? stored.periods : [];
+		return { kind: "currentPeriods", periods: PERIODS.filter((period) => periods.includes(period)) };
+	}
 	if (stored.kind === "linksToNote") return typeof stored.note === "string" ? { kind: "linksToNote", note: stored.note } : undefined;
 	if (stored.kind === "inFolder") return typeof stored.folder === "string" ? { kind: "inFolder", folder: stored.folder } : undefined;
 	if (stored.kind !== "frontmatter" || typeof stored.property !== "string") return undefined;

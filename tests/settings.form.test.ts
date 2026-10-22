@@ -325,3 +325,18 @@ test("editing a prefix tracks its colour and reports a colour change, a removal 
 	assert.equal(changedColor(startDraft("🔗")), undefined);
 	assert.equal(changedPrefix({ ...draft, color: "#336699" }), undefined);
 });
+
+test("a current date notes list toggles each period and names the chosen ones", () => {
+	const list: NoteList = { id: "list-1", enabled: true, prefix: "🗓️", source: { kind: "linksOut" } };
+	writeListField(list, "source", "currentPeriods");
+	assert.deepEqual(list.source, { kind: "currentPeriods", periods: ["day", "week", "month", "quarter", "year"] });
+	writeListField(list, "currentWeek", false);
+	writeListField(list, "currentQuarter", false);
+	assert.deepEqual(readListField(list, "currentWeek"), false);
+	assert.deepEqual(readListField(list, "currentDay"), true);
+	assert.equal(sourceSummary(list.source), "Today, this month, this year");
+	writeListField(list, "currentWeek", true);
+	assert.deepEqual(list.source, { kind: "currentPeriods", periods: ["day", "week", "month", "year"] });
+	for (const field of ["currentDay", "currentWeek", "currentMonth", "currentYear"] as const) writeListField(list, field, false);
+	assert.equal(sourceSummary(list.source), "No date notes chosen");
+});

@@ -85,6 +85,10 @@
 	height: calc(var(--swatch-height) + 4px);
 }
 
+.note-compass-prefix-colour input[type="color"] {
+	height: calc(var(--swatch-height) + 4px);
+}
+
 .note-compass-setting-prefix-color[type="color"]::-webkit-color-swatch {
 	border-radius: 50%;
 }

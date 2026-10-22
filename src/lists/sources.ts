@@ -1,6 +1,6 @@
-import type { ResolvedDateNotes } from "./dateNotes.ts";
-import { adjacentDatePaths, isSameLocalDay, parseDateNote } from "./dates.ts";
-import type { JumpListVault, VaultNote } from "./vault";
+import type { Period, ResolvedDateNotes } from "./dateNotes.ts";
+import { adjacentDatePaths, currentDatePath, isSameLocalDay, parseDateNote } from "./dates.ts";
+import type { JumpListVault, MomentDate, VaultNote } from "./vault";
 
 export interface ListedNote {
 	file: VaultNote;
@@ -18,6 +18,30 @@ export function adjacentDateNotes(vault: JumpListVault, current: VaultNote, date
 	if (next) listed.push({ file: next, direction: adjacent.nextLabel });
 	const previous = atPath(adjacent.previous);
 	if (previous) listed.push({ file: previous, direction: adjacent.previousLabel });
+	return listed;
+}
+
+const CURRENT_PERIOD_LABELS: Record<Period, string> = {
+	day: "today",
+	week: "this week",
+	month: "this month",
+	quarter: "this quarter",
+	year: "this year",
+};
+
+export function currentPeriodNotes(
+	vault: JumpListVault,
+	periods: readonly Period[],
+	dateNotes: ResolvedDateNotes,
+	today: MomentDate,
+): ListedNote[] {
+	const notes = vault.notes();
+	const listed: ListedNote[] = [];
+	for (const period of periods) {
+		const path = currentDatePath(dateNotes, period, today);
+		const file = notes.find((note) => note.path === path);
+		if (file) listed.push({ file, direction: CURRENT_PERIOD_LABELS[period] });
+	}
 	return listed;
 }
 
