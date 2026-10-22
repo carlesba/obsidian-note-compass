@@ -77,9 +77,16 @@
 }
 
 .note-launcher-setting-prefix-color[type="color"] {
+	--swatch-width: var(--font-ui-smaller);
+	--swatch-height: var(--font-ui-smaller);
+	--swatch-radius: 50%;
 	flex-shrink: 0;
-	width: calc(var(--font-ui-smaller) * 1.6 + 2px);
-	height: calc(var(--font-ui-smaller) * 1.6 + 2px);
+	width: calc(var(--swatch-width) + 4px);
+	height: calc(var(--swatch-height) + 4px);
+}
+
+.note-launcher-setting-prefix-color[type="color"]::-webkit-color-swatch {
+	border-radius: 50%;
 }
 
 .setting-item-description.note-launcher-warning {
