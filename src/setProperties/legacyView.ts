@@ -1,4 +1,4 @@
-import { isLinkType, newListId } from "../settings";
+import { isLinkType, newListId } from "../settings.ts";
 import type { EditableProperty, LegacySetPropertiesSettings, LinkList, SetPropertiesSettings } from "../settings";
 
 export function legacyView(settings: SetPropertiesSettings): LegacySetPropertiesSettings {

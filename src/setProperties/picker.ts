@@ -1,8 +1,8 @@
 import { buildJumpList } from "../lists/jumpList.ts";
 import type { Frontmatter, JumpListVault, VaultNote } from "../lists/vault";
 import type { JumpSettings, LinkListMode, SetPropertiesSettings } from "../settings";
-import { legacyView } from "./legacyView";
-import { linkTitle } from "./values";
+import { legacyView } from "./legacyView.ts";
+import { linkTitle } from "./values.ts";
 
 export interface PropertyRow {
 	group: number;
