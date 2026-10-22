@@ -45,6 +45,23 @@ export function formatPendingValue(type: EditablePropertyType, value: unknown): 
 	return truncated(texts.join(", "));
 }
 
+export function isUnset(value: unknown): boolean {
+	return value === undefined || value === null || value === "" || (Array.isArray(value) && value.length === 0);
+}
+
+export function sameValue(left: unknown, right: unknown): boolean {
+	if (isUnset(left) || isUnset(right)) return isUnset(left) && isUnset(right);
+	if (Array.isArray(left) && Array.isArray(right)) {
+		return left.length === right.length && left.every((item, index) => sameValue(item, right[index]));
+	}
+	return left === right;
+}
+
+export function asList(value: unknown): unknown[] {
+	if (isUnset(value)) return [];
+	return Array.isArray(value) ? value : [value];
+}
+
 export function linkTitle(value: unknown): unknown {
 	if (typeof value !== "string") return value;
 	const link = value.match(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/);
