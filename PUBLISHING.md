@@ -25,10 +25,30 @@ never receive. `versions.json` must hold a line mapping that same `version` to t
 because it is how older installs know which release they can run.
 
 ```sh
-git ls-files README.md LICENSE
+git ls-files README.md LICENSE styles.css docs/images
 ```
 
-This must list both files, because the review and the plugin browser read them from the repository.
+This must list `README.md`, `LICENSE`, `styles.css` and every screenshot in `docs/images`, because the
+review and the plugin browser read them from the repository. The README is the user manual, and the
+plugin browser shows it as the plugin's page.
+
+```sh
+grep -o 'docs/images/[^)]*' README.md | sort -u | while read -r image; do
+  git ls-files --error-unmatch "$image" > /dev/null || echo "missing: $image"
+done
+```
+
+This must print nothing. Every image in the README is a relative `docs/images/...` path, which GitHub
+and the plugin browser resolve against the default branch, so an image that is not committed on `main`
+shows as a broken link. After step 2, open the README on GitHub to confirm the
+screenshots render.
+
+```sh
+npm ci && npm run typecheck && npm test && npm run lint && npm run build
+```
+
+This must pass, because the release workflow runs the same tests, lint and build and publishes nothing
+when one of them fails.
 
 ## 2. Make the repository public
 

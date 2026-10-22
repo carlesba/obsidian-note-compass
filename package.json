@@ -1,7 +1,7 @@
 {
 	"name": "obsidian-note-launcher",
 	"version": "0.1.0",
-	"description": "Opens a picker of the notes linked to and from the note in focus, its adjacent date notes, notes from the same day and lists you define by frontmatter, from anywhere in the app.",
+	"description": "Jump to notes related to the note in focus or in lists you define, set its properties from one picker, and create notes that join your link properties.",
 	"main": "main.js",
 	"private": true,
 	"scripts": {
