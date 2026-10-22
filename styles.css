@@ -1,9 +1,9 @@
-.note-launcher-sortable-list .setting-item:has(.mod-drag-handle) {
+.note-launcher-sortable-list .setting-items .setting-item:has(.mod-drag-handle) {
 	position: relative;
 	padding-inline-start: calc(var(--size-4-2) + var(--icon-size) + var(--size-4-3));
 }
 
-.note-launcher-sortable-list .setting-item .mod-drag-handle {
+.note-launcher-sortable-list .setting-items .setting-item .mod-drag-handle {
 	position: absolute;
 	inset-inline-start: var(--size-4-2);
 	top: 50%;
@@ -11,11 +11,11 @@
 	cursor: grab;
 }
 
-.note-launcher-sortable-list .setting-item-info {
+.note-launcher-sortable-list .setting-items .setting-item-info {
 	min-width: 0;
 }
 
-.note-launcher-sortable-list .setting-item-control {
+.note-launcher-sortable-list .setting-items .setting-item-control {
 	flex: 0 0 auto;
 }
 
