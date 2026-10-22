@@ -38,7 +38,9 @@ export function createObsidianVault(app: App): JumpListVault {
 			}),
 		propertyTypes: () => readSafely(() => propertyWidgets(registries.metadataTypeManager?.getAllProperties())) ?? {},
 		propertyValueCounts: (property) =>
-			countValues(app.vault.getMarkdownFiles().map((file) => app.metadataCache.getFileCache(file)?.frontmatter?.[property])),
+			countValues(
+				app.vault.getMarkdownFiles().map((file): unknown => app.metadataCache.getFileCache(file)?.frontmatter?.[property]),
+			),
 		now: () => Date.now(),
 		moment,
 	};
