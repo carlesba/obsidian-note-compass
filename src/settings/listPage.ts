@@ -95,7 +95,7 @@ export function propertyRow(
 	return editableRow(
 		{
 			name: propertyRowName(entry),
-			desc: mixedTypeWarning(entry, properties),
+			desc: propertyWarning(entry, properties, context),
 			enabled: entry.enabled,
 			enabledKey: propertyKey(entry.id, "enabled"),
 			enabledTooltip: "Offer this property in the picker",
@@ -104,6 +104,16 @@ export function propertyRow(
 		},
 		context,
 	);
+}
+
+function propertyWarning(
+	entry: EditableProperty,
+	properties: readonly EditableProperty[],
+	context: ListPageContext,
+): string | undefined {
+	const mixed = mixedTypeWarning(entry, properties);
+	if (mixed || !hasSource(entry) || !inapplicableCondition(entry.source, context.propertyTypes)) return mixed;
+	return "The condition in \"Offer notes from\" does not apply to its property. Edit this property to fix it.";
 }
 
 function editableRow(row: EditableRow, context: ListPageContext): SettingDefinition {
@@ -135,20 +145,20 @@ export function propertyPage(
 	const key = (field: PropertyField) => propertyKey(entry.id, field);
 	const chosen = () => entry.property.trim() !== "";
 	const items: SettingDefinitionItem[] = [
-			{ name: "Enabled", desc: "Offer this property in the picker.", control: { type: "toggle", key: key("enabled") } },
-			{ name: "Prefix", desc: "The property's row in the picker starts with it, as in \"🎛️ meta |\".", control: { type: "text", key: key("prefix") } },
-			{
-				name: "Property",
-				desc: "The property the picker writes.",
-				render: propertyInput(context, key("name"), () => entry.property, "Status", context.propertySuggestions, (suggestion) =>
-					context.write(key("type"), propertyTypePreset(suggestion.type)),
-				),
-			},
-			{
-				name: "Type",
-				desc: chosen() ? "Which value picker the property opens." : "Choose a property first.",
-				control: { type: "dropdown", disabled: () => !chosen(), key: key("type"), options: PROPERTY_TYPE_OPTIONS },
-			},
+		{ name: "Enabled", desc: "Offer this property in the picker.", control: { type: "toggle", key: key("enabled") } },
+		{ name: "Prefix", desc: "The property's row in the picker starts with it, as in \"🎛️ meta |\".", control: { type: "text", key: key("prefix") } },
+		{
+			name: "Property",
+			desc: "The property the picker writes.",
+			render: propertyInput(context, key("name"), () => entry.property, "Status", context.propertySuggestions, (suggestion) =>
+				context.write(key("type"), propertyTypePreset(suggestion.type)),
+			),
+		},
+		{
+			name: "Type",
+			desc: chosen() ? "Which value picker the property opens." : "Choose a property first.",
+			control: { type: "dropdown", disabled: () => !chosen(), key: key("type"), options: PROPERTY_TYPE_OPTIONS },
+		},
 	];
 	if (isLinkType(entry.type) && hasSource(entry)) {
 		items.push(
@@ -174,7 +184,7 @@ export function propertyPage(
 		id: propertyPageId(entry),
 		name: propertyRowName(entry),
 		displayValue: entry.enabled ? "" : "off",
-		status: mixedTypeWarning(entry, properties) ? "warning" : null,
+		status: propertyWarning(entry, properties, context) ? "warning" : null,
 		items,
 	};
 	return page;

@@ -151,7 +151,7 @@ test("a link type gets a source and an excluded folder, and other types drop the
 		type: "text",
 	});
 	assert.equal(readControl(settings, propertySourceKey("list-9", "source")), undefined);
-	assert.equal(writeControl(settings, propertySourceKey("list-9", "source"), "linksOut"), true);
+	assert.equal(writeControl(settings, propertySourceKey("list-9", "source"), "linksOut"), false);
 	assert.equal(settings.setProperties.properties[0].source, undefined);
 });
 

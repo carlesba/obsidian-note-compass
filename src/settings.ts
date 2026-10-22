@@ -26,7 +26,6 @@ type LinkListMode = "multi" | "single";
 const LINK_LIST_MODES: readonly LinkListMode[] = ["multi", "single"];
 
 interface LinkList extends NoteList {
-	name: string;
 	property: string;
 	mode: LinkListMode;
 }
@@ -101,32 +100,29 @@ const DEFAULT_TEMPLATES_FOLDER = "templates";
 
 function defaultLinkListFields(): Omit<LinkList, "id" | "enabled">[] {
 	return [
-		{ prefix: "👤 peop |", name: "People", source: { kind: "linksToNote", note: "Person 👤" }, property: "people", mode: "multi" },
-		{ prefix: "📍 trak |", name: "Trackers", source: { kind: "linksToNote", note: "Tracker 📍" }, property: "trackers", mode: "multi" },
+		{ prefix: "👤 peop |", source: { kind: "linksToNote", note: "Person 👤" }, property: "people", mode: "multi" },
+		{ prefix: "📍 trak |", source: { kind: "linksToNote", note: "Tracker 📍" }, property: "trackers", mode: "multi" },
 		{
 			prefix: "📚 coll |",
-			name: "Collections",
 			source: { kind: "linksToNote", note: "Collection 📚" },
 			property: "collections",
 			mode: "multi",
 		},
-		{ prefix: "📂 catg |", name: "Category", source: { kind: "inFolder", folder: "categories" }, property: "category", mode: "single" },
+		{ prefix: "📂 catg |", source: { kind: "inFolder", folder: "categories" }, property: "category", mode: "single" },
 		{
 			prefix: "🏷️ ever |",
-			name: "Evergreen",
 			source: { kind: "frontmatter", property: "evergreen", condition: { operator: "is true" } },
 			property: "related",
 			mode: "multi",
 		},
 		{
 			prefix: "📍 actv |",
-			name: "Active",
 			source: { kind: "frontmatter", property: "active", condition: { operator: "is true" } },
 			property: "related",
 			mode: "multi",
 		},
-		{ prefix: "🏢 comp |", name: "Companies", source: { kind: "linksToNote", note: "Org 🏢" }, property: "related", mode: "multi" },
-		{ prefix: "🔅 tday |", name: "Today", source: { kind: "modifiedToday" }, property: "related", mode: "multi" },
+		{ prefix: "🏢 comp |", source: { kind: "linksToNote", note: "Org 🏢" }, property: "related", mode: "multi" },
+		{ prefix: "🔅 tday |", source: { kind: "modifiedToday" }, property: "related", mode: "multi" },
 	];
 }
 
@@ -223,7 +219,6 @@ function defaultLinkLists(): LinkList[] {
 function readLinkListFields(entry: Record<string, unknown>): Omit<LinkList, keyof NoteList> | undefined {
 	if (typeof entry.property !== "string") return undefined;
 	return {
-		name: typeof entry.name === "string" ? entry.name : "",
 		property: entry.property,
 		mode: LINK_LIST_MODES.find((mode) => mode === entry.mode) ?? "multi",
 	};
