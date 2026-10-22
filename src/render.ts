@@ -29,14 +29,14 @@ function shownText(part: (typeof ROW_PARTS)[number], text: string | undefined, r
 	return text.trim() || undefined;
 }
 
-export function entryParts(entry: JumpListEntry): RowParts {
-	const parts: RowParts = { prefix: entry.prefix, content: entry.name };
+export function entryParts(entry: JumpListEntry, showPrefixes: boolean): RowParts {
+	const parts: RowParts = showPrefixes ? { prefix: entry.prefix, content: entry.name } : { content: entry.name };
 	if (entry.suffix) parts.value = `(${entry.suffix})`;
 	return parts;
 }
 
-export function entryLabel(entry: JumpListEntry): string {
-	return rowLabel(entryParts(entry));
+export function entryLabel(entry: JumpListEntry, showPrefixes: boolean): string {
+	return rowLabel(entryParts(entry, showPrefixes));
 }
 
 export function matchesInOrder(query: string, label: string): boolean {

@@ -67,6 +67,7 @@ export interface SetPropertiesSettings {
 }
 
 export interface JumpSettings {
+	showPrefixes: boolean;
 	lists: NoteList[];
 	dateNotes: DateNoteSettings;
 	setProperties: SetPropertiesSettings;
@@ -141,6 +142,7 @@ export function newListId(lists: readonly { id: string }[]): string {
 export function mergeSettings(stored: unknown): JumpSettings {
 	const data = isRecord(stored) ? stored : {};
 	return {
+		showPrefixes: typeof data.showPrefixes === "boolean" ? data.showPrefixes : true,
 		lists: Array.isArray(data.lists) ? readLists(data.lists, () => ({})) : migrateLegacyLists(data),
 		dateNotes: readDateNotes(data.dateNotes),
 		setProperties: readSetProperties(data.setProperties),

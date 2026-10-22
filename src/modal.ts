@@ -4,21 +4,23 @@ import { entryLabel, entryParts, matchesInOrder, renderRow } from "./render";
 
 export class JumpModal extends SuggestModal<JumpListEntry> {
 	private readonly entries: JumpListEntry[];
+	private readonly showPrefixes: boolean;
 
-	constructor(app: App, entries: JumpListEntry[]) {
+	constructor(app: App, entries: JumpListEntry[], showPrefixes: boolean) {
 		super(app);
 		this.entries = entries;
+		this.showPrefixes = showPrefixes;
 		this.limit = entries.length;
 		this.setPlaceholder("Pick one…");
 	}
 
 	getSuggestions(query: string): JumpListEntry[] {
 		if (!query) return this.entries;
-		return this.entries.filter((entry) => matchesInOrder(query, entryLabel(entry)));
+		return this.entries.filter((entry) => matchesInOrder(query, entryLabel(entry, this.showPrefixes)));
 	}
 
 	renderSuggestion(entry: JumpListEntry, el: HTMLElement): void {
-		renderRow(el, entryParts(entry));
+		renderRow(el, entryParts(entry, this.showPrefixes));
 	}
 
 	selectSuggestion(entry: JumpListEntry, evt: MouseEvent | KeyboardEvent): void {

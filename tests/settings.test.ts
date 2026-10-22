@@ -53,6 +53,7 @@ const setPropertiesDefaults = (): SetPropertiesSettings => ({
 
 test("defaultSettings enables every relation list in picker order and reads date notes automatically", () => {
 	assert.deepEqual(defaultSettings(), {
+		showPrefixes: true,
 		lists: relationLists(),
 		dateNotes: defaultDateNoteSettings(),
 		setProperties: setPropertiesDefaults(),
@@ -185,6 +186,7 @@ test("mergeSettings migrates the old shape into lists in picker order with custo
 		],
 	});
 	assert.deepEqual(merged, {
+		showPrefixes: true,
 		lists: [
 			{ id: "list-1", enabled: true, prefix: "🗓️", source: { kind: "adjacentDates" } },
 			{ id: "list-2", enabled: true, prefix: "➡️", source: { kind: "linksOut" } },
@@ -267,6 +269,7 @@ test("mergeSettings drops old custom lists it cannot read", () => {
 
 test("mergeSettings keeps saved lists in their order and round-trips its own output", () => {
 	const saved = {
+		showPrefixes: false,
 		lists: [
 			{
 				id: "list-9",
@@ -284,6 +287,13 @@ test("mergeSettings keeps saved lists in their order and round-trips its own out
 	const merged = mergeSettings(saved);
 	assert.deepEqual(merged, { ...saved, setProperties: setPropertiesDefaults() });
 	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(merged))), merged);
+});
+
+test("mergeSettings reads a saved showPrefixes boolean and shows prefixes otherwise", () => {
+	assert.equal(mergeSettings({ showPrefixes: false }).showPrefixes, false);
+	assert.equal(mergeSettings({ showPrefixes: true }).showPrefixes, true);
+	assert.equal(mergeSettings({ showPrefixes: "no" }).showPrefixes, true);
+	assert.equal(mergeSettings({}).showPrefixes, true);
 });
 
 test("mergeSettings keeps a list with a condition its property's type no longer offers", () => {

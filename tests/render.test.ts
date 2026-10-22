@@ -8,22 +8,29 @@ const file = { path: "notes/Project.md", basename: "Project", ctime: 0 };
 
 test("labels an entry with its prefix and name", () => {
 	const entry: JumpListEntry = { file, prefix: "🔗 out", name: "Project" };
-	assert.equal(entryLabel(entry), "🔗 out Project");
+	assert.equal(entryLabel(entry, true), "🔗 out Project");
 });
 
 test("keeps the prefix verbatim, inner spaces included", () => {
 	const entry: JumpListEntry = { file, prefix: "🔗  in", name: "Project" };
-	assert.equal(entryLabel(entry), "🔗  in Project");
+	assert.equal(entryLabel(entry, true), "🔗  in Project");
 });
 
 test("labels an entry with an empty prefix by its name alone", () => {
 	const entry: JumpListEntry = { file, prefix: "", name: "Project" };
-	assert.equal(entryLabel(entry), "Project");
+	assert.equal(entryLabel(entry, true), "Project");
 });
 
 test("appends the suffix in parentheses", () => {
 	const entry: JumpListEntry = { file, prefix: "📅 day", name: "2024-03-05", suffix: "previous - Tue" };
-	assert.equal(entryLabel(entry), "📅 day 2024-03-05 (previous - Tue)");
+	assert.equal(entryLabel(entry, true), "📅 day 2024-03-05 (previous - Tue)");
+});
+
+test("with prefixes hidden an entry is labelled and split without its prefix", () => {
+	const entry: JumpListEntry = { file, prefix: "📅 day", name: "2024-03-05", suffix: "previous - Tue" };
+	assert.equal(entryLabel(entry, false), "2024-03-05 (previous - Tue)");
+	assert.deepEqual(entryParts(entry, false), { content: "2024-03-05", value: "(previous - Tue)" });
+	assert.equal(matchesInOrder("day", entryLabel(entry, false)), false);
 });
 
 test("an empty query matches every label", () => {
@@ -51,8 +58,8 @@ test("matches emoji in the prefix", () => {
 
 test("splits an entry into prefix, name and suffix parts", () => {
 	const entry: JumpListEntry = { file, prefix: "📅 day", name: "2024-03-05", suffix: "previous - Tue" };
-	assert.deepEqual(entryParts(entry), { prefix: "📅 day", content: "2024-03-05", value: "(previous - Tue)" });
-	assert.deepEqual(entryParts({ file, prefix: "", name: "Project" }), { prefix: "", content: "Project" });
+	assert.deepEqual(entryParts(entry, true), { prefix: "📅 day", content: "2024-03-05", value: "(previous - Tue)" });
+	assert.deepEqual(entryParts({ file, prefix: "", name: "Project" }, true), { prefix: "", content: "Project" });
 });
 
 test("a row's label joins its non-empty parts with spaces", () => {

@@ -43,10 +43,11 @@ export function entryChoices(
 	vault: NewNoteVault,
 	sourcePath: string | undefined,
 	query: string,
+	showPrefixes: boolean,
 ): EntryChoice[] {
 	const choices = entries.map((creatable) => {
 		const folder = newNoteFolder(vault, sourcePath, creatable);
-		const parts = { prefix: creatable.entry.prefix, content: creatable.entry.property, value: folder || "vault root" };
+		const parts = { ...prefixPart(creatable, showPrefixes), content: creatable.entry.property, value: folder || "vault root" };
 		return { label: rowLabel(parts), parts, creatable };
 	});
 	return query ? choices.filter((choice) => matchesInOrder(query, choice.label)) : choices;
@@ -61,6 +62,7 @@ export function nameChoices(
 	vault: JumpListVault & NewNoteVault,
 	sourcePath: string | undefined,
 	query: string,
+	showPrefixes: boolean,
 ): NameChoice[] {
 	const name = query.trim();
 	if (name === "") return [reopen({ content: TYPE_A_NAME })];
@@ -69,8 +71,12 @@ export function nameChoices(
 	const existing = vault.notes().find((note) => note.basename.toLowerCase() === wanted);
 	if (existing) return [reopen({ content: `"${name}" already exists at ${existing.path}.` })];
 	const folder = folderName(newNoteFolder(vault, sourcePath, creatable));
-	const parts = { mark: CREATE_MARK, prefix: creatable.entry.prefix, content: `Create "${name}" in ${folder}` };
+	const parts = { mark: CREATE_MARK, ...prefixPart(creatable, showPrefixes), content: `Create "${name}" in ${folder}` };
 	return [{ label: rowLabel(parts), parts, action: { action: "create", creation: { ...creatable, name } } }];
+}
+
+function prefixPart({ entry }: CreatableEntry, showPrefixes: boolean): Pick<RowParts, "prefix"> {
+	return showPrefixes ? { prefix: entry.prefix } : {};
 }
 
 function reopen(parts: RowParts): NameChoice {

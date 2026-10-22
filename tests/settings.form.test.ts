@@ -6,7 +6,7 @@ import { defaultDateNoteSettings } from "../src/lists/dateNotes.ts";
 import type { Frontmatter, JumpListVault } from "../src/lists/vault.ts";
 import { defaultSettings } from "../src/settings.ts";
 import type { NoteList } from "../src/settings.ts";
-import { DATE_NOTE_SOURCE_KEY, listKey, periodKey, readControl, writeControl } from "../src/settings/controlKeys.ts";
+import { DATE_NOTE_SOURCE_KEY, SHOW_PREFIXES_KEY, listKey, periodKey, readControl, writeControl } from "../src/settings/controlKeys.ts";
 import { customPeriods, dateNoteSourceDescription, formatError, writePeriodField } from "../src/settings/dateNotesForm.ts";
 import {
 	fitConditionToProperty,
@@ -212,6 +212,17 @@ test("control keys read and write the list they name and ignore unknown ones", (
 	writeControl(settings, periodKey("day", "folder"), " journal ");
 	assert.equal(readControl(settings, periodKey("quarter", "enabled")), true);
 	assert.equal(readControl(settings, periodKey("day", "folder")), "journal");
+});
+
+test("the show prefixes toggle reads and writes the display setting and refuses non-booleans", () => {
+	const settings = defaultSettings();
+	assert.equal(readControl(settings, SHOW_PREFIXES_KEY), true);
+	assert.equal(writeControl(settings, SHOW_PREFIXES_KEY, false), true);
+	assert.equal(settings.showPrefixes, false);
+	assert.equal(readControl(settings, SHOW_PREFIXES_KEY), false);
+	assert.equal(writeControl(settings, SHOW_PREFIXES_KEY, "yes"), false);
+	assert.equal(settings.showPrefixes, false);
+	assert.equal(settings.lists[0].prefix, "📅 day");
 });
 
 test("the date notes row says where each period comes from and which formats are editable", () => {
