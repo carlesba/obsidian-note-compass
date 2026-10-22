@@ -142,8 +142,9 @@ function isPicked(note: PickableNote, pending: unknown): boolean {
 }
 
 function linksTo(value: unknown, note: PickableNote): boolean {
-	const title = linkTitle(value);
-	return title === note.name || title === note.path.replace(/\.md$/, "");
+	const link = typeof value === "string" ? value.match(/\[\[([^\]|]+)/) : null;
+	const titles = [linkTitle(value), link?.[1]];
+	return titles.some((title) => title === note.name || title === note.path.replace(/\.md$/, ""));
 }
 
 function toggled(note: PickableNote, pending: unknown): unknown[] {

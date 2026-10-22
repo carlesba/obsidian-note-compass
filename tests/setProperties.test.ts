@@ -239,6 +239,14 @@ test("a links picker starts with done, toggles notes and keeps values no row off
 	assert.deepEqual(written(initial, withValue(withoutAnn, "people", done.value)), { people: ["[[Stranger]]", "[[Bob]]"] });
 });
 
+test("a link matches a note by its link text when its alias differs", () => {
+	const people = entry("people", "links");
+	const { initial, choicesFor } = setup([people]);
+	const state = withValue(initial, "people", ["[[people/Ann|Annie]]"]);
+	assert.equal(labels(choicesFor(people, state))[1], "✓ Ann");
+	assert.deepEqual(pick(choicesFor(people, state), "Ann").value, []);
+});
+
 test("clear deletes the key and unchanged properties are not written", () => {
 	const people = entry("people", "links");
 	const status = entry("status", "text");
