@@ -76,8 +76,10 @@ export function readPropertySourceField(entry: EditableProperty, field: ListFiel
 	return hasSource(entry) ? readListField(entry, field) : undefined;
 }
 
-export function writePropertySourceField(entry: EditableProperty, field: ListField, value: unknown): void {
-	if (hasSource(entry)) writeListField(entry, field, value);
+export function writePropertySourceField(entry: EditableProperty, field: ListField, value: unknown): boolean {
+	if (!hasSource(entry)) return false;
+	writeListField(entry, field, value);
+	return true;
 }
 
 function writeType(entry: EditableProperty, type: EditablePropertyType): void {

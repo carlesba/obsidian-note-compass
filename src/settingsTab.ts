@@ -29,6 +29,7 @@ const TYPED_FIELDS = [
 	"format",
 	"note",
 	"name",
+	"excludedFolder",
 ];
 
 const TYPING_PAUSE_MS = 800;

@@ -62,8 +62,8 @@ export function writeControl(settings: JumpSettings, key: string, value: unknown
 	}
 	const entry = settings.setProperties.properties.find((candidate) => candidate.id === name);
 	if (!entry) return false;
-	if (scope === "property") writePropertyField(entry, field as PropertyField, value);
-	else if (scope === "propertySource") writePropertySourceField(entry, field as ListField, value);
-	else return false;
+	if (scope === "propertySource") return writePropertySourceField(entry, field as ListField, value);
+	if (scope !== "property") return false;
+	writePropertyField(entry, field as PropertyField, value);
 	return true;
 }
