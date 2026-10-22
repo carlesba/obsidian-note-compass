@@ -10,3 +10,22 @@
 	transform: translateY(-50%);
 	cursor: grab;
 }
+
+.note-launcher-sortable-list .setting-item-info {
+	min-width: 0;
+}
+
+.setting-item-description.note-launcher-warning {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--size-4-1);
+	color: var(--text-warning);
+	overflow-wrap: anywhere;
+}
+
+.note-launcher-warning-icon {
+	display: flex;
+	flex-shrink: 0;
+	padding-top: 0.15em;
+	--icon-size: var(--icon-xs);
+}

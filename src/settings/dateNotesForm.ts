@@ -19,25 +19,27 @@ export const PERIOD_NAMES: Record<Period, string> = {
 
 export type PeriodField = keyof PeriodFormat;
 
-export interface ResolvedPeriodRow {
-	period: Period;
-	name: string;
-	desc: string;
-}
-
 type DateNoteVault = Pick<JumpListVault, "periodicNotesSettings" | "dailyNotesOptions">;
 
-export function resolvedSourceName(settings: DateNoteSettings, vault: DateNoteVault): string {
-	return DATE_NOTE_SOURCE_OPTIONS[resolveDateNotes(settings, vault).from];
+const AUTOMATIC_ORDER = "Automatic picks Periodic Notes, then Daily notes, then Custom.";
+
+export function customPeriods(settings: DateNoteSettings, vault: DateNoteVault): Period[] {
+	const { from } = resolveDateNotes(settings, vault);
+	if (from === "periodicNotes") return [];
+	return from === "dailyNotes" ? PERIODS.filter((period) => period !== "day") : [...PERIODS];
 }
 
-export function resolvedPeriodRows(settings: DateNoteSettings, vault: DateNoteVault): ResolvedPeriodRow[] {
-	const { periods } = resolveDateNotes(settings, vault);
-	return PERIODS.map((period) => ({ period, name: PERIOD_NAMES[period], desc: describePeriod(periods[period]) }));
-}
-
-export function readsCustomFormats(settings: DateNoteSettings): boolean {
-	return settings.from === "custom";
+export function dateNoteSourceDescription(settings: DateNoteSettings, vault: DateNoteVault): string {
+	const { from } = resolveDateNotes(settings, vault);
+	const reading =
+		from === "periodicNotes"
+			? "Every period comes from Periodic Notes."
+			: from === "dailyNotes"
+				? "Days come from Daily notes. Edit the other periods with the pencil."
+				: "Edit each period's folder and format with the pencil.";
+	if (settings.from === "auto") return `${AUTOMATIC_ORDER} ${reading}`;
+	if (settings.from !== from) return `${DATE_NOTE_SOURCE_OPTIONS[settings.from]} is not enabled. ${reading}`;
+	return reading;
 }
 
 export function writeDateNoteSource(settings: DateNoteSettings, value: unknown): void {
@@ -61,9 +63,4 @@ export function formatError(value: string): string | undefined {
 
 export function isPeriod(value: string): value is Period {
 	return (PERIODS as readonly string[]).includes(value);
-}
-
-function describePeriod(format: PeriodFormat): string {
-	if (!format.enabled) return "Off";
-	return format.folder === "" ? `${format.format} at the vault root` : `${format.format} in the "${format.folder}" folder`;
 }

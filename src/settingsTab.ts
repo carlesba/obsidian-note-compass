@@ -1,6 +1,10 @@
 import { App, Notice, PluginSettingTab, debounce } from "obsidian";
-import type { SettingDefinitionItem, SettingDefinitionList, SettingDefinitionPage } from "obsidian";
-import { PERIODS } from "./lists/dateNotes";
+import type {
+	SettingDefinitionGroup,
+	SettingDefinitionItem,
+	SettingDefinitionList,
+	SettingDefinitionPage,
+} from "obsidian";
 import { createObsidianVault } from "./lists/obsidianVault";
 import type { JumpListVault } from "./lists/vault";
 import type NoteLauncherPlugin from "./main";
@@ -8,14 +12,14 @@ import { DATE_NOTE_SOURCE_KEY, periodKey, readControl, writeControl } from "./se
 import {
 	DATE_NOTE_SOURCE_OPTIONS,
 	PERIOD_NAMES,
+	customPeriods,
+	dateNoteSourceDescription,
 	formatError,
-	readsCustomFormats,
-	resolvedPeriodRows,
-	resolvedSourceName,
 } from "./settings/dateNotesForm";
 import { fitConditionToProperty, newList, propertySuggestions } from "./settings/listForm";
 import type { PropertySuggestion } from "./settings/listForm";
 import { listPage, listRow, propertyPage, propertyRow } from "./settings/listPage";
+import type { ListPageContext } from "./settings/listPage";
 import { hasSource, newProperty } from "./settings/setPropertiesForm";
 
 const TYPED_FIELDS = [
@@ -35,6 +39,8 @@ const TYPED_FIELDS = [
 const TYPING_PAUSE_MS = 800;
 
 const SORTABLE_LIST_CLASS = "note-launcher-sortable-list";
+
+const DATE_NOTE_FORMATS_PAGE_ID = "date-note-formats";
 
 interface SettingModal {
 	openPagePath?: (tabId: string, path: string[]) => unknown;
@@ -58,7 +64,7 @@ export class NoteLauncherSettingTab extends PluginSettingTab {
 		const { properties } = setProperties;
 		const vault = createObsidianVault(this.app);
 		let suggestions: PropertySuggestion[] | undefined;
-		const context = {
+		const context: ListPageContext = {
 			app: this.app,
 			propertyTypes: vault.propertyTypes(),
 			propertySuggestions: () => (suggestions = suggestions ?? propertySuggestions(vault)),
@@ -66,22 +72,19 @@ export class NoteLauncherSettingTab extends PluginSettingTab {
 			openPage: (pageId: string) => this.openPage(pageId),
 		};
 		return [
-			sectionHeading("Jump to note", "Pick a note related to the one in focus, from the lists below, in this order."),
 			{
 				type: "list",
+				heading: "Jump to note",
 				cls: SORTABLE_LIST_CLASS,
 				emptyState: "No lists yet. Add one to show notes in the picker.",
 				items: lists.map((list) => listRow(list, context)),
 				...this.editableEntries(lists),
 				addItem: { name: "Add list", action: () => this.changeLists(() => lists.push(newList(lists))) },
 			},
-			{ type: "group", items: [this.dateNotesPage(vault)] },
-			sectionHeading(
-				"Set properties",
-				"Edit the focused note's properties from a picker. Each row is a property the picker offers.",
-			),
+			this.dateNotesSection(vault, context),
 			{
 				type: "list",
+				heading: "Set properties",
 				cls: SORTABLE_LIST_CLASS,
 				emptyState: "No properties yet. Add one to edit it from the picker.",
 				items: properties.map((entry) => propertyRow(entry, properties, context)),
@@ -97,6 +100,7 @@ export class NoteLauncherSettingTab extends PluginSettingTab {
 				items: [
 					...lists.map((list) => listPage(list, context)),
 					...properties.map((entry) => propertyPage(entry, properties, context)),
+					this.dateNoteFormatsPage(vault),
 				],
 			},
 		];
@@ -150,48 +154,57 @@ export class NoteLauncherSettingTab extends PluginSettingTab {
 		this.update();
 	}
 
-	private dateNotesPage(vault: JumpListVault): SettingDefinitionPage {
+	private dateNotesSection(vault: JumpListVault, context: ListPageContext): SettingDefinitionGroup {
 		const { dateNotes } = this.plugin.settings;
-		const custom = () => readsCustomFormats(dateNotes);
 		return {
-			type: "page",
-			name: "Date notes",
-			desc: "Where the adjacent dates and same day lists find day, week, month, quarter and year notes.",
-			displayValue: () => resolvedSourceName(dateNotes, vault),
+			type: "group",
+			heading: "Date notes",
 			items: [
 				{
 					name: "Read from",
-					desc: "Automatic uses Periodic Notes when it is enabled, then the core Daily notes plugin, then Custom.",
-					control: { type: "dropdown", key: DATE_NOTE_SOURCE_KEY, options: DATE_NOTE_SOURCE_OPTIONS },
+					desc: dateNoteSourceDescription(dateNotes, vault),
+					render: (setting) => {
+						setting.addDropdown((dropdown) =>
+							dropdown
+								.addOptions(DATE_NOTE_SOURCE_OPTIONS)
+								.setValue(dateNotes.from)
+								.onChange((from) => context.write(DATE_NOTE_SOURCE_KEY, from)),
+						);
+						if (customPeriods(dateNotes, vault).length === 0) return;
+						setting.addExtraButton((button) =>
+							button
+								.setIcon("pencil")
+								.setTooltip("Edit formats")
+								.onClick(() => context.openPage(DATE_NOTE_FORMATS_PAGE_ID)),
+						);
+					},
 				},
-				{
-					type: "group",
-					heading: "Formats",
-					visible: () => !custom(),
-					items: resolvedPeriodRows(dateNotes, vault).map((row) => ({ name: row.name, desc: row.desc })),
-				},
-				...PERIODS.map((period) => ({
-					type: "group" as const,
-					heading: PERIOD_NAMES[period],
-					visible: custom,
-					items: [
-						{ name: "Enabled", control: { type: "toggle" as const, key: periodKey(period, "enabled") } },
-						{
-							name: "Folder",
-							control: { type: "folder" as const, key: periodKey(period, "folder"), includeRoot: true },
-						},
-						{
-							name: "Format",
-							desc: "A Moment format the note's name must match exactly.",
-							control: { type: "text" as const, key: periodKey(period, "format"), validate: formatError },
-						},
-					],
-				})),
 			],
 		};
 	}
-}
 
-function sectionHeading(heading: string, description: string): SettingDefinitionItem {
-	return { type: "group", heading, items: [{ name: "", desc: description, searchable: false }] };
+	private dateNoteFormatsPage(vault: JumpListVault): SettingDefinitionPage {
+		const page: SettingDefinitionPage & { id: string } = {
+			type: "page",
+			id: DATE_NOTE_FORMATS_PAGE_ID,
+			name: "Date note formats",
+			items: customPeriods(this.plugin.settings.dateNotes, vault).map((period) => ({
+				type: "group" as const,
+				heading: PERIOD_NAMES[period],
+				items: [
+					{ name: "Enabled", control: { type: "toggle" as const, key: periodKey(period, "enabled") } },
+					{
+						name: "Folder",
+						control: { type: "folder" as const, key: periodKey(period, "folder"), includeRoot: true },
+					},
+					{
+						name: "Format",
+						desc: "A Moment format the note's name must match exactly.",
+						control: { type: "text" as const, key: periodKey(period, "format"), validate: formatError },
+					},
+				],
+			})),
+		};
+		return page;
+	}
 }

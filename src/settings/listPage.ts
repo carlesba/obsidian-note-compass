@@ -1,4 +1,4 @@
-import { AbstractInputSuggest } from "obsidian";
+import { AbstractInputSuggest, setIcon } from "obsidian";
 import type { App, Setting, SettingDefinition, SettingDefinitionItem, SettingDefinitionPage, SettingGroupItem } from "obsidian";
 import { propertyType } from "../lists/conditions";
 import { isLinkType } from "../settings";
@@ -41,7 +41,7 @@ export function propertyPageId(entry: EditableProperty): string {
 
 interface EditableRow {
 	name: string;
-	desc?: string;
+	warning?: string;
 	enabled: boolean;
 	enabledKey: string;
 	enabledTooltip: string;
@@ -76,7 +76,7 @@ export function listRow(list: NoteList, context: ListPageContext): SettingDefini
 	return editableRow(
 		{
 			name: listName(list),
-			desc: inapplicable ? "The condition does not apply to this property. Edit the list to fix it." : undefined,
+			warning: inapplicable ? "Condition does not apply. Edit to see why." : undefined,
 			enabled: list.enabled,
 			enabledKey: listKey(list.id, "enabled"),
 			enabledTooltip: "Show this list in the picker",
@@ -95,7 +95,7 @@ export function propertyRow(
 	return editableRow(
 		{
 			name: propertyRowName(entry),
-			desc: propertyWarning(entry, properties, context),
+			warning: propertyWarning(entry, properties, context),
 			enabled: entry.enabled,
 			enabledKey: propertyKey(entry.id, "enabled"),
 			enabledTooltip: "Offer this property in the picker",
@@ -111,16 +111,17 @@ function propertyWarning(
 	properties: readonly EditableProperty[],
 	context: ListPageContext,
 ): string | undefined {
-	const mixed = mixedTypeWarning(entry, properties);
-	if (mixed || !hasSource(entry) || !inapplicableCondition(entry.source, context.propertyTypes)) return mixed;
-	return "The condition in \"Offer notes from\" does not apply to its property. Edit this property to fix it.";
+	if (mixedTypeWarning(entry, properties)) return "Type differs from another row. Edit to see why.";
+	if (!hasSource(entry) || !inapplicableCondition(entry.source, context.propertyTypes)) return undefined;
+	return "Condition does not apply. Edit to see why.";
 }
 
 function editableRow(row: EditableRow, context: ListPageContext): SettingDefinition {
 	return {
 		name: row.name,
-		desc: row.desc,
+		desc: row.warning,
 		render: (setting) => {
+			if (row.warning) warningDescription(setting.descEl, row.warning);
 			setting.addToggle((toggle) =>
 				toggle
 					.setTooltip(row.enabledTooltip)
@@ -137,6 +138,13 @@ function editableRow(row: EditableRow, context: ListPageContext): SettingDefinit
 	};
 }
 
+function warningDescription(descEl: HTMLElement, warning: string): void {
+	descEl.empty();
+	descEl.addClass("note-launcher-warning");
+	setIcon(descEl.createSpan({ cls: "note-launcher-warning-icon" }), "alert-triangle");
+	descEl.createSpan({ text: warning });
+}
+
 export function propertyPage(
 	entry: EditableProperty,
 	properties: readonly EditableProperty[],
@@ -144,7 +152,15 @@ export function propertyPage(
 ): SettingDefinitionPage {
 	const key = (field: PropertyField) => propertyKey(entry.id, field);
 	const chosen = () => entry.property.trim() !== "";
+	const mixed = mixedTypeWarning(entry, properties);
 	const items: SettingDefinitionItem[] = [
+		{
+			name: "Type differs from another row",
+			desc: mixed,
+			searchable: false,
+			visible: mixed !== undefined,
+			render: (setting) => warningDescription(setting.descEl, mixed ?? ""),
+		},
 		{ name: "Enabled", desc: "Offer this property in the picker.", control: { type: "toggle", key: key("enabled") } },
 		{ name: "Prefix", desc: "The property's row in the picker starts with it, as in \"🎛️ meta |\".", control: { type: "text", key: key("prefix") } },
 		{
@@ -247,6 +263,7 @@ function sourceItems(
 			name: "Condition does not apply",
 			desc: inapplicable ?? "",
 			searchable: false,
+			render: (setting) => warningDescription(setting.descEl, inapplicable ?? ""),
 			visible: () => property() !== undefined && inapplicable !== undefined,
 		},
 		{ name: "Value", visible: () => shape() === "text", control: { type: "text", disabled: () => !hasProperty(list), key: key("text") } },
