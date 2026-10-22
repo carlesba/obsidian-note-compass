@@ -92,7 +92,7 @@ Link properties never offer the note in focus, notes in the property's excluded 
 
 ## Create note
 
-"Create note" makes a new note that belongs to one of your link properties, so that property offers it from then on. It works with or without a note in focus, and it neither opens the new note nor links it from the note in focus.
+"Create note" makes a new note that belongs to one of your link properties, so that property offers it from then on. It works with or without a note in focus, and it opens the new note once it is made, in place of the note in focus, without linking it from that note.
 
 It works in two steps. The first picker, "Create a note for…", has one row per enabled link or links property that has "Allow creating notes" switched on, with the folder the note will go to beside it, or `vault root`.
 
@@ -108,7 +108,7 @@ The new note goes in the source's folder when the property offers notes from a f
 
 When the property has a "Template", the note starts from it. If the Templater plugin is enabled, Templater creates the note, so its `<% %>` commands run; if Templater fails, nothing more is done. Without Templater, the template's content is copied, `{{title}}` becomes the note's name, and `{{date}}` and `{{time}}` become the current date and time in the formats set in the core Templates plugin, `YYYY-MM-DD` and `HH:mm` by default. `{{date:FORMAT}}` and `{{time:FORMAT}}` use the format given.
 
-Finally, the note joins the property's source, so it shows up in that property's list straight away. For a "Links to note" source, a link to that note is added at the end of the body unless the content already links there. For a property condition, the note gets the property the condition asks for, such as `true` for "is true", the value for "is", or a list with the value for "has item".
+Then the note joins the property's source, so it shows up in that property's list straight away. For a "Links to note" source, a link to that note is added at the end of the body unless the content already links there. For a property condition, the note gets the property the condition asks for, such as `true` for "is true", the value for "is", or a list with the value for "has item". Finally, the new note opens in the current tab. When a note with that name already exists, nothing is created and nothing opens.
 
 Only sources that can hold a new note qualify: notes in a folder, notes linking to a note, notes modified today, and property conditions that give a value to write, such as "is true", "is", "has item", or "is set" on a checkbox. The relation sources and conditions such as "greater than" cannot, and the "Allow creating notes" switch explains why when it is disabled. When no property qualifies, the command says "No link property can create notes."
 
