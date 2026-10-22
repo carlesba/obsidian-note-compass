@@ -18,9 +18,19 @@ export function rowLabel(parts: RowParts): string {
 export function renderRow(el: HTMLElement, parts: RowParts, reservesMarkColumn = false): void {
 	el.addClass("note-launcher-row");
 	for (const part of ROW_PARTS) {
-		const text = parts[part] ?? (part === "mark" && reservesMarkColumn ? "" : undefined);
+		const text = shownText(part, parts[part], reservesMarkColumn);
 		if (text !== undefined) el.createSpan({ cls: `note-launcher-row-${part}`, text });
 	}
+}
+
+export function shownPrefix(prefix: string): string {
+	return prefix.replace(/\s*\|\s*$/, "").trim();
+}
+
+function shownText(part: (typeof ROW_PARTS)[number], text: string | undefined, reservesMarkColumn: boolean): string | undefined {
+	if (part === "mark") return text ?? (reservesMarkColumn ? "" : undefined);
+	if (part !== "prefix" || text === undefined) return text;
+	return shownPrefix(text) || undefined;
 }
 
 export function entryParts(entry: JumpListEntry): RowParts {

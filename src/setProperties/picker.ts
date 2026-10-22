@@ -28,8 +28,13 @@ export interface PickerChoice {
 	kept: boolean;
 }
 
-export const SAVE_LABEL = "🏁 Save & close";
-export const CANCEL_LABEL = "🛑 Cancel";
+const SAVE_MARK = "🏁";
+const SAVE_TEXT = "Save & close";
+const CANCEL_MARK = "🛑";
+const CANCEL_TEXT = "Cancel";
+
+export const SAVE_LABEL = rowLabel({ mark: SAVE_MARK, content: SAVE_TEXT });
+export const CANCEL_LABEL = rowLabel({ mark: CANCEL_MARK, content: CANCEL_TEXT });
 
 const SELECTED_MARK = "✓";
 const CHANGED_MARK = "•";
@@ -58,8 +63,8 @@ export function pickerChoices(
 	query: string,
 ): PickerChoice[] {
 	const choices = [
-		choice({ content: SAVE_LABEL }, { action: "save" }),
-		choice({ content: CANCEL_LABEL }, { action: "cancel" }),
+		choice({ mark: SAVE_MARK, content: SAVE_TEXT }, { action: "save" }),
+		choice({ mark: CANCEL_MARK, content: CANCEL_TEXT }, { action: "cancel" }),
 		...selectedChoices(entries, initial, state),
 		...entryChoices(entries, state, query),
 	];

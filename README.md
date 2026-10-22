@@ -68,7 +68,7 @@ A property's own picker marks its current value `✓`, ends with `🗑️ Clear`
 - A number offers `✏️ Use "<what you typed>"` for a number and the numbers the property already has in the vault, most used first.
 - A date offers "Use" for a date typed as `YYYYMMDD` or `YYYY-MM-DD`, then Today, Tomorrow, Next Monday and In a week, and is saved as `YYYY-MM-DD`. A date with a time offers "Use" for `YYYYMMDD HHmm`, `YYYY-MM-DD HH:mm` or `YYYY-MM-DDTHH:mm`, then Now, and is saved as `YYYY-MM-DDTHH:mm`.
 
-Link properties never offer the note in focus, notes in the property's left-out folder or notes with `archived: true`. Rows read in columns, so the marks, prefixes and names line up and values sit muted on the right, as they also do in "Jump to note".
+Link properties never offer the note in focus, notes in the property's left-out folder or notes with `archived: true`. Rows read in columns: marks and action icons such as `🏁` and `🛑` sit in their own column, the prefix shows as a muted chip without its trailing `|`, the name follows it, and a value follows the name in muted text after a `·`. "Jump to note" draws its rows the same way, without the mark column.
 
 Its settings sit under "Set properties", after the jump lists, as one list of typed properties. Each row reads `<prefix> <property> · <type>`, or "New property" until a property is chosen, and works like a jump list row: switch it on or off, drag it to reorder the picker, delete it, or use "Add property", which adds a checkbox switched off. Several rows may write the same property, such as the default `related` rows with different sources; they share one value, and the first enabled row decides its type. A row says so when two rows for one property disagree on type.
 
