@@ -189,8 +189,8 @@ function editableRow(row: EditableRow, context: ListPageContext): SettingDefinit
 
 function warningDescription(descEl: HTMLElement, warning: string): void {
 	descEl.empty();
-	descEl.addClass("note-launcher-warning");
-	setIcon(descEl.createSpan({ cls: "note-launcher-warning-icon" }), "alert-triangle");
+	descEl.addClass("note-compass-warning");
+	setIcon(descEl.createSpan({ cls: "note-compass-warning-icon" }), "alert-triangle");
 	descEl.createSpan({ text: warning });
 }
 

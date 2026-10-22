@@ -1,4 +1,4 @@
-# Publishing Note Launcher
+# Publishing Note Compass
 
 This takes the plugin from a private repository to an entry in the Obsidian community plugin list.
 Run every command from the repository root, on `main`, with a clean working tree. Nothing here has
@@ -8,7 +8,7 @@ been run for you: no tag exists, no release exists and the repository is still p
 
 ```sh
 curl -s https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugins.json \
-  | grep -c '"id": "note-launcher"'
+  | grep -c '"id": "note-compass"'
 ```
 
 This must print `0`. The id is the primary key of the entry in `community-plugins.json`, so an id
@@ -18,7 +18,7 @@ already listed belongs to someone else and the submission would be refused.
 cat manifest.json versions.json
 ```
 
-The manifest must say `"id": "note-launcher"`, `"name": "Note Launcher"`, a `version` such as `0.1.0`
+The manifest must say `"id": "note-compass"`, `"name": "Note Compass"`, a `version` such as `0.1.0`
 with no `v` prefix, the `minAppVersion`, a one-sentence `description` and the `author`. The id is
 permanent once the entry is merged, and a different id later is a different plugin that existing users
 never receive. `versions.json` must hold a line mapping that same `version` to that `minAppVersion`,
@@ -53,7 +53,7 @@ when one of them fails.
 ## 2. Make the repository public
 
 ```sh
-gh repo edit carlesba/obsidian-note-launcher --visibility public \
+gh repo edit carlesba/obsidian-note-compass --visibility public \
   --accept-visibility-change-consequences
 ```
 
@@ -100,7 +100,7 @@ The dashboard needs two accounts only you can sign into, so this step cannot be 
    and forum login use, not GitHub.
 2. Link your GitHub account to that profile, which is how the directory proves you own the
    repository.
-3. Add `carlesba/obsidian-note-launcher` as a plugin. The dashboard reads `manifest.json` from the
+3. Add `carlesba/obsidian-note-compass` as a plugin. The dashboard reads `manifest.json` from the
    head of the default branch, so the `id`, `name`, `version`, `description` and `author` it lists are
    whatever is committed on `main`.
 

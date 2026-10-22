@@ -1,28 +1,28 @@
-# Note Launcher
+# Note Compass
 
-Note Launcher adds three commands that work from anywhere in Obsidian, with or without an editor open. "Jump to note" opens one picker with the notes related to the note in focus, such as its adjacent date notes and the notes it links to, alongside lists you define by property, folder or link. "Set properties" edits the properties of the note in focus from a single picker. "Create note" makes a new note that already belongs to one of your link properties, so the other two commands offer it from then on.
+Note Compass adds three commands that work from anywhere in Obsidian, with or without an editor open. "Jump to note" opens one picker with the notes related to the note in focus, such as its adjacent date notes and the notes it links to, alongside lists you define by property, folder or link. "Set properties" edits the properties of the note in focus from a single picker. "Create note" makes a new note that already belongs to one of your link properties, so the other two commands offer it from then on.
 
 ![The Set properties picker, with Save & close and Cancel at the top, the note's current values marked with a check, and more values to add below](docs/images/set-properties.png)
 
 ## Installation
 
-Once Note Launcher is listed in the community plugins browser, open Settings → Community plugins → Browse, search for "Note Launcher", then install and enable it.
+Once Note Compass is listed in the community plugins browser, open Settings → Community plugins → Browse, search for "Note Compass", then install and enable it.
 
 To install it by hand, download `main.js`, `manifest.json` and `styles.css` from the latest release on GitHub:
 
-https://github.com/carlesba/obsidian-note-launcher/releases/latest
+https://github.com/carlesba/obsidian-note-compass/releases/latest
 
-Put the three files in `<vault>/.obsidian/plugins/note-launcher/`, reload Obsidian, and enable Note Launcher under Settings → Community plugins.
+Put the three files in `<vault>/.obsidian/plugins/note-compass/`, reload Obsidian, and enable Note Compass under Settings → Community plugins.
 
-Note Launcher needs Obsidian 1.13.0 or later and runs on both desktop and mobile.
+Note Compass needs Obsidian 1.13.0 or later and runs on both desktop and mobile.
 
 ## Quick start
 
-The commands are meant to be used from the keyboard, so give each one a hotkey first. Open Settings → Hotkeys, search for "Note Launcher", and assign keys to "Jump to note", "Set properties" and "Create note". You can also run them from the command palette.
+The commands are meant to be used from the keyboard, so give each one a hotkey first. Open Settings → Hotkeys, search for "Note Compass", and assign keys to "Jump to note", "Set properties" and "Create note". You can also run them from the command palette.
 
 A typical flow looks like this. Open today's daily note and press the "Jump to note" hotkey to move to yesterday's note or to a note you linked from it. On a note you are working on, press the "Set properties" hotkey, type a few letters of a person's name, pick them, and choose "Save & close". When the person does not exist yet, press the "Create note" hotkey, choose the people property, type the name, and the new note is ready to be linked.
 
-The defaults give you the four relation lists in "Jump to note" and a set of common checkbox and link properties in "Set properties". Open Settings → Note Launcher to switch off what you do not use and to point the link properties at your own folders and notes.
+The defaults give you the four relation lists in "Jump to note" and a set of common checkbox and link properties in "Set properties". Open Settings → Note Compass to switch off what you do not use and to point the link properties at your own folders and notes.
 
 ## Jump to note
 
@@ -39,7 +39,7 @@ The picker shows the lists you set up under "Jump to note" in settings, in the o
 
 The other lists do not depend on the note in focus:
 
-- Notes with a property lists the notes whose property meets a condition, such as `status is active` or `project has item Launcher`.
+- Notes with a property lists the notes whose property meets a condition, such as `status is active` or `project has item Website`.
 - Links to note lists the notes that link to a chosen note, in their text or in a property.
 - In folder lists the notes in a folder and its subfolders.
 - Modified today lists the notes changed since midnight.
@@ -195,7 +195,7 @@ npm run lint
 To try the plugin in a test vault, symlink the repository into its plugins folder, so the vault always loads the build `npm run dev` just wrote:
 
 ```bash
-ln -s "$PWD" "<vault>/.obsidian/plugins/note-launcher"
+ln -s "$PWD" "<vault>/.obsidian/plugins/note-compass"
 ```
 
 ## License

@@ -6,14 +6,14 @@ import type { VaultNote } from "./lists/vault";
 import { JumpModal } from "./modal";
 import { setProperties } from "./setProperties/modal";
 import { JumpSettings, defaultSettings, mergeSettings } from "./settings";
-import { NoteLauncherSettingTab } from "./settingsTab";
+import { NoteCompassSettingTab } from "./settingsTab";
 
-export default class NoteLauncherPlugin extends Plugin {
+export default class NoteCompassPlugin extends Plugin {
 	settings: JumpSettings = defaultSettings();
 
 	async onload(): Promise<void> {
 		this.settings = mergeSettings(await this.loadData());
-		this.addSettingTab(new NoteLauncherSettingTab(this.app, this));
+		this.addSettingTab(new NoteCompassSettingTab(this.app, this));
 
 		this.addCommand({
 			id: "jump-to-note",

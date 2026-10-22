@@ -101,26 +101,26 @@ const texts = (node: FakeElement): string[] => [
 
 test("a row draws its prefix part trimmed and leaves it out when blank", () => {
 	const prefixed = drawRow({ prefix: " 🔗 out ", content: "Project", value: "x" });
-	assert.deepEqual(prefixed.cls, ["note-launcher-row", "has-prefix"]);
-	assert.deepEqual(texts(prefixed), ["note-launcher-chip-text: 🔗 out", "note-launcher-row-content: Project", "note-launcher-row-value: x"]);
-	assert.deepEqual(prefixed.children.map((child) => child.cls[0]), ["note-launcher-row-prefix", "note-launcher-row-body"]);
+	assert.deepEqual(prefixed.cls, ["note-compass-row", "has-prefix"]);
+	assert.deepEqual(texts(prefixed), ["note-compass-chip-text: 🔗 out", "note-compass-row-content: Project", "note-compass-row-value: x"]);
+	assert.deepEqual(prefixed.children.map((child) => child.cls[0]), ["note-compass-row-prefix", "note-compass-row-body"]);
 	const blank = drawRow({ prefix: "  ", content: "Project" });
-	assert.deepEqual(blank.cls, ["note-launcher-row", "no-prefix"]);
-	assert.deepEqual(texts(blank), ["note-launcher-row-content: Project"]);
+	assert.deepEqual(blank.cls, ["note-compass-row", "no-prefix"]);
+	assert.deepEqual(texts(blank), ["note-compass-row-content: Project"]);
 });
 
 test("a row reserves an empty mark only when its picker has a mark column", () => {
-	assert.deepEqual(texts(drawRow({ content: "Save" }, true)), ["note-launcher-row-mark: ", "note-launcher-row-content: Save"]);
-	assert.deepEqual(texts(drawRow({ content: "Save" })), ["note-launcher-row-content: Save"]);
+	assert.deepEqual(texts(drawRow({ content: "Save" }, true)), ["note-compass-row-mark: ", "note-compass-row-content: Save"]);
+	assert.deepEqual(texts(drawRow({ content: "Save" })), ["note-compass-row-content: Save"]);
 });
 
 test("a coloured prefix tints its chip through a CSS variable and a plain one does not", () => {
 	const [colored] = drawRow({ prefix: "🔗", prefixColor: "#e0a030", content: "Project" }).children;
 	assert.ok(colored.cls.includes("has-color"));
-	assert.equal(colored.props["--note-launcher-chip-color"], "#e0a030");
+	assert.equal(colored.props["--note-compass-chip-color"], "#e0a030");
 	const [plain] = drawRow({ prefix: "🔗", content: "Project" }).children;
 	assert.ok(!plain.cls.includes("has-color"));
-	assert.equal(plain.props["--note-launcher-chip-color"] ?? "", "");
+	assert.equal(plain.props["--note-compass-chip-color"] ?? "", "");
 });
 
 test("an entry's prefix colour joins its parts but never its label, and hides with the prefix", () => {

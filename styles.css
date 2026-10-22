@@ -1,9 +1,9 @@
-.note-launcher-sortable-list .setting-items .setting-item:has(.mod-drag-handle) {
+.note-compass-sortable-list .setting-items .setting-item:has(.mod-drag-handle) {
 	position: relative;
 	padding-inline-start: calc(var(--size-4-2) + var(--icon-size) + var(--size-4-3));
 }
 
-.note-launcher-sortable-list .setting-items .setting-item .mod-drag-handle {
+.note-compass-sortable-list .setting-items .setting-item .mod-drag-handle {
 	position: absolute;
 	inset-inline-start: var(--size-4-2);
 	top: 50%;
@@ -11,46 +11,46 @@
 	cursor: grab;
 }
 
-.note-launcher-sortable-list .setting-items .setting-item-info {
+.note-compass-sortable-list .setting-items .setting-item-info {
 	min-width: 0;
 }
 
-.note-launcher-sortable-list .setting-items .setting-item-control {
+.note-compass-sortable-list .setting-items .setting-item-control {
 	flex: 0 0 auto;
 }
 
-.setting-item-name.note-launcher-prefixed-name {
+.setting-item-name.note-compass-prefixed-name {
 	display: flex;
 	align-items: center;
 	gap: var(--size-4-2);
 	min-width: 0;
 }
 
-.note-launcher-prefixed-name-text {
+.note-compass-prefixed-name-text {
 	min-width: 0;
 	overflow: hidden;
 	white-space: nowrap;
 	text-overflow: ellipsis;
 }
 
-.note-launcher-setting-prefix {
+.note-compass-setting-prefix {
 	flex-shrink: 0;
-	width: var(--note-launcher-prefix-width, auto);
+	width: var(--note-compass-prefix-width, auto);
 	max-width: 12em;
 	cursor: var(--cursor);
 }
 
-.note-launcher-setting-prefix.is-placeholder {
+.note-compass-setting-prefix.is-placeholder {
 	color: var(--text-faint);
 	background: transparent;
 	border-style: dashed;
 }
 
-.note-launcher-setting-prefix:focus-visible {
+.note-compass-setting-prefix:focus-visible {
 	box-shadow: inset 0 0 0 1px var(--background-modifier-border-focus);
 }
 
-.note-launcher-setting-prefix-editor {
+.note-compass-setting-prefix-editor {
 	display: inline-flex;
 	flex-shrink: 0;
 	align-items: center;
@@ -58,9 +58,9 @@
 	max-width: 70%;
 }
 
-.note-launcher-setting-prefix-input[type="text"] {
+.note-compass-setting-prefix-input[type="text"] {
 	field-sizing: content;
-	min-width: max(4em, var(--note-launcher-prefix-width, 0px));
+	min-width: max(4em, var(--note-compass-prefix-width, 0px));
 	max-width: 12em;
 	height: calc(1.6em + 2px);
 	box-sizing: border-box;
@@ -71,12 +71,12 @@
 	border-radius: var(--radius-s);
 }
 
-.note-launcher-setting-prefix-input[type="text"].has-color {
-	background: color-mix(in srgb, var(--note-launcher-chip-color) 28%, var(--background-primary));
-	border-color: color-mix(in srgb, var(--note-launcher-chip-color) 50%, var(--background-modifier-border));
+.note-compass-setting-prefix-input[type="text"].has-color {
+	background: color-mix(in srgb, var(--note-compass-chip-color) 28%, var(--background-primary));
+	border-color: color-mix(in srgb, var(--note-compass-chip-color) 50%, var(--background-modifier-border));
 }
 
-.note-launcher-setting-prefix-color[type="color"] {
+.note-compass-setting-prefix-color[type="color"] {
 	--swatch-width: var(--font-ui-smaller);
 	--swatch-height: var(--font-ui-smaller);
 	--swatch-radius: 50%;
@@ -85,11 +85,11 @@
 	height: calc(var(--swatch-height) + 4px);
 }
 
-.note-launcher-setting-prefix-color[type="color"]::-webkit-color-swatch {
+.note-compass-setting-prefix-color[type="color"]::-webkit-color-swatch {
 	border-radius: 50%;
 }
 
-.setting-item-description.note-launcher-warning {
+.setting-item-description.note-compass-warning {
 	display: flex;
 	align-items: flex-start;
 	gap: var(--size-4-1);
@@ -97,29 +97,29 @@
 	overflow-wrap: anywhere;
 }
 
-.note-launcher-warning-icon {
+.note-compass-warning-icon {
 	display: flex;
 	flex-shrink: 0;
 	padding-top: 0.15em;
 	--icon-size: var(--icon-xs);
 }
 
-.note-launcher-results {
+.note-compass-results {
 	display: grid;
 	grid-template-columns: [prefix] fit-content(12em) [body] minmax(0, 1fr);
 	column-gap: var(--size-4-2);
 	align-content: start;
 }
 
-.note-launcher-results.has-mark-column {
+.note-compass-results.has-mark-column {
 	grid-template-columns: [mark] minmax(1.4em, max-content) [prefix] fit-content(12em) [body] minmax(0, 1fr);
 }
 
-.note-launcher-results > :not(.note-launcher-row) {
+.note-compass-results > :not(.note-compass-row) {
 	grid-column: 1 / -1;
 }
 
-.note-launcher-results > .suggestion-item.note-launcher-row {
+.note-compass-results > .suggestion-item.note-compass-row {
 	display: grid;
 	grid-column: 1 / -1;
 	grid-template-columns: subgrid;
@@ -127,19 +127,19 @@
 	padding-block: var(--size-2-2);
 }
 
-.note-launcher-row-mark {
+.note-compass-row-mark {
 	grid-column: mark;
 	white-space: nowrap;
 	color: var(--text-accent);
 }
 
-.note-launcher-row-prefix {
+.note-compass-row-prefix {
 	grid-column: prefix;
 	justify-self: stretch;
 	min-width: 0;
 }
 
-.note-launcher-row-body {
+.note-compass-row-body {
 	grid-column: body;
 	display: flex;
 	align-items: center;
@@ -147,12 +147,12 @@
 	min-width: 0;
 }
 
-.note-launcher-row.no-prefix .note-launcher-row-body {
+.note-compass-row.no-prefix .note-compass-row-body {
 	grid-column: prefix / -1;
 }
 
-.note-launcher-row-prefix,
-.note-launcher-setting-prefix {
+.note-compass-row-prefix,
+.note-compass-setting-prefix {
 	display: inline-flex;
 	align-items: center;
 	box-sizing: border-box;
@@ -167,21 +167,21 @@
 	overflow: hidden;
 }
 
-.note-launcher-row-prefix.has-color,
-.note-launcher-setting-prefix.has-color {
+.note-compass-row-prefix.has-color,
+.note-compass-setting-prefix.has-color {
 	color: var(--text-normal);
-	background: color-mix(in srgb, var(--note-launcher-chip-color) 28%, var(--background-primary));
-	border-color: color-mix(in srgb, var(--note-launcher-chip-color) 50%, var(--background-modifier-border));
+	background: color-mix(in srgb, var(--note-compass-chip-color) 28%, var(--background-primary));
+	border-color: color-mix(in srgb, var(--note-compass-chip-color) 50%, var(--background-modifier-border));
 }
 
-.note-launcher-chip-text {
+.note-compass-chip-text {
 	min-width: 0;
 	overflow: hidden;
 	white-space: pre;
 	text-overflow: ellipsis;
 }
 
-.note-launcher-row-content {
+.note-compass-row-content {
 	flex: 0 1 auto;
 	min-width: 0;
 	overflow: hidden;
@@ -189,7 +189,7 @@
 	text-overflow: ellipsis;
 }
 
-.note-launcher-row-value {
+.note-compass-row-value {
 	flex: 0 1 auto;
 	max-width: 50%;
 	overflow: hidden;
@@ -198,7 +198,7 @@
 	color: var(--text-muted);
 }
 
-.note-launcher-row-value::before {
+.note-compass-row-value::before {
 	content: "· ";
 	color: var(--text-faint);
 }
