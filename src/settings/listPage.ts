@@ -91,7 +91,7 @@ export function listPageItems(
 	const inapplicable = inapplicableCondition(list.source, context.propertyTypes);
 	return [
 		{ name: "Enabled", desc: "Show this list in the picker.", control: { type: "toggle", key: key("enabled") } },
-		{ name: "Prefix", desc: "Every row from this list starts with it.", control: { type: "text", key: key("prefix") } },
+		{ name: "Prefix", desc: "Every row from this list starts with it, separator included, as in \"🔗 out |\".", control: { type: "text", key: key("prefix") } },
 		{ name: "Source", control: { type: "dropdown", key: key("source"), options: SOURCE_OPTIONS } },
 		{
 			name: "Note",

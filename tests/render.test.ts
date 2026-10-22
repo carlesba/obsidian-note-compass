@@ -6,17 +6,22 @@ import type { JumpListEntry } from "../src/lists/vault.ts";
 const file = { path: "notes/Project.md", basename: "Project", ctime: 0 };
 
 test("labels an entry with its prefix and name", () => {
-	const entry: JumpListEntry = { file, prefix: "🔗 out", name: "Project" };
+	const entry: JumpListEntry = { file, prefix: "🔗 out |", name: "Project" };
 	assert.equal(entryLabel(entry), "🔗 out | Project");
 });
 
-test("keeps the prefix verbatim, trailing space included", () => {
-	const entry: JumpListEntry = { file, prefix: "🔗 in ", name: "Project" };
+test("keeps the prefix verbatim, inner spaces included", () => {
+	const entry: JumpListEntry = { file, prefix: "🔗 in  |", name: "Project" };
 	assert.equal(entryLabel(entry), "🔗 in  | Project");
 });
 
+test("labels an entry with an empty prefix by its name alone", () => {
+	const entry: JumpListEntry = { file, prefix: "", name: "Project" };
+	assert.equal(entryLabel(entry), "Project");
+});
+
 test("appends the suffix in parentheses", () => {
-	const entry: JumpListEntry = { file, prefix: "📅 day", name: "2024-03-05", suffix: "previous - Tue" };
+	const entry: JumpListEntry = { file, prefix: "📅 day |", name: "2024-03-05", suffix: "previous - Tue" };
 	assert.equal(entryLabel(entry), "📅 day | 2024-03-05 (previous - Tue)");
 });
 

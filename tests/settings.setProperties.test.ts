@@ -19,9 +19,9 @@ import {
 
 test("a link list row is named by its prefix, name, the property it writes to and its mode", () => {
 	const [people, , , category] = defaultSettings().setProperties.linkLists;
-	assert.equal(linkListName(people), "👤 peop People → people · multi");
-	assert.equal(linkListName(category), "📂 catg Category → category · single");
-	assert.equal(linkListName({ ...people, name: "", property: "" }), "👤 peop Links to Person 👤 → no property · multi");
+	assert.equal(linkListName(people), "👤 peop | People → people · multi");
+	assert.equal(linkListName(category), "📂 catg | Category → category · single");
+	assert.equal(linkListName({ ...people, name: "", property: "" }), "👤 peop | Links to Person 👤 → no property · multi");
 });
 
 test("a new link list is disabled, unnamed, writes nowhere and takes the next link list id", () => {
@@ -48,7 +48,7 @@ test("flags suggest only checkbox properties", () => {
 
 test("the flags prefix and templates folder read and write their own fields", () => {
 	const settings = defaultSettings();
-	assert.equal(readControl(settings, FLAGS_PREFIX_KEY), "🎛️ meta");
+	assert.equal(readControl(settings, FLAGS_PREFIX_KEY), "🎛️ meta |");
 	assert.equal(readControl(settings, TEMPLATES_FOLDER_KEY), "templates");
 	assert.equal(writeControl(settings, FLAGS_PREFIX_KEY, "🚩 flag"), true);
 	assert.equal(writeControl(settings, TEMPLATES_FOLDER_KEY, " meta/templates "), true);

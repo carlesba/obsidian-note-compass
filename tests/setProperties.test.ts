@@ -110,9 +110,9 @@ test("rows leave out the target note, templates, archived notes and disabled lis
 	const { rows } = setup((settings) => {
 		settings.setProperties.linkLists[3].enabled = false;
 	});
-	const names = rows.map((candidate) => `${candidate.prefix} | ${candidate.name}`);
+	const names = rows.map((candidate) => `${candidate.prefix} ${candidate.name}`);
 	assert.ok(!names.some((name) => name.endsWith("| Today") || name.endsWith("| Old") || name.endsWith("| Person")));
-	assert.ok(!names.some((name) => name.startsWith("📂 catg")));
+	assert.ok(!names.some((name) => name.startsWith("📂 catg |")));
 	assert.deepEqual(
 		names.filter((name) => name.endsWith("| Acme")),
 		["🏷️ ever | Acme"],
@@ -124,13 +124,13 @@ test("the templates folder setting decides which notes are excluded", () => {
 		settings.setProperties.templatesFolder = "people/";
 	});
 	assert.deepEqual(
-		rows.filter((candidate) => candidate.prefix === "👤 peop").map((candidate) => candidate.name),
+		rows.filter((candidate) => candidate.prefix === "👤 peop |").map((candidate) => candidate.name),
 		["Person"],
 	);
 });
 
 test("today lists notes modified since midnight that no earlier list owns", () => {
-	const todayRows = (rows: PropertyRow[]) => rows.filter((candidate) => candidate.prefix === "🔅 tday").map((candidate) => candidate.name);
+	const todayRows = (rows: PropertyRow[]) => rows.filter((candidate) => candidate.prefix === "🔅 tday |").map((candidate) => candidate.name);
 	assert.deepEqual(todayRows(setup().rows), []);
 	const withoutPeople = setup((settings) => {
 		settings.setProperties.linkLists[0].enabled = false;
@@ -140,20 +140,20 @@ test("today lists notes modified since midnight that no earlier list owns", () =
 
 test("choosing a row toggles it and the reopened picker moves it among the selected rows", () => {
 	const { rows, state } = setup();
-	const next = toggleRow(state, row(rows, "📂 catg", "Home"));
+	const next = toggleRow(state, row(rows, "📂 catg |", "Home"));
 	assert.deepEqual(labels(rows, next).slice(2, 5), ["✓ 🎛️ meta | active", "✓ 👤 peop | Ann", "✓ 📂 catg | Home"]);
-	assert.deepEqual(labels(rows, toggleRow(next, row(rows, "📂 catg", "Home"))), labels(rows, state));
+	assert.deepEqual(labels(rows, toggleRow(next, row(rows, "📂 catg |", "Home"))), labels(rows, state));
 });
 
 test("a flag writes true when selected and deletes its key when not, never false", () => {
 	const { rows, state } = setup();
-	const flipped = toggleRow(toggleRow(state, row(rows, "🎛️ meta", "active")), row(rows, "🎛️ meta", "someday"));
+	const flipped = toggleRow(toggleRow(state, row(rows, "🎛️ meta |", "active")), row(rows, "🎛️ meta |", "someday"));
 	assert.deepEqual(saved(state, flipped, { active: true }), { someday: true });
 });
 
 test("a property the picker did not change keeps its saved value", () => {
 	const { rows, state } = setup();
-	const someday = row(rows, "🎛️ meta", "someday");
+	const someday = row(rows, "🎛️ meta |", "someday");
 	const untouched = toggleRow(toggleRow(state, someday), someday);
 	const original = { someday: "later", people: "[[people/Ann|Ann]]" };
 	assert.deepEqual(saved(state, untouched, original), original);
@@ -161,27 +161,27 @@ test("a property the picker did not change keeps its saved value", () => {
 
 test("a multi list adds and removes links and keeps the values it does not offer", () => {
 	const { rows, state } = setup();
-	const withBob = toggleRow(state, row(rows, "👤 peop", "Bob"));
+	const withBob = toggleRow(state, row(rows, "👤 peop |", "Bob"));
 	assert.deepEqual(saved(state, withBob).people, ["[[people/Ann|Ann]]", "[[Stranger]]", "[[Bob]]"]);
-	const withoutAnn = toggleRow(withBob, row(rows, "👤 peop", "Ann"));
+	const withoutAnn = toggleRow(withBob, row(rows, "👤 peop |", "Ann"));
 	assert.deepEqual(saved(state, withoutAnn).people, ["[[Stranger]]", "[[Bob]]"]);
 });
 
 test("a multi list deletes its key when nothing is selected", () => {
 	const { settings, rows, state } = setup();
-	assert.deepEqual(saved(state, toggleRow(state, row(rows, "🏷️ ever", "Acme")), { related: [] }).related, ["[[Acme]]"]);
+	assert.deepEqual(saved(state, toggleRow(state, row(rows, "🏷️ ever |", "Acme")), { related: [] }).related, ["[[Acme]]"]);
 	const onlyAnn = initialPropertyState(settings.setProperties, { people: ["[[Ann]]"] });
-	assert.ok(!("people" in saved(onlyAnn, toggleRow(onlyAnn, row(rows, "👤 peop", "Ann")), { people: ["[[Ann]]"] })));
+	assert.ok(!("people" in saved(onlyAnn, toggleRow(onlyAnn, row(rows, "👤 peop |", "Ann")), { people: ["[[Ann]]"] })));
 });
 
 test("a single list writes one link, replaces it with another row and clears it when chosen again", () => {
 	const { settings, rows, state } = setup();
-	const work = toggleRow(state, row(rows, "📂 catg", "Work"));
+	const work = toggleRow(state, row(rows, "📂 catg |", "Work"));
 	assert.equal(saved(state, work).category, "[[Work]]");
-	const home = toggleRow(work, row(rows, "📂 catg", "Home"));
+	const home = toggleRow(work, row(rows, "📂 catg |", "Home"));
 	assert.equal(saved(state, home).category, "[[Home]]");
 	const atHome = initialPropertyState(settings.setProperties, { category: "[[Home]]" });
-	assert.ok(!("category" in saved(atHome, toggleRow(atHome, row(rows, "📂 catg", "Home")), { category: "[[Home]]" })));
+	assert.ok(!("category" in saved(atHome, toggleRow(atHome, row(rows, "📂 catg |", "Home")), { category: "[[Home]]" })));
 });
 
 test("the initial state matches saved links by alias or link text and keeps unmatched values on save", () => {
@@ -201,7 +201,7 @@ test("the initial state matches saved links by alias or link text and keeps unma
 		"✓ 🏷️ ever | Ideas",
 		"\u2003 🎛️ meta | active",
 	]);
-	const withAcme = toggleRow(toggleRow(state, row(rows, "🏷️ ever", "Acme")), row(rows, "👤 peop", "Bob"));
+	const withAcme = toggleRow(toggleRow(state, row(rows, "🏷️ ever |", "Acme")), row(rows, "👤 peop |", "Bob"));
 	assert.deepEqual(saved(state, withAcme, original), {
 		...original,
 		people: ["[[Ann]]", "[[Bob]]"],
@@ -211,7 +211,7 @@ test("the initial state matches saved links by alias or link text and keeps unma
 
 test("properties outside every list and links no row offers survive a save through the vault", async () => {
 	const { vault, target, rows, state } = setup();
-	const changed = toggleRow(toggleRow(state, row(rows, "👤 peop", "Bob")), row(rows, "🎛️ meta", "someday"));
+	const changed = toggleRow(toggleRow(state, row(rows, "👤 peop |", "Bob")), row(rows, "🎛️ meta |", "someday"));
 	await vault.updateFrontmatter(target.path, (frontmatter) => writeProperties(frontmatter, state, changed));
 	assert.deepEqual(vault.saved, [
 		{ active: true, someday: true, people: ["[[people/Ann|Ann]]", "[[Stranger]]", "[[Bob]]"], topic: "x" },

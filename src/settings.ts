@@ -45,10 +45,10 @@ export interface JumpSettings {
 }
 
 const DEFAULT_PREFIXES: Record<RelationSourceKind, string> = {
-	adjacentDates: "📅 day",
-	linksOut: "🔗 out",
-	linksIn: "🔗 in ",
-	sameDay: "🔅 ctx",
+	adjacentDates: "📅 day |",
+	linksOut: "🔗 out |",
+	linksIn: "🔗 in  |",
+	sameDay: "🔅 ctx |",
 };
 
 const LEGACY_BUILT_IN_KEYS: Record<RelationSourceKind, string> = {
@@ -67,7 +67,7 @@ const LEGACY_OPERATORS: Record<string, (value: string) => Condition> = {
 
 const DATE_NOTE_SOURCES: readonly DateNoteSettings["from"][] = ["auto", "periodicNotes", "dailyNotes", "custom"];
 
-const DEFAULT_FLAGS_PREFIX = "🎛️ meta";
+const DEFAULT_FLAGS_PREFIX = "🎛️ meta |";
 
 const DEFAULT_FLAGS = ["active", "someday", "evergreen", "blocked", "archived"];
 
@@ -75,32 +75,32 @@ const DEFAULT_TEMPLATES_FOLDER = "templates";
 
 function defaultLinkListFields(): Omit<LinkList, "id" | "enabled">[] {
 	return [
-		{ prefix: "👤 peop", name: "People", source: { kind: "linksToNote", note: "Person 👤" }, property: "people", mode: "multi" },
-		{ prefix: "📍 trak", name: "Trackers", source: { kind: "linksToNote", note: "Tracker 📍" }, property: "trackers", mode: "multi" },
+		{ prefix: "👤 peop |", name: "People", source: { kind: "linksToNote", note: "Person 👤" }, property: "people", mode: "multi" },
+		{ prefix: "📍 trak |", name: "Trackers", source: { kind: "linksToNote", note: "Tracker 📍" }, property: "trackers", mode: "multi" },
 		{
-			prefix: "📚 coll",
+			prefix: "📚 coll |",
 			name: "Collections",
 			source: { kind: "linksToNote", note: "Collection 📚" },
 			property: "collections",
 			mode: "multi",
 		},
-		{ prefix: "📂 catg", name: "Category", source: { kind: "inFolder", folder: "categories" }, property: "category", mode: "single" },
+		{ prefix: "📂 catg |", name: "Category", source: { kind: "inFolder", folder: "categories" }, property: "category", mode: "single" },
 		{
-			prefix: "🏷️ ever",
+			prefix: "🏷️ ever |",
 			name: "Evergreen",
 			source: { kind: "frontmatter", property: "evergreen", condition: { operator: "is true" } },
 			property: "related",
 			mode: "multi",
 		},
 		{
-			prefix: "📍 actv",
+			prefix: "📍 actv |",
 			name: "Active",
 			source: { kind: "frontmatter", property: "active", condition: { operator: "is true" } },
 			property: "related",
 			mode: "multi",
 		},
-		{ prefix: "🏢 comp", name: "Companies", source: { kind: "linksToNote", note: "Org 🏢" }, property: "related", mode: "multi" },
-		{ prefix: "🔅 tday", name: "Today", source: { kind: "modifiedToday" }, property: "related", mode: "multi" },
+		{ prefix: "🏢 comp |", name: "Companies", source: { kind: "linksToNote", note: "Org 🏢" }, property: "related", mode: "multi" },
+		{ prefix: "🔅 tday |", name: "Today", source: { kind: "modifiedToday" }, property: "related", mode: "multi" },
 	];
 }
 
@@ -196,7 +196,7 @@ function migrateLegacyLists(data: Record<string, unknown>): NoteList[] {
 		const list = isRecord(legacy) ? legacy : {};
 		add(
 			typeof list.enabled === "boolean" ? list.enabled : true,
-			typeof list.prefix === "string" ? list.prefix : DEFAULT_PREFIXES[kind],
+			typeof list.prefix === "string" ? withLegacySeparator(list.prefix) : DEFAULT_PREFIXES[kind],
 			{ kind },
 		);
 	}
@@ -206,10 +206,14 @@ function migrateLegacyLists(data: Record<string, unknown>): NoteList[] {
 		if (!Object.prototype.hasOwnProperty.call(LEGACY_OPERATORS, legacy.operator)) continue;
 		const toCondition = LEGACY_OPERATORS[legacy.operator];
 		const value = typeof legacy.value === "string" ? legacy.value : "";
-		const prefix = typeof legacy.prefix === "string" ? legacy.prefix : "";
+		const prefix = withLegacySeparator(typeof legacy.prefix === "string" ? legacy.prefix : "");
 		add(true, prefix, { kind: "frontmatter", property: legacy.property, condition: toCondition(value) });
 	}
 	return lists;
+}
+
+function withLegacySeparator(prefix: string): string {
+	return prefix === "" ? "|" : `${prefix} |`;
 }
 
 function readDateNotes(stored: unknown): DateNoteSettings {
