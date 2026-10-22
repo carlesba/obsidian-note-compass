@@ -269,6 +269,13 @@ test("a typed name no note has offers a create row that links it and creates the
 	assert.equal(vault.content("inbox/Zed.md"), "[[types/Person]]\n");
 });
 
+test("create and use rows come after every row the query matches", () => {
+	const people = entry("people", "links", { prefix: "👤" });
+	const status = entry("status", "text", { prefix: "📌" });
+	const { choicesFor } = setup([status, people]);
+	assert.deepEqual(labels(choicesFor(undefined, "bo")), ["👤 Bob", '✏️ 📌 status: use "bo"', '➕ 👤 create "bo"']);
+});
+
 test("a create row is not offered for a relation source or a condition the new note cannot meet", () => {
 	const { choicesFor } = setup(
 		[

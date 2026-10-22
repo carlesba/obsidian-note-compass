@@ -47,7 +47,7 @@ class ChoiceModal<Choice extends { parts: RowParts }> extends SuggestModal<Choic
 	}
 
 	renderSuggestion(choice: Choice, el: HTMLElement): void {
-		renderRow(el, choice.parts);
+		renderRow(el, choice.parts, true);
 	}
 
 	selectSuggestion(choice: Choice, evt: MouseEvent | KeyboardEvent): void {
