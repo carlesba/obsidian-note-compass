@@ -18,12 +18,14 @@ export default class NoteCompassPlugin extends Plugin {
 		this.addCommand({
 			id: "jump-to-note",
 			name: "Jump to note",
+			icon: "compass",
 			callback: () => this.openJumpModal(),
 		});
 
 		this.addCommand({
 			id: "set-properties",
 			name: "Set properties",
+			icon: "sliders-horizontal",
 			checkCallback: (checking) => {
 				const target = this.currentNote();
 				if (!target) return false;
@@ -35,6 +37,7 @@ export default class NoteCompassPlugin extends Plugin {
 		this.addCommand({
 			id: "create-note",
 			name: "Create note",
+			icon: "file-plus",
 			callback: () =>
 				createNoteFromEntries(this.app, createObsidianVault(this.app), this.settings, this.currentNote()?.path),
 		});
