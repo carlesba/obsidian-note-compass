@@ -29,3 +29,40 @@
 	padding-top: 0.15em;
 	--icon-size: var(--icon-xs);
 }
+
+.suggestion-item.note-launcher-row {
+	display: flex;
+	align-items: baseline;
+	gap: var(--size-4-2);
+}
+
+.note-launcher-row-mark {
+	flex: 0 0 2em;
+	white-space: nowrap;
+}
+
+.note-launcher-row-prefix {
+	flex: 0 0 6.5em;
+	overflow: hidden;
+	white-space: pre;
+	text-overflow: ellipsis;
+}
+
+.note-launcher-row-content {
+	flex: 1 1 auto;
+	min-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.note-launcher-row-value {
+	flex: 0 1 auto;
+	max-width: 40%;
+	margin-inline-start: auto;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	text-align: end;
+	color: var(--text-muted);
+}

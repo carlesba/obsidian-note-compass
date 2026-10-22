@@ -32,6 +32,12 @@ export interface JumpListVault {
 	moment: MomentFactory;
 }
 
+export interface NewNoteVault {
+	defaultNoteFolder(sourcePath: string): string;
+	readNote(path: string): Promise<string>;
+	createNote(path: string, content: string): Promise<void>;
+}
+
 export interface JumpListEntry {
 	file: VaultNote;
 	prefix: string;

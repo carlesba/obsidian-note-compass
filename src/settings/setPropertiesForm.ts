@@ -5,7 +5,9 @@ import { mixedTypeProperties } from "../setProperties/propertyTypes.ts";
 import { readListField, writeListField } from "./listForm.ts";
 import type { ListField } from "./listForm.ts";
 
-export type PropertyField = "enabled" | "prefix" | "name" | "type" | "excludedFolder";
+export type PropertyField = "enabled" | "prefix" | "name" | "type" | LinkPropertyField;
+
+type LinkPropertyField = "excludedFolder" | "newNoteFolder" | "newNoteTemplate";
 
 export type LinkProperty = EditableProperty & NoteList;
 
@@ -60,7 +62,7 @@ export function readPropertyField(entry: EditableProperty, field: PropertyField)
 	if (field === "prefix") return entry.prefix;
 	if (field === "name") return entry.property;
 	if (field === "type") return entry.type;
-	return entry.excludedFolder;
+	return entry[field];
 }
 
 export function writePropertyField(entry: EditableProperty, field: PropertyField, value: unknown): void {
@@ -68,8 +70,8 @@ export function writePropertyField(entry: EditableProperty, field: PropertyField
 	if (field === "enabled") entry.enabled = value === true;
 	else if (field === "prefix") entry.prefix = text;
 	else if (field === "name") entry.property = text.trim();
-	else if (field === "excludedFolder") entry.excludedFolder = text.trim();
-	else writeType(entry, EDITABLE_PROPERTY_TYPES.find((type) => type === value) ?? entry.type);
+	else if (field === "type") writeType(entry, EDITABLE_PROPERTY_TYPES.find((type) => type === value) ?? entry.type);
+	else entry[field] = text.trim();
 }
 
 export function readPropertySourceField(entry: EditableProperty, field: ListField): unknown {
@@ -91,6 +93,8 @@ function writeType(entry: EditableProperty, type: EditablePropertyType): void {
 	}
 	delete entry.source;
 	delete entry.excludedFolder;
+	delete entry.newNoteFolder;
+	delete entry.newNoteTemplate;
 }
 
 function defaultLinkSource(): ListSource {

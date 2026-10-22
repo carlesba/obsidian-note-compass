@@ -134,7 +134,7 @@ test("property keys never touch the jump list with the same id", () => {
 	assert.equal(JSON.stringify(settings.lists), jumpLists);
 });
 
-test("a link type gets a source and an excluded folder, and other types drop them", () => {
+test("a link type gets a source, an excluded folder and new note options, and other types drop them", () => {
 	const settings = defaultSettings();
 	const key = (field: Parameters<typeof propertyKey>[1]) => propertyKey("list-9", field);
 	writeControl(settings, key("type"), "links");
@@ -142,6 +142,11 @@ test("a link type gets a source and an excluded folder, and other types drop the
 	assert.equal(settings.setProperties.properties[0].excludedFolder, "");
 	writeControl(settings, key("excludedFolder"), " templates ");
 	assert.equal(readControl(settings, key("excludedFolder")), "templates");
+	writeControl(settings, key("newNoteFolder"), " people ");
+	writeControl(settings, key("newNoteTemplate"), "templates/Person.md");
+	assert.equal(readControl(settings, key("newNoteFolder")), "people");
+	assert.equal(readControl(settings, key("newNoteTemplate")), "templates/Person.md");
+	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(settings))).setProperties, settings.setProperties);
 	writeControl(settings, key("type"), "text");
 	assert.deepEqual(settings.setProperties.properties[0], {
 		id: "list-9",
@@ -169,4 +174,17 @@ test("source keys edit a link property's source with the jump list's form", () =
 		condition: { operator: "is true" },
 	});
 	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(settings))).setProperties, settings.setProperties);
+});
+
+test("a stored new note folder or template that is not text is left out", () => {
+	const stored = {
+		setProperties: {
+			properties: [
+				{ id: "a", enabled: true, prefix: "", property: "people", type: "links", source: { kind: "modifiedToday" }, newNoteFolder: 3, newNoteTemplate: "t.md" },
+			],
+		},
+	};
+	const [property] = mergeSettings(stored).setProperties.properties;
+	assert.equal(property.newNoteFolder, undefined);
+	assert.equal(property.newNoteTemplate, "t.md");
 });

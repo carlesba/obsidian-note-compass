@@ -1,8 +1,36 @@
 import type { JumpListEntry } from "./lists/vault";
 
+export interface RowParts {
+	mark?: string;
+	prefix?: string;
+	content: string;
+	value?: string;
+}
+
+const ROW_PARTS = ["mark", "prefix", "content", "value"] as const;
+
+export function rowLabel(parts: RowParts): string {
+	return ROW_PARTS.map((part) => parts[part])
+		.filter(Boolean)
+		.join(" ");
+}
+
+export function renderRow(el: HTMLElement, parts: RowParts): void {
+	el.addClass("note-launcher-row");
+	for (const part of ROW_PARTS) {
+		const text = parts[part];
+		if (text !== undefined) el.createSpan({ cls: `note-launcher-row-${part}`, text });
+	}
+}
+
+export function entryParts(entry: JumpListEntry): RowParts {
+	const parts: RowParts = { prefix: entry.prefix, content: entry.name };
+	if (entry.suffix) parts.value = `(${entry.suffix})`;
+	return parts;
+}
+
 export function entryLabel(entry: JumpListEntry): string {
-	const suffix = entry.suffix ? ` (${entry.suffix})` : "";
-	return [entry.prefix, `${entry.name}${suffix}`].filter(Boolean).join(" ");
+	return rowLabel(entryParts(entry));
 }
 
 export function matchesInOrder(query: string, label: string): boolean {

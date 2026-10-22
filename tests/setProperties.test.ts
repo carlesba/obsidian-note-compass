@@ -1,20 +1,23 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
-import type { Frontmatter, JumpListVault, PropertyValueCount, VaultNote } from "../src/lists/vault.ts";
+import type { Frontmatter, JumpListVault, NewNoteVault, PropertyValueCount, VaultNote } from "../src/lists/vault.ts";
 import { defaultSettings } from "../src/settings.ts";
-import type { EditableProperty, EditablePropertyType } from "../src/settings.ts";
+import type { EditableProperty, EditablePropertyType, ListSource } from "../src/settings.ts";
+import { createNotes } from "../src/setProperties/newNotes.ts";
+import { offeredEntries, propertyType } from "../src/setProperties/offered.ts";
 import {
 	CANCEL_LABEL,
 	SAVE_LABEL,
 	initialPropertyState,
+	pendingCreations,
 	pickerChoices,
-	propertyType,
+	pickerState,
 	withValue,
 	writeProperties,
 } from "../src/setProperties/picker.ts";
-import type { PropertyState } from "../src/setProperties/picker.ts";
-import { CLEAR_LABEL, DONE_LABEL, valueChoices, valuePicker } from "../src/setProperties/valuePicker.ts";
-import type { ValueChoice } from "../src/setProperties/valuePicker.ts";
+import type { PickerChoice, PickerState, PropertyState } from "../src/setProperties/picker.ts";
+import { CLEAR_LABEL, valueChoices, valuePicker } from "../src/setProperties/valuePicker.ts";
+import type { ScalarPropertyType, ValueChoice } from "../src/setProperties/valuePicker.ts";
 import { moment } from "./moment.ts";
 
 interface FakeNote {
@@ -22,29 +25,32 @@ interface FakeNote {
 	mtime?: number;
 	frontmatter?: Frontmatter;
 	links?: string[];
+	content?: string;
 }
+
+type FakeVault = JumpListVault & NewNoteVault & { note(path: string): VaultNote; content(path: string): string | undefined };
 
 const NOW = new Date(2024, 2, 9, 15).getTime();
 const HOURS_AGO = (hours: number) => NOW - hours * 3600 * 1000;
-const OFF = "\u2003";
+const PERSON = { kind: "linksToNote", note: "types/Person.md" } as const;
 
-function fakeVault(fakes: FakeNote[]): JumpListVault & { note(path: string): VaultNote } {
-	const notes = fakes.map((fake) => ({ path: fake.path, basename: fake.path.split("/").pop()!.replace(/\.md$/, ""), ctime: 0 }));
-	const byPath = new Map(fakes.map((fake) => [fake.path, fake]));
+function fakeVault(fakes: FakeNote[], propertyTypes: Record<string, string> = {}): FakeVault {
+	const toNote = (fake: FakeNote) => ({ path: fake.path, basename: fake.path.split("/").pop()!.replace(/\.md$/, ""), ctime: 0 });
+	const byPath = (path: string) => fakes.find((fake) => fake.path === path);
 	return {
-		notes: () => notes,
-		frontmatter: (path) => byPath.get(path)?.frontmatter,
+		notes: () => fakes.map(toNote),
+		frontmatter: (path) => byPath(path)?.frontmatter,
 		updateFrontmatter: async (path, update) => {
-			const fake = byPath.get(path)!;
+			const fake = byPath(path)!;
 			fake.frontmatter = { ...fake.frontmatter };
 			update(fake.frontmatter);
 		},
-		linksFrom: (path) => byPath.get(path)?.links ?? [],
+		linksFrom: (path) => byPath(path)?.links ?? [],
 		linksTo: (path) => fakes.filter((fake) => fake.links?.includes(path)).map((fake) => fake.path),
-		mtime: (path) => byPath.get(path)?.mtime ?? HOURS_AGO(48),
+		mtime: (path) => byPath(path)?.mtime ?? HOURS_AGO(48),
 		periodicNotesSettings: () => undefined,
 		dailyNotesOptions: () => undefined,
-		propertyTypes: () => ({}),
+		propertyTypes: () => propertyTypes,
 		propertyValueCounts: (property) => {
 			const counts: PropertyValueCount[] = [];
 			for (const fake of fakes) {
@@ -58,9 +64,16 @@ function fakeVault(fakes: FakeNote[]): JumpListVault & { note(path: string): Vau
 			}
 			return counts;
 		},
+		defaultNoteFolder: () => "inbox",
+		readNote: async (path) => byPath(path)?.content ?? "",
+		createNote: async (path, content) => {
+			if (byPath(path)) throw new Error(`${path} exists`);
+			fakes.push({ path, content, mtime: NOW });
+		},
 		now: () => NOW,
 		moment,
-		note: (path) => notes.find((note) => note.path === path)!,
+		note: (path) => toNote(byPath(path)!),
+		content: (path) => byPath(path)?.content,
 	};
 }
 
@@ -73,10 +86,10 @@ function vaultNotes(): FakeNote[] {
 		},
 		{ path: "types/Person.md" },
 		{ path: "people/Ann.md", mtime: HOURS_AGO(30), links: ["types/Person.md"], frontmatter: { status: "done" } },
-		{ path: "people/Bob.md", mtime: HOURS_AGO(2), links: ["types/Person.md"], frontmatter: { status: "done", rating: 3 } },
-		{ path: "people/Cy.md", mtime: HOURS_AGO(5), links: ["types/Person.md"], frontmatter: { rating: 3 } },
+		{ path: "people/Bob.md", mtime: HOURS_AGO(2), links: ["types/Person.md"], frontmatter: { status: "Done", rating: 3 } },
+		{ path: "people/Cy.md", mtime: HOURS_AGO(5), links: ["types/Person.md"], frontmatter: { rating: 3, status: "done" } },
 		{ path: "people/Old.md", mtime: HOURS_AGO(3), links: ["types/Person.md"], frontmatter: { archived: true } },
-		{ path: "templates/Person.md", links: ["types/Person.md"] },
+		{ path: "templates/Person.md", links: ["types/Person.md"], content: "# Person\n" },
 		{ path: "Today too.md", links: ["types/Person.md", "Today.md"], frontmatter: { rating: 4.5 } },
 	];
 }
@@ -84,62 +97,222 @@ function vaultNotes(): FakeNote[] {
 function entry(property: string, type: EditablePropertyType, extra: Partial<EditableProperty> = {}): EditableProperty {
 	const linked = type === "link" || type === "links";
 	return {
-		id: property + type,
+		id: property + type + (extra.prefix ?? ""),
 		enabled: true,
 		prefix: "",
 		property,
 		type,
-		...(linked ? { source: { kind: "linksToNote" as const, note: "types/Person.md" }, excludedFolder: "templates" } : {}),
+		...(linked ? { source: PERSON, excludedFolder: "templates" } : {}),
 		...extra,
 	};
 }
 
-function setup(properties: EditableProperty[]) {
+function setup(properties: EditableProperty[], fakes: FakeNote[] = vaultNotes(), propertyTypes: Record<string, string> = {}) {
 	const settings = defaultSettings();
 	settings.setProperties.properties = properties;
-	const vault = fakeVault(vaultNotes());
+	const vault = fakeVault(fakes, propertyTypes);
 	const target = vault.note("Today.md");
 	const initial = initialPropertyState(settings.setProperties, vault.frontmatter(target.path));
-	const choicesFor = (picked: EditableProperty, state: PropertyState = initial, query = "") =>
+	const entries = offeredEntries(settings, vault, target);
+	const choicesFor = (state: PickerState = pickerState(initial), query = "") => pickerChoices(entries, initial, state, query);
+	const valueChoicesFor = (picked: EditableProperty, state: PickerState = pickerState(initial), query = "") =>
 		valueChoices(
-			valuePicker(settings, vault, target, picked, propertyType(settings.setProperties, picked)),
-			state.get(picked.property),
+			valuePicker(vault, picked.property, propertyType(settings.setProperties, picked) as ScalarPropertyType),
+			state.values.get(picked.property),
 			query,
 		);
-	return { settings, vault, target, initial, choicesFor };
+	return { settings, vault, target, initial, choicesFor, valueChoicesFor };
 }
 
 const labels = (choices: readonly { label: string }[]) => choices.map((choice) => choice.label);
 
-const pick = (choices: readonly ValueChoice[], label: string) => choices.find((choice) => choice.label.endsWith(label))!;
+const pick = <Choice extends { label: string }>(choices: readonly Choice[], label: string) => {
+	const found = choices.find((choice) => choice.label === label);
+	assert.ok(found, `no row ${label} in ${JSON.stringify(labels(choices))}`);
+	return found;
+};
 
-function written(initial: PropertyState, state: PropertyState, frontmatter: Frontmatter = {}): Frontmatter {
+const chosen = (choice: PickerChoice): PickerState => {
+	assert.equal(choice.action.action, "set");
+	return choice.action.action === "set" ? choice.action.state : pickerState(new Map());
+};
+
+function written(initial: PropertyState, state: PickerState, frontmatter: Frontmatter = {}): Frontmatter {
 	const result = { ...frontmatter };
-	writeProperties(result, initial, state);
+	writeProperties(result, initial, state.values);
 	return result;
 }
 
-test("the main picker shows save, cancel and each enabled property with its pending value", () => {
-	const active = entry("active", "checkbox", { prefix: "🎛️" });
-	const { settings, initial } = setup([
-		active,
+test("the main picker lists save, cancel, the set values and then each entry's choices", () => {
+	const { choicesFor } = setup([
+		entry("active", "checkbox", { prefix: "🎛️" }),
 		entry("due", "date", { prefix: "📅" }),
 		entry("people", "links", { prefix: "👤" }),
+		entry("status", "text", { prefix: "📝" }),
 		entry("hidden", "text", { enabled: false }),
-		entry("people", "links", { id: "more", prefix: "🧑" }),
 	]);
-	assert.deepEqual(labels(pickerChoices(settings.setProperties, initial, initial)), [
+	assert.deepEqual(labels(choicesFor()), [
 		SAVE_LABEL,
 		CANCEL_LABEL,
-		`${OFF} 🎛️ active · true`,
-		`${OFF} 📅 due · —`,
-		`${OFF} 👤 people · Ann, Stranger`,
-		`${OFF} 🧑 people · Ann, Stranger`,
+		"✓ 🎛️ active true",
+		"✓ 👤 Ann",
+		"✓ 👤 Stranger",
+		"✓ 📝 status doing",
+		"📅 due",
+		"👤 Bob",
+		"👤 Cy",
+		"👤 Today too",
+		"📝 status done",
+		"📝 status Done",
 	]);
-	const changed = withValue(initial, "active", false);
-	assert.equal(labels(pickerChoices(settings.setProperties, initial, changed))[2], "• 🎛️ active · false");
-	const choice = pickerChoices(settings.setProperties, initial, initial)[2].choice;
-	assert.deepEqual(choice, { action: "edit", entry: active });
+});
+
+test("a row splits into mark, prefix, content and value parts", () => {
+	const { choicesFor } = setup([entry("status", "text", { prefix: "📝" }), entry("people", "links", { prefix: "👤" })]);
+	const choices = choicesFor();
+	assert.deepEqual(pick(choices, "✓ 📝 status doing").parts, { mark: "✓", prefix: "📝", content: "status", value: "doing" });
+	assert.deepEqual(pick(choices, "👤 Bob").parts, { prefix: "👤", content: "Bob" });
+	assert.deepEqual(pick(choices, SAVE_LABEL).parts, { content: SAVE_LABEL });
+});
+
+test("choosing a set link drops only that link and choosing a note adds it", () => {
+	const { initial, choicesFor } = setup([entry("people", "links", { prefix: "👤" })]);
+	const withoutAnn = chosen(pick(choicesFor(), "✓ 👤 Ann"));
+	assert.deepEqual(written(initial, withoutAnn), { people: ["[[Stranger]]"] });
+	assert.ok(labels(choicesFor(withoutAnn)).includes("👤 Ann"));
+	const withBob = chosen(pick(choicesFor(withoutAnn), "👤 Bob"));
+	assert.deepEqual(written(initial, withBob), { people: ["[[Stranger]]", "[[Bob]]"] });
+	assert.deepEqual(labels(choicesFor(withBob)).slice(2, 4), ["✓ 👤 Stranger", "✓ • 👤 Bob"]);
+});
+
+test("a single link is replaced by the chosen note and cleared by its set row", () => {
+	const { initial, choicesFor } = setup([entry("owner", "link", { prefix: "🙋" })]);
+	assert.deepEqual(labels(choicesFor()).slice(2), ["🙋 Bob", "🙋 Cy", "🙋 Ann", "🙋 Today too"]);
+	const withAnn = chosen(pick(choicesFor(), "🙋 Ann"));
+	const withCy = chosen(pick(choicesFor(withAnn), "🙋 Cy"));
+	assert.deepEqual(written(initial, withCy), { owner: "[[Cy]]" });
+	assert.deepEqual(labels(choicesFor(withCy)).slice(2), ["✓ • 🙋 Cy", "🙋 Bob", "🙋 Ann", "🙋 Today too"]);
+	assert.deepEqual(written(initial, chosen(pick(choicesFor(withCy), "✓ • 🙋 Cy"))), {});
+});
+
+test("a link matches a note by its link text when its alias differs", () => {
+	const { initial, choicesFor } = setup([entry("people", "links")]);
+	const state = withValue(pickerState(initial), "people", ["[[people/Ann|Annie]]"]);
+	assert.deepEqual(labels(choicesFor(state)).slice(2), ["✓ • Annie", "Bob", "Cy", "Today too"]);
+});
+
+test("a text entry replaces from vault values, clears from its set row and uses a typed value", () => {
+	const { initial, choicesFor } = setup([entry("status", "text", { prefix: "📝" })]);
+	const done = chosen(pick(choicesFor(), "📝 status done"));
+	assert.deepEqual(written(initial, done), { status: "done" });
+	assert.deepEqual(written(initial, chosen(pick(choicesFor(), "✓ 📝 status doing")), { status: "doing" }), {});
+	assert.deepEqual(labels(choicesFor(undefined, "dne")), ["📝 status done", "📝 status Done", '✏️ 📝 status: use "dne"']);
+	assert.deepEqual(labels(choicesFor(undefined, "zzz")), ['✏️ 📝 status: use "zzz"']);
+	assert.deepEqual(written(initial, chosen(pick(choicesFor(undefined, "zzz"), '✏️ 📝 status: use "zzz"'))), { status: "zzz" });
+	assert.deepEqual(labels(choicesFor(undefined, "DONE")), ["📝 status done", "📝 status Done"]);
+});
+
+test("a checkbox, number or date entry opens its own picker and hides its entry row once set", () => {
+	const active = entry("active", "checkbox", { prefix: "🎛️" });
+	const rating = entry("rating", "number", { prefix: "⭐" });
+	const { initial, choicesFor } = setup([active, rating]);
+	assert.deepEqual(labels(choicesFor()).slice(2), ["✓ 🎛️ active true", "⭐ rating"]);
+	assert.deepEqual(pick(choicesFor(), "✓ 🎛️ active true").action, { action: "edit", entry: active });
+	assert.deepEqual(pick(choicesFor(), "⭐ rating").action, { action: "edit", entry: rating });
+	const changed = withValue(withValue(pickerState(initial), "rating", 3), "active", false);
+	assert.deepEqual(labels(choicesFor(changed)).slice(2), ["✓ • 🎛️ active false", "✓ • ⭐ rating 3"]);
+});
+
+test("entries writing one property share its set rows and offer each note once", () => {
+	const { choicesFor } = setup(
+		[
+			entry("related", "links", { prefix: "🔅", source: { kind: "modifiedToday" } }),
+			entry("related", "links", { prefix: "👤" }),
+		],
+		[...vaultNotes().slice(1), { path: "Today.md", mtime: HOURS_AGO(1), frontmatter: { related: ["[[Ann]]", "[[Bob]]", "[[Ann]]"] } }],
+	);
+	assert.deepEqual(labels(choicesFor()).slice(2), ["✓ 👤 Ann", "✓ 🔅 Bob", "🔅 Cy", "👤 Today too"]);
+});
+
+test("an entry shows five notes and a row to see more until a query is typed", () => {
+	const many = Array.from({ length: 7 }, (_, index) => ({
+		path: `people/P${index}.md`,
+		mtime: HOURS_AGO(index + 1),
+		links: ["types/Person.md"],
+	}));
+	const { choicesFor } = setup([entry("people", "links", { prefix: "👤 peop |" })], [{ path: "Today.md" }, { path: "types/Person.md" }, ...many]);
+	const rows = choicesFor();
+	assert.deepEqual(labels(rows).slice(2), [
+		"👤 peop | P0",
+		"👤 peop | P1",
+		"👤 peop | P2",
+		"👤 peop | P3",
+		"👤 peop | P4",
+		"👤 peop | … 2 more, type to filter",
+	]);
+	const more = pick(rows, "👤 peop | … 2 more, type to filter").action;
+	assert.deepEqual(more, { action: "expand", query: "👤 peop |" });
+	assert.equal(labels(choicesFor(undefined, "👤 peop |")).length, 7);
+	assert.deepEqual(labels(choicesFor(undefined, "p6")), ["👤 peop | P6"]);
+});
+
+test("a typed name no note has offers a create row that links it and creates the note on save", async () => {
+	const people = entry("people", "links", { prefix: "👤" });
+	const { initial, choicesFor, vault, target } = setup([people]);
+	assert.deepEqual(labels(choicesFor(undefined, "bob")), ["👤 Bob"]);
+	assert.deepEqual(labels(choicesFor(undefined, "Zed")), ['➕ 👤 create "Zed"']);
+	const withZed = chosen(pick(choicesFor(undefined, "Zed"), '➕ 👤 create "Zed"'));
+	assert.deepEqual(written(initial, withZed), { people: ["[[people/Ann|Ann]]", "[[Stranger]]", "[[Zed]]"] });
+	assert.deepEqual(labels(choicesFor(withZed, "Zed")), ["✓ • 👤 Zed"]);
+	assert.equal(pendingCreations(chosen(pick(choicesFor(withZed), "✓ • 👤 Zed"))).length, 0);
+	await createNotes(vault, target.path, pendingCreations(withZed));
+	assert.equal(vault.content("inbox/Zed.md"), "[[types/Person]]\n");
+});
+
+test("a create row is not offered for a relation source or a condition the new note cannot meet", () => {
+	const { choicesFor } = setup(
+		[
+			entry("out", "links", { prefix: "🔗", source: { kind: "linksOut" } }),
+			entry("big", "links", { prefix: "🔢", source: { kind: "frontmatter", property: "rating", condition: { operator: ">", value: 3 } } }),
+			entry("flag", "links", { prefix: "🏳️", source: { kind: "frontmatter", property: "flag", condition: { operator: "is set" } } }),
+		],
+		vaultNotes(),
+		{ flag: "text" },
+	);
+	assert.deepEqual(labels(choicesFor(undefined, "Zed")), []);
+});
+
+async function created(source: ListSource, extra: Partial<EditableProperty> = {}, fakes = vaultNotes(), types: Record<string, string> = {}) {
+	const { choicesFor, vault, target } = setup([entry("people", "links", { prefix: "👤", source, ...extra })], fakes, types);
+	const state = chosen(pick(choicesFor(undefined, "Zed"), '➕ 👤 create "Zed"'));
+	await createNotes(vault, target.path, pendingCreations(state));
+	return vault;
+}
+
+test("a created note joins the entry's source", async () => {
+	assert.equal((await created({ kind: "inFolder", folder: "people/" })).content("people/Zed.md"), "");
+	assert.equal((await created({ kind: "modifiedToday" })).content("inbox/Zed.md"), "");
+	const evergreen = await created({ kind: "frontmatter", property: "evergreen", condition: { operator: "is true" } });
+	assert.deepEqual(evergreen.frontmatter("inbox/Zed.md"), { evergreen: true });
+	const kind = await created({ kind: "frontmatter", property: "kind", condition: { operator: "is", value: "person" } });
+	assert.deepEqual(kind.frontmatter("inbox/Zed.md"), { kind: "person" });
+	const tags = await created({ kind: "frontmatter", property: "tags", condition: { operator: "has item", value: "people" } });
+	assert.deepEqual(tags.frontmatter("inbox/Zed.md"), { tags: ["people"] });
+	const done = await created({ kind: "frontmatter", property: "done", condition: { operator: "is set" } }, {}, vaultNotes(), {
+		done: "checkbox",
+	});
+	assert.deepEqual(done.frontmatter("inbox/Zed.md"), { done: true });
+});
+
+test("a created note uses the entry's folder and template and keeps an existing note", async () => {
+	const templated = await created(PERSON, { newNoteFolder: "people", newNoteTemplate: "templates/Person.md" });
+	assert.equal(templated.content("people/Zed.md"), "# Person\n\n[[types/Person]]\n");
+	const linking = [...vaultNotes(), { path: "templates/Linked.md", content: "type: [[types/Person]]" }];
+	assert.equal((await created(PERSON, { newNoteTemplate: "templates/Linked" }, linking)).content("inbox/Zed.md"), "type: [[types/Person]]");
+	const folderWins = await created({ kind: "inFolder", folder: "people" }, { newNoteFolder: "elsewhere" });
+	assert.equal(folderWins.content("people/Zed.md"), "");
+	const existing = [...vaultNotes(), { path: "inbox/Zed.md", content: "mine" }];
+	assert.equal((await created({ kind: "modifiedToday" }, {}, existing)).content("inbox/Zed.md"), "mine");
 });
 
 test("the first enabled entry decides the type of a shared property", () => {
@@ -147,113 +320,62 @@ test("the first enabled entry decides the type of a shared property", () => {
 	assert.equal(propertyType(settings.setProperties, settings.setProperties.properties[2]), "date");
 });
 
+const valueLabels = (choices: readonly ValueChoice[]) => labels(choices);
+
 test("a checkbox offers true, false and clear, marks the pending value and can write false", () => {
 	const active = entry("active", "checkbox");
-	const { initial, choicesFor } = setup([active]);
-	const choices = choicesFor(active);
-	assert.deepEqual(labels(choices), ["✓ true", `${OFF} false`, `${OFF} ${CLEAR_LABEL}`]);
-	const state = withValue(initial, "active", pick(choices, "false").value);
+	const { initial, valueChoicesFor } = setup([active]);
+	const choices = valueChoicesFor(active);
+	assert.deepEqual(valueLabels(choices), ["✓ true", "false", CLEAR_LABEL]);
+	const state = withValue(pickerState(initial), "active", pick(choices, "false").value);
 	assert.deepEqual(written(initial, state, { active: true }), { active: false });
-	assert.deepEqual(labels(choicesFor(active, state)), [`${OFF} true`, "✓ false", `${OFF} ${CLEAR_LABEL}`]);
-});
-
-test("a text picker offers the typed value, then vault values most used first, then clear", () => {
-	const status = entry("status", "text");
-	const { choicesFor } = setup([status]);
-	assert.deepEqual(labels(choicesFor(status)), [`${OFF} done (2)`, "✓ doing (1)", `${OFF} ${CLEAR_LABEL}`]);
-	const typed = choicesFor(status, undefined, "dne");
-	assert.deepEqual(labels(typed), [`${OFF} ✏️ Use "dne"`, `${OFF} done (2)`]);
-	assert.equal(typed[0].value, "dne");
-	assert.deepEqual(labels(choicesFor(status, undefined, "zzz")), [`${OFF} ✏️ Use "zzz"`]);
+	assert.deepEqual(valueLabels(valueChoicesFor(active, state)), ["true", "✓ false", CLEAR_LABEL]);
 });
 
 test("a number picker offers use only for numbers, with vault numbers by count", () => {
 	const rating = entry("rating", "number");
-	const { choicesFor } = setup([rating]);
-	assert.deepEqual(labels(choicesFor(rating)), [`${OFF} 3 (2)`, `${OFF} 4.5 (1)`, `✓ ${CLEAR_LABEL}`]);
-	assert.equal(choicesFor(rating, undefined, "-2.5")[0].value, -2.5);
-	assert.deepEqual(labels(choicesFor(rating, undefined, "12a")), []);
+	const { valueChoicesFor } = setup([rating]);
+	assert.deepEqual(valueLabels(valueChoicesFor(rating)), ["3 ×2", "4.5 ×1", `✓ ${CLEAR_LABEL}`]);
+	assert.equal(valueChoicesFor(rating, undefined, "-2.5")[0].value, -2.5);
+	assert.deepEqual(valueLabels(valueChoicesFor(rating, undefined, "12a")), []);
 });
 
 test("a date picker accepts YYYYMMDD and YYYY-MM-DD and offers presets from today", () => {
 	const due = entry("due", "date");
-	const { choicesFor } = setup([due]);
-	assert.deepEqual(labels(choicesFor(due)), [
-		`${OFF} Today (2024-03-09)`,
-		`${OFF} Tomorrow (2024-03-10)`,
-		`${OFF} Next Monday (2024-03-11)`,
-		`${OFF} In a week (2024-03-16)`,
+	const { valueChoicesFor } = setup([due]);
+	assert.deepEqual(valueLabels(valueChoicesFor(due)), [
+		"Today 2024-03-09",
+		"Tomorrow 2024-03-10",
+		"Next Monday 2024-03-11",
+		"In a week 2024-03-16",
 		`✓ ${CLEAR_LABEL}`,
 	]);
-	assert.equal(choicesFor(due, undefined, "20240402")[0].value, "2024-04-02");
-	assert.equal(choicesFor(due, undefined, "2024-04-02")[0].label, `${OFF} ✏️ Use "2024-04-02"`);
-	assert.deepEqual(labels(choicesFor(due, undefined, "2024-02-30")), []);
-	assert.deepEqual(labels(choicesFor(due, undefined, "tmrw")), [`${OFF} Tomorrow (2024-03-10)`]);
+	assert.deepEqual(valueChoicesFor(due)[0].parts, { mark: "", content: "Today", value: "2024-03-09" });
+	assert.equal(valueChoicesFor(due, undefined, "20240402")[0].value, "2024-04-02");
+	assert.equal(valueChoicesFor(due, undefined, "2024-04-02")[0].label, '✏️ Use "2024-04-02"');
+	assert.deepEqual(valueLabels(valueChoicesFor(due, undefined, "2024-02-30")), []);
+	assert.deepEqual(valueLabels(valueChoicesFor(due, undefined, "tmrw")), ["Tomorrow 2024-03-10"]);
 });
 
 test("a datetime picker accepts the three typed forms and offers now", () => {
 	const start = entry("start", "datetime");
-	const { choicesFor } = setup([start]);
-	assert.deepEqual(labels(choicesFor(start)), [`${OFF} Now (2024-03-09T15:00)`, `✓ ${CLEAR_LABEL}`]);
+	const { valueChoicesFor } = setup([start]);
+	assert.deepEqual(valueLabels(valueChoicesFor(start)), ["Now 2024-03-09T15:00", `✓ ${CLEAR_LABEL}`]);
 	for (const input of ["20240402 0930", "2024-04-02 09:30", "2024-04-02T09:30"]) {
-		assert.equal(choicesFor(start, undefined, input)[0].value, "2024-04-02T09:30");
+		assert.equal(valueChoicesFor(start, undefined, input)[0].value, "2024-04-02T09:30");
 	}
-	assert.deepEqual(labels(choicesFor(start, undefined, "2024-04-02 24:00")), []);
-	assert.deepEqual(labels(choicesFor(start, undefined, "2024-04-02")), []);
+	assert.deepEqual(valueLabels(valueChoicesFor(start, undefined, "2024-04-02 24:00")), []);
+	assert.deepEqual(valueLabels(valueChoicesFor(start, undefined, "2024-04-02")), []);
 });
 
-test("a link picker lists the source's notes, selected first then newest, and choosing the selected one clears it", () => {
-	const owner = entry("owner", "link");
-	const { initial, choicesFor } = setup([owner]);
-	assert.deepEqual(labels(choicesFor(owner)), [
-		`${OFF} Bob`,
-		`${OFF} Cy`,
-		`${OFF} Ann`,
-		`${OFF} Today too`,
-		`✓ ${CLEAR_LABEL}`,
-	]);
-	const state = withValue(initial, "owner", pick(choicesFor(owner), "Ann").value);
-	assert.equal(state.get("owner"), "[[Ann]]");
-	assert.deepEqual(labels(choicesFor(owner, state)).slice(0, 2), ["✓ Ann", `${OFF} Bob`]);
-	assert.equal(pick(choicesFor(owner, state), "Ann").value, undefined);
-	assert.deepEqual(written(initial, state), { owner: "[[Ann]]" });
-});
-
-test("a links picker starts with done, toggles notes and keeps values no row offers", () => {
-	const people = entry("people", "links");
-	const { initial, choicesFor } = setup([people]);
-	const choices = choicesFor(people);
-	assert.deepEqual(labels(choices), [
-		DONE_LABEL,
-		"✓ Ann",
-		`${OFF} Bob`,
-		`${OFF} Cy`,
-		`${OFF} Today too`,
-		`${OFF} ${CLEAR_LABEL}`,
-	]);
-	assert.equal(pick(choices, "Bob").reopens, true);
-	const withBob = withValue(initial, "people", pick(choices, "Bob").value);
-	const withoutAnn = withValue(withBob, "people", pick(choicesFor(people, withBob), "Ann").value);
-	const done = pick(choicesFor(people, withoutAnn), DONE_LABEL);
-	assert.equal(done.reopens, false);
-	assert.deepEqual(written(initial, withValue(withoutAnn, "people", done.value)), { people: ["[[Stranger]]", "[[Bob]]"] });
-});
-
-test("a link matches a note by its link text when its alias differs", () => {
-	const people = entry("people", "links");
-	const { initial, choicesFor } = setup([people]);
-	const state = withValue(initial, "people", ["[[people/Ann|Annie]]"]);
-	assert.equal(labels(choicesFor(people, state))[1], "✓ Ann");
-	assert.deepEqual(pick(choicesFor(people, state), "Ann").value, []);
-});
-
-test("clear deletes the key and unchanged properties are not written", () => {
+test("clearing deletes the key and unchanged properties are not written", () => {
 	const people = entry("people", "links");
 	const status = entry("status", "text");
 	const { initial, choicesFor } = setup([people, status, entry("active", "checkbox")]);
 	const saved = { people: ["[[people/Ann|Ann]]", "[[Stranger]]"], status: "doing", active: true };
-	assert.deepEqual(written(initial, initial, saved), saved);
-	const cleared = withValue(initial, "people", pick(choicesFor(people), CLEAR_LABEL).value);
+	assert.deepEqual(written(initial, pickerState(initial), saved), saved);
+	const withoutAnn = chosen(pick(choicesFor(), "✓ Ann"));
+	const cleared = chosen(pick(choicesFor(withoutAnn), "✓ Stranger"));
 	assert.deepEqual(written(initial, cleared, saved), { status: "doing", active: true });
-	assert.deepEqual(written(initial, withValue(initial, "status", "doing"), {}), {});
+	assert.deepEqual(written(initial, withValue(pickerState(initial), "status", "doing"), {}), {});
 });
