@@ -32,6 +32,7 @@ const TYPED_FIELDS = [
 	"date",
 	"days",
 	"folder",
+	"newNoteFolder",
 	"format",
 	"note",
 	"name",
