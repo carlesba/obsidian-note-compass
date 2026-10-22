@@ -68,7 +68,7 @@ test("operator options keep a stored operator that the type does not offer", () 
 
 test("a row is named by its prefix and a summary of its source, and says off when disabled", () => {
 	const lists = defaultSettings().lists;
-	assert.equal(listName(lists[0]), "📅 day | Adjacent dates");
+	assert.equal(listName(lists[0]), "📅 day Adjacent dates");
 	assert.equal(listName(propertyList("favorite", { operator: "is true" })), "⭐ favorite is true");
 	assert.equal(listName(propertyList("status", { operator: "is", value: "active" })), "⭐ status is active");
 	assert.equal(listName(propertyList("rating", { operator: ">", value: 3 })), "⭐ rating > 3");
@@ -263,21 +263,21 @@ test("a property list has a property only once one is chosen", () => {
 test("a list row's label leaves the prefix to its chip", () => {
 	assert.equal(sourceSummary({ kind: "linksOut" }), "Outbound links");
 	assert.equal(sourceSummary(propertyList("favorite", { operator: "is set" }).source), "favorite is set");
-	assert.equal(listName({ ...propertyList("favorite", { operator: "is set" }), prefix: "⭐ fav |" }), "⭐ fav | favorite is set");
+	assert.equal(listName({ ...propertyList("favorite", { operator: "is set" }), prefix: "⭐ fav" }), "⭐ fav favorite is set");
 });
 
-test("the prefix chip shows the prefix without its trailing bar, or a placeholder when empty", () => {
-	assert.deepEqual(prefixChip("🔗 out |"), { text: "🔗 out", placeholder: false });
+test("the prefix chip shows the trimmed prefix, or a placeholder when blank", () => {
+	assert.deepEqual(prefixChip(" 🔗 out "), { text: "🔗 out", placeholder: false });
 	assert.deepEqual(prefixChip("📅"), { text: "📅", placeholder: false });
 	assert.deepEqual(prefixChip(""), { text: PREFIX_PLACEHOLDER, placeholder: true });
-	assert.deepEqual(prefixChip(" | "), { text: PREFIX_PLACEHOLDER, placeholder: true });
+	assert.deepEqual(prefixChip("  "), { text: PREFIX_PLACEHOLDER, placeholder: true });
 });
 
 test("editing a prefix starts from the raw prefix selected and saves only a changed value", () => {
-	const draft = startDraft("🔗 out |");
-	assert.deepEqual(draft, { original: "🔗 out |", text: "🔗 out |", selectionStart: 0, selectionEnd: 8 });
+	const draft = startDraft("🔗 out");
+	assert.deepEqual(draft, { original: "🔗 out", text: "🔗 out", selectionStart: 0, selectionEnd: 6 });
 	assert.equal(changedPrefix(draft), undefined);
-	assert.equal(changedPrefix({ ...draft, text: "🔗 links |" }), "🔗 links |");
-	assert.equal(changedPrefix({ ...startDraft(""), text: "⭐ |" }), "⭐ |");
+	assert.equal(changedPrefix({ ...draft, text: "🔗 links" }), "🔗 links");
+	assert.equal(changedPrefix({ ...startDraft(""), text: "⭐" }), "⭐");
 	assert.equal(changedPrefix({ ...draft, text: "" }), "");
 });

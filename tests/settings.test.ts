@@ -5,17 +5,17 @@ import { defaultSettings, mergeSettings, newListId } from "../src/settings.ts";
 import type { EditableProperty, EditablePropertyType, ListSource, NoteList, SetPropertiesSettings } from "../src/settings.ts";
 
 const relationLists = (enabled = [true, true, true, true]): NoteList[] => [
-	{ id: "list-1", enabled: enabled[0], prefix: "📅 day |", source: { kind: "adjacentDates" } },
-	{ id: "list-2", enabled: enabled[1], prefix: "🔗 out |", source: { kind: "linksOut" } },
-	{ id: "list-3", enabled: enabled[2], prefix: "🔗 in  |", source: { kind: "linksIn" } },
-	{ id: "list-4", enabled: enabled[3], prefix: "🔅 ctx |", source: { kind: "sameDay" } },
+	{ id: "list-1", enabled: enabled[0], prefix: "📅 day", source: { kind: "adjacentDates" } },
+	{ id: "list-2", enabled: enabled[1], prefix: "🔗 out", source: { kind: "linksOut" } },
+	{ id: "list-3", enabled: enabled[2], prefix: "🔗 in", source: { kind: "linksIn" } },
+	{ id: "list-4", enabled: enabled[3], prefix: "🔅 ctx", source: { kind: "sameDay" } },
 ];
 
 const isTrue = (property: string) => ({ kind: "frontmatter", property, condition: { operator: "is true" } }) as const;
 
 const linksTo = (note: string) => ({ kind: "linksToNote", note }) as const;
 
-const checkbox = (id: string, property: string, prefix = "🎛️ meta |"): EditableProperty => ({
+const checkbox = (id: string, property: string, prefix = "🎛️ meta"): EditableProperty => ({
 	id,
 	enabled: true,
 	prefix,
@@ -40,14 +40,14 @@ const setPropertiesDefaults = (): SetPropertiesSettings => ({
 		checkbox("list-11", "evergreen"),
 		checkbox("list-12", "blocked"),
 		checkbox("list-13", "archived"),
-		linked("list-1", "👤 peop |", linksTo("Person 👤"), "people"),
-		linked("list-2", "📍 trak |", linksTo("Tracker 📍"), "trackers"),
-		linked("list-3", "📚 coll |", linksTo("Collection 📚"), "collections"),
-		linked("list-4", "📂 catg |", { kind: "inFolder", folder: "categories" }, "category", "link"),
-		linked("list-5", "🏷️ ever |", isTrue("evergreen"), "related"),
-		linked("list-6", "📍 actv |", isTrue("active"), "related"),
-		linked("list-7", "🏢 comp |", linksTo("Org 🏢"), "related"),
-		linked("list-8", "🔅 tday |", { kind: "modifiedToday" }, "related"),
+		linked("list-1", "👤 peop", linksTo("Person 👤"), "people"),
+		linked("list-2", "📍 trak", linksTo("Tracker 📍"), "trackers"),
+		linked("list-3", "📚 coll", linksTo("Collection 📚"), "collections"),
+		linked("list-4", "📂 catg", { kind: "inFolder", folder: "categories" }, "category", "link"),
+		linked("list-5", "🏷️ ever", isTrue("evergreen"), "related"),
+		linked("list-6", "📍 actv", isTrue("active"), "related"),
+		linked("list-7", "🏢 comp", linksTo("Org 🏢"), "related"),
+		linked("list-8", "🔅 tday", { kind: "modifiedToday" }, "related"),
 	],
 });
 
@@ -95,7 +95,7 @@ test("mergeSettings migrates any one legacy key and fills the others from the ol
 	const merged = mergeSettings({ setProperties: { flags: ["done"] } });
 	assert.deepEqual(merged.setProperties.properties.slice(0, 2), [
 		checkbox("list-9", "done"),
-		linked("list-1", "👤 peop |", linksTo("Person 👤"), "people"),
+		linked("list-1", "👤 peop", linksTo("Person 👤"), "people"),
 	]);
 	assert.deepEqual(mergeSettings({ setProperties: { linkLists: [] } }).setProperties.properties, [
 		checkbox("list-1", "active"),
@@ -186,24 +186,24 @@ test("mergeSettings migrates the old shape into lists in picker order with custo
 	});
 	assert.deepEqual(merged, {
 		lists: [
-			{ id: "list-1", enabled: true, prefix: "🗓️ |", source: { kind: "adjacentDates" } },
-			{ id: "list-2", enabled: true, prefix: "➡️ |", source: { kind: "linksOut" } },
-			{ id: "list-3", enabled: false, prefix: "⬅️ |", source: { kind: "linksIn" } },
-			{ id: "list-4", enabled: false, prefix: "☀️ |", source: { kind: "sameDay" } },
-			{ id: "list-5", enabled: true, prefix: "⭐ |", source: { kind: "frontmatter", property: "starred", condition: { operator: "is true" } } },
+			{ id: "list-1", enabled: true, prefix: "🗓️", source: { kind: "adjacentDates" } },
+			{ id: "list-2", enabled: true, prefix: "➡️", source: { kind: "linksOut" } },
+			{ id: "list-3", enabled: false, prefix: "⬅️", source: { kind: "linksIn" } },
+			{ id: "list-4", enabled: false, prefix: "☀️", source: { kind: "sameDay" } },
+			{ id: "list-5", enabled: true, prefix: "⭐", source: { kind: "frontmatter", property: "starred", condition: { operator: "is true" } } },
 			{
 				id: "list-6",
 				enabled: true,
-				prefix: "📚 |",
+				prefix: "📚",
 				source: { kind: "frontmatter", property: "type", condition: { operator: "is", value: "book" } },
 			},
 			{
 				id: "list-7",
 				enabled: true,
-				prefix: "💼 |",
+				prefix: "💼",
 				source: { kind: "frontmatter", property: "tags", condition: { operator: "has item", value: "work" } },
 			},
-			{ id: "list-8", enabled: true, prefix: "📝 |", source: { kind: "frontmatter", property: "summary", condition: { operator: "is set" } } },
+			{ id: "list-8", enabled: true, prefix: "📝", source: { kind: "frontmatter", property: "summary", condition: { operator: "is set" } } },
 		],
 		dateNotes: defaultDateNoteSettings(),
 		setProperties: setPropertiesDefaults(),
@@ -213,13 +213,41 @@ test("mergeSettings migrates the old shape into lists in picker order with custo
 test("mergeSettings fills partial or mistyped old built-in lists from the defaults", () => {
 	const merged = mergeSettings({ builtIns: { linksIn: { enabled: false }, sameDay: { prefix: "☀️" }, adjacentDays: { enabled: "yes", prefix: 7 } } });
 	const expected = relationLists([true, true, false, true]);
-	expected[3].prefix = "☀️ |";
+	expected[3].prefix = "☀️";
 	assert.deepEqual(merged.lists, expected);
 });
 
-test("mergeSettings migrates an old empty prefix to the bare separator", () => {
-	const merged = mergeSettings({ customLists: [{ prefix: "", property: "done", operator: "is true" }] });
-	assert.equal(merged.lists[4].prefix, "|");
+test("mergeSettings keeps an old empty prefix empty and trims old prefixes", () => {
+	const merged = mergeSettings({
+		builtIns: { linksOut: { prefix: " ➡️ " } },
+		customLists: [{ prefix: "", property: "done", operator: "is true" }],
+	});
+	assert.equal(merged.lists[1].prefix, "➡️");
+	assert.equal(merged.lists[4].prefix, "");
+});
+
+test("mergeSettings drops the trailing bar from saved prefixes", () => {
+	const lists = mergeSettings({
+		lists: [
+			{ id: "list-1", enabled: true, prefix: "🔗 in  |", source: { kind: "linksIn" } },
+			{ id: "list-2", enabled: true, prefix: "📅 day | ", source: { kind: "adjacentDates" } },
+			{ id: "list-3", enabled: true, prefix: "|", source: { kind: "linksOut" } },
+			{ id: "list-4", enabled: true, prefix: "a | b", source: { kind: "sameDay" } },
+		],
+	}).lists;
+	assert.deepEqual(lists.map((list) => list.prefix), ["🔗 in", "📅 day", "", "a | b"]);
+	const properties = mergeSettings({
+		setProperties: { properties: [{ id: "p-1", enabled: true, prefix: "👤 peop |", property: "people", type: "text" }] },
+	}).setProperties.properties;
+	assert.equal(properties[0].prefix, "👤 peop");
+	const legacy = mergeSettings({
+		setProperties: {
+			flagsPrefix: "🎛️ meta |",
+			flags: ["done"],
+			linkLists: [{ id: "list-1", enabled: true, prefix: "👤 peop |", source: { kind: "modifiedToday" }, property: "seen", mode: "multi" }],
+		},
+	}).setProperties.properties;
+	assert.deepEqual(legacy.map((property) => property.prefix), ["🎛️ meta", "👤 peop"]);
 });
 
 test("mergeSettings drops old custom lists it cannot read", () => {
@@ -232,7 +260,7 @@ test("mergeSettings drops old custom lists it cannot read", () => {
 		],
 	});
 	assert.deepEqual(merged.lists.slice(4), [
-		{ id: "list-5", enabled: true, prefix: "✅ |", source: { kind: "frontmatter", property: "done", condition: { operator: "is true" } } },
+		{ id: "list-5", enabled: true, prefix: "✅", source: { kind: "frontmatter", property: "done", condition: { operator: "is true" } } },
 	]);
 	assert.deepEqual(mergeSettings({ customLists: { prefix: "📚" } }).lists, relationLists());
 });
