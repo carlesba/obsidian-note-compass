@@ -12,6 +12,7 @@ import {
 	deleteExcludedFolder,
 	mixedTypeWarning,
 	newProperty,
+	propertyLabel,
 	propertyRowName,
 	propertyTypePreset,
 } from "../src/settings/setPropertiesForm.ts";
@@ -76,6 +77,12 @@ test("a property row is named by its prefix, property and type, or New property 
 	assert.equal(propertyRowName(entry({ prefix: "👤 peop |", property: "people", type: "links" })), "👤 peop | people · links");
 	assert.equal(propertyRowName(entry({ property: "active" })), "active · checkbox");
 	assert.equal(propertyRowName(entry({ prefix: "🎛️ meta |", property: " ", type: "date" })), "New property");
+});
+
+test("a property row's label leaves the prefix to its chip", () => {
+	assert.equal(propertyLabel(entry({ prefix: "👤 peop |", property: "people", type: "links" })), "people · links");
+	assert.equal(propertyLabel(entry({ prefix: "🎛️ meta |", property: "active" })), "active · checkbox");
+	assert.equal(propertyLabel(entry({ prefix: "🎛️ meta |", property: " ", type: "date" })), "New property");
 });
 
 test("adding a property appends a disabled checkbox entry with the next id", () => {
