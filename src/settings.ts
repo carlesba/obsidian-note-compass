@@ -31,11 +31,37 @@ export interface LinkList extends NoteList {
 	mode: LinkListMode;
 }
 
-export interface SetPropertiesSettings {
+export interface LegacySetPropertiesSettings {
 	flagsPrefix: string;
 	flags: string[];
 	templatesFolder: string;
 	linkLists: LinkList[];
+}
+
+export type EditablePropertyType = "checkbox" | "text" | "number" | "date" | "datetime" | "link" | "links";
+
+export const EDITABLE_PROPERTY_TYPES: readonly EditablePropertyType[] = [
+	"checkbox",
+	"text",
+	"number",
+	"date",
+	"datetime",
+	"link",
+	"links",
+];
+
+export interface EditableProperty {
+	id: string;
+	enabled: boolean;
+	prefix: string;
+	property: string;
+	type: EditablePropertyType;
+	source?: ListSource;
+	excludedFolder?: string;
+}
+
+export interface SetPropertiesSettings {
+	properties: EditableProperty[];
 }
 
 export interface JumpSettings {
@@ -124,6 +150,11 @@ export function mergeSettings(stored: unknown): JumpSettings {
 
 function readSetProperties(stored: unknown): SetPropertiesSettings {
 	const data = isRecord(stored) ? stored : {};
+	if (Array.isArray(data.properties)) return { properties: readProperties(data.properties) };
+	return { properties: migrateLegacySetProperties(readLegacySetProperties(data)) };
+}
+
+function readLegacySetProperties(data: Record<string, unknown>): LegacySetPropertiesSettings {
 	return {
 		flagsPrefix: typeof data.flagsPrefix === "string" ? data.flagsPrefix : DEFAULT_FLAGS_PREFIX,
 		flags: Array.isArray(data.flags)
@@ -132,6 +163,57 @@ function readSetProperties(stored: unknown): SetPropertiesSettings {
 		templatesFolder: typeof data.templatesFolder === "string" ? data.templatesFolder : DEFAULT_TEMPLATES_FOLDER,
 		linkLists: Array.isArray(data.linkLists) ? readLists(data.linkLists, readLinkListFields) : defaultLinkLists(),
 	};
+}
+
+export function migrateLegacySetProperties(legacy: LegacySetPropertiesSettings): EditableProperty[] {
+	const links: EditableProperty[] = legacy.linkLists.map((list) => ({
+		id: list.id,
+		enabled: list.enabled,
+		prefix: list.prefix,
+		property: list.property,
+		type: list.mode === "single" ? "link" : "links",
+		source: list.source,
+		excludedFolder: legacy.templatesFolder,
+	}));
+	const checkboxes: EditableProperty[] = [];
+	for (const flag of legacy.flags) {
+		const id = newListId([...links, ...checkboxes]);
+		checkboxes.push({ id, enabled: true, prefix: legacy.flagsPrefix, property: flag, type: "checkbox" });
+	}
+	return [...checkboxes, ...links];
+}
+
+export function isLinkType(type: EditablePropertyType): boolean {
+	return type === "link" || type === "links";
+}
+
+function readProperties(stored: unknown[]): EditableProperty[] {
+	const storedIds = stored.filter(isRecord).map((entry) => ({ id: typeof entry.id === "string" ? entry.id : "" }));
+	const properties: EditableProperty[] = [];
+	for (const entry of stored) {
+		if (!isRecord(entry) || typeof entry.property !== "string") continue;
+		const type = EDITABLE_PROPERTY_TYPES.find((candidate) => candidate === entry.type);
+		if (!type) continue;
+		const source = isLinkType(type) ? readSource(entry.source) : undefined;
+		if (isLinkType(type) && !source) continue;
+		const id =
+			typeof entry.id === "string" && entry.id !== "" && !properties.some((property) => property.id === entry.id)
+				? entry.id
+				: newListId([...storedIds, ...properties]);
+		const property: EditableProperty = {
+			id,
+			enabled: typeof entry.enabled === "boolean" ? entry.enabled : false,
+			prefix: typeof entry.prefix === "string" ? entry.prefix : "",
+			property: entry.property,
+			type,
+		};
+		if (source) {
+			property.source = source;
+			property.excludedFolder = typeof entry.excludedFolder === "string" ? entry.excludedFolder : "";
+		}
+		properties.push(property);
+	}
+	return properties;
 }
 
 function defaultLinkLists(): LinkList[] {

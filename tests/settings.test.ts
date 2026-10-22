@@ -2,7 +2,7 @@ import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { defaultDateNoteSettings } from "../src/lists/dateNotes.ts";
 import { defaultSettings, mergeSettings, newListId } from "../src/settings.ts";
-import type { NoteList, SetPropertiesSettings } from "../src/settings.ts";
+import type { EditableProperty, EditablePropertyType, ListSource, NoteList, SetPropertiesSettings } from "../src/settings.ts";
 
 const relationLists = (enabled = [true, true, true, true]): NoteList[] => [
 	{ id: "list-1", enabled: enabled[0], prefix: "📅 day |", source: { kind: "adjacentDates" } },
@@ -15,19 +15,38 @@ const isTrue = (property: string) => ({ kind: "frontmatter", property, condition
 
 const linksTo = (note: string) => ({ kind: "linksToNote", note }) as const;
 
+const checkbox = (id: string, property: string, prefix = "🎛️ meta |"): EditableProperty => ({
+	id,
+	enabled: true,
+	prefix,
+	property,
+	type: "checkbox",
+});
+
+const linked = (
+	id: string,
+	prefix: string,
+	source: ListSource,
+	property: string,
+	type: EditablePropertyType = "links",
+	excludedFolder = "templates",
+): EditableProperty => ({ id, enabled: true, prefix, property, type, source, excludedFolder });
+
 const setPropertiesDefaults = (): SetPropertiesSettings => ({
-	flagsPrefix: "🎛️ meta |",
-	flags: ["active", "someday", "evergreen", "blocked", "archived"],
-	templatesFolder: "templates",
-	linkLists: [
-		{ id: "list-1", enabled: true, prefix: "👤 peop |", name: "People", source: linksTo("Person 👤"), property: "people", mode: "multi" },
-		{ id: "list-2", enabled: true, prefix: "📍 trak |", name: "Trackers", source: linksTo("Tracker 📍"), property: "trackers", mode: "multi" },
-		{ id: "list-3", enabled: true, prefix: "📚 coll |", name: "Collections", source: linksTo("Collection 📚"), property: "collections", mode: "multi" },
-		{ id: "list-4", enabled: true, prefix: "📂 catg |", name: "Category", source: { kind: "inFolder", folder: "categories" }, property: "category", mode: "single" },
-		{ id: "list-5", enabled: true, prefix: "🏷️ ever |", name: "Evergreen", source: isTrue("evergreen"), property: "related", mode: "multi" },
-		{ id: "list-6", enabled: true, prefix: "📍 actv |", name: "Active", source: isTrue("active"), property: "related", mode: "multi" },
-		{ id: "list-7", enabled: true, prefix: "🏢 comp |", name: "Companies", source: linksTo("Org 🏢"), property: "related", mode: "multi" },
-		{ id: "list-8", enabled: true, prefix: "🔅 tday |", name: "Today", source: { kind: "modifiedToday" }, property: "related", mode: "multi" },
+	properties: [
+		checkbox("list-9", "active"),
+		checkbox("list-10", "someday"),
+		checkbox("list-11", "evergreen"),
+		checkbox("list-12", "blocked"),
+		checkbox("list-13", "archived"),
+		linked("list-1", "👤 peop |", linksTo("Person 👤"), "people"),
+		linked("list-2", "📍 trak |", linksTo("Tracker 📍"), "trackers"),
+		linked("list-3", "📚 coll |", linksTo("Collection 📚"), "collections"),
+		linked("list-4", "📂 catg |", { kind: "inFolder", folder: "categories" }, "category", "link"),
+		linked("list-5", "🏷️ ever |", isTrue("evergreen"), "related"),
+		linked("list-6", "📍 actv |", isTrue("active"), "related"),
+		linked("list-7", "🏢 comp |", linksTo("Org 🏢"), "related"),
+		linked("list-8", "🔅 tday |", { kind: "modifiedToday" }, "related"),
 	],
 });
 
@@ -39,26 +58,52 @@ test("defaultSettings enables every relation list in picker order and reads date
 	});
 });
 
-test("mergeSettings gives saved jump settings without set-properties data the default flags and link lists", () => {
+test("mergeSettings gives saved jump settings without set-properties data the default properties", () => {
 	const lists = [{ id: "list-1", enabled: true, prefix: "🔗", source: { kind: "linksIn" } }];
 	const merged = mergeSettings({ lists });
 	assert.deepEqual(merged.lists, lists);
 	assert.deepEqual(merged.setProperties, setPropertiesDefaults());
 });
 
-test("mergeSettings keeps saved set-properties data and round-trips it", () => {
+test("mergeSettings migrates saved flags and link lists into properties, flags first, dropping link list names", () => {
 	const setProperties = {
 		flagsPrefix: "⚑",
 		flags: ["pinned"],
 		templatesFolder: "_templates",
-		linkLists: [{ id: "list-4", enabled: false, prefix: "🧭", name: "Areas", source: { kind: "inFolder", folder: "areas" }, property: "area", mode: "single" }],
+		linkLists: [
+			{ id: "list-4", enabled: false, prefix: "🧭", name: "Areas", source: { kind: "inFolder", folder: "areas" }, property: "area", mode: "single" },
+			{ id: "list-2", enabled: true, prefix: "👤", name: "People", source: linksTo("Person"), property: "related", mode: "multi" },
+			{ id: "list-7", enabled: true, prefix: "🏢", name: "Orgs", source: linksTo("Org"), property: "related", mode: "multi" },
+		],
 	};
 	const merged = mergeSettings({ setProperties });
-	assert.deepEqual(merged.setProperties, setProperties);
+	assert.deepEqual(merged.setProperties, {
+		properties: [
+			checkbox("list-8", "pinned", "⚑"),
+			{ ...linked("list-4", "🧭", { kind: "inFolder", folder: "areas" }, "area", "link", "_templates"), enabled: false },
+			linked("list-2", "👤", linksTo("Person"), "related", "links", "_templates"),
+			linked("list-7", "🏢", linksTo("Org"), "related", "links", "_templates"),
+		],
+	});
 	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(merged))), merged);
 });
 
-test("mergeSettings replaces mistyped set-properties fields one by one and drops unreadable link lists", () => {
+test("mergeSettings migrates any one legacy key and fills the others from the old defaults", () => {
+	const merged = mergeSettings({ setProperties: { flags: ["done"] } });
+	assert.deepEqual(merged.setProperties.properties.slice(0, 2), [
+		checkbox("list-9", "done"),
+		linked("list-1", "👤 peop |", linksTo("Person 👤"), "people"),
+	]);
+	assert.deepEqual(mergeSettings({ setProperties: { linkLists: [] } }).setProperties.properties, [
+		checkbox("list-1", "active"),
+		checkbox("list-2", "someday"),
+		checkbox("list-3", "evergreen"),
+		checkbox("list-4", "blocked"),
+		checkbox("list-5", "archived"),
+	]);
+});
+
+test("mergeSettings replaces mistyped legacy fields one by one and drops unreadable link lists", () => {
 	const merged = mergeSettings({
 		setProperties: {
 			flagsPrefix: 4,
@@ -71,15 +116,44 @@ test("mergeSettings replaces mistyped set-properties fields one by one and drops
 			],
 		},
 	});
-	const defaults = setPropertiesDefaults();
 	assert.deepEqual(merged.setProperties, {
-		flagsPrefix: defaults.flagsPrefix,
-		flags: ["done"],
-		templatesFolder: defaults.templatesFolder,
-		linkLists: [{ id: "list-1", enabled: true, prefix: "a", name: "", source: { kind: "modifiedToday" }, property: "seen", mode: "multi" }],
+		properties: [checkbox("list-2", "done"), linked("list-1", "a", { kind: "modifiedToday" }, "seen")],
 	});
-	assert.deepEqual(mergeSettings({ setProperties: "nonsense" }).setProperties, defaults);
-	assert.deepEqual(mergeSettings({ setProperties: { linkLists: [] } }).setProperties.linkLists, []);
+	assert.deepEqual(mergeSettings({ setProperties: "nonsense" }).setProperties, setPropertiesDefaults());
+});
+
+test("mergeSettings keeps properties already in the new shape untouched", () => {
+	const properties: EditableProperty[] = [
+		{ id: "p-1", enabled: true, prefix: "📝", property: "summary", type: "text" },
+		{ id: "p-2", enabled: false, prefix: "🔢", property: "rating", type: "number" },
+		{ id: "p-3", enabled: true, prefix: "📅", property: "due", type: "date" },
+		{ id: "p-4", enabled: true, prefix: "⏰", property: "start", type: "datetime" },
+		checkbox("p-5", "done", ""),
+		linked("p-6", "👤", linksTo("Person"), "owner", "link", ""),
+		linked("p-7", "🔗", { kind: "linksOut" }, "related", "links", "archive"),
+	];
+	const merged = mergeSettings({ setProperties: { properties, flags: ["ignored"] } });
+	assert.deepEqual(merged.setProperties, { properties });
+	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(merged))), merged);
+	assert.deepEqual(mergeSettings({ setProperties: { properties: [] } }).setProperties, { properties: [] });
+});
+
+test("mergeSettings drops unreadable properties, mints missing ids and keeps sources only on link types", () => {
+	const merged = mergeSettings({
+		setProperties: {
+			properties: [
+				{ id: "p-1", enabled: true, prefix: "a", property: "a", type: "colour" },
+				{ id: "p-2", enabled: true, prefix: "b", type: "text" },
+				{ id: "p-3", enabled: true, prefix: "c", property: "c", type: "links", source: { kind: "nowhere" } },
+				{ id: "p-4", prefix: 5, property: "d", type: "text", source: { kind: "linksOut" }, excludedFolder: "x" },
+				{ id: "p-4", enabled: true, prefix: "e", property: "e", type: "link", source: { kind: "linksIn" } },
+			],
+		},
+	});
+	assert.deepEqual(merged.setProperties.properties, [
+		{ id: "p-4", enabled: false, prefix: "", property: "d", type: "text" },
+		{ id: "list-1", enabled: true, prefix: "e", property: "e", type: "link", source: { kind: "linksIn" }, excludedFolder: "" },
+	]);
 });
 
 test("mergeSettings falls back to the defaults when nothing is stored", () => {
@@ -220,8 +294,8 @@ test("mergeSettings returns fresh defaults that callers can change without affec
 	const first = mergeSettings(undefined);
 	first.lists[0].prefix = "changed";
 	first.dateNotes.custom.day.folder = "changed";
-	first.setProperties.flags.push("changed");
-	first.setProperties.linkLists[4].source = { kind: "modifiedToday" };
+	first.setProperties.properties.push(checkbox("list-99", "changed"));
+	first.setProperties.properties[9].source = { kind: "linksOut" };
 	assert.deepEqual(mergeSettings(undefined), defaultSettings());
 });
 
