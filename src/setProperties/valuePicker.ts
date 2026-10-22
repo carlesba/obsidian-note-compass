@@ -19,9 +19,12 @@ export interface ValueChoice {
 	typed: boolean;
 }
 
-export const CLEAR_LABEL = "🗑️ Clear";
-
+const CLEAR_MARK = "🗑️";
+const CLEAR_TEXT = "Clear";
+const USE_MARK = "✏️";
 const SELECTED_MARK = "✓";
+
+export const CLEAR_LABEL = rowLabel({ mark: CLEAR_MARK, content: CLEAR_TEXT });
 
 export function isScalarType(type: EditablePropertyType): type is ScalarPropertyType {
 	return type === "checkbox" || type === "number" || type === "date" || type === "datetime";
@@ -42,7 +45,7 @@ export function valueChoices(picker: ValuePicker, pending: unknown, query: strin
 }
 
 function typeChoices(picker: ValuePicker, pending: unknown, query: string): ValueChoice[] {
-	const clear = choice(CLEAR_LABEL, undefined, isUnset(pending));
+	const clear = choice(CLEAR_TEXT, undefined, isUnset(pending), undefined, CLEAR_MARK);
 	const offer = (label: string, value: unknown, detail?: string) => choice(label, value, sameValue(value, pending), detail);
 	switch (picker.type) {
 		case "checkbox":
@@ -62,15 +65,15 @@ function typeChoices(picker: ValuePicker, pending: unknown, query: string): Valu
 	}
 }
 
-function choice(content: string, value: unknown, selected: boolean, detail?: string): ValueChoice {
-	const parts: RowParts = { mark: selected ? SELECTED_MARK : "", content };
+function choice(content: string, value: unknown, selected: boolean, detail?: string, mark = ""): ValueChoice {
+	const parts: RowParts = { mark: selected ? SELECTED_MARK : mark, content };
 	if (detail !== undefined) parts.value = detail;
 	return { label: rowLabel(parts), parts, value, typed: false };
 }
 
 function useChoice(value: string | number | undefined, pending: unknown): ValueChoice[] {
 	if (value === undefined) return [];
-	return [{ ...choice(`✏️ Use "${value}"`, value, sameValue(value, pending)), typed: true }];
+	return [{ ...choice(`Use "${value}"`, value, sameValue(value, pending), undefined, USE_MARK), typed: true }];
 }
 
 function vaultNumbers(picker: ValuePicker, pending: unknown): ValueChoice[] {

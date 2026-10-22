@@ -32,24 +32,32 @@
 
 .suggestion-item.note-launcher-row {
 	display: flex;
-	align-items: baseline;
+	align-items: center;
 	gap: var(--size-4-2);
+	padding-block: var(--size-2-2);
 }
 
 .note-launcher-row-mark {
-	flex: 0 0 2em;
+	flex: 0 0 1.4em;
 	white-space: nowrap;
+	color: var(--text-accent);
 }
 
 .note-launcher-row-prefix {
-	flex: 0 0 6.5em;
-	overflow: hidden;
+	flex: 0 0 auto;
+	min-width: 5.5em;
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+	background: var(--background-modifier-hover);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	padding: 0 var(--size-4-1);
+	line-height: 1.6;
 	white-space: pre;
-	text-overflow: ellipsis;
 }
 
 .note-launcher-row-content {
-	flex: 1 1 auto;
+	flex: 0 1 auto;
 	min-width: 0;
 	overflow: hidden;
 	white-space: nowrap;
@@ -58,11 +66,14 @@
 
 .note-launcher-row-value {
 	flex: 0 1 auto;
-	max-width: 40%;
-	margin-inline-start: auto;
+	max-width: 50%;
 	overflow: hidden;
 	white-space: nowrap;
 	text-overflow: ellipsis;
-	text-align: end;
 	color: var(--text-muted);
+}
+
+.note-launcher-row-value::before {
+	content: "· ";
+	color: var(--text-faint);
 }

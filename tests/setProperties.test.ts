@@ -116,7 +116,9 @@ test("a row splits into mark, prefix, content and value parts", () => {
 	const choices = choicesFor();
 	assert.deepEqual(pick(choices, "✓ 📝 status doing").parts, { mark: "✓", prefix: "📝", content: "status", value: "doing" });
 	assert.deepEqual(pick(choices, "👤 Bob").parts, { prefix: "👤", content: "Bob" });
-	assert.deepEqual(pick(choices, SAVE_LABEL).parts, { content: SAVE_LABEL });
+	assert.deepEqual(pick(choices, SAVE_LABEL).parts, { mark: "🏁", content: "Save & close" });
+	assert.deepEqual(pick(choices, CANCEL_LABEL).parts, { mark: "🛑", content: "Cancel" });
+	assert.deepEqual([SAVE_LABEL, CANCEL_LABEL], ["🏁 Save & close", "🛑 Cancel"]);
 });
 
 test("choosing a set link drops only that link and choosing a note adds it", () => {
@@ -228,7 +230,7 @@ test("a checkbox offers true, false and clear, marks the pending value and can w
 test("a number picker offers use only for numbers, with vault numbers by count", () => {
 	const rating = entry("rating", "number");
 	const { valueChoicesFor } = setup([rating]);
-	assert.deepEqual(valueLabels(valueChoicesFor(rating)), ["3 ×2", "4.5 ×1", `✓ ${CLEAR_LABEL}`]);
+	assert.deepEqual(valueLabels(valueChoicesFor(rating)), ["3 ×2", "4.5 ×1", "✓ Clear"]);
 	assert.equal(valueChoicesFor(rating, undefined, "-2.5")[0].value, -2.5);
 	assert.deepEqual(valueLabels(valueChoicesFor(rating, undefined, "12a")), []);
 });
@@ -241,11 +243,15 @@ test("a date picker accepts YYYYMMDD and YYYY-MM-DD and offers presets from toda
 		"Tomorrow 2024-03-10",
 		"Next Monday 2024-03-11",
 		"In a week 2024-03-16",
-		`✓ ${CLEAR_LABEL}`,
+		"✓ Clear",
 	]);
 	assert.deepEqual(valueChoicesFor(due)[0].parts, { mark: "", content: "Today", value: "2024-03-09" });
 	assert.equal(valueChoicesFor(due, undefined, "20240402")[0].value, "2024-04-02");
 	assert.equal(valueChoicesFor(due, undefined, "2024-04-02")[0].label, '✏️ Use "2024-04-02"');
+	assert.deepEqual(valueChoicesFor(due, undefined, "2024-04-02")[0].parts, { mark: "✏️", content: 'Use "2024-04-02"' });
+	const setDue = valueChoicesFor(due, withValue(pickerState(new Map()), "due", "2024-03-09"));
+	assert.deepEqual([labels(setDue)[0], labels(setDue)[setDue.length - 1]], ["✓ Today 2024-03-09", CLEAR_LABEL]);
+	assert.deepEqual(setDue[setDue.length - 1].parts, { mark: "🗑️", content: "Clear" });
 	assert.deepEqual(valueLabels(valueChoicesFor(due, undefined, "2024-02-30")), []);
 	assert.deepEqual(valueLabels(valueChoicesFor(due, undefined, "tmrw")), ["Tomorrow 2024-03-10"]);
 });
@@ -253,7 +259,7 @@ test("a date picker accepts YYYYMMDD and YYYY-MM-DD and offers presets from toda
 test("a datetime picker accepts the three typed forms and offers now", () => {
 	const start = entry("start", "datetime");
 	const { valueChoicesFor } = setup([start]);
-	assert.deepEqual(valueLabels(valueChoicesFor(start)), ["Now 2024-03-09T15:00", `✓ ${CLEAR_LABEL}`]);
+	assert.deepEqual(valueLabels(valueChoicesFor(start)), ["Now 2024-03-09T15:00", "✓ Clear"]);
 	for (const input of ["20240402 0930", "2024-04-02 09:30", "2024-04-02T09:30"]) {
 		assert.equal(valueChoicesFor(start, undefined, input)[0].value, "2024-04-02T09:30");
 	}

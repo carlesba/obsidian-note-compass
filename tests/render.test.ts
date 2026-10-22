@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
-import { entryLabel, entryParts, matchesInOrder, rowLabel } from "../src/render.ts";
+import { entryLabel, entryParts, matchesInOrder, rowLabel, shownPrefix } from "../src/render.ts";
 import type { JumpListEntry } from "../src/lists/vault.ts";
 
 const file = { path: "notes/Project.md", basename: "Project", ctime: 0 };
@@ -57,4 +57,12 @@ test("splits an entry into prefix, name and suffix parts", () => {
 test("a row's label joins its non-empty parts with spaces", () => {
 	assert.equal(rowLabel({ mark: "✓ •", prefix: "👤 peop |", content: "Ann", value: "x" }), "✓ • 👤 peop | Ann x");
 	assert.equal(rowLabel({ mark: "", prefix: "", content: "Ann" }), "Ann");
+});
+
+test("a prefix chip drops its trailing separator while the label keeps it", () => {
+	assert.equal(shownPrefix("🔗 out |"), "🔗 out");
+	assert.equal(shownPrefix("👤 peop  | "), "👤 peop");
+	assert.equal(shownPrefix("📅"), "📅");
+	assert.equal(shownPrefix(" | "), "");
+	assert.equal(rowLabel({ prefix: "🔗 out |", content: "Project" }), "🔗 out | Project");
 });
