@@ -7,7 +7,7 @@ import type { Frontmatter, JumpListVault } from "../src/lists/vault.ts";
 import { defaultSettings } from "../src/settings.ts";
 import type { NoteList } from "../src/settings.ts";
 import { DATE_NOTE_SOURCE_KEY, listKey, periodKey, readControl, writeControl } from "../src/settings/controlKeys.ts";
-import { formatError, resolvedPeriodRows, resolvedSourceName, writePeriodField } from "../src/settings/dateNotesForm.ts";
+import { customPeriods, dateNoteSourceDescription, formatError, writePeriodField } from "../src/settings/dateNotesForm.ts";
 import {
 	fitConditionToProperty,
 	fixedDateError,
@@ -212,27 +212,24 @@ test("control keys read and write the list they name and ignore unknown ones", (
 	assert.equal(readControl(settings, periodKey("day", "folder")), "journal");
 });
 
-test("the date notes page shows the source actually read and its formats", () => {
+test("the date notes row says where each period comes from and which formats are editable", () => {
 	const settings = defaultDateNoteSettings();
-	assert.equal(resolvedSourceName(settings, fakeVault()), "Custom");
-	assert.deepEqual(resolvedPeriodRows(settings, fakeVault()).map((row) => `${row.name}: ${row.desc}`), [
-		'Day: YYYY-MM-DD in the "on" folder',
-		'Week: GGGG-[W]WW in the "on" folder',
-		'Month: YYYY-MM in the "on" folder',
-		"Quarter: Off",
-		'Year: YYYY in the "on" folder',
-	]);
+	assert.match(dateNoteSourceDescription(settings, fakeVault()), /^Automatic picks .* Edit each period's folder and format/);
+	assert.deepEqual(customPeriods(settings, fakeVault()), ["day", "week", "month", "quarter", "year"]);
 
 	const dailyNotes = fakeVault({ dailyNotes: { folder: "", format: "" } });
-	assert.equal(resolvedSourceName(settings, dailyNotes), "Daily notes");
-	assert.equal(resolvedPeriodRows(settings, dailyNotes)[0].desc, "YYYY-MM-DD at the vault root");
+	assert.match(dateNoteSourceDescription(settings, dailyNotes), /Days come from Daily notes/);
+	assert.deepEqual(customPeriods(settings, dailyNotes), ["week", "month", "quarter", "year"]);
 
 	const periodic = fakeVault({ periodicNotes: { weekly: { enabled: true, folder: "/weeks/", format: "" } }, dailyNotes: {} });
-	assert.equal(resolvedSourceName(settings, periodic), "Periodic Notes");
-	assert.deepEqual(resolvedPeriodRows(settings, periodic).map((row) => row.desc), ["Off", 'gggg-[W]ww in the "weeks" folder', "Off", "Off", "Off"]);
+	assert.equal(dateNoteSourceDescription(settings, periodic).endsWith("Every period comes from Periodic Notes."), true);
+	assert.deepEqual(customPeriods(settings, periodic), []);
+
+	settings.from = "periodicNotes";
+	assert.match(dateNoteSourceDescription(settings, fakeVault()), /^Periodic Notes is not enabled\. Edit each period's/);
 
 	settings.from = "custom";
-	assert.equal(resolvedSourceName(settings, periodic), "Custom");
+	assert.equal(dateNoteSourceDescription(settings, periodic), "Edit each period's folder and format with the pencil.");
 	writePeriodField(settings, "week", "format", " GGGG-WW ");
 	assert.equal(settings.custom.week.format, "GGGG-WW");
 	assert.ok(formatError(" "));
