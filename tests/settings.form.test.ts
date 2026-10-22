@@ -9,7 +9,9 @@ import type { NoteList } from "../src/settings.ts";
 import { DATE_NOTE_SOURCE_KEY, listKey, periodKey, readControl, writeControl } from "../src/settings/controlKeys.ts";
 import { formatError, resolvedPeriodRows, resolvedSourceName, writePeriodField } from "../src/settings/dateNotesForm.ts";
 import {
+	fitConditionToProperty,
 	fixedDateError,
+	hasProperty,
 	inapplicableCondition,
 	listDisplayValue,
 	listName,
@@ -234,4 +236,26 @@ test("the date notes page shows the source actually read and its formats", () =>
 	assert.equal(settings.custom.week.format, "GGGG-WW");
 	assert.ok(formatError(" "));
 	assert.equal(formatError("YYYY"), undefined);
+});
+
+test("choosing a property switches the condition to one its type offers, and keeps one that already applies", () => {
+	const types = { done: "checkbox", status: "text" };
+	const list: NoteList = {
+		id: "list-1",
+		enabled: true,
+		prefix: "",
+		source: { kind: "frontmatter", property: "done", condition: { operator: "is", value: "x" } },
+	};
+	fitConditionToProperty(list, types);
+	assert.deepEqual(list.source, { kind: "frontmatter", property: "done", condition: { operator: "is true" } });
+	list.source = { kind: "frontmatter", property: "status", condition: { operator: "is set" } };
+	fitConditionToProperty(list, types);
+	assert.deepEqual(list.source, { kind: "frontmatter", property: "status", condition: { operator: "is set" } });
+});
+
+test("a property list has a property only once one is chosen", () => {
+	const list = newList([]);
+	assert.equal(hasProperty(list), false);
+	writeListField(list, "property", "status");
+	assert.equal(hasProperty(list), true);
 });
