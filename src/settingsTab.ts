@@ -7,7 +7,7 @@ import type {
 } from "obsidian";
 import { createObsidianVault } from "./lists/obsidianVault";
 import type { JumpListVault } from "./lists/vault";
-import type NoteLauncherPlugin from "./main";
+import type NoteCompassPlugin from "./main";
 import {
 	DATE_NOTE_SOURCE_KEY,
 	SHOW_PREFIXES_KEY,
@@ -49,7 +49,7 @@ const TYPED_FIELDS = [
 
 const TYPING_PAUSE_MS = 800;
 
-const SORTABLE_LIST_CLASS = "note-launcher-sortable-list";
+const SORTABLE_LIST_CLASS = "note-compass-sortable-list";
 
 const DATE_NOTE_FORMATS_PAGE_ID = "date-note-formats";
 
@@ -61,12 +61,12 @@ interface AppWithSettingModal {
 	setting?: SettingModal;
 }
 
-export class NoteLauncherSettingTab extends PluginSettingTab {
-	private plugin: NoteLauncherPlugin;
+export class NoteCompassSettingTab extends PluginSettingTab {
+	private plugin: NoteCompassPlugin;
 	private readonly refreshAfterTyping = debounce(() => this.update(), TYPING_PAUSE_MS, true);
 	private readonly prefixDrafts = new Map<string, PrefixDraft>();
 
-	constructor(app: App, plugin: NoteLauncherPlugin) {
+	constructor(app: App, plugin: NoteCompassPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}

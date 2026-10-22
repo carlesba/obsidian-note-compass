@@ -10,11 +10,11 @@ export interface RowParts {
 
 const LABEL_PARTS = ["mark", "prefix", "content", "value"] as const;
 
-export const RESULTS_CLASS = "note-launcher-results";
+export const RESULTS_CLASS = "note-compass-results";
 
 export const MARK_COLUMN_CLASS = "has-mark-column";
 
-export const CHIP_COLOR_PROPERTY = "--note-launcher-chip-color";
+export const CHIP_COLOR_PROPERTY = "--note-compass-chip-color";
 
 export function rowLabel(parts: RowParts): string {
 	return LABEL_PARTS.map((part) => parts[part])
@@ -33,17 +33,17 @@ export function paintChip(chipEl: HTMLElement, color: string | undefined): void 
 
 export function renderRow(el: HTMLElement, parts: RowParts, reservesMarkColumn = false): void {
 	const prefix = parts.prefix?.trim() || undefined;
-	el.addClass("note-launcher-row", prefix === undefined ? "no-prefix" : "has-prefix");
+	el.addClass("note-compass-row", prefix === undefined ? "no-prefix" : "has-prefix");
 	const mark = parts.mark ?? (reservesMarkColumn ? "" : undefined);
-	if (mark !== undefined) el.createSpan({ cls: "note-launcher-row-mark", text: mark });
+	if (mark !== undefined) el.createSpan({ cls: "note-compass-row-mark", text: mark });
 	if (prefix !== undefined) {
-		const chipEl = el.createSpan({ cls: "note-launcher-row-prefix" });
-		chipEl.createSpan({ cls: "note-launcher-chip-text", text: prefix });
+		const chipEl = el.createSpan({ cls: "note-compass-row-prefix" });
+		chipEl.createSpan({ cls: "note-compass-chip-text", text: prefix });
 		paintChip(chipEl, parts.prefixColor);
 	}
-	const bodyEl = el.createSpan({ cls: "note-launcher-row-body" });
-	bodyEl.createSpan({ cls: "note-launcher-row-content", text: parts.content });
-	if (parts.value !== undefined) bodyEl.createSpan({ cls: "note-launcher-row-value", text: parts.value });
+	const bodyEl = el.createSpan({ cls: "note-compass-row-body" });
+	bodyEl.createSpan({ cls: "note-compass-row-content", text: parts.content });
+	if (parts.value !== undefined) bodyEl.createSpan({ cls: "note-compass-row-value", text: parts.value });
 }
 
 export function entryParts(entry: JumpListEntry, showPrefixes: boolean): RowParts {

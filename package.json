@@ -1,6 +1,6 @@
 {
-	"name": "obsidian-note-launcher",
-	"version": "0.1.0",
+	"name": "obsidian-note-compass",
+	"version": "0.1.1",
 	"description": "Jump to notes related to the note in focus or in lists you define, set its properties from one picker, and create notes that join your link properties.",
 	"main": "main.js",
 	"private": true,
@@ -18,9 +18,9 @@
 	],
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/carlesba/obsidian-note-launcher.git"
+		"url": "git+https://github.com/carlesba/obsidian-note-compass.git"
 	},
-	"homepage": "https://github.com/carlesba/obsidian-note-launcher",
+	"homepage": "https://github.com/carlesba/obsidian-note-compass",
 	"license": "MIT",
 	"devDependencies": {
 		"@types/node": "^20.11.30",
