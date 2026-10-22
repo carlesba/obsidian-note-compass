@@ -7,7 +7,7 @@ import type { ListField } from "./listForm.ts";
 
 export type PropertyField = "enabled" | "prefix" | "name" | "type" | LinkPropertyField;
 
-type LinkPropertyField = "excludedFolder" | "newNoteFolder" | "newNoteTemplate";
+type LinkPropertyField = "excludedFolders" | "createsNotes" | "newNoteFolder" | "newNoteTemplate";
 
 export type LinkProperty = EditableProperty & NoteList;
 
@@ -57,7 +57,8 @@ export function hasSource(entry: EditableProperty): entry is LinkProperty {
 	return entry.source !== undefined;
 }
 
-export function readPropertyField(entry: EditableProperty, field: PropertyField): unknown {
+export function readPropertyField(entry: EditableProperty, field: PropertyField, index?: string): unknown {
+	if (field === "excludedFolders") return entry.excludedFolders?.[Number(index)];
 	if (field === "enabled") return entry.enabled;
 	if (field === "prefix") return entry.prefix;
 	if (field === "name") return entry.property;
@@ -65,13 +66,31 @@ export function readPropertyField(entry: EditableProperty, field: PropertyField)
 	return entry[field];
 }
 
-export function writePropertyField(entry: EditableProperty, field: PropertyField, value: unknown): void {
+export function writePropertyField(entry: EditableProperty, field: PropertyField, value: unknown, index?: string): boolean {
 	const text = typeof value === "string" ? value : "";
+	if (field === "excludedFolders") return writeExcludedFolder(entry, Number(index), text);
 	if (field === "enabled") entry.enabled = value === true;
+	else if (field === "createsNotes") entry.createsNotes = value === true;
 	else if (field === "prefix") entry.prefix = text;
 	else if (field === "name") entry.property = text.trim();
 	else if (field === "type") writeType(entry, EDITABLE_PROPERTY_TYPES.find((type) => type === value) ?? entry.type);
 	else entry[field] = text.trim();
+	return true;
+}
+
+export function addExcludedFolder(entry: EditableProperty): void {
+	entry.excludedFolders = [...(entry.excludedFolders ?? []), ""];
+}
+
+export function deleteExcludedFolder(entry: EditableProperty, index: number): void {
+	entry.excludedFolders?.splice(index, 1);
+}
+
+function writeExcludedFolder(entry: EditableProperty, index: number, folder: string): boolean {
+	const folders = entry.excludedFolders;
+	if (!folders || !Number.isInteger(index) || index < 0 || index >= folders.length) return false;
+	folders[index] = folder.trim();
+	return true;
 }
 
 export function readPropertySourceField(entry: EditableProperty, field: ListField): unknown {
@@ -88,11 +107,13 @@ function writeType(entry: EditableProperty, type: EditablePropertyType): void {
 	entry.type = type;
 	if (isLinkType(type)) {
 		entry.source = entry.source ?? defaultLinkSource();
-		entry.excludedFolder = entry.excludedFolder ?? "";
+		entry.excludedFolders = entry.excludedFolders ?? [];
+		entry.createsNotes = entry.createsNotes ?? false;
 		return;
 	}
 	delete entry.source;
-	delete entry.excludedFolder;
+	delete entry.excludedFolders;
+	delete entry.createsNotes;
 	delete entry.newNoteFolder;
 	delete entry.newNoteTemplate;
 }

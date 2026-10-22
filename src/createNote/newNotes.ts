@@ -47,10 +47,21 @@ export function newNoteRule(source: ListSource | undefined, vault: JumpListVault
 	}
 }
 
-export function createsNotes(source: ListSource, propertyTypes: Record<string, string>): boolean {
-	if (source.kind === "inFolder" || source.kind === "linksToNote" || source.kind === "modifiedToday") return true;
-	if (source.kind !== "frontmatter" || source.property === "") return false;
-	return satisfyingValue(source, propertyType(propertyTypes, source.property)) !== undefined;
+export function noteCreationBlocker(source: ListSource, propertyTypes: Record<string, string>): string | undefined {
+	switch (source.kind) {
+		case "inFolder":
+			return trimSlashes(source.folder) === "" ? "choose a folder first" : undefined;
+		case "linksToNote":
+			return source.note.trim() === "" ? "choose a note first" : undefined;
+		case "modifiedToday":
+			return undefined;
+		case "frontmatter":
+			if (source.property === "") return "choose a property first";
+			if (satisfyingValue(source, propertyType(propertyTypes, source.property)) !== undefined) return undefined;
+			return `"${source.condition.operator}" gives no value to write into a new note`;
+		default:
+			return "it lists notes by how they relate to the note in focus";
+	}
 }
 
 export function isCreatableName(name: string): boolean {

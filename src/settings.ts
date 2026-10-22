@@ -56,7 +56,8 @@ export interface EditableProperty {
 	property: string;
 	type: EditablePropertyType;
 	source?: ListSource;
-	excludedFolder?: string;
+	excludedFolders?: string[];
+	createsNotes?: boolean;
 	newNoteFolder?: string;
 	newNoteTemplate?: string;
 }
@@ -171,7 +172,8 @@ function migrateLegacySetProperties(legacy: LegacySetPropertiesSettings): Editab
 		property: list.property,
 		type: list.mode === "single" ? "link" : "links",
 		source: list.source,
-		excludedFolder: legacy.templatesFolder,
+		excludedFolders: folderList(legacy.templatesFolder),
+		createsNotes: false,
 	}));
 	const checkboxes: EditableProperty[] = [];
 	for (const flag of legacy.flags) {
@@ -207,13 +209,32 @@ function readProperties(stored: unknown[]): EditableProperty[] {
 		};
 		if (source) {
 			property.source = source;
-			property.excludedFolder = typeof entry.excludedFolder === "string" ? entry.excludedFolder : "";
+			property.excludedFolders = readExcludedFolders(entry);
 			if (typeof entry.newNoteFolder === "string") property.newNoteFolder = entry.newNoteFolder;
 			if (typeof entry.newNoteTemplate === "string") property.newNoteTemplate = entry.newNoteTemplate;
+			property.createsNotes =
+				typeof entry.createsNotes === "boolean"
+					? entry.createsNotes
+					: [property.newNoteFolder, property.newNoteTemplate].some((field) => (field ?? "").trim() !== "");
 		}
 		properties.push(property);
 	}
 	return properties;
+}
+
+function readExcludedFolders(entry: Record<string, unknown>): string[] {
+	if (Array.isArray(entry.excludedFolders)) {
+		return entry.excludedFolders
+			.filter((folder): folder is string => typeof folder === "string")
+			.map((folder) => folder.trim())
+			.filter((folder) => folder !== "");
+	}
+	return typeof entry.excludedFolder === "string" ? folderList(entry.excludedFolder) : [];
+}
+
+function folderList(folder: string): string[] {
+	const trimmed = folder.trim();
+	return trimmed === "" ? [] : [trimmed];
 }
 
 function defaultLinkLists(): LinkList[] {

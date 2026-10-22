@@ -33,7 +33,7 @@ const TYPED_FIELDS = [
 	"format",
 	"note",
 	"name",
-	"excludedFolder",
+	"excludedFolders",
 ];
 
 const TYPING_PAUSE_MS = 800;
@@ -70,6 +70,7 @@ export class NoteLauncherSettingTab extends PluginSettingTab {
 			propertySuggestions: () => (suggestions = suggestions ?? propertySuggestions(vault)),
 			write: (key: string, value: unknown) => void this.setControlValue(key, value),
 			openPage: (pageId: string) => this.openPage(pageId),
+			change: (change: () => unknown) => this.changeLists(change),
 		};
 		return [
 			{
@@ -130,7 +131,7 @@ export class NoteLauncherSettingTab extends PluginSettingTab {
 		if (!writeControl(this.plugin.settings, key, value)) return;
 		if (key.endsWith("/property")) this.fitCondition(key);
 		await this.plugin.saveSettings();
-		if (TYPED_FIELDS.includes(key.split("/").pop() ?? "")) {
+		if (TYPED_FIELDS.includes(key.split("/")[2] ?? "")) {
 			this.refreshAfterTyping();
 			return;
 		}

@@ -29,8 +29,9 @@ const linked = (
 	source: ListSource,
 	property: string,
 	type: EditablePropertyType = "links",
-	excludedFolder = "templates",
-): EditableProperty => ({ id, enabled: true, prefix, property, type, source, excludedFolder });
+	excludedFolders = ["templates"],
+	createsNotes = false,
+): EditableProperty => ({ id, enabled: true, prefix, property, type, source, excludedFolders, createsNotes });
 
 const setPropertiesDefaults = (): SetPropertiesSettings => ({
 	properties: [
@@ -80,12 +81,14 @@ test("mergeSettings migrates saved flags and link lists into properties, flags f
 	assert.deepEqual(merged.setProperties, {
 		properties: [
 			checkbox("list-8", "pinned", "⚑"),
-			{ ...linked("list-4", "🧭", { kind: "inFolder", folder: "areas" }, "area", "link", "_templates"), enabled: false },
-			linked("list-2", "👤", linksTo("Person"), "related", "links", "_templates"),
-			linked("list-7", "🏢", linksTo("Org"), "related", "links", "_templates"),
+			{ ...linked("list-4", "🧭", { kind: "inFolder", folder: "areas" }, "area", "link", ["_templates"]), enabled: false },
+			linked("list-2", "👤", linksTo("Person"), "related", "links", ["_templates"]),
+			linked("list-7", "🏢", linksTo("Org"), "related", "links", ["_templates"]),
 		],
 	});
 	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(merged))), merged);
+	const withoutTemplates = mergeSettings({ setProperties: { ...setProperties, templatesFolder: " " } }).setProperties.properties;
+	assert.deepEqual(withoutTemplates.slice(1).map((property) => property.excludedFolders), [[], [], []]);
 });
 
 test("mergeSettings migrates any one legacy key and fills the others from the old defaults", () => {
@@ -129,8 +132,8 @@ test("mergeSettings keeps properties already in the new shape untouched", () => 
 		{ id: "p-3", enabled: true, prefix: "📅", property: "due", type: "date" },
 		{ id: "p-4", enabled: true, prefix: "⏰", property: "start", type: "datetime" },
 		checkbox("p-5", "done", ""),
-		linked("p-6", "👤", linksTo("Person"), "owner", "link", ""),
-		linked("p-7", "🔗", { kind: "linksOut" }, "related", "links", "archive"),
+		linked("p-6", "👤", linksTo("Person"), "owner", "link", []),
+		linked("p-7", "🔗", { kind: "linksOut" }, "related", "links", ["archive", "templates"], true),
 	];
 	const merged = mergeSettings({ setProperties: { properties, flags: ["ignored"] } });
 	assert.deepEqual(merged.setProperties, { properties });
@@ -152,7 +155,7 @@ test("mergeSettings drops unreadable properties, mints missing ids and keeps sou
 	});
 	assert.deepEqual(merged.setProperties.properties, [
 		{ id: "p-4", enabled: false, prefix: "", property: "d", type: "text" },
-		{ id: "list-1", enabled: true, prefix: "e", property: "e", type: "link", source: { kind: "linksIn" }, excludedFolder: "" },
+		{ id: "list-1", enabled: true, prefix: "e", property: "e", type: "link", source: { kind: "linksIn" }, excludedFolders: [], createsNotes: false },
 	]);
 });
 

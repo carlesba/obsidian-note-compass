@@ -46,13 +46,15 @@ function pickableNotes(
 ): PickableNote[] {
 	if (!entry.source) return [];
 	const list = { id: entry.id, enabled: true, prefix: "", source: entry.source };
-	const excludedFolder = (entry.excludedFolder ?? "").replace(/^\/+|\/+$/g, "");
+	const excludedFolders = (entry.excludedFolders ?? [])
+		.map((folder) => folder.trim().replace(/^\/+|\/+$/g, ""))
+		.filter((folder) => folder !== "");
 	return buildJumpList([list], vault, target, settings.dateNotes)
 		.map((listed) => listed.file)
 		.filter(
 			(file) =>
 				file.path !== target.path &&
-				!(excludedFolder !== "" && file.path.startsWith(`${excludedFolder}/`)) &&
+				!excludedFolders.some((folder) => file.path.startsWith(`${folder}/`)) &&
 				vault.frontmatter(file.path)?.archived !== true,
 		)
 		.map((file) => ({ name: file.basename, path: file.path, mtime: vault.mtime(file.path) }))

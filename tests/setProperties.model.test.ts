@@ -47,7 +47,7 @@ test("the test vault's v2 data migrates to properties and keeps its jump setting
 		data.setProperties.linkLists.slice(4).map((list: { source: unknown }) => list.source),
 	);
 	assert.ok(merged.setProperties.properties.every((property) => property.enabled));
-	assert.ok(related.every((property) => property.excludedFolder === "templates"));
+	assert.deepEqual(related.map((property) => property.excludedFolders), related.map(() => ["templates"]));
 	assert.equal(merged.setProperties.properties[0].prefix, "🎛️ meta |");
 	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(merged))), merged);
 });
@@ -69,7 +69,9 @@ test("the defaults are the old defaults in the new shape", () => {
 		"🏢 comp | related · links",
 		"🔅 tday | related · links",
 	]);
-	assert.ok(properties.filter((entry) => entry.source).every((entry) => entry.excludedFolder === "templates"));
+	const linked = properties.filter((entry) => entry.source);
+	assert.deepEqual(linked.map((entry) => entry.excludedFolders), linked.map(() => ["templates"]));
+	assert.ok(linked.every((entry) => entry.createsNotes === false));
 });
 
 test("the first enabled entry for a property decides its type", () => {
