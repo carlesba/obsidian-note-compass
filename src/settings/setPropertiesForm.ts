@@ -1,61 +1,96 @@
-import { LINK_LIST_MODES } from "../settings.ts";
-import type { LegacySetPropertiesSettings, LinkList, LinkListMode } from "../settings.ts";
-import { newList, readListField, sourceSummary, writeListField } from "./listForm.ts";
-import type { ListField, PropertySuggestion } from "./listForm.ts";
+import type { PropertyType } from "../lists/conditions.ts";
+import { EDITABLE_PROPERTY_TYPES, isLinkType, newListId } from "../settings.ts";
+import type { EditableProperty, EditablePropertyType, ListSource, NoteList } from "../settings.ts";
+import { mixedTypeProperties } from "../setProperties/propertyTypes.ts";
+import { readListField, writeListField } from "./listForm.ts";
+import type { ListField } from "./listForm.ts";
 
-export type LinkListField = ListField | "name" | "writesTo" | "mode";
+export type PropertyField = "enabled" | "prefix" | "name" | "type" | "excludedFolder";
 
-const MODE_NAMES: Record<LinkListMode, string> = { multi: "Multi", single: "Single" };
+export type LinkProperty = EditableProperty & NoteList;
 
-export const LINK_LIST_MODE_OPTIONS = LINK_LIST_MODES.reduce<Record<string, string>>(
-	(options, mode) => ({ ...options, [mode]: MODE_NAMES[mode] }),
+const TYPE_NAMES: Record<EditablePropertyType, string> = {
+	checkbox: "checkbox",
+	text: "text",
+	number: "number",
+	date: "date",
+	datetime: "datetime",
+	link: "link, one note",
+	links: "links, several notes",
+};
+
+export const PROPERTY_TYPE_OPTIONS = EDITABLE_PROPERTY_TYPES.reduce<Record<string, string>>(
+	(options, type) => ({ ...options, [type]: TYPE_NAMES[type] }),
 	{},
 );
 
-export function newLinkList(lists: readonly LinkList[]): LinkList {
-	return { ...newList(lists), name: "", property: "", mode: "multi" };
+const PRESETS: Partial<Record<PropertyType, EditablePropertyType>> = {
+	checkbox: "checkbox",
+	number: "number",
+	date: "date",
+	datetime: "datetime",
+	multitext: "links",
+	tags: "links",
+};
+
+export function propertyTypePreset(vaultType: PropertyType): EditablePropertyType {
+	return PRESETS[vaultType] ?? "text";
 }
 
-export function linkListName(list: LinkList): string {
-	const name = list.name.trim() === "" ? sourceSummary(list.source) : list.name.trim();
-	const property = list.property === "" ? "no property" : list.property;
-	return `${list.prefix} ${name} → ${property} · ${list.mode}`.trim();
+export function propertyRowName(entry: EditableProperty): string {
+	if (entry.property.trim() === "") return "New property";
+	return `${entry.prefix} ${entry.property} · ${entry.type}`.trim();
 }
 
-export function checkboxSuggestions(suggestions: readonly PropertySuggestion[]): PropertySuggestion[] {
-	return suggestions.filter((suggestion) => suggestion.type === "checkbox");
+export function newProperty(properties: readonly EditableProperty[]): EditableProperty {
+	return { id: newListId(properties), enabled: false, prefix: "", property: "", type: "checkbox" };
 }
 
-export function readSetPropertiesField(settings: LegacySetPropertiesSettings, field: string | undefined): unknown {
-	if (field === "flagsPrefix") return settings.flagsPrefix;
-	if (field === "templatesFolder") return settings.templatesFolder;
-	return undefined;
+export function mixedTypeWarning(entry: EditableProperty, properties: readonly EditableProperty[]): string | undefined {
+	if (entry.property.trim() === "" || !mixedTypeProperties(properties).includes(entry.property)) return undefined;
+	return `Another entry writes ${entry.property} as a different type. The first enabled one decides.`;
 }
 
-export function writeSetPropertiesField(settings: LegacySetPropertiesSettings, field: string | undefined, value: unknown): boolean {
+export function hasSource(entry: EditableProperty): entry is LinkProperty {
+	return entry.source !== undefined;
+}
+
+export function readPropertyField(entry: EditableProperty, field: PropertyField): unknown {
+	if (field === "enabled") return entry.enabled;
+	if (field === "prefix") return entry.prefix;
+	if (field === "name") return entry.property;
+	if (field === "type") return entry.type;
+	return entry.excludedFolder;
+}
+
+export function writePropertyField(entry: EditableProperty, field: PropertyField, value: unknown): void {
 	const text = typeof value === "string" ? value : "";
-	if (field === "flagsPrefix") settings.flagsPrefix = text;
-	else if (field === "templatesFolder") settings.templatesFolder = text.trim();
-	else return false;
-	return true;
+	if (field === "enabled") entry.enabled = value === true;
+	else if (field === "prefix") entry.prefix = text;
+	else if (field === "name") entry.property = text.trim();
+	else if (field === "excludedFolder") entry.excludedFolder = text.trim();
+	else writeType(entry, EDITABLE_PROPERTY_TYPES.find((type) => type === value) ?? entry.type);
 }
 
-export function writeFlag(settings: LegacySetPropertiesSettings, index: number, value: unknown): boolean {
-	if (!Number.isInteger(index) || index < 0 || index >= settings.flags.length) return false;
-	settings.flags[index] = typeof value === "string" ? value.trim() : "";
-	return true;
+export function readPropertySourceField(entry: EditableProperty, field: ListField): unknown {
+	return hasSource(entry) ? readListField(entry, field) : undefined;
 }
 
-export function readLinkListField(list: LinkList, field: LinkListField): unknown {
-	if (field === "name") return list.name;
-	if (field === "writesTo") return list.property;
-	if (field === "mode") return list.mode;
-	return readListField(list, field);
+export function writePropertySourceField(entry: EditableProperty, field: ListField, value: unknown): void {
+	if (hasSource(entry)) writeListField(entry, field, value);
 }
 
-export function writeLinkListField(list: LinkList, field: LinkListField, value: unknown): void {
-	if (field === "name") list.name = typeof value === "string" ? value : "";
-	else if (field === "writesTo") list.property = typeof value === "string" ? value.trim() : "";
-	else if (field === "mode") list.mode = LINK_LIST_MODES.find((mode) => mode === value) ?? list.mode;
-	else writeListField(list, field, value);
+function writeType(entry: EditableProperty, type: EditablePropertyType): void {
+	entry.type = type;
+	if (isLinkType(type)) {
+		entry.source = entry.source ?? defaultLinkSource();
+		entry.excludedFolder = entry.excludedFolder ?? "";
+		return;
+	}
+	delete entry.source;
+	delete entry.excludedFolder;
+}
+
+function defaultLinkSource(): ListSource {
+	return { kind: "modifiedToday" };
 }

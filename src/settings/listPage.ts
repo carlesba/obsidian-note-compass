@@ -1,8 +1,9 @@
 import { AbstractInputSuggest } from "obsidian";
-import type { App, Setting, SettingDefinition, SettingDefinitionItem, SettingDefinitionPage } from "obsidian";
+import type { App, Setting, SettingDefinition, SettingDefinitionItem, SettingDefinitionPage, SettingGroupItem } from "obsidian";
 import { propertyType } from "../lists/conditions";
-import type { LinkList, NoteList } from "../settings";
-import { flagKey, linkListKey, listKey } from "./controlKeys";
+import { isLinkType } from "../settings";
+import type { EditableProperty, NoteList } from "../settings";
+import { listKey, propertyKey, propertySourceKey } from "./controlKeys";
 import {
 	DATE_MODE_OPTIONS,
 	DIRECTION_OPTIONS,
@@ -17,8 +18,8 @@ import {
 	valueShape,
 } from "./listForm";
 import type { ListField, PropertySuggestion, ValueShape } from "./listForm";
-import { LINK_LIST_MODE_OPTIONS, checkboxSuggestions, linkListName } from "./setPropertiesForm";
-import type { LinkListField } from "./setPropertiesForm";
+import { PROPERTY_TYPE_OPTIONS, hasSource, mixedTypeWarning, propertyRowName, propertyTypePreset } from "./setPropertiesForm";
+import type { PropertyField } from "./setPropertiesForm";
 
 export interface ListPageContext {
 	app: App;
@@ -34,8 +35,18 @@ export function listPageId(list: NoteList): string {
 	return `list-${list.id}`;
 }
 
-export function linkListPageId(list: LinkList): string {
-	return `link-list-${list.id}`;
+export function propertyPageId(entry: EditableProperty): string {
+	return `property-${entry.id}`;
+}
+
+interface EditableRow {
+	name: string;
+	desc?: string;
+	enabled: boolean;
+	enabledKey: string;
+	enabledTooltip: string;
+	pageId: string;
+	editTooltip: string;
 }
 
 export class PropertySuggest extends AbstractInputSuggest<PropertySuggestion> {
@@ -61,69 +72,128 @@ export function listPage(list: NoteList, context: ListPageContext): SettingDefin
 }
 
 export function listRow(list: NoteList, context: ListPageContext): SettingDefinition {
-	return editableRow(listName(list), list, listPageId(list), (field) => listKey(list.id, field), context);
+	const inapplicable = inapplicableCondition(list.source, context.propertyTypes);
+	return editableRow(
+		{
+			name: listName(list),
+			desc: inapplicable ? "The condition does not apply to this property. Edit the list to fix it." : undefined,
+			enabled: list.enabled,
+			enabledKey: listKey(list.id, "enabled"),
+			enabledTooltip: "Show this list in the picker",
+			pageId: listPageId(list),
+			editTooltip: "Edit list",
+		},
+		context,
+	);
 }
 
-export function linkListRow(list: LinkList, context: ListPageContext): SettingDefinition {
-	return editableRow(linkListName(list), list, linkListPageId(list), (field) => linkListKey(list.id, field), context);
-}
-
-function editableRow(
-	name: string,
-	list: NoteList,
-	pageId: string,
-	key: (field: ListField) => string,
+export function propertyRow(
+	entry: EditableProperty,
+	properties: readonly EditableProperty[],
 	context: ListPageContext,
 ): SettingDefinition {
-	const inapplicable = inapplicableCondition(list.source, context.propertyTypes);
+	return editableRow(
+		{
+			name: propertyRowName(entry),
+			desc: mixedTypeWarning(entry, properties),
+			enabled: entry.enabled,
+			enabledKey: propertyKey(entry.id, "enabled"),
+			enabledTooltip: "Offer this property in the picker",
+			pageId: propertyPageId(entry),
+			editTooltip: "Edit property",
+		},
+		context,
+	);
+}
+
+function editableRow(row: EditableRow, context: ListPageContext): SettingDefinition {
 	return {
-		name,
-		desc: inapplicable ? "The condition does not apply to this property. Edit the list to fix it." : undefined,
+		name: row.name,
+		desc: row.desc,
 		render: (setting) => {
 			setting.addToggle((toggle) =>
 				toggle
-					.setTooltip("Show this list in the picker")
-					.setValue(list.enabled)
-					.onChange((enabled) => context.write(key("enabled"), enabled)),
+					.setTooltip(row.enabledTooltip)
+					.setValue(row.enabled)
+					.onChange((enabled) => context.write(row.enabledKey, enabled)),
 			);
 			setting.addExtraButton((button) =>
 				button
 					.setIcon("pencil")
-					.setTooltip("Edit list")
-					.onClick(() => context.openPage(pageId)),
+					.setTooltip(row.editTooltip)
+					.onClick(() => context.openPage(row.pageId)),
 			);
 		},
 	};
 }
 
-export function linkListPage(list: LinkList, context: ListPageContext): SettingDefinitionPage {
-	const key = (field: LinkListField) => linkListKey(list.id, field);
-	return pageEntry(linkListPageId(list), linkListName(list), list, context, [
-		...listPageItems(list, context, key),
-		{ name: "Name", desc: "How the picker's rows for this list are named.", control: { type: "text", key: key("name") } },
-		{
-			name: "Writes to",
-			desc: "The property that holds the links chosen from this list.",
-			render: propertyInput(context, key("writesTo"), () => list.property, "Related", context.propertySuggestions),
-		},
-		{
-			name: "Mode",
-			desc: "Multi keeps a list of links in the property; single keeps one link.",
-			control: { type: "dropdown", key: key("mode"), options: LINK_LIST_MODE_OPTIONS },
-		},
-	]);
+export function propertyPage(
+	entry: EditableProperty,
+	properties: readonly EditableProperty[],
+	context: ListPageContext,
+): SettingDefinitionPage {
+	const key = (field: PropertyField) => propertyKey(entry.id, field);
+	const chosen = () => entry.property.trim() !== "";
+	const items: SettingDefinitionItem[] = [
+			{ name: "Enabled", desc: "Offer this property in the picker.", control: { type: "toggle", key: key("enabled") } },
+			{ name: "Prefix", desc: "The property's row in the picker starts with it, as in \"🎛️ meta |\".", control: { type: "text", key: key("prefix") } },
+			{
+				name: "Property",
+				desc: "The property the picker writes.",
+				render: propertyInput(context, key("name"), () => entry.property, "Status", context.propertySuggestions, (suggestion) =>
+					context.write(key("type"), propertyTypePreset(suggestion.type)),
+				),
+			},
+			{
+				name: "Type",
+				desc: chosen() ? "Which value picker the property opens." : "Choose a property first.",
+				control: { type: "dropdown", disabled: () => !chosen(), key: key("type"), options: PROPERTY_TYPE_OPTIONS },
+			},
+	];
+	if (isLinkType(entry.type) && hasSource(entry)) {
+		items.push(
+			{
+				type: "group",
+				heading: "Offer notes from",
+				items: sourceItems(entry, context, (field) => propertySourceKey(entry.id, field)),
+			},
+			{
+				type: "group",
+				items: [
+					{
+						name: "Leave out folder",
+						desc: "Notes in this folder are never offered.",
+						control: { type: "folder", key: key("excludedFolder") },
+					},
+				],
+			},
+		);
+	}
+	const page: IdentifiedPage = {
+		type: "page",
+		id: propertyPageId(entry),
+		name: propertyRowName(entry),
+		displayValue: entry.enabled ? "" : "off",
+		status: mixedTypeWarning(entry, properties) ? "warning" : null,
+		items,
+	};
+	return page;
 }
 
-export function flagRow(flag: string, index: number, context: ListPageContext): SettingDefinition {
-	const suggestions = () => checkboxSuggestions(context.propertySuggestions());
-	return { name: flag === "" ? "New flag" : flag, render: propertyInput(context, flagKey(index), () => flag, "Archived", suggestions) };
+export function listPageItems(list: NoteList, context: ListPageContext): SettingDefinitionItem[] {
+	const key = (field: ListField) => listKey(list.id, field);
+	return [
+		{ name: "Enabled", desc: "Show this list in the picker.", control: { type: "toggle", key: key("enabled") } },
+		{ name: "Prefix", desc: "Every row from this list starts with it, separator included, as in \"🔗 out |\".", control: { type: "text", key: key("prefix") } },
+		...sourceItems(list, context, key),
+	];
 }
 
-export function listPageItems(
+function sourceItems(
 	list: NoteList,
 	context: ListPageContext,
-	key: (field: ListField) => string = (field) => listKey(list.id, field),
-): SettingDefinitionItem[] {
+	key: (field: ListField) => string,
+): SettingGroupItem[] {
 	const property = () => (list.source.kind === "frontmatter" ? list.source : undefined);
 	const shape = (): ValueShape => valueShape(property()?.condition.operator ?? "is set");
 	const dateMode = () => {
@@ -138,8 +208,6 @@ export function listPageItems(
 	const type = propertyType(context.propertyTypes, source?.property ?? "");
 	const inapplicable = inapplicableCondition(list.source, context.propertyTypes);
 	return [
-		{ name: "Enabled", desc: "Show this list in the picker.", control: { type: "toggle", key: key("enabled") } },
-		{ name: "Prefix", desc: "Every row from this list starts with it, separator included, as in \"🔗 out |\".", control: { type: "text", key: key("prefix") } },
 		{ name: "Source", control: { type: "dropdown", key: key("source"), options: SOURCE_OPTIONS } },
 		{
 			name: "Note",
@@ -213,6 +281,7 @@ function propertyInput(
 	value: () => string,
 	placeholder: string,
 	suggestions: () => PropertySuggestion[],
+	picked?: (suggestion: PropertySuggestion) => void,
 ): (setting: Setting) => void {
 	return (setting) => {
 		setting.addText((text) => {
@@ -222,6 +291,7 @@ function propertyInput(
 			suggest.onSelect((suggestion) => {
 				suggest.setValue(suggestion.name);
 				context.write(key, suggestion.name);
+				picked?.(suggestion);
 				suggest.close();
 			});
 		});
