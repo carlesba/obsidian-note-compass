@@ -1,5 +1,3 @@
-import { shownPrefix } from "../render.ts";
-
 export interface PrefixChip {
 	text: string;
 	placeholder: boolean;
@@ -15,7 +13,7 @@ export interface PrefixDraft {
 export const PREFIX_PLACEHOLDER = "prefix";
 
 export function prefixChip(prefix: string): PrefixChip {
-	const shown = shownPrefix(prefix);
+	const shown = prefix.trim();
 	return shown === "" ? { text: PREFIX_PLACEHOLDER, placeholder: true } : { text: shown, placeholder: false };
 }
 

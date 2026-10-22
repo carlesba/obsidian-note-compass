@@ -23,7 +23,14 @@ test("the type list offers every editable type in the spec's order", () => {
 test("the test vault's v2 data migrates to properties and keeps its jump settings", () => {
 	const data = v2Data();
 	const merged = mergeSettings(data);
-	assert.deepEqual(merged.lists, data.lists);
+	assert.deepEqual(
+		merged.lists.map((list) => list.prefix),
+		["📅 day", "🔗 out", "🔗 in", "🔅 ctx", "⭐ fav", "📌 todo", "🗂 proj"],
+	);
+	assert.deepEqual(
+		merged.lists,
+		data.lists.map((list: { prefix: string }, index: number) => ({ ...list, prefix: merged.lists[index].prefix })),
+	);
 	assert.deepEqual(merged.dateNotes, data.dateNotes);
 	const rows = merged.setProperties.properties.map((property) => [property.id, property.type, property.property]);
 	assert.deepEqual(rows, [
@@ -48,26 +55,40 @@ test("the test vault's v2 data migrates to properties and keeps its jump setting
 	);
 	assert.ok(merged.setProperties.properties.every((property) => property.enabled));
 	assert.deepEqual(related.map((property) => property.excludedFolders), related.map(() => ["templates"]));
-	assert.equal(merged.setProperties.properties[0].prefix, "🎛️ meta |");
+	assert.deepEqual(merged.setProperties.properties.map((property) => property.prefix), [
+		"🎛️ meta",
+		"🎛️ meta",
+		"🎛️ meta",
+		"🎛️ meta",
+		"🎛️ meta",
+		"📍 trak",
+		"📚 coll",
+		"📂 catg",
+		"👤 peop",
+		"🏷️ ever",
+		"📍 actv",
+		"🏢 comp",
+		"🔅 tday",
+	]);
 	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(merged))), merged);
 });
 
 test("the defaults are the old defaults in the new shape", () => {
 	const { properties } = defaultSettings().setProperties;
 	assert.deepEqual(properties.map(propertyRowName), [
-		"🎛️ meta | active · checkbox",
-		"🎛️ meta | someday · checkbox",
-		"🎛️ meta | evergreen · checkbox",
-		"🎛️ meta | blocked · checkbox",
-		"🎛️ meta | archived · checkbox",
-		"👤 peop | people · links",
-		"📍 trak | trackers · links",
-		"📚 coll | collections · links",
-		"📂 catg | category · link",
-		"🏷️ ever | related · links",
-		"📍 actv | related · links",
-		"🏢 comp | related · links",
-		"🔅 tday | related · links",
+		"🎛️ meta active · checkbox",
+		"🎛️ meta someday · checkbox",
+		"🎛️ meta evergreen · checkbox",
+		"🎛️ meta blocked · checkbox",
+		"🎛️ meta archived · checkbox",
+		"👤 peop people · links",
+		"📍 trak trackers · links",
+		"📚 coll collections · links",
+		"📂 catg category · link",
+		"🏷️ ever related · links",
+		"📍 actv related · links",
+		"🏢 comp related · links",
+		"🔅 tday related · links",
 	]);
 	const linked = properties.filter((entry) => entry.source);
 	assert.deepEqual(linked.map((entry) => entry.excludedFolders), linked.map(() => ["templates"]));

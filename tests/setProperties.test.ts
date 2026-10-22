@@ -194,20 +194,20 @@ test("an entry shows five notes and a row to see more until a query is typed", (
 		mtime: HOURS_AGO(index + 1),
 		links: ["types/Person.md"],
 	}));
-	const { choicesFor } = setup([entry("people", "links", { prefix: "👤 peop |" })], [{ path: "Today.md" }, { path: "types/Person.md" }, ...many]);
+	const { choicesFor } = setup([entry("people", "links", { prefix: "👤 peop" })], [{ path: "Today.md" }, { path: "types/Person.md" }, ...many]);
 	const rows = choicesFor();
 	assert.deepEqual(labels(rows).slice(2), [
-		"👤 peop | P0",
-		"👤 peop | P1",
-		"👤 peop | P2",
-		"👤 peop | P3",
-		"👤 peop | P4",
-		"👤 peop | … 2 more, type to filter",
+		"👤 peop P0",
+		"👤 peop P1",
+		"👤 peop P2",
+		"👤 peop P3",
+		"👤 peop P4",
+		"👤 peop … 2 more, type to filter",
 	]);
-	const more = pick(rows, "👤 peop | … 2 more, type to filter").action;
-	assert.deepEqual(more, { action: "expand", query: "👤 peop |" });
-	assert.equal(labels(choicesFor(undefined, "👤 peop |")).length, 7);
-	assert.deepEqual(labels(choicesFor(undefined, "p6")), ["👤 peop | P6"]);
+	const more = pick(rows, "👤 peop … 2 more, type to filter").action;
+	assert.deepEqual(more, { action: "expand", query: "👤 peop" });
+	assert.equal(labels(choicesFor(undefined, "👤 peop")).length, 7);
+	assert.deepEqual(labels(choicesFor(undefined, "p6")), ["👤 peop P6"]);
 });
 
 test("use rows come after every row the query matches and a typed name offers no new note", () => {

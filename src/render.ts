@@ -23,14 +23,10 @@ export function renderRow(el: HTMLElement, parts: RowParts, reservesMarkColumn =
 	}
 }
 
-export function shownPrefix(prefix: string): string {
-	return prefix.replace(/\s*\|\s*$/, "").trim();
-}
-
 function shownText(part: (typeof ROW_PARTS)[number], text: string | undefined, reservesMarkColumn: boolean): string | undefined {
 	if (part === "mark") return text ?? (reservesMarkColumn ? "" : undefined);
 	if (part !== "prefix" || text === undefined) return text;
-	return shownPrefix(text) || undefined;
+	return text.trim() || undefined;
 }
 
 export function entryParts(entry: JumpListEntry): RowParts {

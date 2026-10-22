@@ -74,15 +74,15 @@ test("picking a known property presets the type from its vault type", () => {
 });
 
 test("a property row is named by its prefix, property and type, or New property while the property is blank", () => {
-	assert.equal(propertyRowName(entry({ prefix: "👤 peop |", property: "people", type: "links" })), "👤 peop | people · links");
+	assert.equal(propertyRowName(entry({ prefix: "👤 peop", property: "people", type: "links" })), "👤 peop people · links");
 	assert.equal(propertyRowName(entry({ property: "active" })), "active · checkbox");
-	assert.equal(propertyRowName(entry({ prefix: "🎛️ meta |", property: " ", type: "date" })), "New property");
+	assert.equal(propertyRowName(entry({ prefix: "🎛️ meta", property: " ", type: "date" })), "New property");
 });
 
 test("a property row's label leaves the prefix to its chip", () => {
-	assert.equal(propertyLabel(entry({ prefix: "👤 peop |", property: "people", type: "links" })), "people · links");
-	assert.equal(propertyLabel(entry({ prefix: "🎛️ meta |", property: "active" })), "active · checkbox");
-	assert.equal(propertyLabel(entry({ prefix: "🎛️ meta |", property: " ", type: "date" })), "New property");
+	assert.equal(propertyLabel(entry({ prefix: "👤 peop", property: "people", type: "links" })), "people · links");
+	assert.equal(propertyLabel(entry({ prefix: "🎛️ meta", property: "active" })), "active · checkbox");
+	assert.equal(propertyLabel(entry({ prefix: "🎛️ meta", property: " ", type: "date" })), "New property");
 });
 
 test("adding a property appends a disabled checkbox entry with the next id", () => {
@@ -165,7 +165,7 @@ test("a link type gets a source, excluded folders and new note options, and othe
 	assert.deepEqual(settings.setProperties.properties[0], {
 		id: "list-9",
 		enabled: true,
-		prefix: "🎛️ meta |",
+		prefix: "🎛️ meta",
 		property: "active",
 		type: "text",
 	});

@@ -50,7 +50,7 @@ async function created(source: ListSource, extra: Partial<EditableProperty> = {}
 test("the first step lists each link entry whose source can hold a new note with where it goes", () => {
 	const { entryRows } = setup(
 		[
-			entry("people", "links", { prefix: "👤 peop |" }),
+			entry("people", "links", { prefix: "👤 peop" }),
 			entry("related", "links", { prefix: "🔅", source: { kind: "modifiedToday" }, newNoteFolder: "/crm/" }),
 			entry("related", "link", { prefix: "📁", source: { kind: "inFolder", folder: "areas" } }),
 			entry("out", "links", { prefix: "🔗", source: { kind: "linksOut" } }),
@@ -63,10 +63,10 @@ test("the first step lists each link entry whose source can hold a new note with
 		{ propertyTypes: { flag: "text" }, defaultNoteFolder: () => "" },
 	);
 	const rows = entryRows();
-	assert.deepEqual(labels(rows), ["👤 peop | people vault root", "🔅 related crm", "📁 related areas"]);
-	assert.deepEqual(rows[0].parts, { prefix: "👤 peop |", content: "people", value: "vault root" });
+	assert.deepEqual(labels(rows), ["👤 peop people vault root", "🔅 related crm", "📁 related areas"]);
+	assert.deepEqual(rows[0].parts, { prefix: "👤 peop", content: "people", value: "vault root" });
 	assert.deepEqual(labels(entryRows("rel")), ["🔅 related crm", "📁 related areas"]);
-	assert.deepEqual(labels(entryRows("peop people")), ["👤 peop | people vault root"]);
+	assert.deepEqual(labels(entryRows("peop people")), ["👤 peop people vault root"]);
 	assert.deepEqual(labels(entryRows("zzz")), []);
 	assert.equal(ENTRY_PLACEHOLDER, "Create a note for…");
 });
@@ -106,7 +106,7 @@ test("a source that cannot create notes says why", () => {
 
 test("the second step asks for a name and only offers creating a valid, unused one", () => {
 	const fakes = [...vaultNotes(), { path: "archive/old/Bea.md" }];
-	const { entries, nameRows } = setup([entry("people", "links", { prefix: "👤 peop |" })], {}, fakes);
+	const { entries, nameRows } = setup([entry("people", "links", { prefix: "👤 peop" })], {}, fakes);
 	assert.equal(namePlaceholder(entries[0]), "Name of the new people note…");
 	for (const typed of ["", "   "]) {
 		assert.deepEqual(labels(nameRows(0, typed)), [TYPE_A_NAME]);
@@ -124,8 +124,8 @@ test("the second step asks for a name and only offers creating a valid, unused o
 		assert.deepEqual(rows[0].action, { action: "reopen" });
 	}
 	const valid = nameRows(0, " John Doe ");
-	assert.deepEqual(labels(valid), ['➕ 👤 peop | Create "John Doe" in inbox']);
-	assert.deepEqual(valid[0].parts, { mark: "➕", prefix: "👤 peop |", content: 'Create "John Doe" in inbox' });
+	assert.deepEqual(labels(valid), ['➕ 👤 peop Create "John Doe" in inbox']);
+	assert.deepEqual(valid[0].parts, { mark: "➕", prefix: "👤 peop", content: 'Create "John Doe" in inbox' });
 	assert.equal(creation(valid).name, "John Doe");
 });
 
