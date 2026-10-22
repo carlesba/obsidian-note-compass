@@ -7,6 +7,7 @@ import type {
 	SettingDefinitionItem,
 	SettingDefinitionList,
 	SettingDefinitionPage,
+	SettingDefinitionRender,
 	SettingGroupItem,
 } from "obsidian";
 import { propertyType } from "../lists/conditions";
@@ -25,6 +26,7 @@ import {
 	listName,
 	matchingSuggestions,
 	operatorOptions,
+	sourceSummary,
 	valueShape,
 } from "./listForm";
 import type { ListField, PropertySuggestion, ValueShape } from "./listForm";
@@ -34,10 +36,13 @@ import {
 	deleteExcludedFolder,
 	hasSource,
 	mixedTypeWarning,
+	propertyLabel,
 	propertyRowName,
 	propertyTypePreset,
 } from "./setPropertiesForm";
 import type { LinkProperty, PropertyField } from "./setPropertiesForm";
+import type { PrefixDraft } from "./prefixChip";
+import { renderPrefixedName } from "./prefixField";
 
 export interface ListPageContext {
 	app: App;
@@ -46,6 +51,7 @@ export interface ListPageContext {
 	write: (key: string, value: unknown) => void;
 	openPage: (pageId: string) => void;
 	change: (change: () => unknown) => void;
+	prefixDrafts: Map<string, PrefixDraft>;
 }
 
 type IdentifiedPage = SettingDefinitionPage & { id: string };
@@ -60,6 +66,9 @@ export function propertyPageId(entry: EditableProperty): string {
 
 interface EditableRow {
 	name: string;
+	label: string;
+	prefix: string;
+	prefixKey: string;
 	warning?: string;
 	enabled: boolean;
 	enabledKey: string;
@@ -95,6 +104,9 @@ export function listRow(list: NoteList, context: ListPageContext): SettingDefini
 	return editableRow(
 		{
 			name: listName(list),
+			label: sourceSummary(list.source),
+			prefix: list.prefix,
+			prefixKey: listKey(list.id, "prefix"),
 			warning: inapplicable ? "Condition does not apply. Edit to see why." : undefined,
 			enabled: list.enabled,
 			enabledKey: listKey(list.id, "enabled"),
@@ -114,6 +126,9 @@ export function propertyRow(
 	return editableRow(
 		{
 			name: propertyRowName(entry),
+			label: propertyLabel(entry),
+			prefix: entry.prefix,
+			prefixKey: propertyKey(entry.id, "prefix"),
 			warning: propertyWarning(entry, properties, context),
 			enabled: entry.enabled,
 			enabledKey: propertyKey(entry.id, "enabled"),
@@ -136,10 +151,17 @@ function propertyWarning(
 }
 
 function editableRow(row: EditableRow, context: ListPageContext): SettingDefinition {
-	return {
-		name: row.name,
+	const definition: SettingDefinitionRender & { id: string } = {
+		id: `${row.pageId}-row`,
+		name: row.label,
+		aliases: [row.name],
 		desc: row.warning,
 		render: (setting) => {
+			const stopEditing = renderPrefixedName(
+				setting.nameEl,
+				{ key: row.prefixKey, prefix: row.prefix, label: row.label },
+				context,
+			);
 			if (row.warning) warningDescription(setting.descEl, row.warning);
 			setting.addToggle((toggle) =>
 				toggle
@@ -153,8 +175,10 @@ function editableRow(row: EditableRow, context: ListPageContext): SettingDefinit
 					.setTooltip(row.editTooltip)
 					.onClick(() => context.openPage(row.pageId)),
 			);
+			return stopEditing;
 		},
 	};
+	return definition;
 }
 
 function warningDescription(descEl: HTMLElement, warning: string): void {

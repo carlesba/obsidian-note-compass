@@ -41,7 +41,12 @@ export function propertyTypePreset(vaultType: PropertyType): EditablePropertyTyp
 
 export function propertyRowName(entry: EditableProperty): string {
 	if (entry.property.trim() === "") return "New property";
-	return `${entry.prefix} ${entry.property} · ${entry.type}`.trim();
+	return `${entry.prefix} ${propertyLabel(entry)}`.trim();
+}
+
+export function propertyLabel(entry: EditableProperty): string {
+	if (entry.property.trim() === "") return "New property";
+	return `${entry.property} · ${entry.type}`;
 }
 
 export function newProperty(properties: readonly EditableProperty[]): EditableProperty {

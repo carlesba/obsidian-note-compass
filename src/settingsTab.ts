@@ -20,6 +20,8 @@ import { fitConditionToProperty, newList, propertySuggestions } from "./settings
 import type { PropertySuggestion } from "./settings/listForm";
 import { listPage, listRow, propertyPage, propertyRow } from "./settings/listPage";
 import type { ListPageContext } from "./settings/listPage";
+import { changedPrefix } from "./settings/prefixChip";
+import type { PrefixDraft } from "./settings/prefixChip";
 import { hasSource, newProperty } from "./settings/setPropertiesForm";
 
 const TYPED_FIELDS = [
@@ -53,6 +55,7 @@ interface AppWithSettingModal {
 export class NoteLauncherSettingTab extends PluginSettingTab {
 	private plugin: NoteLauncherPlugin;
 	private readonly refreshAfterTyping = debounce(() => this.update(), TYPING_PAUSE_MS, true);
+	private readonly prefixDrafts = new Map<string, PrefixDraft>();
 
 	constructor(app: App, plugin: NoteLauncherPlugin) {
 		super(app, plugin);
@@ -71,6 +74,7 @@ export class NoteLauncherSettingTab extends PluginSettingTab {
 			write: (key: string, value: unknown) => void this.setControlValue(key, value),
 			openPage: (pageId: string) => this.openPage(pageId),
 			change: (change: () => unknown) => this.changeLists(change),
+			prefixDrafts: this.prefixDrafts,
 		};
 		return [
 			{
@@ -105,6 +109,15 @@ export class NoteLauncherSettingTab extends PluginSettingTab {
 				],
 			},
 		];
+	}
+
+	hide(): void {
+		for (const [key, draft] of this.prefixDrafts) {
+			const changed = changedPrefix(draft);
+			if (changed !== undefined) void this.setControlValue(key, changed);
+		}
+		this.prefixDrafts.clear();
+		super.hide();
 	}
 
 	private openPage(pageId: string): void {

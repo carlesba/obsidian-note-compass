@@ -20,9 +20,11 @@ import {
 	operatorOptions,
 	propertySuggestions,
 	readListField,
+	sourceSummary,
 	valueShape,
 	writeListField,
 } from "../src/settings/listForm.ts";
+import { PREFIX_PLACEHOLDER, changedPrefix, prefixChip, startDraft } from "../src/settings/prefixChip.ts";
 import { moment } from "./moment.ts";
 
 interface FakeVault {
@@ -256,4 +258,26 @@ test("a property list has a property only once one is chosen", () => {
 	assert.equal(hasProperty(list), false);
 	writeListField(list, "property", "status");
 	assert.equal(hasProperty(list), true);
+});
+
+test("a list row's label leaves the prefix to its chip", () => {
+	assert.equal(sourceSummary({ kind: "linksOut" }), "Outbound links");
+	assert.equal(sourceSummary(propertyList("favorite", { operator: "is set" }).source), "favorite is set");
+	assert.equal(listName({ ...propertyList("favorite", { operator: "is set" }), prefix: "⭐ fav |" }), "⭐ fav | favorite is set");
+});
+
+test("the prefix chip shows the prefix without its trailing bar, or a placeholder when empty", () => {
+	assert.deepEqual(prefixChip("🔗 out |"), { text: "🔗 out", placeholder: false });
+	assert.deepEqual(prefixChip("📅"), { text: "📅", placeholder: false });
+	assert.deepEqual(prefixChip(""), { text: PREFIX_PLACEHOLDER, placeholder: true });
+	assert.deepEqual(prefixChip(" | "), { text: PREFIX_PLACEHOLDER, placeholder: true });
+});
+
+test("editing a prefix starts from the raw prefix selected and saves only a changed value", () => {
+	const draft = startDraft("🔗 out |");
+	assert.deepEqual(draft, { original: "🔗 out |", text: "🔗 out |", selectionStart: 0, selectionEnd: 8 });
+	assert.equal(changedPrefix(draft), undefined);
+	assert.equal(changedPrefix({ ...draft, text: "🔗 links |" }), "🔗 links |");
+	assert.equal(changedPrefix({ ...startDraft(""), text: "⭐ |" }), "⭐ |");
+	assert.equal(changedPrefix({ ...draft, text: "" }), "");
 });
