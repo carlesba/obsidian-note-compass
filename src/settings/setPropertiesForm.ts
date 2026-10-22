@@ -1,5 +1,5 @@
 import { LINK_LIST_MODES } from "../settings.ts";
-import type { LinkList, LinkListMode, SetPropertiesSettings } from "../settings.ts";
+import type { LegacySetPropertiesSettings, LinkList, LinkListMode } from "../settings.ts";
 import { newList, readListField, sourceSummary, writeListField } from "./listForm.ts";
 import type { ListField, PropertySuggestion } from "./listForm.ts";
 
@@ -26,13 +26,13 @@ export function checkboxSuggestions(suggestions: readonly PropertySuggestion[]):
 	return suggestions.filter((suggestion) => suggestion.type === "checkbox");
 }
 
-export function readSetPropertiesField(settings: SetPropertiesSettings, field: string | undefined): unknown {
+export function readSetPropertiesField(settings: LegacySetPropertiesSettings, field: string | undefined): unknown {
 	if (field === "flagsPrefix") return settings.flagsPrefix;
 	if (field === "templatesFolder") return settings.templatesFolder;
 	return undefined;
 }
 
-export function writeSetPropertiesField(settings: SetPropertiesSettings, field: string | undefined, value: unknown): boolean {
+export function writeSetPropertiesField(settings: LegacySetPropertiesSettings, field: string | undefined, value: unknown): boolean {
 	const text = typeof value === "string" ? value : "";
 	if (field === "flagsPrefix") settings.flagsPrefix = text;
 	else if (field === "templatesFolder") settings.templatesFolder = text.trim();
@@ -40,7 +40,7 @@ export function writeSetPropertiesField(settings: SetPropertiesSettings, field: 
 	return true;
 }
 
-export function writeFlag(settings: SetPropertiesSettings, index: number, value: unknown): boolean {
+export function writeFlag(settings: LegacySetPropertiesSettings, index: number, value: unknown): boolean {
 	if (!Number.isInteger(index) || index < 0 || index >= settings.flags.length) return false;
 	settings.flags[index] = typeof value === "string" ? value.trim() : "";
 	return true;

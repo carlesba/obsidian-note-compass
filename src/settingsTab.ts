@@ -24,6 +24,8 @@ import { fitConditionToProperty, newList, propertySuggestions } from "./settings
 import type { PropertySuggestion } from "./settings/listForm";
 import { flagRow, linkListPage, linkListRow, listPage, listRow } from "./settings/listPage";
 import { newLinkList } from "./settings/setPropertiesForm";
+import { editLegacyView, legacyView } from "./setProperties/legacyView";
+import type { LegacySetPropertiesSettings } from "./settings";
 
 const TYPED_FIELDS = [
 	"prefix",
@@ -64,7 +66,7 @@ export class NoteLauncherSettingTab extends PluginSettingTab {
 
 	getSettingDefinitions(): SettingDefinitionItem[] {
 		const { lists, setProperties } = this.plugin.settings;
-		const { flags, linkLists } = setProperties;
+		const { flags, linkLists } = legacyView(setProperties);
 		const vault = createObsidianVault(this.app);
 		let suggestions: PropertySuggestion[] | undefined;
 		const context = {
@@ -102,8 +104,8 @@ export class NoteLauncherSettingTab extends PluginSettingTab {
 				heading: "Flags",
 				emptyState: "No flags yet. Add one to switch a checkbox property from the picker.",
 				items: flags.map((flag, index) => flagRow(flag, index, context)),
-				...this.editableEntries(flags),
-				addItem: { name: "Add flag", action: () => this.changeLists(() => flags.push("")) },
+				...this.editableSetProperties((view) => view.flags),
+				addItem: { name: "Add flag", action: () => this.changeSetProperties((view) => view.flags.push("")) },
 			},
 			{
 				type: "group",
@@ -121,8 +123,11 @@ export class NoteLauncherSettingTab extends PluginSettingTab {
 				heading: "Link lists",
 				emptyState: "No link lists yet. Add one to link notes from the picker.",
 				items: linkLists.map((list) => linkListRow(list, context)),
-				...this.editableEntries(linkLists),
-				addItem: { name: "Add link list", action: () => this.changeLists(() => linkLists.push(newLinkList(linkLists))) },
+				...this.editableSetProperties((view) => view.linkLists),
+				addItem: {
+					name: "Add link list",
+					action: () => this.changeSetProperties((view) => view.linkLists.push(newLinkList(view.linkLists))),
+				},
 			},
 			{
 				type: "group",
@@ -148,6 +153,20 @@ export class NoteLauncherSettingTab extends PluginSettingTab {
 		};
 	}
 
+	private editableSetProperties(
+		entriesOf: (view: LegacySetPropertiesSettings) => unknown[],
+	): Pick<SettingDefinitionList, "onReorder" | "onDelete"> {
+		return {
+			onReorder: (from, to) =>
+				this.changeSetProperties((view) => entriesOf(view).splice(to, 0, ...entriesOf(view).splice(from, 1))),
+			onDelete: (index) => this.changeSetProperties((view) => entriesOf(view).splice(index, 1)),
+		};
+	}
+
+	private changeSetProperties(change: (view: LegacySetPropertiesSettings) => unknown): void {
+		this.changeLists(() => editLegacyView(this.plugin.settings.setProperties, change));
+	}
+
 	getControlValue(key: string): unknown {
 		return readControl(this.plugin.settings, key);
 	}
@@ -167,9 +186,14 @@ export class NoteLauncherSettingTab extends PluginSettingTab {
 	private fitCondition(key: string): void {
 		const [scope, id] = key.split("/");
 		const { lists, setProperties } = this.plugin.settings;
-		const owner = scope === "list" ? lists : scope === "linkList" ? setProperties.linkLists : [];
-		const list = owner.find((candidate) => candidate.id === id);
-		if (list) fitConditionToProperty(list, createObsidianVault(this.app).propertyTypes());
+		const propertyTypes = createObsidianVault(this.app).propertyTypes();
+		const list = scope === "list" ? lists.find((candidate) => candidate.id === id) : undefined;
+		if (list) fitConditionToProperty(list, propertyTypes);
+		if (scope !== "linkList") return;
+		editLegacyView(setProperties, (view) => {
+			const linkList = view.linkLists.find((candidate) => candidate.id === id);
+			if (linkList) fitConditionToProperty(linkList, propertyTypes);
+		});
 	}
 
 	private changeLists(change: () => unknown): void {

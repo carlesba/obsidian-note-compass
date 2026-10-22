@@ -1,6 +1,8 @@
 import { buildJumpList } from "../lists/jumpList.ts";
 import type { Frontmatter, JumpListVault, VaultNote } from "../lists/vault";
 import type { JumpSettings, LinkListMode, SetPropertiesSettings } from "../settings";
+import { legacyView } from "./legacyView";
+import { linkTitle } from "./values";
 
 export interface PropertyRow {
 	group: number;
@@ -40,7 +42,7 @@ const SELECTED_MARK = "✓";
 const UNSELECTED_MARK = "\u2003";
 
 export function propertyRows(settings: JumpSettings, vault: JumpListVault, target: VaultNote): PropertyRow[] {
-	const { flags, flagsPrefix, templatesFolder, linkLists } = settings.setProperties;
+	const { flags, flagsPrefix, templatesFolder, linkLists } = legacyView(settings.setProperties);
 	const rows: PropertyRow[] = flags
 		.filter((flag, index) => flags.indexOf(flag) === index)
 		.map((flag) => ({ group: 0, prefix: flagsPrefix, name: flag, property: flag, mode: "flag", mtime: 0 }));
@@ -67,9 +69,10 @@ export function propertyRows(settings: JumpSettings, vault: JumpListVault, targe
 
 export function initialPropertyState(settings: SetPropertiesSettings, frontmatter: Frontmatter | undefined): PropertyState {
 	const saved = frontmatter ?? {};
-	const flags = new Map(settings.flags.map((flag) => [flag, ownValue(saved, flag) === true]));
+	const { flags: flagNames, linkLists } = legacyView(settings);
+	const flags = new Map(flagNames.map((flag) => [flag, ownValue(saved, flag) === true]));
 	const links = new Map<string, LinkProperty>();
-	for (const list of settings.linkLists) {
+	for (const list of linkLists) {
 		if (!list.enabled || links.has(list.property)) continue;
 		const values = asList(ownValue(saved, list.property)).map((raw) => ({ title: linkTitle(raw), raw }));
 		links.set(list.property, { mode: list.mode, values });
@@ -124,12 +127,6 @@ export function writeProperties(frontmatter: Frontmatter, initial: PropertyState
 		if (!values.length) delete frontmatter[property];
 		else frontmatter[property] = link.mode === "single" && values.length === 1 ? values[0] : values;
 	});
-}
-
-export function linkTitle(value: unknown): unknown {
-	if (typeof value !== "string") return value;
-	const link = value.match(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/);
-	return link ? link[2] ?? link[1] : value.replace(/[[\]"']/g, "").trim();
 }
 
 function isExcluded(vault: JumpListVault, path: string, templatesFolder: string): boolean {

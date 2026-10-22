@@ -2,18 +2,19 @@ import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import type { Frontmatter, JumpListVault, VaultNote } from "../src/lists/vault.ts";
 import { defaultSettings } from "../src/settings.ts";
-import type { JumpSettings } from "../src/settings.ts";
+import type { LegacySetPropertiesSettings } from "../src/settings.ts";
+import { editLegacyView } from "../src/setProperties/legacyView.ts";
 import {
 	CANCEL_LABEL,
 	SAVE_LABEL,
 	initialPropertyState,
-	linkTitle,
 	pickerChoices,
 	propertyRows,
 	toggleRow,
 	writeProperties,
 } from "../src/setProperties/picker.ts";
 import type { PropertyRow, PropertyState } from "../src/setProperties/picker.ts";
+import { linkTitle } from "../src/setProperties/values.ts";
 import { moment } from "./moment.ts";
 
 interface FakeNote {
@@ -68,10 +69,12 @@ function vaultNotes(): FakeNote[] {
 	];
 }
 
-function setup(change: (settings: JumpSettings) => void = () => {}) {
+function setup(change: (view: LegacySetPropertiesSettings) => void = () => {}) {
 	const settings = defaultSettings();
-	settings.setProperties.flags = ["active", "someday"];
-	change(settings);
+	editLegacyView(settings.setProperties, (view) => {
+		view.flags = ["active", "someday"];
+		change(view);
+	});
 	const vault = fakeVault(vaultNotes());
 	const target = vault.note("Today.md");
 	const rows = propertyRows(settings, vault, target);
@@ -107,8 +110,8 @@ test("the picker opens with save and cancel, then selected rows, then flags and 
 });
 
 test("rows leave out the target note, templates, archived notes and disabled lists, and the first list owns a shared note", () => {
-	const { rows } = setup((settings) => {
-		settings.setProperties.linkLists[3].enabled = false;
+	const { rows } = setup((view) => {
+		view.linkLists[3].enabled = false;
 	});
 	const names = rows.map((candidate) => `${candidate.prefix} ${candidate.name}`);
 	assert.ok(!names.some((name) => name.endsWith("| Today") || name.endsWith("| Old") || name.endsWith("| Person")));
@@ -120,8 +123,8 @@ test("rows leave out the target note, templates, archived notes and disabled lis
 });
 
 test("the templates folder setting decides which notes are excluded", () => {
-	const { rows } = setup((settings) => {
-		settings.setProperties.templatesFolder = "people/";
+	const { rows } = setup((view) => {
+		view.templatesFolder = "people/";
 	});
 	assert.deepEqual(
 		rows.filter((candidate) => candidate.prefix === "👤 peop |").map((candidate) => candidate.name),
@@ -132,8 +135,8 @@ test("the templates folder setting decides which notes are excluded", () => {
 test("today lists notes modified since midnight that no earlier list owns", () => {
 	const todayRows = (rows: PropertyRow[]) => rows.filter((candidate) => candidate.prefix === "🔅 tday |").map((candidate) => candidate.name);
 	assert.deepEqual(todayRows(setup().rows), []);
-	const withoutPeople = setup((settings) => {
-		settings.setProperties.linkLists[0].enabled = false;
+	const withoutPeople = setup((view) => {
+		view.linkLists[0].enabled = false;
 	});
 	assert.deepEqual(todayRows(withoutPeople.rows), ["Bob"]);
 });
@@ -219,8 +222,8 @@ test("properties outside every list and links no row offers survive a save throu
 });
 
 test("disabled link lists leave their property alone", () => {
-	const { rows, state } = setup((settings) => {
-		settings.setProperties.linkLists[3].enabled = false;
+	const { rows, state } = setup((view) => {
+		view.linkLists[3].enabled = false;
 	});
 	assert.ok(!state.links.has("category"));
 	assert.equal(saved(state, state, { category: "[[Work]]" }).category, "[[Work]]");

@@ -1,0 +1,218 @@
+{
+  "lists": [
+    {
+      "id": "list-1",
+      "enabled": true,
+      "prefix": "📅 day |",
+      "source": {
+        "kind": "adjacentDates"
+      }
+    },
+    {
+      "id": "list-2",
+      "enabled": true,
+      "prefix": "🔗 out |",
+      "source": {
+        "kind": "linksOut"
+      }
+    },
+    {
+      "id": "list-3",
+      "enabled": true,
+      "prefix": "🔗 in  |",
+      "source": {
+        "kind": "linksIn"
+      }
+    },
+    {
+      "id": "list-4",
+      "enabled": true,
+      "prefix": "🔅 ctx |",
+      "source": {
+        "kind": "sameDay"
+      }
+    },
+    {
+      "id": "list-5",
+      "enabled": true,
+      "prefix": "⭐ fav |",
+      "source": {
+        "kind": "frontmatter",
+        "property": "favorite",
+        "condition": {
+          "operator": "is set"
+        }
+      }
+    },
+    {
+      "id": "list-6",
+      "enabled": true,
+      "prefix": "📌 todo |",
+      "source": {
+        "kind": "frontmatter",
+        "property": "status",
+        "condition": {
+          "operator": "is",
+          "value": "active"
+        }
+      }
+    },
+    {
+      "id": "list-7",
+      "enabled": true,
+      "prefix": "🗂 proj |",
+      "source": {
+        "kind": "frontmatter",
+        "property": "project",
+        "condition": {
+          "operator": "has item",
+          "value": "Launcher"
+        }
+      }
+    }
+  ],
+  "dateNotes": {
+    "from": "auto",
+    "custom": {
+      "day": {
+        "enabled": true,
+        "folder": "on",
+        "format": "YYYY-MM-DD"
+      },
+      "week": {
+        "enabled": true,
+        "folder": "on",
+        "format": "GGGG-[W]WW"
+      },
+      "month": {
+        "enabled": true,
+        "folder": "on",
+        "format": "YYYY-MM"
+      },
+      "quarter": {
+        "enabled": false,
+        "folder": "on",
+        "format": "YYYY-[Q]Q"
+      },
+      "year": {
+        "enabled": true,
+        "folder": "on",
+        "format": "YYYY"
+      }
+    }
+  },
+  "setProperties": {
+    "flagsPrefix": "🎛️ meta |",
+    "flags": [
+      "active",
+      "someday",
+      "evergreen",
+      "blocked",
+      "archived"
+    ],
+    "templatesFolder": "templates",
+    "linkLists": [
+      {
+        "name": "Trackers",
+        "property": "trackers",
+        "mode": "multi",
+        "id": "list-2",
+        "enabled": true,
+        "prefix": "📍 trak |",
+        "source": {
+          "kind": "linksToNote",
+          "note": "Tracker 📍"
+        }
+      },
+      {
+        "name": "Collections",
+        "property": "collections",
+        "mode": "multi",
+        "id": "list-3",
+        "enabled": true,
+        "prefix": "📚 coll |",
+        "source": {
+          "kind": "linksToNote",
+          "note": "Collection 📚"
+        }
+      },
+      {
+        "name": "Category",
+        "property": "category",
+        "mode": "single",
+        "id": "list-4",
+        "enabled": true,
+        "prefix": "📂 catg |",
+        "source": {
+          "kind": "inFolder",
+          "folder": "categories"
+        }
+      },
+      {
+        "name": "People",
+        "property": "people",
+        "mode": "multi",
+        "id": "list-1",
+        "enabled": true,
+        "prefix": "👤 peop |",
+        "source": {
+          "kind": "linksToNote",
+          "note": "Person 👤"
+        }
+      },
+      {
+        "name": "Evergreen",
+        "property": "related",
+        "mode": "multi",
+        "id": "list-5",
+        "enabled": true,
+        "prefix": "🏷️ ever |",
+        "source": {
+          "kind": "frontmatter",
+          "property": "evergreen",
+          "condition": {
+            "operator": "is true"
+          }
+        }
+      },
+      {
+        "name": "Active",
+        "property": "related",
+        "mode": "multi",
+        "id": "list-6",
+        "enabled": true,
+        "prefix": "📍 actv |",
+        "source": {
+          "kind": "frontmatter",
+          "property": "active",
+          "condition": {
+            "operator": "is true"
+          }
+        }
+      },
+      {
+        "name": "Companies",
+        "property": "related",
+        "mode": "multi",
+        "id": "list-7",
+        "enabled": true,
+        "prefix": "🏢 comp |",
+        "source": {
+          "kind": "linksToNote",
+          "note": "Org 🏢"
+        }
+      },
+      {
+        "name": "Today",
+        "property": "related",
+        "mode": "multi",
+        "id": "list-8",
+        "enabled": true,
+        "prefix": "🔅 tday |",
+        "source": {
+          "kind": "modifiedToday"
+        }
+      }
+    ]
+  }
+}

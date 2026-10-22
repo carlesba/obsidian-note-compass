@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { defaultSettings } from "../src/settings.ts";
+import type { JumpSettings } from "../src/settings.ts";
+import { legacyView } from "../src/setProperties/legacyView.ts";
 import {
 	FLAGS_PREFIX_KEY,
 	TEMPLATES_FOLDER_KEY,
@@ -17,15 +19,17 @@ import {
 	newLinkList,
 } from "../src/settings/setPropertiesForm.ts";
 
-test("a link list row is named by its prefix, name, the property it writes to and its mode", () => {
-	const [people, , , category] = defaultSettings().setProperties.linkLists;
-	assert.equal(linkListName(people), "👤 peop | People → people · multi");
-	assert.equal(linkListName(category), "📂 catg | Category → category · single");
+const view = (settings: JumpSettings) => legacyView(settings.setProperties);
+
+test("a link list row is named by its prefix, name or source, the property it writes to and its mode", () => {
+	const [people, , , category] = view(defaultSettings()).linkLists;
+	assert.equal(linkListName({ ...people, name: "People" }), "👤 peop | People → people · multi");
+	assert.equal(linkListName({ ...category, name: "Category" }), "📂 catg | Category → category · single");
 	assert.equal(linkListName({ ...people, name: "", property: "" }), "👤 peop | Links to Person 👤 → no property · multi");
 });
 
 test("a new link list is disabled, unnamed, writes nowhere and takes the next link list id", () => {
-	const { linkLists } = defaultSettings().setProperties;
+	const { linkLists } = view(defaultSettings());
 	const list = newLinkList(linkLists);
 	assert.equal(list.id, "list-9");
 	assert.equal(list.enabled, false);
@@ -52,8 +56,8 @@ test("the flags prefix and templates folder read and write their own fields", ()
 	assert.equal(readControl(settings, TEMPLATES_FOLDER_KEY), "templates");
 	assert.equal(writeControl(settings, FLAGS_PREFIX_KEY, "🚩 flag"), true);
 	assert.equal(writeControl(settings, TEMPLATES_FOLDER_KEY, " meta/templates "), true);
-	assert.equal(settings.setProperties.flagsPrefix, "🚩 flag");
-	assert.equal(settings.setProperties.templatesFolder, "meta/templates");
+	assert.equal(view(settings).flagsPrefix, "🚩 flag");
+	assert.equal(view(settings).templatesFolder, "meta/templates");
 	assert.equal(writeControl(settings, "setProperties/flags", "x"), false);
 });
 
@@ -61,18 +65,18 @@ test("a flag key reads and writes the flag at its position and ignores positions
 	const settings = defaultSettings();
 	assert.equal(readControl(settings, flagKey(1)), "someday");
 	assert.equal(writeControl(settings, flagKey(1), " later "), true);
-	assert.deepEqual(settings.setProperties.flags, ["active", "later", "evergreen", "blocked", "archived"]);
+	assert.deepEqual(view(settings).flags, ["active", "later", "evergreen", "blocked", "archived"]);
 	assert.equal(writeControl(settings, flagKey(5), "extra"), false);
 	assert.equal(writeControl(settings, "flag/x/name", "extra"), false);
-	assert.equal(settings.setProperties.flags.length, 5);
+	assert.equal(view(settings).flags.length, 5);
 });
 
 test("link list keys edit the link list, never the jump list with the same id", () => {
 	const settings = defaultSettings();
 	const jumpList = JSON.parse(JSON.stringify(settings.lists[0]));
-	const category = settings.setProperties.linkLists[3];
+	const category = view(settings).linkLists[3];
 	assert.equal(category.id, "list-4");
-	assert.equal(readControl(settings, linkListKey("list-4", "name")), "Category");
+	assert.equal(readControl(settings, linkListKey("list-4", "name")), "");
 	assert.equal(readControl(settings, linkListKey("list-4", "writesTo")), "category");
 	assert.equal(readControl(settings, linkListKey("list-4", "mode")), "single");
 	assert.equal(readControl(settings, linkListKey("list-4", "source")), "inFolder");
@@ -83,8 +87,8 @@ test("link list keys edit the link list, never the jump list with the same id", 
 	writeControl(settings, linkListKey("list-1", "mode"), "single");
 	writeControl(settings, linkListKey("list-1", "prefix"), "🧑 folk");
 	writeControl(settings, linkListKey("list-1", "enabled"), false);
-	const people = settings.setProperties.linkLists[0];
-	assert.deepEqual([people.name, people.property, people.mode, people.prefix, people.enabled], ["Folks", "folks", "single", "🧑 folk", false]);
+	const people = view(settings).linkLists[0];
+	assert.deepEqual([people.property, people.mode, people.prefix, people.enabled], ["folks", "single", "🧑 folk", false]);
 	assert.deepEqual(settings.lists[0], jumpList);
 	assert.equal(readControl(settings, listKey("list-1", "prefix")), jumpList.prefix);
 });
@@ -92,15 +96,15 @@ test("link list keys edit the link list, never the jump list with the same id", 
 test("a link list keeps its mode when given an unknown one, and its source fields follow the source", () => {
 	const settings = defaultSettings();
 	writeControl(settings, linkListKey("list-2", "mode"), "many");
-	assert.equal(settings.setProperties.linkLists[1].mode, "multi");
+	assert.equal(view(settings).linkLists[1].mode, "multi");
 	writeControl(settings, linkListKey("list-2", "source"), "frontmatter");
 	writeControl(settings, linkListKey("list-2", "property"), "tracker");
 	writeControl(settings, linkListKey("list-2", "operator"), "is true");
-	assert.deepEqual(settings.setProperties.linkLists[1].source, {
+	assert.deepEqual(view(settings).linkLists[1].source, {
 		kind: "frontmatter",
 		property: "tracker",
 		condition: { operator: "is true" },
 	});
-	assert.equal(settings.setProperties.linkLists[1].property, "trackers");
+	assert.equal(view(settings).linkLists[1].property, "trackers");
 	assert.equal(writeControl(settings, linkListKey("list-99", "name"), "x"), false);
 });

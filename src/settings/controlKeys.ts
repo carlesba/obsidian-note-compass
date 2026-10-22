@@ -12,6 +12,7 @@ import {
 	writeSetPropertiesField,
 } from "./setPropertiesForm.ts";
 import type { LinkListField } from "./setPropertiesForm.ts";
+import { editLegacyView, legacyView } from "../setProperties/legacyView.ts";
 
 export const DATE_NOTE_SOURCE_KEY = "dateNotes/from";
 
@@ -43,10 +44,11 @@ export function readControl(settings: JumpSettings, key: string): unknown {
 		return list ? readListField(list, field as ListField) : undefined;
 	}
 	if (scope === "dateNotes" && isPeriod(name)) return readPeriodField(settings.dateNotes, name, field as PeriodField);
-	if (scope === "setProperties") return readSetPropertiesField(settings.setProperties, name);
-	if (scope === "flag") return settings.setProperties.flags[Number(name)];
+	const view = legacyView(settings.setProperties);
+	if (scope === "setProperties") return readSetPropertiesField(view, name);
+	if (scope === "flag") return view.flags[Number(name)];
 	if (scope === "linkList") {
-		const list = settings.setProperties.linkLists.find((candidate) => candidate.id === name);
+		const list = view.linkLists.find((candidate) => candidate.id === name);
 		return list ? readLinkListField(list, field as LinkListField) : undefined;
 	}
 	return undefined;
@@ -67,12 +69,12 @@ export function writeControl(settings: JumpSettings, key: string, value: unknown
 		writePeriodField(settings.dateNotes, name, field as PeriodField, value);
 		return true;
 	}
-	if (scope === "setProperties") return writeSetPropertiesField(settings.setProperties, name, value);
-	if (scope === "flag") return writeFlag(settings.setProperties, Number(name), value);
-	if (scope === "linkList") {
-		const list = settings.setProperties.linkLists.find((candidate) => candidate.id === name);
+	return editLegacyView(settings.setProperties, (view) => {
+		if (scope === "setProperties") return writeSetPropertiesField(view, name, value);
+		if (scope === "flag") return writeFlag(view, Number(name), value);
+		if (scope !== "linkList") return false;
+		const list = view.linkLists.find((candidate) => candidate.id === name);
 		if (list) writeLinkListField(list, field as LinkListField, value);
 		return list !== undefined;
-	}
-	return false;
+	});
 }
