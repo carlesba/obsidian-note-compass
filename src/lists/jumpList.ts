@@ -18,6 +18,7 @@ import type { JumpListEntry, JumpListVault, MomentDate, VaultNote } from "./vaul
 
 interface PrefixedList {
 	prefix: string;
+	prefixColor?: string;
 	notes: ListedNote[];
 }
 
@@ -45,7 +46,7 @@ export function buildJumpList(
 	};
 	const lists: PrefixedList[] = noteLists
 		.filter((list) => list.enabled)
-		.map((list) => ({ prefix: list.prefix, notes: sourceNotes(list.source, context) }));
+		.map((list) => ({ prefix: list.prefix, prefixColor: list.prefixColor, notes: sourceNotes(list.source, context) }));
 
 	const seen = new Set<string>(current ? [current.path] : []);
 	const entries: JumpListEntry[] = [];
@@ -53,7 +54,7 @@ export function buildJumpList(
 		for (const listed of [...list.notes].sort(byName)) {
 			if (seen.has(listed.file.path)) continue;
 			seen.add(listed.file.path);
-			entries.push(toEntry(vault, dateNotes, list.prefix, listed));
+			entries.push(toEntry(vault, dateNotes, list, listed));
 		}
 	}
 	return entries;
@@ -84,12 +85,15 @@ function sourceNotes(source: ListSource, context: ListContext): ListedNote[] {
 	}
 }
 
-function toEntry(vault: JumpListVault, dateNotes: ResolvedDateNotes, prefix: string, listed: ListedNote): JumpListEntry {
+function toEntry(vault: JumpListVault, dateNotes: ResolvedDateNotes, list: PrefixedList, listed: ListedNote): JumpListEntry {
 	const name = listed.file.basename;
 	const dateNote = parseDateNote(listed.file, dateNotes, vault.moment);
 	const dateSuffix = dateNote ? dateNoteSuffix(dateNote) : undefined;
 	const suffix = listed.direction && dateSuffix ? `${listed.direction} - ${dateSuffix}` : listed.direction ?? dateSuffix;
-	return suffix ? { file: listed.file, prefix, name, suffix } : { file: listed.file, prefix, name };
+	const entry: JumpListEntry = { file: listed.file, prefix: list.prefix, name };
+	if (list.prefixColor !== undefined) entry.prefixColor = list.prefixColor;
+	if (suffix) entry.suffix = suffix;
+	return entry;
 }
 
 function byName(a: ListedNote, b: ListedNote): number {

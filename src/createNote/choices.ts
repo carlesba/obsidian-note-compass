@@ -1,5 +1,5 @@
 import type { JumpListVault, NewNoteVault } from "../lists/vault";
-import { matchesInOrder, rowLabel } from "../render.ts";
+import { matchesInOrder, prefixParts, rowLabel } from "../render.ts";
 import type { RowParts } from "../render";
 import { offeredProperties, propertyType } from "../setProperties/offered.ts";
 import { isLinkType } from "../settings.ts";
@@ -75,8 +75,8 @@ export function nameChoices(
 	return [{ label: rowLabel(parts), parts, action: { action: "create", creation: { ...creatable, name } } }];
 }
 
-function prefixPart({ entry }: CreatableEntry, showPrefixes: boolean): Pick<RowParts, "prefix"> {
-	return showPrefixes ? { prefix: entry.prefix } : {};
+function prefixPart({ entry }: CreatableEntry, showPrefixes: boolean): Pick<RowParts, "prefix" | "prefixColor"> {
+	return showPrefixes ? prefixParts(entry.prefix, entry.prefixColor) : {};
 }
 
 function reopen(parts: RowParts): NameChoice {

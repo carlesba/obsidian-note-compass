@@ -8,7 +8,14 @@ import type {
 import { createObsidianVault } from "./lists/obsidianVault";
 import type { JumpListVault } from "./lists/vault";
 import type NoteLauncherPlugin from "./main";
-import { DATE_NOTE_SOURCE_KEY, SHOW_PREFIXES_KEY, periodKey, readControl, writeControl } from "./settings/controlKeys";
+import {
+	DATE_NOTE_SOURCE_KEY,
+	SHOW_PREFIXES_KEY,
+	periodKey,
+	prefixColorKey,
+	readControl,
+	writeControl,
+} from "./settings/controlKeys";
 import {
 	DATE_NOTE_SOURCE_OPTIONS,
 	PERIOD_NAMES,
@@ -20,12 +27,13 @@ import { fitConditionToProperty, newList, propertySuggestions } from "./settings
 import type { PropertySuggestion } from "./settings/listForm";
 import { listPage, listRow, propertyPage, propertyRow } from "./settings/listPage";
 import type { ListPageContext } from "./settings/listPage";
-import { changedPrefix } from "./settings/prefixChip";
+import { changedColor, changedPrefix } from "./settings/prefixChip";
 import type { PrefixDraft } from "./settings/prefixChip";
 import { hasSource, newProperty } from "./settings/setPropertiesForm";
 
 const TYPED_FIELDS = [
 	"prefix",
+	"prefixColor",
 	"property",
 	"text",
 	"number",
@@ -126,8 +134,10 @@ export class NoteLauncherSettingTab extends PluginSettingTab {
 
 	hide(): void {
 		for (const [key, draft] of this.prefixDrafts) {
-			const changed = changedPrefix(draft);
-			if (changed !== undefined) void this.setControlValue(key, changed);
+			const prefix = changedPrefix(draft);
+			if (prefix !== undefined) void this.setControlValue(key, prefix);
+			const color = changedColor(draft);
+			if (color !== undefined) void this.setControlValue(prefixColorKey(key), color);
 		}
 		this.prefixDrafts.clear();
 		super.hide();

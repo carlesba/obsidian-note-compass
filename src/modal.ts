@@ -1,6 +1,6 @@
 import { App, SuggestModal } from "obsidian";
 import type { JumpListEntry } from "./lists/vault";
-import { entryLabel, entryParts, matchesInOrder, renderRow } from "./render";
+import { RESULTS_CLASS, entryLabel, entryParts, matchesInOrder, renderRow } from "./render";
 
 export class JumpModal extends SuggestModal<JumpListEntry> {
 	private readonly entries: JumpListEntry[];
@@ -11,6 +11,7 @@ export class JumpModal extends SuggestModal<JumpListEntry> {
 		this.entries = entries;
 		this.showPrefixes = showPrefixes;
 		this.limit = entries.length;
+		this.resultContainerEl.addClass(RESULTS_CLASS);
 		this.setPlaceholder("Pick one…");
 	}
 

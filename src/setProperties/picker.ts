@@ -1,5 +1,5 @@
 import type { Frontmatter } from "../lists/vault";
-import { matchesInOrder, rowLabel } from "../render.ts";
+import { matchesInOrder, prefixParts, rowLabel } from "../render.ts";
 import type { RowParts } from "../render";
 import { isLinkType } from "../settings.ts";
 import type { EditableProperty, SetPropertiesSettings } from "../settings";
@@ -130,12 +130,12 @@ function linkOwner(entries: readonly OfferedEntry[], property: string, link: unk
 	)?.entry;
 }
 
-function linkSourceParts(owner: EditableProperty, showPrefixes: boolean): Pick<RowParts, "prefix" | "value"> {
-	return showPrefixes ? { prefix: owner.prefix } : { value: owner.property };
+function linkSourceParts(owner: EditableProperty, showPrefixes: boolean): Pick<RowParts, "prefix" | "prefixColor" | "value"> {
+	return showPrefixes ? prefixPart(owner, true) : { value: owner.property };
 }
 
-function prefixPart(entry: EditableProperty, showPrefixes: boolean): Pick<RowParts, "prefix"> {
-	return showPrefixes ? { prefix: entry.prefix } : {};
+function prefixPart(entry: EditableProperty, showPrefixes: boolean): Pick<RowParts, "prefix" | "prefixColor"> {
+	return showPrefixes ? prefixParts(entry.prefix, entry.prefixColor) : {};
 }
 
 function entryChoices(
@@ -206,7 +206,7 @@ function capped(offered: OfferedEntry, rows: PickerChoice[], query: string, show
 	if (query || rows.length <= UNFILTERED_ROWS_PER_ENTRY) return rows;
 	const { prefix, property } = offered.entry;
 	const content = `… ${rows.length - UNFILTERED_ROWS_PER_ENTRY} more, type to filter`;
-	const more = showPrefixes ? { prefix, content } : { content, value: property };
+	const more = showPrefixes ? { ...prefixPart(offered.entry, showPrefixes), content } : { content, value: property };
 	const expandQuery = (showPrefixes && prefix.trim()) || property;
 	return [...rows.slice(0, UNFILTERED_ROWS_PER_ENTRY), choice(more, { action: "expand", query: expandQuery })];
 }

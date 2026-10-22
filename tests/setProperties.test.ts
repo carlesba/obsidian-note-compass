@@ -126,6 +126,16 @@ test("a row splits into mark, prefix, content and value parts", () => {
 	assert.deepEqual([SAVE_LABEL, CANCEL_LABEL], ["🏁 Save & close", "🛑 Cancel"]);
 });
 
+test("rows carry their entry's prefix colour outside the label, and drop it with the prefix", () => {
+	const properties = [entry("status", "text", { prefix: "📝", prefixColor: "#e0a030" }), entry("people", "links", { prefix: "👤", prefixColor: "#33aa66" })];
+	const choices = setup(properties).choicesFor();
+	assert.deepEqual(pick(choices, "✓ 📝 status doing").parts, { mark: "✓", prefix: "📝", prefixColor: "#e0a030", content: "status", value: "doing" });
+	assert.deepEqual(pick(choices, "👤 Bob").parts, { prefix: "👤", prefixColor: "#33aa66", content: "Bob" });
+	assert.deepEqual(pick(choices, SAVE_LABEL).parts, { mark: "🏁", content: "Save & close" });
+	const hidden = setup(properties, vaultNotes(), {}, false).choicesFor();
+	assert.ok(hidden.every((choice) => choice.parts.prefixColor === undefined));
+});
+
 test("with prefixes hidden rows drop the prefix and link rows name the property they write", () => {
 	const { choicesFor } = setup(
 		[entry("status", "text", { prefix: "📝 stat" }), entry("people", "links", { prefix: "👤 peop" })],

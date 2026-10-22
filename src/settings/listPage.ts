@@ -69,6 +69,7 @@ interface EditableRow {
 	name: string;
 	label: string;
 	prefix: string;
+	prefixColor?: string;
 	prefixKey: string;
 	warning?: string;
 	enabled: boolean;
@@ -107,6 +108,7 @@ export function listRow(list: NoteList, context: ListPageContext): SettingDefini
 			name: listName(list),
 			label: sourceSummary(list.source),
 			prefix: list.prefix,
+			prefixColor: list.prefixColor,
 			prefixKey: listKey(list.id, "prefix"),
 			warning: inapplicable ? "Condition does not apply. Edit to see why." : undefined,
 			enabled: list.enabled,
@@ -129,6 +131,7 @@ export function propertyRow(
 			name: propertyRowName(entry),
 			label: propertyLabel(entry),
 			prefix: entry.prefix,
+			prefixColor: entry.prefixColor,
 			prefixKey: propertyKey(entry.id, "prefix"),
 			warning: propertyWarning(entry, properties, context),
 			enabled: entry.enabled,
@@ -159,7 +162,11 @@ function editableRow(row: EditableRow, context: ListPageContext): SettingDefinit
 		desc: row.warning,
 		render: (setting) => {
 			const stopEditing = context.showPrefixes
-				? renderPrefixedName(setting.nameEl, { key: row.prefixKey, prefix: row.prefix, label: row.label }, context)
+				? renderPrefixedName(
+						setting.nameEl,
+						{ key: row.prefixKey, prefix: row.prefix, prefixColor: row.prefixColor, label: row.label },
+						context,
+					)
 				: undefined;
 			if (row.warning) warningDescription(setting.descEl, row.warning);
 			setting.addToggle((toggle) =>
@@ -210,6 +217,7 @@ export function propertyPage(
 			visible: context.showPrefixes,
 			control: { type: "text", key: key("prefix") },
 		},
+		...prefixColorItems(entry, key("prefixColor"), context),
 		{
 			name: "Property",
 			desc: "The property the picker writes.",
@@ -299,7 +307,30 @@ export function listPageItems(list: NoteList, context: ListPageContext): Setting
 			visible: context.showPrefixes,
 			control: { type: "text", key: key("prefix") },
 		},
+		...prefixColorItems(list, key("prefixColor"), context),
 		...sourceItems(list, context, key),
+	];
+}
+
+function prefixColorItems(
+	target: { prefixColor?: string },
+	key: string,
+	context: ListPageContext,
+): SettingDefinitionItem[] {
+	const colored = () => context.showPrefixes && target.prefixColor !== undefined;
+	return [
+		{
+			name: "Prefix colour",
+			desc: target.prefixColor === undefined ? "No colour. Pick one to tint the prefix chip." : "Tints the prefix chip.",
+			visible: context.showPrefixes,
+			control: { type: "color", key },
+		},
+		{
+			name: "Remove prefix colour",
+			desc: "Show the prefix chip in plain grey again.",
+			visible: colored,
+			action: () => context.write(key, ""),
+		},
 	];
 }
 

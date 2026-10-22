@@ -1,9 +1,13 @@
-import { changedPrefix, prefixChip, startDraft } from "./prefixChip.ts";
+import { ExtraButtonComponent } from "obsidian";
+import { paintChip } from "../render.ts";
+import { prefixColorKey } from "./controlKeys.ts";
+import { changedColor, changedPrefix, prefixChip, startDraft } from "./prefixChip.ts";
 import type { PrefixDraft } from "./prefixChip.ts";
 
 export interface PrefixField {
 	key: string;
 	prefix: string;
+	prefixColor?: string;
 	label: string;
 }
 
@@ -14,12 +18,23 @@ export interface PrefixEditing {
 
 const MIN_INPUT_SIZE = 4;
 
+const FOCUS_SETTLE_MS = 50;
+
+const NEUTRAL_COLOR = "#888888";
+
+const CHIP_CLASS = "note-launcher-setting-prefix";
+
+const PREFIX_WIDTH_PROPERTY = "--note-launcher-prefix-width";
+
+const measuringLists = new WeakSet<HTMLElement>();
+
 export function renderPrefixedName(nameEl: HTMLElement, field: PrefixField, editing: PrefixEditing): () => void {
 	const drafts = editing.prefixDrafts;
 	nameEl.empty();
 	nameEl.addClass("note-launcher-prefixed-name");
 	const labelEl = nameEl.createSpan({ cls: "note-launcher-prefixed-name-text", text: field.label });
 	let saved = field.prefix;
+	let savedColor = field.prefixColor;
 	let shownEl: HTMLElement | undefined;
 	let input: HTMLInputElement | undefined;
 	let stopListening: (() => void) | undefined;
@@ -37,67 +52,124 @@ export function renderPrefixedName(nameEl: HTMLElement, field: PrefixField, edit
 		stopListening = undefined;
 		const chip = prefixChip(saved);
 		const chipEl = createSpan({
-			cls: chip.placeholder ? ["note-launcher-setting-prefix", "is-placeholder"] : "note-launcher-setting-prefix",
-			text: chip.text,
+			cls: chip.placeholder ? [CHIP_CLASS, "is-placeholder"] : CHIP_CLASS,
 			attr: { role: "button", tabindex: "0", "aria-label": "Edit prefix" },
 		});
+		chipEl.createSpan({ cls: "note-launcher-chip-text", text: chip.text });
+		if (!chip.placeholder) paintChip(chipEl, savedColor);
 		chipEl.addEventListener("mousedown", (event) => event.stopPropagation());
 		chipEl.addEventListener("click", (event) => {
 			event.stopPropagation();
-			edit(startDraft(saved));
+			edit(startDraft(saved, savedColor));
 		});
 		chipEl.addEventListener("keydown", (event) => {
 			if (event.key !== "Enter" && event.key !== " ") return;
 			event.preventDefault();
 			event.stopPropagation();
-			edit(startDraft(saved));
+			edit(startDraft(saved, savedColor));
 		});
 		place(chipEl);
+		alignChips(nameEl);
 		if (focus) chipEl.focus();
 	};
 
-	const finish = (save: boolean, focusChip: boolean) => {
-		const draft = drafts.get(field.key);
-		if (tornDown || !draft) return;
+	const finish = (draft: PrefixDraft, save: boolean, focusChip: boolean) => {
+		if (tornDown || drafts.get(field.key) !== draft) return;
 		drafts.delete(field.key);
-		const changed = save ? changedPrefix(draft) : undefined;
-		if (changed !== undefined) {
-			saved = changed;
-			editing.write(field.key, changed);
+		const prefix = save ? changedPrefix(draft) : undefined;
+		const color = save ? changedColor(draft) : undefined;
+		if (prefix !== undefined) {
+			saved = prefix;
+			editing.write(field.key, prefix);
+		}
+		if (color !== undefined) {
+			savedColor = color || undefined;
+			editing.write(prefixColorKey(field.key), color);
 		}
 		showChip(focusChip);
 	};
 
 	const edit = (draft: PrefixDraft) => {
 		drafts.set(field.key, draft);
-		const editor = createEl("input", {
+		const win = nameEl.win;
+		const editorEl = createSpan({ cls: "note-launcher-setting-prefix-editor" });
+		const textEl = editorEl.createEl("input", {
 			cls: "note-launcher-setting-prefix-input",
 			type: "text",
 			value: draft.text,
 			attr: { "aria-label": "Prefix", spellcheck: "false" },
 		});
-		const fit = () => (editor.size = Math.max(editor.value.length, MIN_INPUT_SIZE));
+		const colorEl = editorEl.createEl("input", {
+			cls: "note-launcher-setting-prefix-color",
+			type: "color",
+			value: draft.color ?? NEUTRAL_COLOR,
+			attr: { "aria-label": "Prefix colour" },
+		});
+		new ExtraButtonComponent(editorEl)
+			.setIcon("rotate-ccw")
+			.setTooltip("Remove colour")
+			.onClick(() => {
+				draft.color = undefined;
+				paintChip(textEl, undefined);
+				textEl.focus();
+			});
+		paintChip(textEl, draft.color);
+		let pickingColor = false;
+
+		const fit = () => (textEl.size = Math.max(textEl.value.length, MIN_INPUT_SIZE));
 		fit();
-		for (const type of ["mousedown", "click", "pointerdown"]) editor.addEventListener(type, (event) => event.stopPropagation());
-		editor.addEventListener("input", () => {
-			draft.text = editor.value;
+		textEl.addEventListener("input", () => {
+			draft.text = textEl.value;
 			fit();
 		});
-		editor.addEventListener("keydown", (event) => event.stopPropagation());
-		const win = nameEl.win;
+		const pickColor = () => {
+			draft.color = colorEl.value;
+			paintChip(textEl, draft.color);
+		};
+		colorEl.addEventListener("pointerdown", () => (pickingColor = true));
+		colorEl.addEventListener("input", pickColor);
+		colorEl.addEventListener("change", () => {
+			pickColor();
+			pickingColor = false;
+			textEl.focus();
+		});
+		editorEl.addEventListener("mousedown", (event) => {
+			event.stopPropagation();
+			if (event.target !== textEl && event.target !== colorEl) event.preventDefault();
+		});
+		for (const type of ["click", "pointerdown"]) editorEl.addEventListener(type, (event) => event.stopPropagation());
+		editorEl.addEventListener("keydown", (event) => event.stopPropagation());
+		editorEl.addEventListener("focusout", (event) => {
+			const next = event.relatedTarget;
+			if (next instanceof Node && editorEl.contains(next)) return;
+			if (next === null && pickingColor) return;
+			win.setTimeout(() => {
+				if (editorEl.contains(editorEl.doc.activeElement)) return;
+				finish(draft, true, false);
+			}, FOCUS_SETTLE_MS);
+		});
+
 		const onKey = (event: KeyboardEvent) => {
-			if (event.target !== editor || event.isComposing) return;
-			if (event.key !== "Enter" && event.key !== "Escape") return;
+			if (!(event.target instanceof Node) || !editorEl.contains(event.target) || event.isComposing) return;
+			const commits = event.key === "Enter" && event.target === textEl;
+			if (!commits && event.key !== "Escape") return;
 			event.preventDefault();
-			finish(event.key === "Enter", true);
+			finish(draft, commits, true);
+		};
+		const onPointerOutside = (event: PointerEvent) => {
+			if (event.target instanceof Node && editorEl.contains(event.target)) return;
+			finish(draft, true, false);
 		};
 		win.addEventListener("keydown", onKey, true);
-		stopListening = () => win.removeEventListener("keydown", onKey, true);
-		editor.addEventListener("blur", () => win.setTimeout(() => finish(true, false), 0));
-		input = editor;
-		place(editor);
-		editor.focus();
-		editor.setSelectionRange(draft.selectionStart, draft.selectionEnd);
+		win.addEventListener("pointerdown", onPointerOutside, true);
+		stopListening = () => {
+			win.removeEventListener("keydown", onKey, true);
+			win.removeEventListener("pointerdown", onPointerOutside, true);
+		};
+		input = textEl;
+		place(editorEl);
+		textEl.focus();
+		textEl.setSelectionRange(draft.selectionStart, draft.selectionEnd);
 	};
 
 	const pending = drafts.get(field.key);
@@ -113,4 +185,18 @@ export function renderPrefixedName(nameEl: HTMLElement, field: PrefixField, edit
 		draft.selectionStart = input.selectionStart ?? input.value.length;
 		draft.selectionEnd = input.selectionEnd ?? input.value.length;
 	};
+}
+
+function alignChips(nameEl: HTMLElement): void {
+	const win = nameEl.win;
+	win.requestAnimationFrame(() => {
+		const listEl = nameEl.closest<HTMLElement>(".setting-items");
+		if (!listEl || measuringLists.has(listEl)) return;
+		measuringLists.add(listEl);
+		win.setTimeout(() => measuringLists.delete(listEl), 0);
+		listEl.setCssProps({ [PREFIX_WIDTH_PROPERTY]: "" });
+		const widths = Array.from(listEl.querySelectorAll<HTMLElement>(`.${CHIP_CLASS}`), (chipEl) => chipEl.getBoundingClientRect().width);
+		const widest = Math.ceil(Math.max(0, ...widths));
+		if (widest > 0) listEl.setCssProps({ [PREFIX_WIDTH_PROPERTY]: `${widest}px` });
+	});
 }

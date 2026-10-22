@@ -6,7 +6,15 @@ import { defaultDateNoteSettings } from "../src/lists/dateNotes.ts";
 import type { Frontmatter, JumpListVault } from "../src/lists/vault.ts";
 import { defaultSettings } from "../src/settings.ts";
 import type { NoteList } from "../src/settings.ts";
-import { DATE_NOTE_SOURCE_KEY, SHOW_PREFIXES_KEY, listKey, periodKey, readControl, writeControl } from "../src/settings/controlKeys.ts";
+import {
+	DATE_NOTE_SOURCE_KEY,
+	SHOW_PREFIXES_KEY,
+	listKey,
+	periodKey,
+	prefixColorKey,
+	readControl,
+	writeControl,
+} from "../src/settings/controlKeys.ts";
 import { customPeriods, dateNoteSourceDescription, formatError, writePeriodField } from "../src/settings/dateNotesForm.ts";
 import {
 	fitConditionToProperty,
@@ -24,7 +32,7 @@ import {
 	valueShape,
 	writeListField,
 } from "../src/settings/listForm.ts";
-import { PREFIX_PLACEHOLDER, changedPrefix, prefixChip, startDraft } from "../src/settings/prefixChip.ts";
+import { PREFIX_PLACEHOLDER, changedColor, changedPrefix, prefixChip, startDraft } from "../src/settings/prefixChip.ts";
 import { moment } from "./moment.ts";
 
 interface FakeVault {
@@ -291,4 +299,29 @@ test("editing a prefix starts from the raw prefix selected and saves only a chan
 	assert.equal(changedPrefix({ ...draft, text: "🔗 links" }), "🔗 links");
 	assert.equal(changedPrefix({ ...startDraft(""), text: "⭐" }), "⭐");
 	assert.equal(changedPrefix({ ...draft, text: "" }), "");
+});
+
+test("a list's prefix colour key reads blank until set, keeps valid hex and clears on anything else", () => {
+	const settings = defaultSettings();
+	const key = listKey("list-2", "prefixColor");
+	assert.equal(prefixColorKey(listKey("list-2", "prefix")), key);
+	assert.equal(readControl(settings, key), "");
+	assert.equal(writeControl(settings, key, "#e0a030"), true);
+	assert.equal(settings.lists[1].prefixColor, "#e0a030");
+	assert.equal(readControl(settings, key), "#e0a030");
+	writeControl(settings, key, "");
+	assert.equal("prefixColor" in settings.lists[1], false);
+	writeControl(settings, key, "#abc");
+	writeControl(settings, key, "orange");
+	assert.equal("prefixColor" in settings.lists[1], false);
+});
+
+test("editing a prefix tracks its colour and reports a colour change, a removal as blank, or nothing", () => {
+	const draft = startDraft("🔗 out", "#e0a030");
+	assert.equal(changedColor(draft), undefined);
+	assert.equal(changedColor({ ...draft, color: "#336699" }), "#336699");
+	assert.equal(changedColor({ ...draft, color: undefined }), "");
+	assert.equal(changedColor({ ...startDraft("🔗"), color: "#336699" }), "#336699");
+	assert.equal(changedColor(startDraft("🔗")), undefined);
+	assert.equal(changedPrefix({ ...draft, color: "#336699" }), undefined);
 });
