@@ -1,7 +1,7 @@
 import { AbstractInputSuggest, setIcon } from "obsidian";
 import type { App, Setting, SettingDefinition, SettingDefinitionItem, SettingDefinitionPage, SettingGroupItem } from "obsidian";
 import { propertyType } from "../lists/conditions";
-import { createsNotes } from "../setProperties/newNotes";
+import { createsNotes } from "../createNote/newNotes";
 import { isLinkType } from "../settings";
 import type { EditableProperty, NoteList } from "../settings";
 import { listKey, propertyKey, propertySourceKey } from "./controlKeys";
@@ -194,13 +194,13 @@ export function propertyPage(
 					},
 					{
 						name: "New note folder",
-						desc: "Notes created from the picker go here. Empty uses the default location for new notes.",
+						desc: "Notes made with Create note go here. Empty uses the default location for new notes.",
 						visible: () => createsNotes(entry.source, context.propertyTypes) && entry.source.kind !== "inFolder",
 						control: { type: "folder", key: key("newNoteFolder") },
 					},
 					{
 						name: "New note template",
-						desc: "Notes created from the picker start with this note's content.",
+						desc: "Create note starts new notes from this template. Templater runs it when enabled; otherwise {{title}}, {{date}} and {{time}} are filled in as the core Templates plugin does.",
 						visible: () => createsNotes(entry.source, context.propertyTypes),
 						control: { type: "file", key: key("newNoteTemplate"), filter: (file) => file.extension === "md" },
 					},

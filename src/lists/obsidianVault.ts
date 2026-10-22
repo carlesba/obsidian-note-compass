@@ -1,10 +1,10 @@
-import { moment } from "obsidian";
-import type { App } from "obsidian";
-import type { JumpListVault, NewNoteVault, PropertyValueCount } from "./vault";
+import { TFile, moment } from "obsidian";
+import type { App, TFolder } from "obsidian";
+import type { JumpListVault, NewNoteVault, NoteTemplater, PropertyValueCount } from "./vault";
 
 interface PluginRegistries {
 	metadataTypeManager?: { getAllProperties(): Record<string, { widget?: unknown } | undefined> };
-	plugins?: { getPlugin(id: string): { settings?: unknown } | null | undefined };
+	plugins?: { getPlugin(id: string): { settings?: unknown; templater?: unknown } | null | undefined };
 	internalPlugins?: {
 		getPluginById(id: string): { enabled?: boolean; instance?: { options?: unknown } } | null | undefined;
 	};
@@ -41,19 +41,56 @@ export function createObsidianVault(app: App): JumpListVault & NewNoteVault {
 			countValues(
 				app.vault.getMarkdownFiles().map((file): unknown => app.metadataCache.getFileCache(file)?.frontmatter?.[property]),
 			),
-		defaultNoteFolder: (sourcePath) => app.fileManager.getNewFileParent(sourcePath).path,
+		defaultNoteFolder: (sourcePath) => app.fileManager.getNewFileParent(sourcePath ?? "").path,
 		readNote: async (path) => {
 			const file = app.vault.getFileByPath(path);
 			return file ? app.vault.cachedRead(file) : "";
 		},
 		createNote: async (path, content) => {
-			const folder = path.split("/").slice(0, -1).join("/");
-			if (folder !== "" && !app.vault.getFolderByPath(folder)) await app.vault.createFolder(folder);
+			await ensureFolder(app, path.split("/").slice(0, -1).join("/"));
 			await app.vault.create(path, content);
 		},
+		processNote: async (path, update) => {
+			const file = app.vault.getFileByPath(path);
+			if (!file) throw new Error(`No note at ${path}`);
+			await app.vault.process(file, update);
+		},
+		templater: () => readSafely(() => templaterFor(app, registries.plugins?.getPlugin("templater-obsidian")?.templater)),
+		coreTemplatesOptions: () => readSafely(() => registries.internalPlugins?.getPluginById("templates")?.instance?.options),
 		now: () => Date.now(),
 		moment,
 	};
+}
+
+interface TemplaterApi {
+	create_new_note_from_template(template: TFile, folder: TFolder, filename: string, openNewNote: boolean): Promise<unknown>;
+}
+
+function templaterFor(app: App, templater: unknown): NoteTemplater | undefined {
+	if (!isTemplaterApi(templater)) return undefined;
+	return {
+		createFromTemplate: async (templatePath, folder, name) => {
+			const template = app.vault.getFileByPath(templatePath);
+			if (!template) return undefined;
+			await ensureFolder(app, folder);
+			const parent = folder === "" ? app.vault.getRoot() : app.vault.getFolderByPath(folder);
+			if (!parent) return undefined;
+			const created = await templater.create_new_note_from_template(template, parent, name, false);
+			return created instanceof TFile ? created.path : undefined;
+		},
+	};
+}
+
+function isTemplaterApi(templater: unknown): templater is TemplaterApi {
+	return (
+		typeof templater === "object" &&
+		templater !== null &&
+		typeof (templater as Partial<Record<keyof TemplaterApi, unknown>>).create_new_note_from_template === "function"
+	);
+}
+
+async function ensureFolder(app: App, folder: string): Promise<void> {
+	if (folder !== "" && !app.vault.getFolderByPath(folder)) await app.vault.createFolder(folder);
 }
 
 function propertyWidgets(properties: Record<string, { widget?: unknown } | undefined> | undefined): Record<string, string> {
