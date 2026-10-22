@@ -27,7 +27,7 @@ export function setProperties(
 		}
 	};
 	const openMain = (state: PickerState, query: string): void => {
-		new ChoiceModal<PickerChoice>(app, "Set properties…", (typed) => pickerChoices(entries, initial, state, typed), {
+		new ChoiceModal<PickerChoice>(app, "Set properties…", (typed) => pickerChoices(entries, initial, state, typed, settings.showPrefixes), {
 			choose: ({ action }, typed) => {
 				if (action.action === "set") openMain(action.state, typed);
 				else if (action.action === "expand") openMain(state, action.query);

@@ -27,13 +27,13 @@ export function createNoteFromEntries(
 		}
 	};
 	const openEntries = (query: string): void => {
-		new ChoiceModal<EntryChoice>(app, ENTRY_PLACEHOLDER, (typed) => entryChoices(entries, vault, sourcePath, typed), {
+		new ChoiceModal<EntryChoice>(app, ENTRY_PLACEHOLDER, (typed) => entryChoices(entries, vault, sourcePath, typed, settings.showPrefixes), {
 			choose: ({ creatable }, typed) => openName(creatable, "", typed),
 			dismiss: () => undefined,
 		}).openWithQuery(query);
 	};
 	const openName = (creatable: CreatableEntry, query: string, entryQuery: string): void => {
-		new ChoiceModal<NameChoice>(app, namePlaceholder(creatable), (typed) => nameChoices(creatable, vault, sourcePath, typed), {
+		new ChoiceModal<NameChoice>(app, namePlaceholder(creatable), (typed) => nameChoices(creatable, vault, sourcePath, typed, settings.showPrefixes), {
 			choose: ({ action }, typed) => {
 				if (action.action === "create") void create(action.creation);
 				else openName(creatable, typed, entryQuery);

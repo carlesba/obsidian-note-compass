@@ -24,11 +24,17 @@ function entry(property: string, type: EditablePropertyType, extra: Partial<Edit
 	return { id: property + type + (extra.prefix ?? ""), enabled: true, prefix: "", property, type, source: PERSON, createsNotes: true, ...extra };
 }
 
-function setup(properties: EditableProperty[], options: FakeVaultOptions = {}, fakes: FakeNote[] = vaultNotes(), sourcePath = "Today.md") {
+function setup(
+	properties: EditableProperty[],
+	options: FakeVaultOptions = {},
+	fakes: FakeNote[] = vaultNotes(),
+	sourcePath = "Today.md",
+	showPrefixes = true,
+) {
 	const vault = fakeVault(fakes, options);
 	const entries = creatableEntries({ properties }, vault);
-	const entryRows = (query = "") => entryChoices(entries, vault, sourcePath, query);
-	const nameRows = (index: number, query: string) => nameChoices(entryRows()[index].creatable, vault, sourcePath, query);
+	const entryRows = (query = "") => entryChoices(entries, vault, sourcePath, query, showPrefixes);
+	const nameRows = (index: number, query: string) => nameChoices(entryRows()[index].creatable, vault, sourcePath, query, showPrefixes);
 	return { vault, entries, entryRows, nameRows };
 }
 
@@ -69,6 +75,16 @@ test("the first step lists each link entry whose source can hold a new note with
 	assert.deepEqual(labels(entryRows("peop people")), ["👤 peop people vault root"]);
 	assert.deepEqual(labels(entryRows("zzz")), []);
 	assert.equal(ENTRY_PLACEHOLDER, "Create a note for…");
+});
+
+test("with prefixes hidden both steps leave the prefix out of their rows", () => {
+	const { entryRows, nameRows } = setup([entry("people", "links", { prefix: "👤 peop" })], { defaultNoteFolder: () => "" }, vaultNotes(), "Today.md", false);
+	assert.deepEqual(labels(entryRows()), ["people vault root"]);
+	assert.deepEqual(entryRows()[0].parts, { content: "people", value: "vault root" });
+	assert.deepEqual(labels(entryRows("people")), ["people vault root"]);
+	assert.deepEqual(labels(entryRows("👤")), []);
+	const valid = nameRows(0, "Zed");
+	assert.deepEqual(valid[0].parts, { mark: "➕", content: 'Create "Zed" in the vault root' });
 });
 
 test("the first step lists only the entries that allow creating notes", () => {
@@ -177,7 +193,7 @@ test("a created note goes to the source folder, then the entry's folder, then Ob
 	assert.equal(root.notice, 'Created "Zed" in the vault root.');
 	assert.deepEqual([...new Set(sources)], ["Today.md"]);
 	const { vault, entries } = setup([entry("people", "links", { prefix: "👤" })], { defaultNoteFolder: (source) => source ?? "root" });
-	await createNote(vault, undefined, creation(nameChoices(entries[0], vault, undefined, "Zed")));
+	await createNote(vault, undefined, creation(nameChoices(entries[0], vault, undefined, "Zed", true)));
 	assert.ok(vault.paths().includes("root/Zed.md"));
 });
 

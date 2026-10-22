@@ -52,6 +52,7 @@ export interface ListPageContext {
 	openPage: (pageId: string) => void;
 	change: (change: () => unknown) => void;
 	prefixDrafts: Map<string, PrefixDraft>;
+	showPrefixes: boolean;
 }
 
 type IdentifiedPage = SettingDefinitionPage & { id: string };
@@ -157,11 +158,9 @@ function editableRow(row: EditableRow, context: ListPageContext): SettingDefinit
 		aliases: [row.name],
 		desc: row.warning,
 		render: (setting) => {
-			const stopEditing = renderPrefixedName(
-				setting.nameEl,
-				{ key: row.prefixKey, prefix: row.prefix, label: row.label },
-				context,
-			);
+			const stopEditing = context.showPrefixes
+				? renderPrefixedName(setting.nameEl, { key: row.prefixKey, prefix: row.prefix, label: row.label }, context)
+				: undefined;
 			if (row.warning) warningDescription(setting.descEl, row.warning);
 			setting.addToggle((toggle) =>
 				toggle
@@ -205,7 +204,12 @@ export function propertyPage(
 			render: (setting) => warningDescription(setting.descEl, mixed ?? ""),
 		},
 		{ name: "Enabled", desc: "Offer this property in the picker.", control: { type: "toggle", key: key("enabled") } },
-		{ name: "Prefix", desc: "Text shown before this property's rows in the picker, such as an emoji and a short tag.", control: { type: "text", key: key("prefix") } },
+		{
+			name: "Prefix",
+			desc: "Text shown before this property's rows in the picker, such as an emoji and a short tag.",
+			visible: context.showPrefixes,
+			control: { type: "text", key: key("prefix") },
+		},
 		{
 			name: "Property",
 			desc: "The property the picker writes.",
@@ -289,7 +293,12 @@ export function listPageItems(list: NoteList, context: ListPageContext): Setting
 	const key = (field: ListField) => listKey(list.id, field);
 	return [
 		{ name: "Enabled", desc: "Show this list in the picker.", control: { type: "toggle", key: key("enabled") } },
-		{ name: "Prefix", desc: "Text shown before each note from this list, such as an emoji and a short tag.", control: { type: "text", key: key("prefix") } },
+		{
+			name: "Prefix",
+			desc: "Text shown before each note from this list, such as an emoji and a short tag.",
+			visible: context.showPrefixes,
+			control: { type: "text", key: key("prefix") },
+		},
 		...sourceItems(list, context, key),
 	];
 }

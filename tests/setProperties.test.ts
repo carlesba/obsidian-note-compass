@@ -51,14 +51,19 @@ function entry(property: string, type: EditablePropertyType, extra: Partial<Edit
 	};
 }
 
-function setup(properties: EditableProperty[], fakes: FakeNote[] = vaultNotes(), propertyTypes: Record<string, string> = {}) {
+function setup(
+	properties: EditableProperty[],
+	fakes: FakeNote[] = vaultNotes(),
+	propertyTypes: Record<string, string> = {},
+	showPrefixes = true,
+) {
 	const settings = defaultSettings();
 	settings.setProperties.properties = properties;
 	const vault = fakeVault(fakes, { propertyTypes });
 	const target = vault.note("Today.md");
 	const initial = initialPropertyState(settings.setProperties, vault.frontmatter(target.path));
 	const entries = offeredEntries(settings, vault, target);
-	const choicesFor = (state: PickerState = pickerState(initial), query = "") => pickerChoices(entries, initial, state, query);
+	const choicesFor = (state: PickerState = pickerState(initial), query = "") => pickerChoices(entries, initial, state, query, showPrefixes);
 	const valueChoicesFor = (picked: EditableProperty, state: PickerState = pickerState(initial), query = "") =>
 		valueChoices(
 			valuePicker(vault, picked.property, propertyType(settings.setProperties, picked) as ScalarPropertyType),
@@ -119,6 +124,57 @@ test("a row splits into mark, prefix, content and value parts", () => {
 	assert.deepEqual(pick(choices, SAVE_LABEL).parts, { mark: "🏁", content: "Save & close" });
 	assert.deepEqual(pick(choices, CANCEL_LABEL).parts, { mark: "🛑", content: "Cancel" });
 	assert.deepEqual([SAVE_LABEL, CANCEL_LABEL], ["🏁 Save & close", "🛑 Cancel"]);
+});
+
+test("with prefixes hidden rows drop the prefix and link rows name the property they write", () => {
+	const { choicesFor } = setup(
+		[entry("status", "text", { prefix: "📝 stat" }), entry("people", "links", { prefix: "👤 peop" })],
+		vaultNotes(),
+		{},
+		false,
+	);
+	const choices = choicesFor();
+	assert.deepEqual(labels(choices).slice(2), [
+		"✓ status doing",
+		"✓ Ann people",
+		"✓ Stranger people",
+		"status done",
+		"status Done",
+		"Bob people",
+		"Cy people",
+		"Today too people",
+	]);
+	assert.deepEqual(pick(choices, "✓ Ann people").parts, { mark: "✓", content: "Ann", value: "people" });
+	assert.deepEqual(pick(choices, "Bob people").parts, { content: "Bob", value: "people" });
+	assert.deepEqual(pick(choices, "✓ status doing").parts, { mark: "✓", content: "status", value: "doing" });
+	assert.deepEqual(labels(choicesFor(undefined, "peop")), [
+		"✓ Ann people",
+		"✓ Stranger people",
+		"Bob people",
+		"Cy people",
+		"Today too people",
+		'✏️ status: use "peop"',
+	]);
+	assert.deepEqual(labels(choicesFor(undefined, "👤")), ['✏️ status: use "👤"']);
+	assert.deepEqual(labels(choicesFor(undefined, "📝 stat Done")), ['✏️ status: use "📝 stat Done"']);
+});
+
+test("with prefixes hidden the see-more row names its property and expands to it", () => {
+	const many = Array.from({ length: 7 }, (_, index) => ({
+		path: `people/P${index}.md`,
+		mtime: HOURS_AGO(index + 1),
+		links: ["types/Person.md"],
+	}));
+	const { choicesFor } = setup(
+		[entry("people", "links", { prefix: "👤 peop" })],
+		[{ path: "Today.md" }, { path: "types/Person.md" }, ...many],
+		{},
+		false,
+	);
+	const rows = choicesFor();
+	assert.equal(labels(rows)[7], "… 2 more, type to filter people");
+	assert.deepEqual(rows[7].action, { action: "expand", query: "people" });
+	assert.equal(labels(choicesFor(undefined, "people")).length, 7);
 });
 
 test("a link entry leaves out notes inside any of its excluded folders", () => {

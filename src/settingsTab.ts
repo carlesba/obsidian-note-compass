@@ -8,7 +8,7 @@ import type {
 import { createObsidianVault } from "./lists/obsidianVault";
 import type { JumpListVault } from "./lists/vault";
 import type NoteLauncherPlugin from "./main";
-import { DATE_NOTE_SOURCE_KEY, periodKey, readControl, writeControl } from "./settings/controlKeys";
+import { DATE_NOTE_SOURCE_KEY, SHOW_PREFIXES_KEY, periodKey, readControl, writeControl } from "./settings/controlKeys";
 import {
 	DATE_NOTE_SOURCE_OPTIONS,
 	PERIOD_NAMES,
@@ -64,7 +64,7 @@ export class NoteLauncherSettingTab extends PluginSettingTab {
 	}
 
 	getSettingDefinitions(): SettingDefinitionItem[] {
-		const { lists, setProperties } = this.plugin.settings;
+		const { lists, setProperties, showPrefixes } = this.plugin.settings;
 		const { properties } = setProperties;
 		const vault = createObsidianVault(this.app);
 		let suggestions: PropertySuggestion[] | undefined;
@@ -76,8 +76,20 @@ export class NoteLauncherSettingTab extends PluginSettingTab {
 			openPage: (pageId: string) => this.openPage(pageId),
 			change: (change: () => unknown) => this.changeLists(change),
 			prefixDrafts: this.prefixDrafts,
+			showPrefixes,
 		};
 		return [
+			{
+				type: "group",
+				heading: "Display",
+				items: [
+					{
+						name: "Show prefixes",
+						desc: "Start each row in the pickers with its list's or property's prefix.",
+						control: { type: "toggle", key: SHOW_PREFIXES_KEY },
+					},
+				],
+			},
 			{
 				type: "list",
 				heading: "Jump to note",

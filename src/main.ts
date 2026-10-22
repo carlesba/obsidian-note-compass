@@ -55,7 +55,7 @@ export default class NoteLauncherPlugin extends Plugin {
 			new Notice("No notes to jump to.");
 			return;
 		}
-		new JumpModal(this.app, entries).open();
+		new JumpModal(this.app, entries, this.settings.showPrefixes).open();
 	}
 
 	private currentNote(): VaultNote | undefined {
