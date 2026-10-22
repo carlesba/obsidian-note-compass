@@ -21,7 +21,11 @@ export function createNoteFromEntries(
 	}
 	const create = async (creation: NoteCreation) => {
 		try {
-			new Notice(createdNotice(creation.name, await createNote(vault, sourcePath, creation)));
+			const created = await createNote(vault, sourcePath, creation);
+			new Notice(createdNotice(creation.name, created));
+			if (created.outcome !== "created") return;
+			const file = app.vault.getFileByPath(created.path);
+			if (file) await app.workspace.getLeaf(false).openFile(file);
 		} catch {
 			new Notice(`Could not create "${creation.name}".`);
 		}
