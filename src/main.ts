@@ -1,4 +1,5 @@
 import { MarkdownView, Notice, Plugin } from "obsidian";
+import { createNoteFromEntries } from "./createNote/modal";
 import { buildJumpList } from "./lists/jumpList";
 import { createObsidianVault } from "./lists/obsidianVault";
 import type { VaultNote } from "./lists/vault";
@@ -29,6 +30,13 @@ export default class NoteLauncherPlugin extends Plugin {
 				if (!checking) setProperties(this.app, createObsidianVault(this.app), this.settings, target);
 				return true;
 			},
+		});
+
+		this.addCommand({
+			id: "create-note",
+			name: "Create note",
+			callback: () =>
+				createNoteFromEntries(this.app, createObsidianVault(this.app), this.settings, this.currentNote()?.path),
 		});
 	}
 

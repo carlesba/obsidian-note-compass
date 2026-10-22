@@ -1,15 +1,13 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
-import type { Frontmatter, JumpListVault, NewNoteVault, PropertyValueCount, VaultNote } from "../src/lists/vault.ts";
+import type { Frontmatter } from "../src/lists/vault.ts";
 import { defaultSettings } from "../src/settings.ts";
-import type { EditableProperty, EditablePropertyType, ListSource } from "../src/settings.ts";
-import { createNotes } from "../src/setProperties/newNotes.ts";
+import type { EditableProperty, EditablePropertyType } from "../src/settings.ts";
 import { offeredEntries, propertyType } from "../src/setProperties/offered.ts";
 import {
 	CANCEL_LABEL,
 	SAVE_LABEL,
 	initialPropertyState,
-	pendingCreations,
 	pickerChoices,
 	pickerState,
 	withValue,
@@ -18,64 +16,10 @@ import {
 import type { PickerChoice, PickerState, PropertyState } from "../src/setProperties/picker.ts";
 import { CLEAR_LABEL, valueChoices, valuePicker } from "../src/setProperties/valuePicker.ts";
 import type { ScalarPropertyType, ValueChoice } from "../src/setProperties/valuePicker.ts";
-import { moment } from "./moment.ts";
+import { HOURS_AGO, fakeVault } from "./fakeVault.ts";
+import type { FakeNote } from "./fakeVault.ts";
 
-interface FakeNote {
-	path: string;
-	mtime?: number;
-	frontmatter?: Frontmatter;
-	links?: string[];
-	content?: string;
-}
-
-type FakeVault = JumpListVault & NewNoteVault & { note(path: string): VaultNote; content(path: string): string | undefined };
-
-const NOW = new Date(2024, 2, 9, 15).getTime();
-const HOURS_AGO = (hours: number) => NOW - hours * 3600 * 1000;
 const PERSON = { kind: "linksToNote", note: "types/Person.md" } as const;
-
-function fakeVault(fakes: FakeNote[], propertyTypes: Record<string, string> = {}): FakeVault {
-	const toNote = (fake: FakeNote) => ({ path: fake.path, basename: fake.path.split("/").pop()!.replace(/\.md$/, ""), ctime: 0 });
-	const byPath = (path: string) => fakes.find((fake) => fake.path === path);
-	return {
-		notes: () => fakes.map(toNote),
-		frontmatter: (path) => byPath(path)?.frontmatter,
-		updateFrontmatter: async (path, update) => {
-			const fake = byPath(path)!;
-			fake.frontmatter = { ...fake.frontmatter };
-			update(fake.frontmatter);
-		},
-		linksFrom: (path) => byPath(path)?.links ?? [],
-		linksTo: (path) => fakes.filter((fake) => fake.links?.includes(path)).map((fake) => fake.path),
-		mtime: (path) => byPath(path)?.mtime ?? HOURS_AGO(48),
-		periodicNotesSettings: () => undefined,
-		dailyNotesOptions: () => undefined,
-		propertyTypes: () => propertyTypes,
-		propertyValueCounts: (property) => {
-			const counts: PropertyValueCount[] = [];
-			for (const fake of fakes) {
-				const value = fake.frontmatter?.[property];
-				for (const item of Array.isArray(value) ? value : [value]) {
-					if (typeof item !== "string" && typeof item !== "number") continue;
-					const known = counts.find((count) => count.value === item);
-					if (known) known.count++;
-					else counts.push({ value: item, count: 1 });
-				}
-			}
-			return counts;
-		},
-		defaultNoteFolder: () => "inbox",
-		readNote: async (path) => byPath(path)?.content ?? "",
-		createNote: async (path, content) => {
-			if (byPath(path)) throw new Error(`${path} exists`);
-			fakes.push({ path, content, mtime: NOW });
-		},
-		now: () => NOW,
-		moment,
-		note: (path) => toNote(byPath(path)!),
-		content: (path) => byPath(path)?.content,
-	};
-}
 
 function vaultNotes(): FakeNote[] {
 	return [
@@ -110,7 +54,7 @@ function entry(property: string, type: EditablePropertyType, extra: Partial<Edit
 function setup(properties: EditableProperty[], fakes: FakeNote[] = vaultNotes(), propertyTypes: Record<string, string> = {}) {
 	const settings = defaultSettings();
 	settings.setProperties.properties = properties;
-	const vault = fakeVault(fakes, propertyTypes);
+	const vault = fakeVault(fakes, { propertyTypes });
 	const target = vault.note("Today.md");
 	const initial = initialPropertyState(settings.setProperties, vault.frontmatter(target.path));
 	const entries = offeredEntries(settings, vault, target);
@@ -256,70 +200,12 @@ test("an entry shows five notes and a row to see more until a query is typed", (
 	assert.deepEqual(labels(choicesFor(undefined, "p6")), ["👤 peop | P6"]);
 });
 
-test("a typed name no note has offers a create row that links it and creates the note on save", async () => {
-	const people = entry("people", "links", { prefix: "👤" });
-	const { initial, choicesFor, vault, target } = setup([people]);
-	assert.deepEqual(labels(choicesFor(undefined, "bob")), ["👤 Bob"]);
-	assert.deepEqual(labels(choicesFor(undefined, "Zed")), ['➕ 👤 create "Zed"']);
-	const withZed = chosen(pick(choicesFor(undefined, "Zed"), '➕ 👤 create "Zed"'));
-	assert.deepEqual(written(initial, withZed), { people: ["[[people/Ann|Ann]]", "[[Stranger]]", "[[Zed]]"] });
-	assert.deepEqual(labels(choicesFor(withZed, "Zed")), ["✓ • 👤 Zed"]);
-	assert.equal(pendingCreations(chosen(pick(choicesFor(withZed), "✓ • 👤 Zed"))).length, 0);
-	await createNotes(vault, target.path, pendingCreations(withZed));
-	assert.equal(vault.content("inbox/Zed.md"), "[[types/Person]]\n");
-});
-
-test("create and use rows come after every row the query matches", () => {
+test("use rows come after every row the query matches and a typed name offers no new note", () => {
 	const people = entry("people", "links", { prefix: "👤" });
 	const status = entry("status", "text", { prefix: "📌" });
 	const { choicesFor } = setup([status, people]);
-	assert.deepEqual(labels(choicesFor(undefined, "bo")), ["👤 Bob", '✏️ 📌 status: use "bo"', '➕ 👤 create "bo"']);
-});
-
-test("a create row is not offered for a relation source or a condition the new note cannot meet", () => {
-	const { choicesFor } = setup(
-		[
-			entry("out", "links", { prefix: "🔗", source: { kind: "linksOut" } }),
-			entry("big", "links", { prefix: "🔢", source: { kind: "frontmatter", property: "rating", condition: { operator: ">", value: 3 } } }),
-			entry("flag", "links", { prefix: "🏳️", source: { kind: "frontmatter", property: "flag", condition: { operator: "is set" } } }),
-		],
-		vaultNotes(),
-		{ flag: "text" },
-	);
-	assert.deepEqual(labels(choicesFor(undefined, "Zed")), []);
-});
-
-async function created(source: ListSource, extra: Partial<EditableProperty> = {}, fakes = vaultNotes(), types: Record<string, string> = {}) {
-	const { choicesFor, vault, target } = setup([entry("people", "links", { prefix: "👤", source, ...extra })], fakes, types);
-	const state = chosen(pick(choicesFor(undefined, "Zed"), '➕ 👤 create "Zed"'));
-	await createNotes(vault, target.path, pendingCreations(state));
-	return vault;
-}
-
-test("a created note joins the entry's source", async () => {
-	assert.equal((await created({ kind: "inFolder", folder: "people/" })).content("people/Zed.md"), "");
-	assert.equal((await created({ kind: "modifiedToday" })).content("inbox/Zed.md"), "");
-	const evergreen = await created({ kind: "frontmatter", property: "evergreen", condition: { operator: "is true" } });
-	assert.deepEqual(evergreen.frontmatter("inbox/Zed.md"), { evergreen: true });
-	const kind = await created({ kind: "frontmatter", property: "kind", condition: { operator: "is", value: "person" } });
-	assert.deepEqual(kind.frontmatter("inbox/Zed.md"), { kind: "person" });
-	const tags = await created({ kind: "frontmatter", property: "tags", condition: { operator: "has item", value: "people" } });
-	assert.deepEqual(tags.frontmatter("inbox/Zed.md"), { tags: ["people"] });
-	const done = await created({ kind: "frontmatter", property: "done", condition: { operator: "is set" } }, {}, vaultNotes(), {
-		done: "checkbox",
-	});
-	assert.deepEqual(done.frontmatter("inbox/Zed.md"), { done: true });
-});
-
-test("a created note uses the entry's folder and template and keeps an existing note", async () => {
-	const templated = await created(PERSON, { newNoteFolder: "people", newNoteTemplate: "templates/Person.md" });
-	assert.equal(templated.content("people/Zed.md"), "# Person\n\n[[types/Person]]\n");
-	const linking = [...vaultNotes(), { path: "templates/Linked.md", content: "type: [[types/Person]]" }];
-	assert.equal((await created(PERSON, { newNoteTemplate: "templates/Linked" }, linking)).content("inbox/Zed.md"), "type: [[types/Person]]");
-	const folderWins = await created({ kind: "inFolder", folder: "people" }, { newNoteFolder: "elsewhere" });
-	assert.equal(folderWins.content("people/Zed.md"), "");
-	const existing = [...vaultNotes(), { path: "inbox/Zed.md", content: "mine" }];
-	assert.equal((await created({ kind: "modifiedToday" }, {}, existing)).content("inbox/Zed.md"), "mine");
+	assert.deepEqual(labels(choicesFor(undefined, "bo")), ["👤 Bob", '✏️ 📌 status: use "bo"']);
+	assert.deepEqual(labels(choicesFor(undefined, "Zed")), ['✏️ 📌 status: use "Zed"']);
 });
 
 test("the first enabled entry decides the type of a shared property", () => {

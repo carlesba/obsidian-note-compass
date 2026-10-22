@@ -3,8 +3,6 @@ import type { JumpListVault, VaultNote } from "../lists/vault";
 import { isLinkType } from "../settings.ts";
 import type { EditableProperty, EditablePropertyType, JumpSettings, SetPropertiesSettings } from "../settings";
 import type { PickableNote } from "./links";
-import { newNoteRule } from "./newNotes.ts";
-import type { NewNoteRule } from "./newNotes";
 import { decidedPropertyType } from "./propertyTypes.ts";
 
 export interface OfferedEntry {
@@ -12,7 +10,6 @@ export interface OfferedEntry {
 	type: EditablePropertyType;
 	notes: PickableNote[];
 	values: string[];
-	newNote?: NewNoteRule;
 }
 
 export function offeredProperties(settings: SetPropertiesSettings): EditableProperty[] {
@@ -27,11 +24,7 @@ export function offeredEntries(settings: JumpSettings, vault: JumpListVault, tar
 	return offeredProperties(settings.setProperties).map((entry) => {
 		const type = propertyType(settings.setProperties, entry);
 		const offered: OfferedEntry = { entry, type, notes: [], values: [] };
-		if (isLinkType(type)) {
-			offered.notes = pickableNotes(settings, vault, target, entry);
-			const rule = newNoteRule(entry.source, vault);
-			if (rule) offered.newNote = rule;
-		}
+		if (isLinkType(type)) offered.notes = pickableNotes(settings, vault, target, entry);
 		if (type === "text") offered.values = vaultTexts(vault, entry.property);
 		return offered;
 	});

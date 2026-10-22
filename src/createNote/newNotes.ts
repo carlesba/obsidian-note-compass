@@ -1,6 +1,6 @@
 import { propertyType } from "../lists/conditions.ts";
 import { findNote } from "../lists/sources.ts";
-import type { Frontmatter, JumpListVault, NewNoteVault, VaultNote } from "../lists/vault";
+import type { Frontmatter, JumpListVault, MomentDate, NewNoteVault, VaultNote } from "../lists/vault";
 import type { EditableProperty, ListSource } from "../settings";
 
 export interface NewNoteRule {
@@ -15,7 +15,14 @@ export interface NoteCreation {
 	rule: NewNoteRule;
 }
 
+export type CreatedNote =
+	| { outcome: "created"; path: string; folder: string }
+	| { outcome: "exists"; path: string }
+	| { outcome: "templaterFailed" };
+
 const UNSAFE_NAME = /[\\/:*?"<>|#^[\]]/;
+const DEFAULT_DATE_FORMAT = "YYYY-MM-DD";
+const DEFAULT_TIME_FORMAT = "HH:mm";
 
 export function newNoteRule(source: ListSource | undefined, vault: JumpListVault): NewNoteRule | undefined {
 	if (!source) return undefined;
@@ -50,25 +57,59 @@ export function isCreatableName(name: string): boolean {
 	return name !== "" && !name.startsWith(".") && !UNSAFE_NAME.test(name);
 }
 
-export async function createNotes(
+export async function createNote(
 	vault: JumpListVault & NewNoteVault,
-	sourcePath: string,
-	creations: readonly NoteCreation[],
-): Promise<void> {
-	for (const creation of creations) await createNote(vault, sourcePath, creation);
-}
-
-async function createNote(vault: JumpListVault & NewNoteVault, sourcePath: string, creation: NoteCreation): Promise<void> {
+	sourcePath: string | undefined,
+	creation: NoteCreation,
+): Promise<CreatedNote> {
 	const { name, entry, rule } = creation;
 	const folder = trimSlashes(rule.folder ?? (entry.newNoteFolder?.trim() || vault.defaultNoteFolder(sourcePath)));
 	const path = folder === "" ? `${name}.md` : `${folder}/${name}.md`;
 	const notes = vault.notes();
-	if (notes.some((note) => note.path.toLowerCase() === path.toLowerCase())) return;
+	if (notes.some((note) => note.path.toLowerCase() === path.toLowerCase())) return { outcome: "exists", path };
 	const template = findNote(notes, entry.newNoteTemplate?.trim() ?? "");
-	const content = template ? await vault.readNote(template.path) : "";
-	await vault.createNote(path, rule.linkTo ? withLink(content, rule.linkTo, notes) : content);
+	const templater = template ? vault.templater() : undefined;
+	const linkTo = rule.linkTo;
+	let createdPath = path;
+	if (template && templater) {
+		const made = await templater.createFromTemplate(template.path, folder, name).catch(() => undefined);
+		if (made === undefined) return { outcome: "templaterFailed" };
+		createdPath = made;
+		if (linkTo) await vault.processNote(createdPath, (content) => withLink(content, linkTo, notes));
+	} else {
+		const content = template
+			? fillCoreTemplate(await vault.readNote(template.path), name, vault.moment(vault.now()), vault.coreTemplatesOptions())
+			: "";
+		await vault.createNote(path, linkTo ? withLink(content, linkTo, notes) : content);
+	}
 	const property = rule.property;
-	if (property) await vault.updateFrontmatter(path, (frontmatter) => satisfy(frontmatter, property.name, property.value));
+	if (property) {
+		await vault.updateFrontmatter(createdPath, (frontmatter) => satisfy(frontmatter, property.name, property.value));
+	}
+	return { outcome: "created", path: createdPath, folder: createdPath.split("/").slice(0, -1).join("/") };
+}
+
+export function createdNotice(name: string, created: CreatedNote): string {
+	if (created.outcome === "exists") return `"${name}" already exists.`;
+	if (created.outcome === "templaterFailed") return `Templater could not create "${name}".`;
+	return `Created "${name}" in ${created.folder === "" ? "the vault root" : created.folder}.`;
+}
+
+export function fillCoreTemplate(content: string, title: string, now: MomentDate, options: unknown): string {
+	const formats = coreTemplateFormats(options);
+	return content
+		.replace(/{{title}}/gi, () => title)
+		.replace(/{{(date|time)(?::(.*?))?}}/gi, (_match, kind: string, format: string | undefined) =>
+			now.format(format || (kind.toLowerCase() === "date" ? formats.date : formats.time)),
+		);
+}
+
+function coreTemplateFormats(options: unknown): { date: string; time: string } {
+	const read = (key: string, fallback: string) => {
+		const value = typeof options === "object" && options !== null ? (options as Record<string, unknown>)[key] : undefined;
+		return typeof value === "string" && value.trim() !== "" ? value : fallback;
+	};
+	return { date: read("dateFormat", DEFAULT_DATE_FORMAT), time: read("timeFormat", DEFAULT_TIME_FORMAT) };
 }
 
 function satisfyingValue(source: Extract<ListSource, { kind: "frontmatter" }>, type: string): unknown {

@@ -4,8 +4,6 @@ import type { RowParts } from "../render";
 import { isLinkType } from "../settings.ts";
 import type { EditableProperty, SetPropertiesSettings } from "../settings";
 import { isPicked, linksTo, wikiLink } from "./links.ts";
-import { isCreatableName } from "./newNotes.ts";
-import type { NoteCreation } from "./newNotes";
 import { offeredProperties } from "./offered.ts";
 import type { OfferedEntry } from "./offered";
 import { asList, formatPendingValue, isUnset, linkTitle, sameValue } from "./values.ts";
@@ -14,7 +12,6 @@ export type PropertyState = ReadonlyMap<string, unknown>;
 
 export interface PickerState {
 	values: PropertyState;
-	creations: readonly NoteCreation[];
 }
 
 export type PickerAction =
@@ -37,7 +34,6 @@ export const CANCEL_LABEL = "🛑 Cancel";
 const SELECTED_MARK = "✓";
 const CHANGED_MARK = "•";
 const USE_MARK = "✏️";
-const CREATE_MARK = "➕";
 const UNFILTERED_ROWS_PER_ENTRY = 5;
 
 export function initialPropertyState(settings: SetPropertiesSettings, frontmatter: Frontmatter | undefined): PropertyState {
@@ -48,19 +44,11 @@ export function initialPropertyState(settings: SetPropertiesSettings, frontmatte
 }
 
 export function pickerState(values: PropertyState): PickerState {
-	return { values, creations: [] };
+	return { values };
 }
 
 export function withValue(state: PickerState, property: string, value: unknown): PickerState {
 	return { ...state, values: new Map(state.values).set(property, value) };
-}
-
-export function pendingCreations(state: PickerState): NoteCreation[] {
-	return state.creations.filter(
-		(creation, index) =>
-			state.creations.findIndex((other) => other.name === creation.name) === index &&
-			asList(state.values.get(creation.entry.property)).some((value) => linkTitle(value) === creation.name),
-	);
 }
 
 export function pickerChoices(
@@ -116,7 +104,7 @@ function selectedChoices(entries: readonly OfferedEntry[], initial: PropertyStat
 			const remaining = offered.type === "links" ? links.filter((other) => !sameValue(other, link)) : undefined;
 			const parts = {
 				mark: selectedMark(!asList(saved).some((other) => sameValue(other, link))),
-				prefix: linkOwner(entries, state, property, link)?.prefix ?? prefix,
+				prefix: linkOwner(entries, property, link)?.prefix ?? prefix,
 				content: title,
 			};
 			choices.push(choice(parts, set(withValue(state, property, remaining))));
@@ -125,18 +113,10 @@ function selectedChoices(entries: readonly OfferedEntry[], initial: PropertyStat
 	return choices;
 }
 
-function linkOwner(
-	entries: readonly OfferedEntry[],
-	state: PickerState,
-	property: string,
-	link: unknown,
-): EditableProperty | undefined {
-	const listing = entries.find(
+function linkOwner(entries: readonly OfferedEntry[], property: string, link: unknown): EditableProperty | undefined {
+	return entries.find(
 		(offered) => offered.entry.property === property && offered.notes.some((note) => linksTo(link, note)),
-	);
-	if (listing) return listing.entry;
-	return state.creations.find((creation) => creation.entry.property === property && creation.name === linkTitle(link))
-		?.entry;
+	)?.entry;
 }
 
 function entryChoices(entries: readonly OfferedEntry[], state: PickerState, query: string): PickerChoice[] {
@@ -152,38 +132,23 @@ function entryChoices(entries: readonly OfferedEntry[], state: PickerState, quer
 	for (const offered of entries) {
 		const { property } = offered.entry;
 		const pending = state.values.get(property);
-		const name = typedName(offered);
 		if (offered.type === "link" || offered.type === "links") {
 			const notes = offered.notes.filter((note) => !isPicked(note, pending) && offer(property, note.path));
 			const rows = notes.map((note) =>
 				choice({ prefix: offered.entry.prefix, content: note.name }, set(withLink(state, offered, note.name))),
 			);
-			choices.push(...capped(offered, rows, query), ...createChoices(offered, state, name));
+			choices.push(...capped(offered, rows, query));
 		} else if (offered.type === "text") {
 			const values = offered.values.filter((value) => !sameValue(value, pending) && offer(property, value));
 			const rows = values.map((value) =>
 				choice({ prefix: offered.entry.prefix, content: property, value }, set(withValue(state, property, value))),
 			);
-			choices.push(...capped(offered, rows, query), ...useChoices(offered, state, name));
+			choices.push(...capped(offered, rows, query), ...useChoices(offered, state, typedName(offered)));
 		} else if (isUnset(pending) && offer(property, "")) {
 			choices.push(choice({ prefix: offered.entry.prefix, content: property }, { action: "edit", entry: offered.entry }));
 		}
 	}
 	return choices;
-}
-
-function createChoices(offered: OfferedEntry, state: PickerState, name: string | undefined): PickerChoice[] {
-	if (name === undefined || !offered.newNote || !isCreatableName(name)) return [];
-	const wanted = name.toLowerCase();
-	const pending = asList(state.values.get(offered.entry.property));
-	const known =
-		offered.notes.some((note) => note.name.toLowerCase() === wanted) ||
-		pending.some((value) => String(linkTitle(value)).toLowerCase() === wanted);
-	if (known) return [];
-	const creation: NoteCreation = { name, entry: offered.entry, rule: offered.newNote };
-	const next = withLink(state, offered, name);
-	const parts = { mark: CREATE_MARK, prefix: offered.entry.prefix, content: `create "${name}"` };
-	return [{ ...choice(parts, set({ ...next, creations: [...next.creations, creation] })), kept: true }];
 }
 
 function useChoices(offered: OfferedEntry, state: PickerState, name: string | undefined): PickerChoice[] {
