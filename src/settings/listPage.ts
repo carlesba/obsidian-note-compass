@@ -161,6 +161,7 @@ function editableRow(row: EditableRow, context: ListPageContext): SettingDefinit
 		aliases: [row.name],
 		desc: row.warning,
 		render: (setting) => {
+			setting.settingEl.addClass("note-compass-draggable-row");
 			const stopEditing = context.showPrefixes
 				? renderPrefixedName(
 						setting.nameEl,

@@ -1,5 +1,3 @@
-import type { moment } from "obsidian";
-
 export interface VaultNote {
 	path: string;
 	basename: string;
@@ -13,9 +11,23 @@ export interface PropertyValueCount {
 	count: number;
 }
 
-export type MomentFactory = typeof moment;
+export type MomentUnit = "day" | "week" | "month" | "quarter" | "year";
 
-export type MomentDate = ReturnType<MomentFactory>;
+export interface MomentDate {
+	clone(): MomentDate;
+	add(amount: number, unit: MomentUnit): MomentDate;
+	startOf(unit: MomentUnit): MomentDate;
+	format(format?: string): string;
+	isValid(): boolean;
+	valueOf(): number;
+	day(): number;
+	week(): number;
+	isoWeek(): number;
+	month(): number;
+	quarter(): number;
+}
+
+export type MomentFactory = (input?: number | string, format?: string, strict?: boolean) => MomentDate;
 
 export interface JumpListVault {
 	notes(): VaultNote[];

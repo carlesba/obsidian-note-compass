@@ -1,4 +1,4 @@
-.note-compass-sortable-list .setting-items .setting-item:has(.mod-drag-handle) {
+.note-compass-sortable-list .setting-items .setting-item.note-compass-draggable-row {
 	position: relative;
 	padding-inline-start: calc(var(--size-4-2) + var(--icon-size) + var(--size-4-3));
 }
@@ -107,7 +107,7 @@
 .note-compass-results {
 	display: grid;
 	grid-template-columns: [prefix] fit-content(12em) [body] minmax(0, 1fr);
-	column-gap: var(--size-4-2);
+	gap: 0 var(--size-4-2);
 	align-content: start;
 }
 
