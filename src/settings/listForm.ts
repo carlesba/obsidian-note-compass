@@ -77,6 +77,17 @@ export function sourceSummary(source: ListSource): string {
 		: `${source.property} ${condition.operator}`;
 }
 
+export function fitConditionToProperty(list: NoteList, types: Record<string, string>): void {
+	if (list.source.kind !== "frontmatter" || list.source.property === "") return;
+	const type = propertyType(types, list.source.property);
+	if (conditionAppliesTo(list.source.condition.operator, type)) return;
+	list.source.condition = conditionFor(CONDITIONS_BY_TYPE[type][0], list.source.condition);
+}
+
+export function hasProperty(list: NoteList): boolean {
+	return list.source.kind === "frontmatter" && list.source.property !== "";
+}
+
 export function listDisplayValue(list: NoteList): string {
 	return list.enabled ? "" : "off";
 }

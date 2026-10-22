@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, debounce } from "obsidian";
+import { App, Notice, PluginSettingTab, debounce } from "obsidian";
 import type { SettingDefinitionItem, SettingDefinitionList, SettingDefinitionPage } from "obsidian";
 import { PERIODS } from "./lists/dateNotes";
 import { createObsidianVault } from "./lists/obsidianVault";
@@ -20,9 +20,9 @@ import {
 	resolvedPeriodRows,
 	resolvedSourceName,
 } from "./settings/dateNotesForm";
-import { newList, propertySuggestions } from "./settings/listForm";
+import { fitConditionToProperty, newList, propertySuggestions } from "./settings/listForm";
 import type { PropertySuggestion } from "./settings/listForm";
-import { flagRow, linkListPage, listPage } from "./settings/listPage";
+import { flagRow, linkListPage, linkListRow, listPage, listRow } from "./settings/listPage";
 import { newLinkList } from "./settings/setPropertiesForm";
 
 const TYPED_FIELDS = [
@@ -43,6 +43,16 @@ const TYPED_FIELDS = [
 
 const TYPING_PAUSE_MS = 800;
 
+const SORTABLE_LIST_CLASS = "note-launcher-sortable-list";
+
+interface SettingModal {
+	openPagePath?: (tabId: string, path: string[]) => unknown;
+}
+
+interface AppWithSettingModal {
+	setting?: SettingModal;
+}
+
 export class NoteLauncherSettingTab extends PluginSettingTab {
 	private plugin: NoteLauncherPlugin;
 	private readonly refreshAfterTyping = debounce(() => this.update(), TYPING_PAUSE_MS, true);
@@ -62,13 +72,15 @@ export class NoteLauncherSettingTab extends PluginSettingTab {
 			propertyTypes: vault.propertyTypes(),
 			propertySuggestions: () => (suggestions = suggestions ?? propertySuggestions(vault)),
 			write: (key: string, value: unknown) => void this.setControlValue(key, value),
+			openPage: (pageId: string) => this.openPage(pageId),
 		};
 		return [
 			{
 				type: "list",
+				cls: SORTABLE_LIST_CLASS,
 				heading: "Jump to note",
 				emptyState: "No lists yet. Add one to show notes in the picker.",
-				items: lists.map((list) => listPage(list, context)),
+				items: lists.map((list) => listRow(list, context)),
 				...this.editableEntries(lists),
 				addItem: { name: "Add list", action: () => this.changeLists(() => lists.push(newList(lists))) },
 			},
@@ -86,6 +98,7 @@ export class NoteLauncherSettingTab extends PluginSettingTab {
 			},
 			{
 				type: "list",
+				cls: SORTABLE_LIST_CLASS,
 				heading: "Flags",
 				emptyState: "No flags yet. Add one to switch a checkbox property from the picker.",
 				items: flags.map((flag, index) => flagRow(flag, index, context)),
@@ -104,13 +117,28 @@ export class NoteLauncherSettingTab extends PluginSettingTab {
 			},
 			{
 				type: "list",
+				cls: SORTABLE_LIST_CLASS,
 				heading: "Link lists",
 				emptyState: "No link lists yet. Add one to link notes from the picker.",
-				items: linkLists.map((list) => linkListPage(list, context)),
+				items: linkLists.map((list) => linkListRow(list, context)),
 				...this.editableEntries(linkLists),
 				addItem: { name: "Add link list", action: () => this.changeLists(() => linkLists.push(newLinkList(linkLists))) },
 			},
+			{
+				type: "group",
+				visible: false,
+				items: [...lists.map((list) => listPage(list, context)), ...linkLists.map((list) => linkListPage(list, context))],
+			},
 		];
+	}
+
+	private openPage(pageId: string): void {
+		const modal = (this.app as unknown as AppWithSettingModal).setting;
+		if (typeof modal?.openPagePath !== "function") {
+			new Notice("Editing a list needs Obsidian 1.13 or later.");
+			return;
+		}
+		modal.openPagePath(this.plugin.manifest.id, [pageId]);
 	}
 
 	private editableEntries(entries: unknown[]): Pick<SettingDefinitionList, "onReorder" | "onDelete"> {
@@ -126,6 +154,7 @@ export class NoteLauncherSettingTab extends PluginSettingTab {
 
 	async setControlValue(key: string, value: unknown): Promise<void> {
 		if (!writeControl(this.plugin.settings, key, value)) return;
+		if (key.endsWith("/property")) this.fitCondition(key);
 		await this.plugin.saveSettings();
 		if (TYPED_FIELDS.includes(key.split("/").pop() ?? "")) {
 			this.refreshAfterTyping();
@@ -133,6 +162,14 @@ export class NoteLauncherSettingTab extends PluginSettingTab {
 		}
 		this.refreshDomState();
 		this.update();
+	}
+
+	private fitCondition(key: string): void {
+		const [scope, id] = key.split("/");
+		const { lists, setProperties } = this.plugin.settings;
+		const owner = scope === "list" ? lists : scope === "linkList" ? setProperties.linkLists : [];
+		const list = owner.find((candidate) => candidate.id === id);
+		if (list) fitConditionToProperty(list, createObsidianVault(this.app).propertyTypes());
 	}
 
 	private changeLists(change: () => unknown): void {

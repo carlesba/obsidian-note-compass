@@ -8,6 +8,7 @@ import {
 	DIRECTION_OPTIONS,
 	SOURCE_OPTIONS,
 	fixedDateError,
+	hasProperty,
 	inapplicableCondition,
 	listDisplayValue,
 	listName,
@@ -24,6 +25,17 @@ export interface ListPageContext {
 	propertyTypes: Record<string, string>;
 	propertySuggestions: () => PropertySuggestion[];
 	write: (key: string, value: unknown) => void;
+	openPage: (pageId: string) => void;
+}
+
+type IdentifiedPage = SettingDefinitionPage & { id: string };
+
+export function listPageId(list: NoteList): string {
+	return `list-${list.id}`;
+}
+
+export function linkListPageId(list: LinkList): string {
+	return `link-list-${list.id}`;
 }
 
 export class PropertySuggest extends AbstractInputSuggest<PropertySuggestion> {
@@ -45,12 +57,48 @@ export class PropertySuggest extends AbstractInputSuggest<PropertySuggestion> {
 }
 
 export function listPage(list: NoteList, context: ListPageContext): SettingDefinitionPage {
-	return pageEntry(listName(list), list, context, listPageItems(list, context));
+	return pageEntry(listPageId(list), listName(list), list, context, listPageItems(list, context));
+}
+
+export function listRow(list: NoteList, context: ListPageContext): SettingDefinition {
+	return editableRow(listName(list), list, listPageId(list), (field) => listKey(list.id, field), context);
+}
+
+export function linkListRow(list: LinkList, context: ListPageContext): SettingDefinition {
+	return editableRow(linkListName(list), list, linkListPageId(list), (field) => linkListKey(list.id, field), context);
+}
+
+function editableRow(
+	name: string,
+	list: NoteList,
+	pageId: string,
+	key: (field: ListField) => string,
+	context: ListPageContext,
+): SettingDefinition {
+	const inapplicable = inapplicableCondition(list.source, context.propertyTypes);
+	return {
+		name,
+		desc: inapplicable ? "The condition does not apply to this property. Edit the list to fix it." : undefined,
+		render: (setting) => {
+			setting.addToggle((toggle) =>
+				toggle
+					.setTooltip("Show this list in the picker")
+					.setValue(list.enabled)
+					.onChange((enabled) => context.write(key("enabled"), enabled)),
+			);
+			setting.addExtraButton((button) =>
+				button
+					.setIcon("pencil")
+					.setTooltip("Edit list")
+					.onClick(() => context.openPage(pageId)),
+			);
+		},
+	};
 }
 
 export function linkListPage(list: LinkList, context: ListPageContext): SettingDefinitionPage {
 	const key = (field: LinkListField) => linkListKey(list.id, field);
-	return pageEntry(linkListName(list), list, context, [
+	return pageEntry(linkListPageId(list), linkListName(list), list, context, [
 		...listPageItems(list, context, key),
 		{ name: "Name", desc: "How the picker's rows for this list are named.", control: { type: "text", key: key("name") } },
 		{
@@ -113,8 +161,9 @@ export function listPageItems(
 		},
 		{
 			name: "Condition",
+			desc: hasProperty(list) ? `Conditions for a ${type} property.` : "Choose a property first.",
 			visible: () => property() !== undefined,
-			control: { type: "dropdown", key: key("operator"), options: operatorOptions(type, source?.condition.operator) },
+			control: { type: "dropdown", disabled: () => !hasProperty(list), key: key("operator"), options: operatorOptions(type, source?.condition.operator) },
 		},
 		{
 			name: "Condition does not apply",
@@ -122,12 +171,12 @@ export function listPageItems(
 			searchable: false,
 			visible: () => property() !== undefined && inapplicable !== undefined,
 		},
-		{ name: "Value", visible: () => shape() === "text", control: { type: "text", key: key("text") } },
-		{ name: "Value", visible: () => shape() === "number", control: { type: "number", key: key("number") } },
+		{ name: "Value", visible: () => shape() === "text", control: { type: "text", disabled: () => !hasProperty(list), key: key("text") } },
+		{ name: "Value", visible: () => shape() === "number", control: { type: "number", disabled: () => !hasProperty(list), key: key("number") } },
 		{
 			name: "Date",
 			visible: () => shape() === "date",
-			control: { type: "dropdown", key: key("dateMode"), options: DATE_MODE_OPTIONS },
+			control: { type: "dropdown", disabled: () => !hasProperty(list), key: key("dateMode"), options: DATE_MODE_OPTIONS },
 		},
 		{
 			name: "Fixed date",
@@ -147,9 +196,15 @@ export function listPageItems(
 	];
 }
 
-function pageEntry(name: string, list: NoteList, context: ListPageContext, items: SettingDefinitionItem[]): SettingDefinitionPage {
+function pageEntry(
+	id: string,
+	name: string,
+	list: NoteList,
+	context: ListPageContext,
+	items: SettingDefinitionItem[],
+): IdentifiedPage {
 	const inapplicable = inapplicableCondition(list.source, context.propertyTypes);
-	return { type: "page", name, displayValue: listDisplayValue(list), status: inapplicable ? "warning" : null, items };
+	return { type: "page", id, name, displayValue: listDisplayValue(list), status: inapplicable ? "warning" : null, items };
 }
 
 function propertyInput(

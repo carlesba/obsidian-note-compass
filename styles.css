@@ -1,0 +1,12 @@
+.note-launcher-sortable-list .setting-item:has(.mod-drag-handle) {
+	position: relative;
+	padding-inline-start: calc(var(--size-4-2) + var(--icon-size) + var(--size-4-3));
+}
+
+.note-launcher-sortable-list .setting-item .mod-drag-handle {
+	position: absolute;
+	inset-inline-start: var(--size-4-2);
+	top: 50%;
+	transform: translateY(-50%);
+	cursor: grab;
+}
