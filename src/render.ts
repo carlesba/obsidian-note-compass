@@ -15,10 +15,10 @@ export function rowLabel(parts: RowParts): string {
 		.join(" ");
 }
 
-export function renderRow(el: HTMLElement, parts: RowParts): void {
+export function renderRow(el: HTMLElement, parts: RowParts, reservesMarkColumn = false): void {
 	el.addClass("note-launcher-row");
 	for (const part of ROW_PARTS) {
-		const text = parts[part];
+		const text = parts[part] ?? (part === "mark" && reservesMarkColumn ? "" : undefined);
 		if (text !== undefined) el.createSpan({ cls: `note-launcher-row-${part}`, text });
 	}
 }

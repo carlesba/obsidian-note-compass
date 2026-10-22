@@ -76,7 +76,8 @@ export function pickerChoices(
 		...entryChoices(entries, state, query),
 	];
 	if (!query) return choices;
-	return choices.filter((candidate) => candidate.kept || matchesInOrder(query, candidate.label));
+	const matches = choices.filter((candidate) => !candidate.kept && matchesInOrder(query, candidate.label));
+	return [...matches, ...choices.filter((candidate) => candidate.kept)];
 }
 
 export function writeProperties(frontmatter: Frontmatter, initial: PropertyState, state: PropertyState): void {
