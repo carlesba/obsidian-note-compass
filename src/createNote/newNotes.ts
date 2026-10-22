@@ -63,7 +63,7 @@ export async function createNote(
 	creation: NoteCreation,
 ): Promise<CreatedNote> {
 	const { name, entry, rule } = creation;
-	const folder = trimSlashes(rule.folder ?? (entry.newNoteFolder?.trim() || vault.defaultNoteFolder(sourcePath)));
+	const folder = newNoteFolder(vault, sourcePath, creation);
 	const path = folder === "" ? `${name}.md` : `${folder}/${name}.md`;
 	const notes = vault.notes();
 	if (notes.some((note) => note.path.toLowerCase() === path.toLowerCase())) return { outcome: "exists", path };
@@ -89,10 +89,18 @@ export async function createNote(
 	return { outcome: "created", path: createdPath, folder: createdPath.split("/").slice(0, -1).join("/") };
 }
 
+export function newNoteFolder(vault: NewNoteVault, sourcePath: string | undefined, { entry, rule }: Omit<NoteCreation, "name">): string {
+	return trimSlashes(rule.folder ?? (entry.newNoteFolder?.trim() || vault.defaultNoteFolder(sourcePath)));
+}
+
+export function folderName(folder: string): string {
+	return folder === "" ? "the vault root" : folder;
+}
+
 export function createdNotice(name: string, created: CreatedNote): string {
 	if (created.outcome === "exists") return `"${name}" already exists.`;
 	if (created.outcome === "templaterFailed") return `Templater could not create "${name}".`;
-	return `Created "${name}" in ${created.folder === "" ? "the vault root" : created.folder}.`;
+	return `Created "${name}" in ${folderName(created.folder)}.`;
 }
 
 export function fillCoreTemplate(content: string, title: string, now: MomentDate, options: unknown): string {
