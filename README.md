@@ -1,38 +1,142 @@
 # Note Launcher
 
-An Obsidian plugin that opens one quick-switcher-style picker from anywhere in the app, listing the notes related to the note in focus alongside lists you define by property, folder or link.
+Note Launcher adds three commands that work from anywhere in Obsidian, with or without an editor open. "Jump to note" opens one picker with the notes related to the note in focus, such as its adjacent date notes and the notes it links to, alongside lists you define by property, folder or link. "Set properties" edits the properties of the note in focus from a single picker. "Create note" makes a new note that already belongs to one of your link properties, so the other two commands offer it from then on.
 
-## What it does
+![The Set properties picker, with Save & close and Cancel at the top, the note's current values marked with a check, and more values to add below](docs/images/set-properties.png)
 
-The plugin adds a "Jump to note" command. It replaces a Templater script that did the same job but needed an open editor to run, so the command now works from any tab, from the sidebar, or with no tab open at all. Two more commands, "Set properties" and "Create note", are described below.
+## Installation
 
-With a markdown note in focus, the picker can show that note's relation lists: its adjacent date notes, the notes it links to (links in properties included), the notes that link to it, and the notes from the same day. The other lists do not depend on the note in focus. The picker shows the lists in the order you set, and with anything else in focus, or no tab at all, it leaves out the relation lists.
+Once Note Launcher is listed in the community plugins browser, open Settings → Community plugins → Browse, search for "Note Launcher", then install and enable it.
+
+To install it by hand, download `main.js`, `manifest.json` and `styles.css` from the latest release on GitHub:
+
+https://github.com/carlesba/obsidian-note-launcher/releases/latest
+
+Put the three files in `<vault>/.obsidian/plugins/note-launcher/`, reload Obsidian, and enable Note Launcher under Settings → Community plugins.
+
+Note Launcher needs Obsidian 1.13.0 or later and runs on both desktop and mobile.
+
+## Quick start
+
+The commands are meant to be used from the keyboard, so give each one a hotkey first. Open Settings → Hotkeys, search for "Note Launcher", and assign keys to "Jump to note", "Set properties" and "Create note". You can also run them from the command palette.
+
+A typical flow looks like this. Open today's daily note and press the "Jump to note" hotkey to move to yesterday's note or to a note you linked from it. On a note you are working on, press the "Set properties" hotkey, type a few letters of a person's name, pick them, and choose "Save & close". When the person does not exist yet, press the "Create note" hotkey, choose the people property, type the name, and the new note is ready to be linked.
+
+The defaults give you the four relation lists in "Jump to note" and a set of common checkbox and link properties in "Set properties". Open Settings → Note Launcher to switch off what you do not use and to point the link properties at your own folders and notes.
+
+## Jump to note
+
+"Jump to note" opens a picker of notes to move to. Picking a row opens the note in the active tab, or in a new tab when none is open.
+
+![The Jump to note picker on a daily note, with rows for the previous day, an inbound link and notes from the same day](docs/images/jump-to-note.png)
+
+The picker shows the lists you set up under "Jump to note" in settings, in the order you set. Four of the available lists depend on the markdown note in focus, and they are left out when anything else has focus or no tab is open:
+
+- Adjacent dates lists the previous and next note of the same period when the note in focus is a date note, as in `📅 day 2024-03-06 (next day - Wednesday)` or `📅 day 2024-W09 (prev week - week 9)`.
+- Outbound links lists the notes the note in focus links to, links in properties included.
+- Inbound links lists the notes that link to the note in focus.
+- Same day lists the notes created on the same day as the note in focus. For a day note it uses the date in its name rather than when the file was created.
+
+The other lists do not depend on the note in focus:
+
+- Notes with a property lists the notes whose property meets a condition, such as `status is active` or `project has item Launcher`.
+- Links to note lists the notes that link to a chosen note, in their text or in a property.
+- In folder lists the notes in a folder and its subfolders.
+- Modified today lists the notes changed since midnight.
 
 Each note appears once, under the first list that holds it, and the note in focus is left out. Within a list the notes are sorted by name. When no list has any note, the command says "No notes to jump to." instead of opening an empty picker.
 
-## Rows and matching
+Every row starts with its list's prefix, shown as a small chip so it stays apart from the name. All chips in a picker share the width of the widest one, up to about twelve characters, so the names line up, and a list with a prefix colour tints its chips. A date note adds its period after the name: the weekday for a day note, `week N` for a week note, `month - <Month>` for a month note and `year` for a year note.
 
-Every row reads `<prefix> <note name>`, where the prefix is the one set for its list and shows as a muted chip that keeps it apart from the name, so the default `🔗 out` gives `🔗 out Project`. Every chip in a picker is as wide as the widest one, up to about twelve characters with longer prefixes cut short, so the names after them line up, and a list with a prefix colour tints its chips with it. A list with an empty prefix shows the note name alone. A date note adds its period in parentheses: the weekday for a day note, `week N` for a week note, `month - <Month>` for a month note and `year` for a year note, as in `🔗 out 2024-03-05 (Tuesday)`. Rows in the adjacent dates list also say which way they point, as in `📅 day 2024-03-06 (next day - Wednesday)` or `📅 day 2024-W09 (prev week - week 9)`.
+Typing filters the rows by in-order matching. A row stays when the characters you typed appear in it in the same order, ignoring case, with anything in between. The prefix is part of the row, so typing part of a prefix narrows the picker to that list.
 
-Typing filters the rows by in-order matching: a row stays when the characters you typed appear in it in the same order, ignoring case, with anything in between. Because the prefix is part of the row, typing part of a prefix narrows the picker towards that list. Picking a row opens the note in the active tab, or in a new tab when none is open.
-
-## Date notes
+### Date notes
 
 A note is a date note when it sits directly in the folder set for its period and its name matches that period's format exactly. There are five periods, day, week, month, quarter and year, and each has its own folder, format and on/off switch.
 
-The adjacent dates list holds the previous and next note of the same period as the date note in focus, when those notes exist. The same day list holds the notes created on the same day as the note in focus; for a day note it uses the date in its name rather than when the file was created.
+The "Read from" setting under "Date notes" chooses where those formats come from. "Automatic" uses the Periodic Notes plugin when it is enabled, then the core Daily notes plugin, then the plugin's own Custom formats. Daily notes covers days only, so the other periods come from Custom. Whenever a period comes from Custom, a pencil next to "Read from" opens its formats, where you set each period's folder and its format as a Moment format:
 
-Two limits follow from matching the name inside the period's folder. A day format containing `/`, such as `YYYY/MM/DD`, never matches, because the name is compared without its folders. And with the default formats, year notes such as `on/2024` count as date notes too, so turn the year period off under Custom if you keep other notes named after a year in that folder.
+https://momentjs.com/docs/#/displaying/format/
+
+By default every period lives in `on/`, as `2024-03-05`, `2024-W10`, `2024-03` and `2024`, with quarters such as `2024-Q1` switched off.
+
+## Set properties
+
+"Set properties" edits the properties of the markdown note in focus from one picker. It only appears in the command palette when a markdown note has focus.
+
+Nothing is written while you work in the picker. The first two rows are always `🏁 Save & close`, which writes only the properties you changed, and `🛑 Cancel`, which discards every change. Escape does the same as Cancel.
+
+Next come the values the note will be saved with, each marked `✓`: one row per linked note, and one row for each checkbox, text, number or date with its value beside it. A value you changed in this session is also marked `•`. Choosing a set link or text removes it, so a links property loses that one note. Choosing a set checkbox, number or date opens its own picker.
+
+Below the set values, each enabled property offers what it can add, in the order of your settings:
+
+- A link or links property lists the notes from its source that are not set yet, most recently modified first. Choosing one adds it to a links property, or replaces the note a link property holds. Links are saved as a list such as `["[[Alice]]", "[[Bob]]"]`, and links the property already holds that its source does not offer are kept.
+- A text property lists the values it already has across the vault, most used first, and choosing one replaces the value. When nothing matches what you typed, it also offers `✏️ <property>: use "<what you typed>"`.
+- A checkbox, number, date or datetime property that is not set shows one row with its name, which opens its own picker.
+
+With nothing typed, each property shows at most five values, followed by `… N more, type to filter`, which types the property's prefix for you. Once you type, every matching row is shown. After you choose a value the picker reopens with what you typed, so the value you just chose shows up at the top as set and you can keep going.
+
+![Set properties after typing "joan": Joan Puig is now set and marked as changed, and the status property offers to use "joan" as a new value](docs/images/set-properties-search.png)
+
+A property's own picker marks its current value `✓` and ends with `🗑️ Clear`, which removes the property. Escape returns to the main picker without changing that property, and the changes you already made there are kept.
+
+- A checkbox offers `true` and `false`.
+- A number offers `✏️ Use "<what you typed>"` for a number, then the numbers the property already has in the vault, most used first.
+- A date offers "Use" for a date typed as `YYYYMMDD` or `YYYY-MM-DD`, then Today, Tomorrow, Next Monday and In a week, and is saved as `YYYY-MM-DD`.
+- A datetime offers "Use" for `YYYYMMDD HHmm`, `YYYY-MM-DD HH:mm` or `YYYY-MM-DDTHH:mm`, then Now, and is saved as `YYYY-MM-DDTHH:mm`.
+
+![The value picker of a date property, with Today, Tomorrow, Next Monday, In a week and Clear](docs/images/set-properties-date.png)
+
+Link properties never offer the note in focus, notes in the property's excluded folders, or notes with `archived: true`. The picker only links notes that already exist, so to link a new note, make it first with "Create note".
+
+## Create note
+
+"Create note" makes a new note that belongs to one of your link properties, so that property offers it from then on. It works with or without a note in focus, and it neither opens the new note nor links it from the note in focus.
+
+It works in two steps. The first picker, "Create a note for…", has one row per enabled link or links property that has "Allow creating notes" switched on, with the folder the note will go to beside it, or `vault root`.
+
+![The first step of Create note, listing the people, collections and category properties with the folder each one creates notes in](docs/images/create-note-choose.png)
+
+Choosing a row opens the second prompt, where you type the name of the new note. A usable name shows a single row, `➕ Create "<name>" in <folder>`, and choosing it creates the note and says where, as in `Created "Ada Lovelace" in samples/people.` Escape goes back to the first step.
+
+![The second step of Create note, offering to create "Ada Lovelace" in samples/people](docs/images/create-note-name.png)
+
+A name with characters Obsidian cannot use in a file name is refused with a message saying so. A name that any note in the vault already has, in any folder and ignoring case, is refused too, as in `"Ann" already exists at people/Ann.md.`, because a second note with that name would make `[[Ann]]` links ambiguous. Choosing one of these rows keeps the prompt open with what you typed.
+
+The new note goes in the source's folder when the property offers notes from a folder. Otherwise it goes in the property's "Folder" under "Create notes", and when that is empty, where Obsidian puts new notes.
+
+When the property has a "Template", the note starts from it. If the Templater plugin is enabled, Templater creates the note, so its `<% %>` commands run; if Templater fails, nothing more is done. Without Templater, the template's content is copied, `{{title}}` becomes the note's name, and `{{date}}` and `{{time}}` become the current date and time in the formats set in the core Templates plugin, `YYYY-MM-DD` and `HH:mm` by default. `{{date:FORMAT}}` and `{{time:FORMAT}}` use the format given.
+
+Finally, the note joins the property's source, so it shows up in that property's list straight away. For a "Links to note" source, a link to that note is added at the end of the body unless the content already links there. For a property condition, the note gets the property the condition asks for, such as `true` for "is true", the value for "is", or a list with the value for "has item".
+
+Only sources that can hold a new note qualify: notes in a folder, notes linking to a note, notes modified today, and property conditions that give a value to write, such as "is true", "is", "has item", or "is set" on a checkbox. The relation sources and conditions such as "greater than" cannot, and the "Allow creating notes" switch explains why when it is disabled. When no property qualifies, the command says "No link property can create notes."
 
 ## Settings
 
-Settings fit a narrow window and work the same on mobile. The first group, "Display", holds "Show prefixes", which is on by default. Turning it off removes the prefix from every picker row, in Jump to note, Set properties and Create note, and leaves it out of what typing matches. Link rows in Set properties then name the property they write as their value instead, as in `✓ Marta Vidal · people` or `Joan Puig · people`, and the `… N more, type to filter` row types the property name. The settings rows lose their prefix chips and the list and property pages hide their "Prefix" and "Prefix colour" fields, but the prefixes and their colours stay saved, so turning the setting back on restores them.
+Settings fit a narrow window and work the same on mobile. They are split into four parts: "Display", the "Jump to note" lists, "Date notes" and the "Set properties" list.
 
-Under "Jump to note", which picks a note related to the one in focus, there is one row per list, in the order the picker shows them. Each row shows the list's prefix and what it lists, and says "off" when the list is hidden from the picker. The prefix sits in a muted chip at the start of the row, or as a faint `prefix` chip when it is empty. The chips in one list share the width of its widest chip, so the row names line up. Click the chip, or focus it and press Enter, to edit the prefix in place. A colour swatch and a "Remove colour" button sit beside the text while you edit, and the chip previews the colour as you pick it. Enter or clicking away saves both, and Escape leaves both unchanged. Drag a row to reorder the lists, delete it to remove the list, or use "Add list" to add one; a new list starts switched off, so it stays out of the picker until you open it and fill it in.
+![The settings tab, with the Jump to note lists, the Date notes source and the Set properties list, each row with a prefix chip, a switch, a pencil and a delete button](docs/images/settings.png)
 
-Opening a row shows the list's page. "Enabled" shows or hides the list, "Prefix" sets the text each of its rows starts with, "Prefix colour" tints its chip in the pickers and settings, "Remove prefix colour" brings back the plain grey chip, and "Source" chooses what it lists: adjacent dates, outbound links, inbound links, same day, notes with a property, notes linking to a note, notes in a folder, or notes modified today. The default lists are the four relations, with the prefixes `📅 day`, `🔗 out`, `🔗 in` and `🔅 ctx`. The chip provides the spacing a separator used to, so a prefix saved with a trailing `|` loses it when settings load.
+### Display
 
-A "Links to note" list asks for a note and lists the notes that link to it, in their text or in a property. An "In folder" list asks for a folder and lists the notes in it and in its subfolders. A "Modified today" list asks for nothing and lists the notes changed since midnight.
+"Show prefixes" is on by default. Turning it off removes the prefix from every row in all three pickers and leaves it out of what typing matches. Link rows in "Set properties" then show the property they write instead, as in `✓ Marta Vidal · people`. The settings hide the prefix chips and the prefix fields too, but your prefixes and colours stay saved, so turning the setting back on restores them.
+
+### Lists and properties
+
+"Jump to note" and "Set properties" are both lists of rows, and their rows work the same way. Each row shows its prefix chip and what it lists or writes, such as `status is active` or `people · links`.
+
+- Drag the handle on the left to reorder the rows. The order is the order of the picker.
+- Use the switch to show or hide a row in the picker without losing its setup.
+- Use the pencil to open the row's page, and the cross to delete it.
+- Use the `+` in the section header to add a row. A new row starts switched off, so it stays out of the picker until you fill it in and switch it on.
+
+To edit a prefix, click its chip, or focus it and press Enter. A colour swatch and a reset button appear beside the text, and the chip previews the colour as you pick it. Enter or clicking away saves both the text and the colour, and Escape leaves both unchanged. An empty prefix shows as a faint `prefix` chip.
+
+![A prefix chip being edited in place, with its colour swatch and reset button beside it](docs/images/settings-prefix-edit.png)
+
+### List pages
+
+A list's page has "Enabled", "Prefix", "Prefix colour" and "Remove prefix colour", then "Source", which chooses what the list holds: adjacent dates, outbound links, inbound links, same day, notes with a property, notes linking to a note, notes in a folder, or notes modified today.
 
 A property list asks for the property, suggesting the vault's properties with their types, then a condition offered for that type:
 
@@ -42,77 +146,53 @@ A property list asks for the property, suggesting the vault's properties with th
 - Number properties can be equal to, less than or greater than a number, or be set.
 - Date properties can be on, before or after a fixed date, today, or a number of days ago or from now, or be set. A relative date is worked out each time the picker opens.
 
-"Is not set" also matches a property left blank. If a property later changes type, its list keeps the old condition and its page says the condition no longer applies; the list shows nothing until you pick a new one. Lists saved by an earlier version with an "equals" condition on a number, checkbox or date property show it as "(does not apply)" in the same way, until you edit it.
+"Is not set" also matches a property left blank.
 
-The "Date notes" section's "Read from" row chooses where the formats come from, and its description says what each period is read from. "Automatic" uses the Periodic Notes plugin when it is enabled, then the core Daily notes plugin, then the plugin's own Custom formats. Daily notes covers days only, so the other periods come from Custom. Whenever a period comes from Custom, a pencil on the row opens its formats, where you set each period's folder and format, as a [Moment format](https://momentjs.com/docs/#/displaying/format/), and switch it on or off. By default every period lives in `on/`, as `2024-03-05`, `2024-W10`, `2024-03` and `2024`, with quarters such as `2024-Q1` switched off.
+### Property pages
 
-## Set properties
+A property's page has "Enabled", "Prefix" and "Prefix colour" as on a list's page, then "Property" and "Type". "Property" suggests the vault's properties with their types, and picking one sets the type to match: checkbox, number, date and datetime keep theirs, lists and tags become links, and anything else becomes text. "Type" can be checkbox, text, number, date, datetime, link for one note, or links for several, and stays disabled until a property is chosen.
 
-The "Set properties" command edits the properties of the markdown note in focus from one picker, and only appears in the command palette when such a note has focus. It replaces the Templater script that set a note's flags and links.
+![The page of the people links property, offering notes that link to Person, excluding the templates folder, and creating new notes in samples/people from a template](docs/images/settings-property.png)
 
-The main picker sets values directly. Its first two rows are always `🏁 Save & close` and `🛑 Cancel`. Nothing is written until you choose "Save & close", which writes only the properties you changed, and Escape or "Cancel" discards every change.
+A link or links property has three more sections:
 
-Next come the values the note will be saved with, each marked `✓`: one row per linked note, showing its title, and one row for a checkbox, text, number or date with the value beside it. A value is listed once even when several properties in the settings write it, such as the default `related` rows. A value you changed is also marked `•`. Choosing a set link or text removes it, so a links property loses that one note, while choosing a set checkbox, number or date opens its own picker.
+- "Offer notes from" chooses the notes the picker offers, with the same sources as a jump list.
+- "Excluded folders" lists folders whose notes are never offered. The `+` in its header adds a folder, each row can be deleted, and an empty row excludes nothing.
+- "Create notes" decides whether the property appears in "Create note". "Allow creating notes" switches it on, "Folder" sets where new notes go, and "Template" sets the note new notes start from.
 
-Then each enabled property in settings order offers what it can add:
+Several rows may write the same property, such as the default `related` rows with different sources. They share one value, and the first enabled row decides its type. A row warns you when two rows for one property disagree on type.
 
-- A link or links property lists the notes from its source that are not set yet, as `<prefix> <note>`, most recently modified first. Choosing one adds it to links, or replaces the note a link holds. Links are saved as a list such as `["[[Alice]]", "[[Bob]]"]`, and links the property already holds that the source does not offer are kept.
-- A text property lists the values it already has in the vault, most used first. Choosing one replaces the value. While you type something no value matches, it also offers `✏️ <prefix> <property>: use "<what you typed>"`.
-- A checkbox, number, date or datetime property that is not set shows one row, `<prefix> <property>`, which opens its own picker.
+## Tips
 
-With nothing typed, each property shows at most five values, followed by `<prefix> … N more, type to filter`, which types the prefix for you. Once you type, every matching row is shown. After you choose a value the picker reopens with what you typed, so the note you just picked shows up at the top as set.
+- Give the three commands hotkeys you can press without looking. The plugin is built around opening a picker, typing a few letters and pressing Enter.
+- Keep prefixes short, such as an emoji and a three or four letter tag like `👤 peop` or `📅 due`. All chips share the width of the widest one, so one long prefix pushes every name to the right.
+- Use colours to group related lists, such as one colour for all your people and company lists and another for project lists, so you can tell them apart at a glance.
+- Type a prefix tag to narrow a picker towards one list, such as `peop` for the people rows in "Set properties".
+- Use a "Links to note" source as a lightweight tag. Create a note such as `Person` and point the people property at "Links to note: Person". Every note created through "Create note" for that property gets a link to `Person`, so it shows up in the list without you tagging it by hand.
+- Add your templates folder to "Excluded folders" on every link property, so template notes are never offered as values.
+- Turn "Show prefixes" off for a minimal look once you know your lists. Link rows then name their property instead.
+- In "Set properties", Escape in a value picker only steps back to the main picker. The changes you already made are kept until you choose "Save & close" or "Cancel".
 
-The picker only links notes that already exist. To link a new note, make it first with "Create note" and then run "Set properties".
+## Known behaviour
 
-A property's own picker marks its current value `✓`, ends with `🗑️ Clear`, which removes the property, and returns to the main picker on Escape without changing anything.
-
-- A checkbox offers `true` and `false`, so it can now be saved as `false`.
-- A number offers `✏️ Use "<what you typed>"` for a number and the numbers the property already has in the vault, most used first.
-- A date offers "Use" for a date typed as `YYYYMMDD` or `YYYY-MM-DD`, then Today, Tomorrow, Next Monday and In a week, and is saved as `YYYY-MM-DD`. A date with a time offers "Use" for `YYYYMMDD HHmm`, `YYYY-MM-DD HH:mm` or `YYYY-MM-DDTHH:mm`, then Now, and is saved as `YYYY-MM-DDTHH:mm`.
-
-Link properties never offer the note in focus, notes in the property's excluded folders or notes with `archived: true`. Rows read in columns: marks and action icons such as `🏁` and `🛑` sit in their own column, the prefix shows as a muted chip, the name follows it, and a value follows the name in muted text after a `·`. "Jump to note" draws its rows the same way, without the mark column.
-
-Its settings sit under "Set properties", after the jump lists, as one list of typed properties. Each row reads `<property> · <type>` after its prefix chip, or "New property" until a property is chosen, and works like a jump list row: click the chip to edit the prefix, switch it on or off, drag it to reorder the picker, delete it, or use "Add property", which adds a checkbox switched off. Several rows may write the same property, such as the default `related` rows with different sources; they share one value, and the first enabled row decides its type. A row says so when two rows for one property disagree on type.
-
-Opening a row shows the property's page: "Enabled", "Prefix", "Prefix colour" as on a list's page, "Property", which suggests the vault's properties with their types, and "Type", which can be checkbox, text, number, date, datetime, link for one note or links for several. Picking a property from the suggestions sets its type from the vault's: checkbox, number, date and datetime keep theirs, lists and tags become links, and anything else becomes text. "Type" stays disabled until a property is chosen. A link or links property also has "Offer notes from", the same source a jump list has, then "Excluded folders", a list of folders whose notes are never offered: the `+` in its header adds a folder row and each row can be deleted, while an empty row excludes nothing. Its last section, "Create notes", decides whether the property appears in the "Create note" command. "Allow creating notes" switches that on; it is disabled, with the reason beside it, for a source that cannot hold a new note, such as a relation source or a condition with no value to write. Once it is on, "Folder" sets where new notes go, except for an "In folder" source, whose folder decides, and "Template" sets the note a new note starts from. Templater runs the template when it is enabled; otherwise `{{title}}`, `{{date}}` and `{{time}}` are filled in as the core Templates plugin does. Left empty, the folder is where Obsidian puts new notes, and the note still gets the link or property its source needs. The defaults are a checkbox each for active, someday, evergreen, blocked and archived, and links for people, trackers, collections, the category, evergreen and active notes, companies and notes modified today, all leaving out `templates` and none allowing note creation.
-
-Settings saved by an earlier version move to this list when they load: each flag becomes a checkbox with the flags prefix, and each link list becomes a links property, or a link property in single mode, keeping its id, prefix, source and property and leaving out the old templates folder. A link property saved with a single left-out folder keeps it as its only excluded folder, and one saved before "Allow creating notes" existed has it on only when it set a new note folder or template.
-
-## Create note
-
-The "Create note" command makes a new note that belongs to one of the link properties from "Set properties", so that property offers it from then on. It works with or without a note in focus, and it neither opens the new note nor links it anywhere.
-
-It works in two steps. The first picker, "Create a note for…", has one row per enabled link or links property with "Allow creating notes" on whose source can hold a new note: notes in a folder, notes linking to a note, notes modified today, and property lists whose condition gives a value to write, such as "is true", "is", "has item", or "is set" on a checkbox. The relation sources and conditions such as "greater than" have no row. Several rows writing the same property, like the default `related` rows, each get their own row because their sources differ. Each row reads `<prefix> <property>` with the folder the note will go to beside it, or `vault root`, and typing filters the rows as in the other pickers. When no property qualifies, the command says "No link property can create notes." instead of opening the picker.
-
-Choosing a row opens the second prompt, "Name of the new <property> note…", which shows a single row for what you type. With nothing typed it reads `Type a name`. A name with characters Obsidian cannot use in a file name, or a name any note in the vault already has, ignoring folder and case, gets a row saying so, as in `"Ann" already exists at people/Ann.md.`, because a second note with that name would make `[[Ann]]` links ambiguous. Choosing one of these rows keeps the prompt open with what you typed. A usable name reads `➕ <prefix> Create "<name>" in <folder>`, and Escape goes back to the first picker.
-
-Choosing it creates the note and says where, as in `Created "John" in people.`; if a note already exists at that path, it is left untouched and the command says so. The note goes in the source's folder for an "In folder" source, otherwise in the property's "Folder" under "Create notes", otherwise where Obsidian puts new notes. It then joins the source: it links to the source's note at the end of its body, unless its content already links there, or it gets the property its condition asks for, such as `true` for "is true", the value for "is" or a list with the value for "has item".
-
-When the property has a "Template" under "Create notes" and the Templater plugin is enabled, Templater creates the note from it, so its `<% %>` commands run, and the link or property is added afterwards. If Templater fails, nothing more is done. Without Templater, the template's content is copied and `{{title}}` becomes the note's name, while `{{date}}` and `{{time}}` become the current date and time in the formats set in the core Templates plugin, `YYYY-MM-DD` and `HH:mm` by default, and `{{date:FORMAT}}` or `{{time:FORMAT}}` use the format given, as the core plugin does.
-
-## Differences from the Templater script
-
-The command runs without an editor, so it works from any view. The category column is gone, because the prefix already says which list a row came from. The lists and their prefixes are configurable in settings instead of being fixed in the script.
-
-## Installation
-
-Once the plugin is listed in the community browser, open Settings → Community plugins → Browse, search for Note Launcher, then install and enable it.
-
-To install it by hand, download `main.js`, `manifest.json` and `styles.css` from a release, put them in `<vault>/.obsidian/plugins/note-launcher/`, and enable Note Launcher under Settings → Community plugins. It needs Obsidian 1.13.0 or later and runs on both desktop and mobile.
+- A day format containing `/`, such as `YYYY/MM/DD`, never matches, because a note's name is compared without its folders.
+- With the default formats, notes named after a year in the date notes folder, such as `on/2024`, count as year notes. Switch the year period off in the Custom formats if you keep other notes named that way in that folder.
+- If a property changes type, a list filtering on it keeps its old condition and shows nothing until you pick a new one. Its row and page say that the condition no longer applies.
+- "Create note" never touches an existing note. If a note already exists at the path it would create, it is left alone and the command says so.
 
 ## Development
 
 ```bash
-npm install
+npm ci
 npm run dev
 npm run build
-npm run lint
 npm test
+npm run lint
 ```
 
-`npm run dev` rebuilds on every change, `npm run build` typechecks and writes the production bundle, and `npm test` runs the unit tests.
+`npm run dev` rebuilds on every change, `npm run build` typechecks and writes the production bundle, `npm test` runs the unit tests, and `npm run lint` runs the same Obsidian lint rules the community review applies.
 
-Install into a test vault by symlinking the repository itself, so the plugin always loads the build `npm run dev` just wrote:
+To try the plugin in a test vault, symlink the repository into its plugins folder, so the vault always loads the build `npm run dev` just wrote:
 
 ```bash
 ln -s "$PWD" "<vault>/.obsidian/plugins/note-launcher"
@@ -120,4 +200,4 @@ ln -s "$PWD" "<vault>/.obsidian/plugins/note-launcher"
 
 ## License
 
-[MIT](LICENSE).
+MIT, see [LICENSE](LICENSE).
