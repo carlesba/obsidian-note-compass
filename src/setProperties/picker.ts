@@ -99,7 +99,8 @@ export function orderedRows(rows: readonly PropertyRow[], state: PropertyState):
 }
 
 export function rowLabel(row: PropertyRow, state: PropertyState): string {
-	return `${isSelected(row, state) ? SELECTED_MARK : UNSELECTED_MARK} ${row.prefix} | ${row.name}`;
+	const mark = isSelected(row, state) ? SELECTED_MARK : UNSELECTED_MARK;
+	return [mark, row.prefix, row.name].filter(Boolean).join(" ");
 }
 
 export function pickerChoices(rows: readonly PropertyRow[], state: PropertyState): LabelledChoice[] {

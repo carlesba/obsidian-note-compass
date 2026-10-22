@@ -58,11 +58,11 @@ function propertyList(prefix: string, property: string, condition: Condition): N
 }
 
 function sourceList(source: ListSource): NoteList[] {
-	return [{ id: "list-1", enabled: true, prefix: "src", source }];
+	return [{ id: "list-1", enabled: true, prefix: "src |", source }];
 }
 
 const describe = (entries: { name: string; prefix: string; suffix?: string }[]) =>
-	entries.map((entry) => [entry.prefix, entry.name, entry.suffix].filter((part) => part !== undefined).join(" | "));
+	entries.map((entry) => [`${entry.prefix} ${entry.name}`, entry.suffix].filter((part) => part !== undefined).join(" | "));
 
 test("adjacent days lists the previous and next date notes with direction and date suffixes", () => {
 	const vault = fakeVault([
@@ -191,7 +191,7 @@ test("property lists match every note whether or not there is a current note", (
 		],
 		{ propertyTypes: { active: "checkbox" } },
 	);
-	const lists = [propertyList("📍 act", "active", { operator: "is true" })];
+	const lists = [propertyList("📍 act |", "active", { operator: "is true" })];
 	assert.deepEqual(describe(buildJumpList(lists, vault)), ["📍 act | a", "📍 act | b"]);
 	assert.deepEqual(describe(buildJumpList(lists, vault, vault.note("d.md"))), ["📍 act | a", "📍 act | b"]);
 });
@@ -201,7 +201,7 @@ test("without a current note only the property lists run", () => {
 		{ path: "on/2024-03-05.md", ctime: MARCH_5, links: ["linked.md"] },
 		{ path: "linked.md", ctime: MARCH_5, frontmatter: { tags: ["[[Work|work]]"] } },
 	]);
-	const lists = [...defaultSettings().lists, propertyList("💼 work", "tags", { operator: "has item", value: "Work" })];
+	const lists = [...defaultSettings().lists, propertyList("💼 work |", "tags", { operator: "has item", value: "Work" })];
 	assert.deepEqual(describe(buildJumpList(lists, vault)), ["💼 work | linked"]);
 });
 
@@ -220,8 +220,8 @@ test("the lists run in order, the first occurrence of a note wins and the curren
 	);
 	const lists = [
 		...defaultSettings().lists,
-		propertyList("📍 act", "active", { operator: "is true" }),
-		propertyList("🏠 home", "area", { operator: "is", value: "home" }),
+		propertyList("📍 act |", "active", { operator: "is true" }),
+		propertyList("🏠 home |", "area", { operator: "is", value: "home" }),
 	];
 	const entries = buildJumpList(lists, vault, vault.note("on/2024-03-05.md"));
 	assert.deepEqual(describe(entries), [
@@ -244,7 +244,7 @@ test("disabled lists are skipped", () => {
 		...list,
 		enabled: list.source.kind !== "linksOut" && list.source.kind !== "sameDay",
 	}));
-	lists.push({ ...propertyList("🏠 home", "area", { operator: "is set" }), enabled: false });
+	lists.push({ ...propertyList("🏠 home |", "area", { operator: "is set" }), enabled: false });
 	assert.deepEqual(describe(buildJumpList(lists, vault, vault.note("current.md"))), ["🔗 in  | in", "🔗 in  | out"]);
 });
 
@@ -254,7 +254,7 @@ test("the user's order decides which list owns a note", () => {
 		{ path: "shared.md", frontmatter: { area: "home" } },
 	]);
 	const linksOut = onlyList("linksOut").filter((list) => list.enabled);
-	const home = propertyList("🏠 home", "area", { operator: "is", value: "home" });
+	const home = propertyList("🏠 home |", "area", { operator: "is", value: "home" });
 	assert.deepEqual(describe(buildJumpList([...linksOut, home], vault, vault.note("current.md"))), ["🔗 out | shared"]);
 	assert.deepEqual(describe(buildJumpList([home, ...linksOut], vault, vault.note("current.md"))), ["🏠 home | shared"]);
 });
@@ -268,15 +268,15 @@ test("property lists follow the property's type and evaluate relative dates agai
 		],
 		{ propertyTypes: { due: "date" }, now: new Date(2024, 2, 9, 23, 30).getTime() },
 	);
-	const tomorrow = [propertyList("⏰ due", "Due", { operator: "on", value: { kind: "relative", days: 1 } })];
+	const tomorrow = [propertyList("⏰ due |", "Due", { operator: "on", value: { kind: "relative", days: 1 } })];
 	assert.deepEqual(describe(buildJumpList(tomorrow, vault)), ["⏰ due | due-tomorrow"]);
-	const asText = [propertyList("⏰ due", "Due", { operator: "is", value: "2024-03-09" })];
+	const asText = [propertyList("⏰ due |", "Due", { operator: "is", value: "2024-03-09" })];
 	assert.deepEqual(buildJumpList(asText, vault), []);
 });
 
 test("every property reads as text when the vault reports no types", () => {
 	const vault = fakeVault([{ path: "a.md", frontmatter: { area: "home" } }]);
-	assert.deepEqual(describe(buildJumpList([propertyList("🏠", "area", { operator: "contains", value: "om" })], vault)), ["🏠 | a"]);
+	assert.deepEqual(describe(buildJumpList([propertyList("🏠 |", "area", { operator: "contains", value: "om" })], vault)), ["🏠 | a"]);
 });
 
 test("links to note lists the notes linking to the chosen note by path or name, without the current note", () => {

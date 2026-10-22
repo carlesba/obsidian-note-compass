@@ -63,7 +63,7 @@ test("operator options keep a stored operator that the type does not offer", () 
 
 test("a row is named by its prefix and a summary of its source, and says off when disabled", () => {
 	const lists = defaultSettings().lists;
-	assert.equal(listName(lists[0]), "📅 day Adjacent dates");
+	assert.equal(listName(lists[0]), "📅 day | Adjacent dates");
 	assert.equal(listName(propertyList("favorite", { operator: "is true" })), "⭐ favorite is true");
 	assert.equal(listName(propertyList("status", { operator: "is", value: "active" })), "⭐ status is active");
 	assert.equal(listName(propertyList("rating", { operator: ">", value: 3 })), "⭐ rating > 3");
