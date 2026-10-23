@@ -81,7 +81,6 @@ function renderGroup(
 		.addOptions(FILTER_MODE_OPTIONS)
 		.setValue(group.mode)
 		.onChange((mode) => editing.change(() => writeMode(group, mode)));
-	if (parent) removeButton(headerEl, "Remove group", () => editing.change(() => removeNode(parent, group)));
 	const itemsEl = groupEl.createDiv({ cls: "note-compass-filter-items" });
 	for (const item of group.items) {
 		if (item.kind === "group") renderGroup(itemsEl, item, depth + 1, group, editing);
@@ -90,6 +89,11 @@ function renderGroup(
 	const actionsEl = groupEl.createDiv({ cls: "note-compass-filter-actions" });
 	addButton(actionsEl, "+ Add condition", () => editing.change(() => addCondition(group)));
 	if (canAddGroup(depth)) addButton(actionsEl, "+ Add group", () => editing.change(() => addGroup(group)));
+	if (parent) {
+		addButton(actionsEl, "Remove group", () => editing.change(() => removeNode(parent, group))).buttonEl.addClass(
+			"note-compass-filter-remove-group",
+		);
+	}
 }
 
 function renderRule(parentEl: HTMLElement, rule: FilterRule, group: FilterGroup, editing: FilterEditing): void {
@@ -237,9 +241,10 @@ function numberInput(parentEl: HTMLElement, value: number, edit: TextEdit, min?:
 	text.inputEl.step = "1";
 }
 
-function addButton(parentEl: HTMLElement, label: string, onClick: () => void): void {
+function addButton(parentEl: HTMLElement, label: string, onClick: () => void): ButtonComponent {
 	const button = new ButtonComponent(parentEl).setButtonText(label).setClass("note-compass-filter-add").onClick(onClick);
 	keepFocusOnPress(button.buttonEl);
+	return button;
 }
 
 function removeButton(parentEl: HTMLElement, tooltip: string, onClick: () => void): void {
