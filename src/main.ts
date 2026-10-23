@@ -3,7 +3,7 @@ import { createNoteFromEntries } from "./createNote/modal";
 import { buildJumpList } from "./lists/jumpList";
 import { createObsidianVault } from "./lists/obsidianVault";
 import type { VaultNote } from "./lists/vault";
-import { JumpModal } from "./modal";
+import { JumpModal, SET_PROPERTIES_ICON } from "./modal";
 import { setProperties } from "./setProperties/modal";
 import { JumpSettings, defaultSettings, mergeSettings } from "./settings";
 import { NoteCompassSettingTab } from "./settingsTab";
@@ -25,7 +25,7 @@ export default class NoteCompassPlugin extends Plugin {
 		this.addCommand({
 			id: "set-properties",
 			name: "Set properties",
-			icon: "sliders-horizontal",
+			icon: SET_PROPERTIES_ICON,
 			checkCallback: (checking) => {
 				const target = this.currentNote();
 				if (!target) return false;
@@ -58,7 +58,9 @@ export default class NoteCompassPlugin extends Plugin {
 			new Notice("No notes to jump to.");
 			return;
 		}
-		new JumpModal(this.app, entries, this.settings.showPrefixes).open();
+		new JumpModal(this.app, entries, this.settings.showPrefixes, (note) =>
+			setProperties(this.app, createObsidianVault(this.app), this.settings, note),
+		).open();
 	}
 
 	private currentNote(): VaultNote | undefined {
