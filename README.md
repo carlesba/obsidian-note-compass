@@ -43,9 +43,9 @@ The other lists do not depend on the note in focus:
 - Links to note lists the notes that link to a chosen note, in their text or in a property.
 - In folder lists the notes in a folder and its subfolders.
 - Modified today lists the notes changed since midnight.
-- Current date notes lists the date notes for today, this week, this month, this quarter and this year, each one you switch on, when the note exists. They keep that order instead of being sorted by name, and each row says which period it is, such as `this week - week 10`.
+- Current date notes lists the date notes for today, this week, this month, this quarter and this year, each one you switch on. They keep that order instead of being sorted by name, and each row says which period it is, such as `this week - week 10`. A note that does not exist yet shows as `create this week`, and choosing it creates and opens it the way your date notes plugin does, with the same template: Periodic Notes, or core Daily notes for days. Periods that come from the Custom formats start as an empty note. A link property on this source only offers the notes that exist.
 
-Each note appears once, under the first list that holds it, and the note in focus is left out. Within a list the notes are sorted by name. When no list has any note, the command says "No notes to jump to." instead of opening an empty picker.
+A note appears under every list that holds it, in the order of your lists, and the note in focus is left out. Within a list the notes are sorted by name. When no list has any note, the command says "No notes to jump to." instead of opening an empty picker.
 
 Every row starts with its list's prefix, shown as a small chip so it stays apart from the name. All chips in a picker share the width of the widest one, up to about twelve characters, so the names line up, and a list with a prefix colour tints its chips. A date note adds its period after the name: the weekday for a day note, `week N` for a week note, `month - <Month>` for a month note and `year` for a year note.
 

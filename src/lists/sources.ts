@@ -5,6 +5,7 @@ import type { JumpListVault, MomentDate, VaultNote } from "./vault";
 export interface ListedNote {
 	file: VaultNote;
 	direction?: string;
+	missing?: Period;
 }
 
 export function adjacentDateNotes(vault: JumpListVault, current: VaultNote, dateNotes: ResolvedDateNotes): ListedNote[] {
@@ -39,8 +40,10 @@ export function currentPeriodNotes(
 	const listed: ListedNote[] = [];
 	for (const period of periods) {
 		const path = currentDatePath(dateNotes, period, today);
+		if (path === undefined) continue;
 		const file = notes.find((note) => note.path === path);
 		if (file) listed.push({ file, direction: CURRENT_PERIOD_LABELS[period] });
+		else listed.push({ file: unsavedNote(path), direction: `create ${CURRENT_PERIOD_LABELS[period]}`, missing: period });
 	}
 	return listed;
 }
@@ -89,6 +92,10 @@ export function notesModifiedSince(vault: JumpListVault, since: number): ListedN
 		.notes()
 		.filter((note) => vault.mtime(note.path) >= since)
 		.map((file) => ({ file }));
+}
+
+function unsavedNote(path: string): VaultNote {
+	return { path, basename: path.split("/").pop()?.replace(/\.md$/, "") ?? path, ctime: 0 };
 }
 
 function notesAtPaths(vault: JumpListVault, paths: string[]): ListedNote[] {

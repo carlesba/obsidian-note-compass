@@ -50,6 +50,7 @@ function pickableNotes(
 		.map((folder) => folder.trim().replace(/^\/+|\/+$/g, ""))
 		.filter((folder) => folder !== "");
 	return buildJumpList([list], vault, target, settings.dateNotes)
+		.filter((listed) => listed.missing === undefined)
 		.map((listed) => listed.file)
 		.filter(
 			(file) =>

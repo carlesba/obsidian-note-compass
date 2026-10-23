@@ -1,4 +1,5 @@
-import { App, SuggestModal } from "obsidian";
+import { App, Notice, SuggestModal } from "obsidian";
+import { createDateNote } from "./lists/openDateNote";
 import type { JumpListEntry } from "./lists/vault";
 import { RESULTS_CLASS, entryLabel, entryParts, matchesInOrder, renderRow } from "./render";
 
@@ -31,6 +32,10 @@ export class JumpModal extends SuggestModal<JumpListEntry> {
 	}
 
 	onChooseSuggestion(entry: JumpListEntry): void {
+		if (entry.missing) {
+			createDateNote(this.app, entry, entry.missing).catch(() => new Notice(`Could not create "${entry.name}".`));
+			return;
+		}
 		const file = this.app.vault.getFileByPath(entry.file.path);
 		if (file) void this.app.workspace.getLeaf(false).openFile(file);
 	}

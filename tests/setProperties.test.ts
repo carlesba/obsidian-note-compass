@@ -352,3 +352,15 @@ test("clearing deletes the key and unchanged properties are not written", () => 
 	assert.deepEqual(written(initial, cleared, saved), { status: "doing", active: true });
 	assert.deepEqual(written(initial, withValue(pickerState(initial), "status", "doing"), {}), {});
 });
+
+test("a link property on current date notes offers only the date notes that exist", () => {
+	const source = { kind: "currentPeriods", periods: ["day", "month"] } as const;
+	const settings = defaultSettings();
+	settings.setProperties.properties = [entry("period", "links", { source: { ...source, periods: [...source.periods] } })];
+	const vault = fakeVault([...vaultNotes(), { path: "on/2024-03.md" }]);
+	const [offered] = offeredEntries(settings, vault, vault.note("Today.md"));
+	assert.deepEqual(
+		offered.notes.map((note) => note.path),
+		["on/2024-03.md"],
+	);
+});
