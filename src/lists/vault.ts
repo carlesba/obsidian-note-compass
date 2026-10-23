@@ -1,3 +1,10 @@
+import type { DateNoteSource, Period } from "./dateNotes";
+
+export interface MissingDateNote {
+	period: Period;
+	from: DateNoteSource;
+}
+
 export interface VaultNote {
 	path: string;
 	basename: string;
@@ -63,4 +70,5 @@ export interface JumpListEntry {
 	prefixColor?: string;
 	name: string;
 	suffix?: string;
+	missing?: MissingDateNote;
 }

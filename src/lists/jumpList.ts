@@ -55,9 +55,9 @@ export function buildJumpList(
 			keepsOrder: list.source.kind === "currentPeriods",
 		}));
 
-	const seen = new Set<string>(current ? [current.path] : []);
 	const entries: JumpListEntry[] = [];
 	for (const list of lists) {
+		const seen = new Set<string>(current ? [current.path] : []);
 		for (const listed of list.keepsOrder ? list.notes : [...list.notes].sort(byName)) {
 			if (seen.has(listed.file.path)) continue;
 			seen.add(listed.file.path);
@@ -101,6 +101,7 @@ function toEntry(vault: JumpListVault, dateNotes: ResolvedDateNotes, list: Prefi
 	const entry: JumpListEntry = { file: listed.file, prefix: list.prefix, name };
 	if (list.prefixColor !== undefined) entry.prefixColor = list.prefixColor;
 	if (suffix) entry.suffix = suffix;
+	if (listed.missing) entry.missing = { period: listed.missing, from: dateNotes.from };
 	return entry;
 }
 

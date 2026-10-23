@@ -206,7 +206,7 @@ test("without a current note only the property lists run", () => {
 	assert.deepEqual(describe(buildJumpList(lists, vault)), ["💼 work linked"]);
 });
 
-test("the lists run in order, the first occurrence of a note wins and the current note never appears", () => {
+test("the lists run in order, a note appears in every list that holds it and the current note never appears", () => {
 	const vault = fakeVault(
 		[
 			{ path: "on/2024-03-05.md", ctime: MARCH_5, links: ["on/2024-03-06.md", "zed.md", "on/2024-03-05.md"] },
@@ -227,10 +227,17 @@ test("the lists run in order, the first occurrence of a note wins and the curren
 	const entries = buildJumpList(lists, vault, vault.note("on/2024-03-05.md"));
 	assert.deepEqual(describe(entries), [
 		"📅 day 2024-03-06 | next day - Wednesday",
+		"🔗 out 2024-03-06 | Wednesday",
 		"🔗 out zed",
 		"🔗 in backlink",
+		"🔗 in zed",
 		"🔅 ctx same-day",
+		"🔅 ctx zed",
 		"📍 act active",
+		"📍 act same-day",
+		"📍 act zed",
+		"🏠 home active",
+		"🏠 home backlink",
 		"🏠 home home",
 	]);
 });
@@ -249,15 +256,15 @@ test("disabled lists are skipped", () => {
 	assert.deepEqual(describe(buildJumpList(lists, vault, vault.note("current.md"))), ["🔗 in in", "🔗 in out"]);
 });
 
-test("the user's order decides which list owns a note", () => {
+test("a note held by two lists appears under each, in the user's order", () => {
 	const vault = fakeVault([
 		{ path: "current.md", links: ["shared.md"] },
 		{ path: "shared.md", frontmatter: { area: "home" } },
 	]);
 	const linksOut = onlyList("linksOut").filter((list) => list.enabled);
 	const home = propertyList("🏠 home", "area", { operator: "is", value: "home" });
-	assert.deepEqual(describe(buildJumpList([...linksOut, home], vault, vault.note("current.md"))), ["🔗 out shared"]);
-	assert.deepEqual(describe(buildJumpList([home, ...linksOut], vault, vault.note("current.md"))), ["🏠 home shared"]);
+	assert.deepEqual(describe(buildJumpList([...linksOut, home], vault, vault.note("current.md"))), ["🔗 out shared", "🏠 home shared"]);
+	assert.deepEqual(describe(buildJumpList([home, ...linksOut], vault, vault.note("current.md"))), ["🏠 home shared", "🔗 out shared"]);
 });
 
 test("property lists follow the property's type and evaluate relative dates against the clock", () => {
@@ -350,13 +357,14 @@ test("each entry carries its list's prefix colour, and lists without one leave i
 		[
 			["Alpha", "#e0a030"],
 			["Beta", "#e0a030"],
+			["Beta", undefined],
 		],
 	);
 	const inbound = buildJumpList([lists[1]], vault, vault.note("current.md"));
 	assert.deepEqual(inbound.map((entry) => "prefixColor" in entry), [false]);
 });
 
-test("current date notes lists the chosen periods' notes for today, in period order, when they exist", () => {
+test("current date notes lists the chosen periods' notes for today in period order, offering to create the missing ones", () => {
 	const vault = fakeVault([
 		{ path: "on/2024.md" },
 		{ path: "on/2024-03.md" },
@@ -365,13 +373,27 @@ test("current date notes lists the chosen periods' notes for today, in period or
 		{ path: "on/2024-03-08.md" },
 		{ path: "notes/elsewhere.md" },
 	]);
+	const dateNotes = defaultDateNoteSettings();
+	dateNotes.custom.quarter.enabled = true;
 	const all = sourceList({ kind: "currentPeriods", periods: ["day", "week", "month", "quarter", "year"] });
-	assert.deepEqual(describe(buildJumpList(all, vault)), [
+	const entries = buildJumpList(all, vault, undefined, dateNotes);
+	assert.deepEqual(describe(entries), [
 		"src 2024-03-09 | today - Saturday",
 		"src 2024-W10 | this week - week 10",
 		"src 2024-03 | this month - month - March",
+		"src 2024-Q1 | create this quarter - quarter 1",
 		"src 2024 | this year - year",
 	]);
+	assert.deepEqual(
+		entries.map((entry) => [entry.file.path, entry.missing]),
+		[
+			["on/2024-03-09.md", undefined],
+			["on/2024-W10.md", undefined],
+			["on/2024-03.md", undefined],
+			["on/2024-Q1.md", { period: "quarter", from: "custom" }],
+			["on/2024.md", undefined],
+		],
+	);
 	const chosen = sourceList({ kind: "currentPeriods", periods: ["month"] });
 	assert.deepEqual(describe(buildJumpList(chosen, vault, vault.note("notes/elsewhere.md"))), [
 		"src 2024-03 | this month - month - March",
