@@ -47,7 +47,7 @@ export default class NoteCompassPlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 
-	private openJumpModal(): void {
+	private openJumpModal(query = ""): void {
 		const entries = buildJumpList(
 			this.settings.lists,
 			createObsidianVault(this.app),
@@ -58,9 +58,9 @@ export default class NoteCompassPlugin extends Plugin {
 			new Notice("No notes to jump to.");
 			return;
 		}
-		new JumpModal(this.app, entries, this.settings.showPrefixes, (note) =>
-			setProperties(this.app, createObsidianVault(this.app), this.settings, note),
-		).open();
+		new JumpModal(this.app, entries, this.settings.showPrefixes, (note, typed) =>
+			setProperties(this.app, createObsidianVault(this.app), this.settings, note, () => this.openJumpModal(typed)),
+		).openWithQuery(query);
 	}
 
 	private currentNote(): VaultNote | undefined {
