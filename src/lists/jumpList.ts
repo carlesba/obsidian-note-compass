@@ -1,9 +1,8 @@
 import type { ListSource, NoteList } from "../settings";
-import { propertyType } from "./conditions.ts";
 import { defaultDateNoteSettings, resolveDateNotes } from "./dateNotes.ts";
 import type { DateNoteSettings, ResolvedDateNotes } from "./dateNotes.ts";
 import { dateNoteSuffix, parseDateNote } from "./dates.ts";
-import { matchesCondition } from "./matchers.ts";
+import { filterNotes } from "./filters.ts";
 import {
 	adjacentDateNotes,
 	currentPeriodNotes,
@@ -47,7 +46,7 @@ export function buildJumpList(
 		today: vault.moment(vault.now()).startOf("day"),
 	};
 	const lists: PrefixedList[] = noteLists
-		.filter((list) => list.enabled)
+		.filter((list) => list.enabled && list.source.kind !== "unreadable")
 		.map((list) => ({
 			prefix: list.prefix,
 			prefixColor: list.prefixColor,
@@ -69,13 +68,8 @@ export function buildJumpList(
 
 function sourceNotes(source: ListSource, context: ListContext): ListedNote[] {
 	const { vault, current, dateNotes } = context;
-	if (source.kind === "frontmatter") {
-		const check = { ...source, type: propertyType(context.propertyTypes, source.property), today: context.today };
-		return vault
-			.notes()
-			.filter((note) => matchesCondition(vault.frontmatter(note.path), check))
-			.map((file) => ({ file }));
-	}
+	if (source.kind === "filter") return filterNotes(source.filter, context).map((file) => ({ file }));
+	if (source.kind === "unreadable") return [];
 	if (source.kind === "linksToNote") return notesLinkingTo(vault, source.note);
 	if (source.kind === "inFolder") return notesInFolder(vault, source.folder);
 	if (source.kind === "modifiedToday") return notesModifiedSince(vault, context.today.valueOf());

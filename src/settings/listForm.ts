@@ -1,27 +1,23 @@
-import {
-	CONDITIONS_BY_TYPE,
-	DATE_OPERATORS,
-	NUMBER_OPERATORS,
-	TEXT_OPERATORS,
-	VALUELESS_OPERATORS,
-	conditionAppliesTo,
-	propertyType,
-} from "../lists/conditions.ts";
-import type { Condition, ConditionOperator, DateValue, PropertyType } from "../lists/conditions.ts";
+import { CONDITIONS_BY_TYPE, DATE_OPERATORS, NUMBER_OPERATORS, TEXT_OPERATORS, conditionAppliesTo, propertyType } from "../lists/conditions.ts";
+import type { ConditionOperator, PropertyType } from "../lists/conditions.ts";
 import { PERIODS } from "../lists/dateNotes.ts";
 import type { Period } from "../lists/dateNotes.ts";
+import { emptyFilter } from "../lists/filters.ts";
 import type { JumpListVault } from "../lists/vault.ts";
 import { RELATION_SOURCE_KINDS, newListId, writePrefixColor } from "../settings.ts";
 import type { ListSource, NoteList } from "../settings.ts";
+import { filterSummary, inapplicableFilter } from "./filterForm.ts";
 
-export type SourceChoice = ListSource["kind"];
+export type SourceChoice = Exclude<ListSource["kind"], "unreadable">;
+
+export const UNREADABLE_LIST_WARNING = "This list can't be read by this version of Note Compass. Remove it and build a new one.";
 
 export const SOURCE_OPTIONS: Record<SourceChoice, string> = {
 	adjacentDates: "Adjacent dates",
 	linksOut: "Outbound links",
 	linksIn: "Inbound links",
 	sameDay: "Same day",
-	frontmatter: "Property",
+	filter: "Filter",
 	linksToNote: "Links to note",
 	inFolder: "In folder",
 	modifiedToday: "Modified today",
@@ -55,14 +51,6 @@ export type ListField =
 	| "prefix"
 	| "prefixColor"
 	| "source"
-	| "property"
-	| "operator"
-	| "text"
-	| "number"
-	| "dateMode"
-	| "date"
-	| "days"
-	| "direction"
 	| "note"
 	| "folder"
 	| CurrentPeriodField;
@@ -74,14 +62,12 @@ export interface PropertySuggestion {
 	type: PropertyType;
 }
 
-type PropertySource = Extract<ListSource, { kind: "frontmatter" }>;
-
 type CurrentPeriodsSource = Extract<ListSource, { kind: "currentPeriods" }>;
 
 const FIXED_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export function newList(lists: readonly NoteList[]): NoteList {
-	return { id: newListId(lists), enabled: false, prefix: "", source: propertySource() };
+	return { id: newListId(lists), enabled: false, prefix: "", source: { kind: "filter", filter: emptyFilter() } };
 }
 
 export function listName(list: NoteList): string {
@@ -98,34 +84,17 @@ export function sourceSummary(source: ListSource): string {
 		if (source.periods.length === 0) return "No date notes chosen";
 		return source.periods.map((period, index) => (index === 0 ? CURRENT_PERIOD_NAMES[period] : CURRENT_PERIOD_NAMES[period].toLowerCase())).join(", ");
 	}
-	if (source.kind !== "frontmatter") return SOURCE_OPTIONS[source.kind];
-	if (source.property.trim() === "") return "Property not chosen";
-	const { condition } = source;
-	return "value" in condition
-		? `${source.property} ${condition.operator} ${describeValue(condition.value)}`
-		: `${source.property} ${condition.operator}`;
-}
-
-export function fitConditionToProperty(list: NoteList, types: Record<string, string>): void {
-	if (list.source.kind !== "frontmatter" || list.source.property === "") return;
-	const type = propertyType(types, list.source.property);
-	if (conditionAppliesTo(list.source.condition.operator, type)) return;
-	list.source.condition = conditionFor(CONDITIONS_BY_TYPE[type][0], list.source.condition);
-}
-
-export function hasProperty(list: NoteList): boolean {
-	return list.source.kind === "frontmatter" && list.source.property !== "";
+	if (source.kind === "filter") return filterSummary(source.filter);
+	if (source.kind === "unreadable") return "Unreadable list";
+	return SOURCE_OPTIONS[source.kind];
 }
 
 export function listDisplayValue(list: NoteList): string {
-	return list.enabled ? "" : "off";
+	return list.enabled && list.source.kind !== "unreadable" ? "" : "off";
 }
 
 export function inapplicableCondition(source: ListSource, types: Record<string, string>): string | undefined {
-	if (source.kind !== "frontmatter") return undefined;
-	const type = propertyType(types, source.property);
-	if (conditionAppliesTo(source.condition.operator, type)) return undefined;
-	return `"${source.condition.operator}" does not apply to a ${type} property, so this list matches nothing until you change the condition.`;
+	return source.kind === "filter" ? inapplicableFilter(source.filter, types) : undefined;
 }
 
 export function operatorOptions(type: PropertyType, current?: ConditionOperator): Record<string, string> {
@@ -175,20 +144,7 @@ export function readListField(list: NoteList, field: ListField): unknown {
 		const period = currentPeriodOf(field);
 		return period === undefined ? undefined : source.periods.includes(period);
 	}
-	if (source.kind !== "frontmatter") return undefined;
-	const { condition } = source;
-	if (field === "property") return source.property;
-	if (field === "operator") return condition.operator;
-	if (!("value" in condition)) return undefined;
-	const { value } = condition;
-	if (field === "text") return typeof value === "string" ? value : undefined;
-	if (field === "number") return typeof value === "number" ? value : undefined;
-	if (typeof value !== "object") return undefined;
-	if (field === "dateMode") return value.kind;
-	if (field === "date") return value.kind === "fixed" ? value.date : "";
-	const days = value.kind === "relative" ? value.days : 0;
-	if (field === "days") return Math.abs(days);
-	return days < 0 ? "ago" : days > 0 ? "fromNow" : "today";
+	return undefined;
 }
 
 export function writeListField(list: NoteList, field: ListField, value: unknown): void {
@@ -199,7 +155,6 @@ export function writeListField(list: NoteList, field: ListField, value: unknown)
 	else if (field === "note" && list.source.kind === "linksToNote") list.source.note = typeof value === "string" ? value.trim() : "";
 	else if (field === "folder" && list.source.kind === "inFolder") list.source.folder = typeof value === "string" ? value.trim() : "";
 	else if (list.source.kind === "currentPeriods") writeCurrentPeriod(list.source, field, value);
-	else if (list.source.kind === "frontmatter") writeConditionField(list.source, field, value);
 }
 
 function currentPeriodOf(field: ListField): Period | undefined {
@@ -217,64 +172,15 @@ export function fixedDateError(value: string): string | undefined {
 	return "Write the date as YYYY-MM-DD.";
 }
 
-function writeConditionField(source: PropertySource, field: ListField, value: unknown): void {
-	const { condition } = source;
-	if (field === "property") source.property = typeof value === "string" ? value.trim() : "";
-	else if (field === "operator" && typeof value === "string") source.condition = conditionFor(value, condition);
-	else if (field === "text" && typeof value === "string" && includes(TEXT_OPERATORS, condition.operator)) {
-		source.condition = { operator: condition.operator, value };
-	} else if (field === "number" && typeof value === "number" && Number.isFinite(value) && includes(NUMBER_OPERATORS, condition.operator)) {
-		source.condition = { operator: condition.operator, value };
-	} else if (includes(DATE_OPERATORS, condition.operator) && "value" in condition && typeof condition.value === "object") {
-		source.condition = { operator: condition.operator, value: dateFor(condition.value, field, value) };
-	}
-}
-
-function dateFor(date: DateValue, field: ListField, value: unknown): DateValue {
-	const days = date.kind === "relative" ? date.days : 0;
-	if (field === "dateMode") return value === "fixed" ? { kind: "fixed", date: "" } : { kind: "relative", days: 0 };
-	if (field === "date" && typeof value === "string" && date.kind === "fixed") return { kind: "fixed", date: value.trim() };
-	if (field === "days" && typeof value === "number" && Number.isInteger(value) && value >= 1 && date.kind === "relative") {
-		return { kind: "relative", days: days < 0 ? -value : value };
-	}
-	if (field === "direction" && date.kind === "relative") {
-		const count = Math.max(1, Math.abs(days));
-		return { kind: "relative", days: value === "ago" ? -count : value === "fromNow" ? count : 0 };
-	}
-	return date;
-}
-
 function sourceFor(kind: unknown, current: ListSource): ListSource {
 	if (kind === current.kind) return current;
-	if (kind === "frontmatter") return propertySource();
+	if (kind === "filter") return { kind, filter: emptyFilter() };
 	if (kind === "linksToNote") return { kind, note: "" };
 	if (kind === "inFolder") return { kind, folder: "" };
 	if (kind === "modifiedToday") return { kind };
 	if (kind === "currentPeriods") return { kind, periods: [...PERIODS] };
 	const relation = RELATION_SOURCE_KINDS.find((choice) => choice === kind);
 	return relation ? { kind: relation } : current;
-}
-
-function conditionFor(operator: string, previous: Condition): Condition {
-	const kept = "value" in previous ? previous.value : undefined;
-	if (includes(TEXT_OPERATORS, operator)) return { operator, value: typeof kept === "string" ? kept : "" };
-	if (includes(NUMBER_OPERATORS, operator)) return { operator, value: typeof kept === "number" ? kept : 0 };
-	if (includes(DATE_OPERATORS, operator)) {
-		return { operator, value: typeof kept === "object" ? kept : { kind: "relative", days: 0 } };
-	}
-	return includes(VALUELESS_OPERATORS, operator) ? { operator } : previous;
-}
-
-function propertySource(): PropertySource {
-	return { kind: "frontmatter", property: "", condition: { operator: "is set" } };
-}
-
-function describeValue(value: string | number | DateValue): string {
-	if (typeof value !== "object") return String(value);
-	if (value.kind === "fixed") return value.date;
-	if (value.days === 0) return "today";
-	const days = Math.abs(value.days) === 1 ? "1 day" : `${Math.abs(value.days)} days`;
-	return value.days < 0 ? `${days} ago` : `${days} from now`;
 }
 
 function includes<T extends string>(values: readonly T[], value: string): value is T {

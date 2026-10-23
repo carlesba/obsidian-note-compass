@@ -43,6 +43,10 @@ export function propertyType(types: Record<string, string>, property: string): P
 	return isPropertyType(type) ? type : "text";
 }
 
+export function isDateCondition(condition: Condition): condition is DateCondition {
+	return includes(DATE_OPERATORS, condition.operator);
+}
+
 export function readCondition(stored: unknown): Condition | undefined {
 	if (!isRecord(stored) || typeof stored.operator !== "string") return undefined;
 	const { operator, value } = stored;

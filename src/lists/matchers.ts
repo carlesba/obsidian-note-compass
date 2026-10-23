@@ -1,5 +1,5 @@
 import { FIXED_DATE_FORMAT, conditionAppliesTo } from "./conditions.ts";
-import type { Condition, DateValue, PropertyType } from "./conditions.ts";
+import type { Condition, DateCondition, DateValue, PropertyType } from "./conditions.ts";
 import type { Frontmatter, MomentDate } from "./vault";
 
 export interface PropertyCheck {
@@ -38,6 +38,10 @@ export function matchesCondition(frontmatter: Frontmatter | undefined, check: Pr
 		case "after":
 			return compareDay(property, condition.operator, targetDay(condition.value, check.today));
 	}
+}
+
+export function matchesDay(day: string, condition: DateCondition, today: MomentDate): boolean {
+	return compareDay(day, condition.operator, targetDay(condition.value, today));
 }
 
 function isEmpty(property: unknown): boolean {

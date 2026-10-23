@@ -39,6 +39,7 @@ export type MomentFactory = (input?: number | string, format?: string, strict?: 
 export interface JumpListVault {
 	notes(): VaultNote[];
 	frontmatter(path: string): Frontmatter | undefined;
+	tags(path: string): string[];
 	updateFrontmatter(path: string, update: (frontmatter: Frontmatter) => void): Promise<void>;
 	linksFrom(path: string): string[];
 	linksTo(path: string): string[];

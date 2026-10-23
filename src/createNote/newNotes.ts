@@ -1,4 +1,6 @@
 import { propertyType } from "../lists/conditions.ts";
+import { filterRules } from "../lists/filters.ts";
+import type { FilterGroup, FilterRule, PropertyRule } from "../lists/filters.ts";
 import { findNote } from "../lists/sources.ts";
 import type { Frontmatter, JumpListVault, MomentDate, NewNoteVault, VaultNote } from "../lists/vault";
 import type { EditableProperty, ListSource } from "../settings";
@@ -37,10 +39,11 @@ export function newNoteRule(source: ListSource | undefined, vault: JumpListVault
 		}
 		case "modifiedToday":
 			return {};
-		case "frontmatter": {
-			if (source.property === "") return undefined;
-			const value = satisfyingValue(source, propertyType(vault.propertyTypes(), source.property));
-			return value === undefined ? undefined : { property: { name: source.property, value } };
+		case "filter": {
+			const rule = soleTopLevelRule(source.filter);
+			if (rule?.kind !== "property" || rule.property === "") return undefined;
+			const value = satisfyingValue(rule, propertyType(vault.propertyTypes(), rule.property));
+			return value === undefined ? undefined : { property: { name: rule.property, value } };
 		}
 		default:
 			return undefined;
@@ -57,13 +60,30 @@ export function noteCreationBlocker(source: ListSource, propertyTypes: Record<st
 			return undefined;
 		case "currentPeriods":
 			return "it lists the date notes for the current periods";
-		case "frontmatter":
-			if (source.property === "") return "choose a property first";
-			if (satisfyingValue(source, propertyType(propertyTypes, source.property)) !== undefined) return undefined;
-			return `"${source.condition.operator}" gives no value to write into a new note`;
+		case "filter":
+			return filterCreationBlocker(source.filter, propertyTypes);
+		case "unreadable":
+			return "this version of Note Compass can't read its source";
 		default:
 			return "it lists notes by how they relate to the note in focus";
 	}
+}
+
+function filterCreationBlocker(filter: FilterGroup, propertyTypes: Record<string, string>): string | undefined {
+	if (filterRules(filter).length === 0) return "add a condition first";
+	if (filter.mode !== "all") return 'only an "All of the following" filter can decide what a new note needs';
+	const rule = soleTopLevelRule(filter);
+	if (rule === undefined) return "a filter with more than one condition, or with groups, can't decide what a new note needs";
+	if (rule.kind !== "property") return "only a property condition can decide what a new note needs";
+	if (rule.property === "") return "choose a property first";
+	if (satisfyingValue(rule, propertyType(propertyTypes, rule.property)) !== undefined) return undefined;
+	return `"${rule.condition.operator}" gives no value to write into a new note`;
+}
+
+function soleTopLevelRule(filter: FilterGroup): FilterRule | undefined {
+	const [only, ...rest] = filter.items;
+	if (filter.mode !== "all" || only === undefined || rest.length > 0 || only.kind === "group") return undefined;
+	return only;
 }
 
 export function isCreatableName(name: string): boolean {
@@ -133,8 +153,8 @@ function coreTemplateFormats(options: unknown): { date: string; time: string } {
 	return { date: read("dateFormat", DEFAULT_DATE_FORMAT), time: read("timeFormat", DEFAULT_TIME_FORMAT) };
 }
 
-function satisfyingValue(source: Extract<ListSource, { kind: "frontmatter" }>, type: string): unknown {
-	const { condition } = source;
+function satisfyingValue(rule: PropertyRule, type: string): unknown {
+	const { condition } = rule;
 	if (condition.operator === "is true") return true;
 	if (condition.operator === "is" && "value" in condition) return condition.value;
 	if (condition.operator === "has item" && "value" in condition) return [condition.value];

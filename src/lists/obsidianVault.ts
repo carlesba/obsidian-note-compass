@@ -1,4 +1,4 @@
-import { TFile, moment } from "obsidian";
+import { TFile, getAllTags, moment } from "obsidian";
 import type { App, TFolder } from "obsidian";
 import type { JumpListVault, MomentFactory, NewNoteVault, NoteTemplater, PropertyValueCount } from "./vault";
 
@@ -18,6 +18,11 @@ export function createObsidianVault(app: App): JumpListVault & NewNoteVault {
 		frontmatter: (path) => {
 			const file = app.vault.getFileByPath(path);
 			return file ? app.metadataCache.getFileCache(file)?.frontmatter : undefined;
+		},
+		tags: (path) => {
+			const file = app.vault.getFileByPath(path);
+			const cache = file ? app.metadataCache.getFileCache(file) : null;
+			return cache ? getAllTags(cache) ?? [] : [];
 		},
 		updateFrontmatter: async (path, update) => {
 			const file = app.vault.getFileByPath(path);

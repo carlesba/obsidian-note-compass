@@ -5,7 +5,7 @@ import { createObsidianVault } from "./lists/obsidianVault";
 import type { VaultNote } from "./lists/vault";
 import { JumpModal, SET_PROPERTIES_ICON } from "./modal";
 import { setProperties } from "./setProperties/modal";
-import { JumpSettings, defaultSettings, mergeSettings } from "./settings";
+import { JumpSettings, defaultSettings, mergeSettings, storedSettings } from "./settings";
 import { NoteCompassSettingTab } from "./settingsTab";
 
 export default class NoteCompassPlugin extends Plugin {
@@ -44,7 +44,7 @@ export default class NoteCompassPlugin extends Plugin {
 	}
 
 	async saveSettings(): Promise<void> {
-		await this.saveData(this.settings);
+		await this.saveData(storedSettings(this.settings));
 	}
 
 	private openJumpModal(query = ""): void {

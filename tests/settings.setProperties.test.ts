@@ -22,6 +22,7 @@ function fakeVault(frontmatter: Record<string, Frontmatter>, propertyTypes: Reco
 	return {
 		notes: () => Object.keys(frontmatter).map((path) => ({ path, basename: path.replace(/\.md$/, ""), ctime: 0 })),
 		frontmatter: (path) => frontmatter[path],
+		tags: () => [],
 		updateFrontmatter: async () => {},
 		linksFrom: () => [],
 		linksTo: () => [],
@@ -192,14 +193,8 @@ test("source keys edit a link property's source with the jump list's form", () =
 	const key = (field: Parameters<typeof propertySourceKey>[1]) => propertySourceKey("list-4", field);
 	assert.equal(readControl(settings, key("source")), "inFolder");
 	assert.equal(readControl(settings, key("folder")), "categories");
-	writeControl(settings, key("source"), "frontmatter");
-	writeControl(settings, key("property"), "tracker");
-	writeControl(settings, key("operator"), "is true");
-	assert.deepEqual(settings.setProperties.properties[8].source, {
-		kind: "frontmatter",
-		property: "tracker",
-		condition: { operator: "is true" },
-	});
+	writeControl(settings, key("source"), "filter");
+	assert.deepEqual(settings.setProperties.properties[8].source, { kind: "filter", filter: { kind: "group", mode: "all", items: [] } });
 	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(settings))).setProperties, settings.setProperties);
 });
 

@@ -1,6 +1,6 @@
 # Note Compass
 
-Note Compass adds three commands that work from anywhere in Obsidian, with or without an editor open. "Jump to note" opens one picker with the notes related to the note in focus, such as its adjacent date notes and the notes it links to, alongside lists you define by property, folder or link. "Set properties" edits the properties of the note in focus from a single picker. "Create note" makes a new note that already belongs to one of your link properties, so the other two commands offer it from then on.
+Note Compass adds three commands that work from anywhere in Obsidian, with or without an editor open. "Jump to note" opens one picker with the notes related to the note in focus, such as its adjacent date notes and the notes it links to, alongside lists you define with filters on properties, folders, tags, links and dates. "Set properties" edits the properties of the note in focus from a single picker. "Create note" makes a new note that already belongs to one of your link properties, so the other two commands offer it from then on.
 
 ![The Set properties picker, with Save & close and Cancel at the top, the note's current values marked with a check, and more values to add below](docs/images/set-properties.png)
 
@@ -39,7 +39,7 @@ The picker shows the lists you set up under "Jump to note" in settings, in the o
 
 The other lists do not depend on the note in focus:
 
-- Notes with a property lists the notes whose property meets a condition, such as `status is active` or `project has item Website`.
+- Filter lists the notes that match a set of conditions, such as `status is active`, notes tagged `#project`, or notes in `work` modified in the last week. The conditions can be grouped, as described under "List pages".
 - Links to note lists the notes that link to a chosen note, in their text or in a property.
 - In folder lists the notes in a folder and its subfolders.
 - Modified today lists the notes changed since midnight.
@@ -110,13 +110,13 @@ The new note goes in the source's folder when the property offers notes from a f
 
 When the property has a "Template", the note starts from it. If the Templater plugin is enabled, Templater creates the note, so its `<% %>` commands run; if Templater fails, nothing more is done. Without Templater, the template's content is copied, `{{title}}` becomes the note's name, and `{{date}}` and `{{time}}` become the current date and time in the formats set in the core Templates plugin, `YYYY-MM-DD` and `HH:mm` by default. `{{date:FORMAT}}` and `{{time:FORMAT}}` use the format given.
 
-Then the note joins the property's source, so it shows up in that property's list straight away. For a "Links to note" source, a link to that note is added at the end of the body unless the content already links there. For a property condition, the note gets the property the condition asks for, such as `true` for "is true", the value for "is", or a list with the value for "has item". Finally, the new note opens in the current tab. When a note with that name already exists, nothing is created and nothing opens.
+Then the note joins the property's source, so it shows up in that property's list straight away. For a "Links to note" source, a link to that note is added at the end of the body unless the content already links there. For a filter with a single property condition, the note gets the property the condition asks for, such as `true` for "is true", the value for "is", or a list with the value for "has item". Finally, the new note opens in the current tab. When a note with that name already exists, nothing is created and nothing opens.
 
-Only sources that can hold a new note qualify: notes in a folder, notes linking to a note, notes modified today, and property conditions that give a value to write, such as "is true", "is", "has item", or "is set" on a checkbox. The relation sources and conditions such as "greater than" cannot, and the "Allow creating notes" switch explains why when it is disabled. When no property qualifies, the command says "No link property can create notes."
+Only sources that can hold a new note qualify: notes in a folder, notes linking to a note, notes modified today, and filters made of a single property condition under "All of the following" that gives a value to write, such as "is true", "is", "has item", or "is set" on a checkbox. The relation sources, filters with more than one condition or with groups, and conditions such as "greater than" cannot, and the "Allow creating notes" switch explains why when it is disabled. When no property qualifies, the command says "No link property can create notes."
 
 ## Settings
 
-Settings fit a narrow window and work the same on mobile. They are split into four parts: "Display", the "Jump to note" lists, "Date notes" and the "Set properties" list.
+Settings fit a narrow window and work the same on mobile. They are split into four parts: "Display", the "Jump to note" lists, "Date notes" and the "Set properties" list, followed by "Reset all settings".
 
 ![The settings tab, with the Jump to note lists, the Date notes source and the Set properties list, each row with a prefix chip, a switch, a pencil and a delete button](docs/images/settings.png)
 
@@ -133,15 +133,31 @@ Settings fit a narrow window and work the same on mobile. They are split into fo
 - Use the pencil to open the row's page, and the cross to delete it.
 - Use the `+` in the section header to add a row. A new row starts switched off, so it stays out of the picker until you fill it in and switch it on.
 
+A row this version of Note Compass cannot read, such as one saved by a newer version, stays in the list with a warning: "This list can't be read by this version of Note Compass. Remove it and build a new one." Its switch is off and disabled and it has no pencil, so it never adds notes to a picker or to "Create note", but its saved setup is kept as it was until you delete it.
+
 To edit a prefix, click its chip, or focus it and press Enter. A colour swatch and a reset button appear beside the text, and the chip previews the colour as you pick it. Enter or clicking away saves both the text and the colour, and Escape leaves both unchanged. An empty prefix shows as a faint `prefix` chip.
 
 ![A prefix chip being edited in place, with its colour swatch and reset button beside it](docs/images/settings-prefix-edit.png)
 
 ### List pages
 
-A list's page has "Enabled", "Prefix" and "Prefix colour", whose circular arrow removes the colour, then "Source", which chooses what the list holds: adjacent dates, outbound links, inbound links, same day, notes with a property, notes linking to a note, notes in a folder, notes modified today, or current date notes. Current date notes has one switch per period, from "Today" to "This year".
+A list's page has "Enabled", "Prefix" and "Prefix colour", whose circular arrow removes the colour, then "Source", which chooses what the list holds: adjacent dates, outbound links, inbound links, same day, a filter, notes linking to a note, notes in a folder, notes modified today, or current date notes. Current date notes has one switch per period, from "Today" to "This year".
 
-A property list asks for the property, suggesting the vault's properties with their types, then a condition offered for that type:
+A filter works like the filters in Obsidian Bases. It is a group of conditions that starts with "All of the following", "Any of the following" or "None of the following", so a note is listed when it matches every condition, at least one, or none of them. "+ Add condition" adds a condition to the group, and "+ Add group" adds a group inside it with its own choice, such as notes in `projects` that are tagged `#client` or have `status is active`. Groups can sit inside groups up to three levels deep, counting the filter itself, and each condition or inner group has a button that removes it. A new filter has no conditions and lists nothing until you add one, and an empty group inside a filter is left out of the matching.
+
+Each condition starts by choosing what it looks at:
+
+- Property checks a property against a condition offered for its type, as described below.
+- Folder matches the notes in a folder and its subfolders.
+- Tag matches the notes with a tag in their properties or their text. A tag also matches its subtags, so `project` matches `#project/website`, and the case and a leading `#` do not matter.
+- Links to note matches the notes that link to a chosen note, in their text or in a property.
+- Created and Modified compare the day the note was created or last changed with a fixed date or one relative to today, using on, before or after.
+
+A list's row shows the filter's only condition, such as `status is active` or `Tagged project`, or counts its conditions, as in `All of 3 conditions`.
+
+Lists saved by earlier versions as "Notes with a property" open as a filter with that one property condition, and they list the same notes as before.
+
+A property condition asks for the property, suggesting the vault's properties with their types, then a condition offered for that type:
 
 - Checkbox properties can be true, false, set or not set. "Is false" needs an explicit `false`.
 - Text properties can be equal to a value, contain it, be set or not set.
@@ -165,6 +181,10 @@ A link or links property has three more sections:
 
 Several rows may write the same property, such as the default `related` rows with different sources. They share one value, and the first enabled row decides its type. A row warns you when two rows for one property disagree on type.
 
+### Reset all settings
+
+"Reset all settings", at the bottom of the settings, puts every list, property and option back to the defaults. It asks first, and Cancel or Escape leaves everything as it was. The reset cannot be undone.
+
 ## Tips
 
 - Give the three commands hotkeys you can press without looking. The plugin is built around opening a picker, typing a few letters and pressing Enter.
@@ -180,7 +200,7 @@ Several rows may write the same property, such as the default `related` rows wit
 
 - A day format containing `/`, such as `YYYY/MM/DD`, never matches, because a note's name is compared without its folders.
 - With the default formats, notes named after a year in the date notes folder, such as `on/2024`, count as year notes. Switch the year period off in the Custom formats if you keep other notes named that way in that folder.
-- If a property changes type, a list filtering on it keeps its old condition and shows nothing until you pick a new one. Its row and page say that the condition no longer applies.
+- If a property changes type, a filter condition on it keeps its old condition and matches nothing until you pick a new one. The condition, its list's row and its page say that the condition no longer applies.
 - "Create note" never touches an existing note. If a note already exists at the path it would create, it is left alone and the command says so.
 
 ## Development
