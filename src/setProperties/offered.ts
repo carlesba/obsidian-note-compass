@@ -1,6 +1,6 @@
 import { buildJumpList } from "../lists/jumpList.ts";
 import type { JumpListVault, VaultNote } from "../lists/vault";
-import { isLinkType } from "../settings.ts";
+import { isLinkType, isUnreadable } from "../settings.ts";
 import type { EditableProperty, EditablePropertyType, JumpSettings, SetPropertiesSettings } from "../settings";
 import type { PickableNote } from "./links";
 import { decidedPropertyType } from "./propertyTypes.ts";
@@ -13,7 +13,7 @@ export interface OfferedEntry {
 }
 
 export function offeredProperties(settings: SetPropertiesSettings): EditableProperty[] {
-	return settings.properties.filter((entry) => entry.enabled && entry.property.trim() !== "");
+	return settings.properties.filter((entry) => entry.enabled && entry.property.trim() !== "" && !isUnreadable(entry.source));
 }
 
 export function propertyType(settings: SetPropertiesSettings, entry: EditableProperty): EditablePropertyType {

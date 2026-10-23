@@ -1,5 +1,7 @@
 import { readCondition } from "./lists/conditions.ts";
 import type { Condition } from "./lists/conditions.ts";
+import { readFilter, singleRuleFilter } from "./lists/filters.ts";
+import type { FilterGroup } from "./lists/filters.ts";
 import { DEFAULT_CUSTOM_DATE_NOTES, PERIODS, defaultDateNoteSettings } from "./lists/dateNotes.ts";
 import type { DateNoteSettings, Period, PeriodFormat } from "./lists/dateNotes.ts";
 
@@ -9,11 +11,17 @@ export const RELATION_SOURCE_KINDS: readonly RelationSourceKind[] = ["adjacentDa
 
 export type ListSource =
 	| { kind: RelationSourceKind }
-	| { kind: "frontmatter"; property: string; condition: Condition }
+	| { kind: "filter"; filter: FilterGroup }
 	| { kind: "linksToNote"; note: string }
 	| { kind: "inFolder"; folder: string }
 	| { kind: "modifiedToday" }
-	| { kind: "currentPeriods"; periods: Period[] };
+	| { kind: "currentPeriods"; periods: Period[] }
+	| UnreadableSource;
+
+export interface UnreadableSource {
+	kind: "unreadable";
+	stored: unknown;
+}
 
 export interface NoteList {
 	id: string;
@@ -118,19 +126,39 @@ function defaultLinkListFields(): Omit<LinkList, "id" | "enabled">[] {
 		{ prefix: "📂 catg", source: { kind: "inFolder", folder: "categories" }, property: "category", mode: "single" },
 		{
 			prefix: "🏷️ ever",
-			source: { kind: "frontmatter", property: "evergreen", condition: { operator: "is true" } },
+			source: propertyFilter("evergreen", { operator: "is true" }),
 			property: "related",
 			mode: "multi",
 		},
 		{
 			prefix: "📍 actv",
-			source: { kind: "frontmatter", property: "active", condition: { operator: "is true" } },
+			source: propertyFilter("active", { operator: "is true" }),
 			property: "related",
 			mode: "multi",
 		},
 		{ prefix: "🏢 comp", source: { kind: "linksToNote", note: "Org 🏢" }, property: "related", mode: "multi" },
 		{ prefix: "🔅 tday", source: { kind: "modifiedToday" }, property: "related", mode: "multi" },
 	];
+}
+
+function propertyFilter(property: string, condition: Condition): ListSource {
+	return { kind: "filter", filter: singleRuleFilter({ kind: "property", property, condition }) };
+}
+
+export function isUnreadable(source: ListSource | undefined): source is UnreadableSource {
+	return source?.kind === "unreadable";
+}
+
+export function storedSettings(settings: JumpSettings): unknown {
+	return {
+		...settings,
+		lists: settings.lists.map(withStoredSource),
+		setProperties: { ...settings.setProperties, properties: settings.setProperties.properties.map(withStoredSource) },
+	};
+}
+
+function withStoredSource(entry: { source?: ListSource }): object {
+	return isUnreadable(entry.source) ? { ...entry, source: entry.source.stored } : entry;
 }
 
 export function defaultSettings(): JumpSettings {
@@ -206,8 +234,7 @@ function readProperties(stored: unknown[]): EditableProperty[] {
 		if (!isRecord(entry) || typeof entry.property !== "string") continue;
 		const type = EDITABLE_PROPERTY_TYPES.find((candidate) => candidate === entry.type);
 		if (!type) continue;
-		const source = isLinkType(type) ? readSource(entry.source) : undefined;
-		if (isLinkType(type) && !source) continue;
+		const source = isLinkType(type) ? readSourceOrKeep(entry.source) : undefined;
 		const id =
 			typeof entry.id === "string" && entry.id !== "" && !properties.some((property) => property.id === entry.id)
 				? entry.id
@@ -270,9 +297,9 @@ function readLists<Fields extends object>(
 	const lists: (NoteList & Fields)[] = [];
 	for (const entry of stored) {
 		if (!isRecord(entry)) continue;
-		const source = readSource(entry.source);
+		const source = readSourceOrKeep(entry.source);
 		const fields = readFields(entry);
-		if (!source || !fields) continue;
+		if (!fields) continue;
 		const id =
 			typeof entry.id === "string" && entry.id !== "" && !lists.some((list) => list.id === entry.id)
 				? entry.id
@@ -290,6 +317,10 @@ function readLists<Fields extends object>(
 	return lists;
 }
 
+function readSourceOrKeep(stored: unknown): ListSource {
+	return readSource(stored) ?? { kind: "unreadable", stored };
+}
+
 function readSource(stored: unknown): ListSource | undefined {
 	if (!isRecord(stored) || typeof stored.kind !== "string") return undefined;
 	const kind = RELATION_SOURCE_KINDS.find((relation) => relation === stored.kind);
@@ -301,9 +332,13 @@ function readSource(stored: unknown): ListSource | undefined {
 	}
 	if (stored.kind === "linksToNote") return typeof stored.note === "string" ? { kind: "linksToNote", note: stored.note } : undefined;
 	if (stored.kind === "inFolder") return typeof stored.folder === "string" ? { kind: "inFolder", folder: stored.folder } : undefined;
+	if (stored.kind === "filter") {
+		const filter = readFilter(stored.filter);
+		return filter ? { kind: "filter", filter } : undefined;
+	}
 	if (stored.kind !== "frontmatter" || typeof stored.property !== "string") return undefined;
 	const condition = readCondition(stored.condition);
-	return condition ? { kind: "frontmatter", property: stored.property, condition } : undefined;
+	return condition ? propertyFilter(stored.property, condition) : undefined;
 }
 
 function migrateLegacyLists(data: Record<string, unknown>): NoteList[] {
@@ -328,7 +363,7 @@ function migrateLegacyLists(data: Record<string, unknown>): NoteList[] {
 		const toCondition = LEGACY_OPERATORS[legacy.operator];
 		const value = typeof legacy.value === "string" ? legacy.value : "";
 		const prefix = typeof legacy.prefix === "string" ? legacy.prefix.trim() : "";
-		add(true, prefix, { kind: "frontmatter", property: legacy.property, condition: toCondition(value) });
+		add(true, prefix, propertyFilter(legacy.property, toCondition(value)));
 	}
 	return lists;
 }

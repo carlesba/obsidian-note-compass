@@ -1,4 +1,3 @@
-import { AbstractInputSuggest, setIcon } from "obsidian";
 import type {
 	App,
 	Setting,
@@ -10,30 +9,26 @@ import type {
 	SettingDefinitionRender,
 	SettingGroupItem,
 } from "obsidian";
-import { propertyType } from "../lists/conditions";
 import type { Period } from "../lists/dateNotes";
 import { noteCreationBlocker } from "../createNote/newNotes";
-import { isLinkType } from "../settings";
-import type { EditableProperty, NoteList } from "../settings";
+import { isLinkType, isUnreadable } from "../settings";
+import type { EditableProperty, ListSource, NoteList } from "../settings";
 import { excludedFolderKey, listKey, propertyKey, propertySourceKey } from "./controlKeys";
 import { PERIODS } from "../lists/dateNotes";
 import {
 	CURRENT_PERIOD_FIELDS,
 	CURRENT_PERIOD_NAMES,
-	DATE_MODE_OPTIONS,
-	DIRECTION_OPTIONS,
 	SOURCE_OPTIONS,
-	fixedDateError,
-	hasProperty,
+	UNREADABLE_LIST_WARNING,
 	inapplicableCondition,
 	listDisplayValue,
 	listName,
-	matchingSuggestions,
-	operatorOptions,
 	sourceSummary,
-	valueShape,
 } from "./listForm";
-import type { ListField, PropertySuggestion, ValueShape } from "./listForm";
+import type { ListField, PropertySuggestion } from "./listForm";
+import { filterRules } from "../lists/filters";
+import { renderFilter } from "./filterEditor";
+import { PropertySuggest, warningDescription } from "./suggest";
 import {
 	PROPERTY_TYPE_OPTIONS,
 	addExcludedFolder,
@@ -86,6 +81,7 @@ interface EditableRow {
 	prefixColor?: string;
 	prefixKey: string;
 	warning?: string;
+	broken: boolean;
 	enabled: boolean;
 	enabledKey: string;
 	enabledTooltip: string;
@@ -93,30 +89,26 @@ interface EditableRow {
 	editTooltip: string;
 }
 
-export class PropertySuggest extends AbstractInputSuggest<PropertySuggestion> {
-	private readonly suggestions: () => PropertySuggestion[];
-
-	constructor(app: App, inputEl: HTMLInputElement, suggestions: () => PropertySuggestion[]) {
-		super(app, inputEl);
-		this.suggestions = suggestions;
-	}
-
-	protected getSuggestions(query: string): PropertySuggestion[] {
-		return matchingSuggestions(this.suggestions(), query);
-	}
-
-	renderSuggestion(suggestion: PropertySuggestion, el: HTMLElement): void {
-		el.createDiv({ text: suggestion.name });
-		el.createDiv({ text: suggestion.type, cls: "setting-item-description" });
-	}
+export function listPage(list: NoteList, context: ListPageContext): SettingDefinitionPage {
+	const items = isUnreadable(list.source) ? [unreadableItem()] : listPageItems(list, context);
+	return pageEntry(listPageId(list), listName(list), list, context, items);
 }
 
-export function listPage(list: NoteList, context: ListPageContext): SettingDefinitionPage {
-	return pageEntry(listPageId(list), listName(list), list, context, listPageItems(list, context));
+function unreadableItem(): SettingDefinitionItem {
+	return {
+		name: "List can't be read",
+		desc: UNREADABLE_LIST_WARNING,
+		searchable: false,
+		render: (setting) => warningDescription(setting.descEl, UNREADABLE_LIST_WARNING),
+	};
+}
+
+function sourceWarning(source: ListSource, context: ListPageContext): string | undefined {
+	if (isUnreadable(source)) return UNREADABLE_LIST_WARNING;
+	return inapplicableCondition(source, context.propertyTypes) ? "Condition does not apply. Edit to see why." : undefined;
 }
 
 export function listRow(list: NoteList, context: ListPageContext): SettingDefinition {
-	const inapplicable = inapplicableCondition(list.source, context.propertyTypes);
 	return editableRow(
 		{
 			name: listName(list),
@@ -124,7 +116,8 @@ export function listRow(list: NoteList, context: ListPageContext): SettingDefini
 			prefix: list.prefix,
 			prefixColor: list.prefixColor,
 			prefixKey: listKey(list.id, "prefix"),
-			warning: inapplicable ? "Condition does not apply. Edit to see why." : undefined,
+			warning: sourceWarning(list.source, context),
+			broken: isUnreadable(list.source),
 			enabled: list.enabled,
 			enabledKey: listKey(list.id, "enabled"),
 			enabledTooltip: "Show this list in the picker",
@@ -148,6 +141,7 @@ export function propertyRow(
 			prefixColor: entry.prefixColor,
 			prefixKey: propertyKey(entry.id, "prefix"),
 			warning: propertyWarning(entry, properties, context),
+			broken: isUnreadable(entry.source),
 			enabled: entry.enabled,
 			enabledKey: propertyKey(entry.id, "enabled"),
 			enabledTooltip: "Offer this property in the picker",
@@ -163,9 +157,9 @@ function propertyWarning(
 	properties: readonly EditableProperty[],
 	context: ListPageContext,
 ): string | undefined {
+	if (isUnreadable(entry.source)) return UNREADABLE_LIST_WARNING;
 	if (mixedTypeWarning(entry, properties)) return "Type differs from another row. Edit to see why.";
-	if (!hasSource(entry) || !inapplicableCondition(entry.source, context.propertyTypes)) return undefined;
-	return "Condition does not apply. Edit to see why.";
+	return hasSource(entry) ? sourceWarning(entry.source, context) : undefined;
 }
 
 function editableRow(row: EditableRow, context: ListPageContext): SettingDefinition {
@@ -187,9 +181,11 @@ function editableRow(row: EditableRow, context: ListPageContext): SettingDefinit
 			setting.addToggle((toggle) =>
 				toggle
 					.setTooltip(row.enabledTooltip)
-					.setValue(row.enabled)
+					.setValue(row.enabled && !row.broken)
+					.setDisabled(row.broken)
 					.onChange((enabled) => context.write(row.enabledKey, enabled)),
 			);
+			if (row.broken) return stopEditing;
 			setting.addExtraButton((button) =>
 				button
 					.setIcon("pencil")
@@ -202,13 +198,6 @@ function editableRow(row: EditableRow, context: ListPageContext): SettingDefinit
 	return definition;
 }
 
-function warningDescription(descEl: HTMLElement, warning: string): void {
-	descEl.empty();
-	descEl.addClass("note-compass-warning");
-	setIcon(descEl.createSpan({ cls: "note-compass-warning-icon" }), "alert-triangle");
-	descEl.createSpan({ text: warning });
-}
-
 export function propertyPage(
 	entry: EditableProperty,
 	properties: readonly EditableProperty[],
@@ -217,7 +206,7 @@ export function propertyPage(
 	const key = (field: PropertyField) => propertyKey(entry.id, field);
 	const chosen = () => entry.property.trim() !== "";
 	const mixed = mixedTypeWarning(entry, properties);
-	const items: SettingDefinitionItem[] = [
+	const items: SettingDefinitionItem[] = isUnreadable(entry.source) ? [unreadableItem()] : [
 		{
 			name: "Type differs from another row",
 			desc: mixed,
@@ -246,7 +235,7 @@ export function propertyPage(
 			control: { type: "dropdown", disabled: () => !chosen(), key: key("type"), options: PROPERTY_TYPE_OPTIONS },
 		},
 	];
-	if (isLinkType(entry.type) && hasSource(entry)) {
+	if (isLinkType(entry.type) && hasSource(entry) && !isUnreadable(entry.source)) {
 		items.push(
 			{
 				type: "group",
@@ -261,7 +250,7 @@ export function propertyPage(
 		type: "page",
 		id: propertyPageId(entry),
 		name: propertyRowName(entry),
-		displayValue: entry.enabled ? "" : "off",
+		displayValue: entry.enabled && !isUnreadable(entry.source) ? "" : "off",
 		status: propertyWarning(entry, properties, context) ? "warning" : null,
 		items,
 	};
@@ -359,19 +348,7 @@ function sourceItems(
 	context: ListPageContext,
 	key: (field: ListField) => string,
 ): SettingGroupItem[] {
-	const property = () => (list.source.kind === "frontmatter" ? list.source : undefined);
-	const shape = (): ValueShape => valueShape(property()?.condition.operator ?? "is set");
-	const dateMode = () => {
-		const condition = property()?.condition;
-		return condition && "value" in condition && typeof condition.value === "object" ? condition.value.kind : undefined;
-	};
-	const relativeToday = () => {
-		const condition = property()?.condition;
-		return condition !== undefined && "value" in condition && typeof condition.value === "object" && condition.value.kind === "relative" && condition.value.days === 0;
-	};
-	const source = property();
-	const type = propertyType(context.propertyTypes, source?.property ?? "");
-	const inapplicable = inapplicableCondition(list.source, context.propertyTypes);
+	const filter = list.source.kind === "filter" ? list.source.filter : undefined;
 	return [
 		{ name: "Source", control: { type: "dropdown", key: key("source"), options: SOURCE_OPTIONS } },
 		{
@@ -393,45 +370,13 @@ function sourceItems(
 			control: { type: "toggle" as const, key: key(CURRENT_PERIOD_FIELDS[period]) },
 		})),
 		{
-			name: "Property",
-			desc: "Notes whose property meets the condition are listed.",
-			visible: () => property() !== undefined,
-			render: propertyInput(context, key("property"), () => property()?.property ?? "", "Status", context.propertySuggestions),
-		},
-		{
-			name: "Condition",
-			desc: hasProperty(list) ? `Conditions for a ${type} property.` : "Choose a property first.",
-			visible: () => property() !== undefined,
-			control: { type: "dropdown", disabled: () => !hasProperty(list), key: key("operator"), options: operatorOptions(type, source?.condition.operator) },
-		},
-		{
-			name: "Condition does not apply",
-			desc: inapplicable ?? "",
+			name: "Filter",
+			desc: filter && filterRules(filter).length === 0 ? "Add a condition to list notes." : "Notes that match the filter are listed.",
 			searchable: false,
-			render: (setting) => warningDescription(setting.descEl, inapplicable ?? ""),
-			visible: () => property() !== undefined && inapplicable !== undefined,
-		},
-		{ name: "Value", visible: () => shape() === "text", control: { type: "text", disabled: () => !hasProperty(list), key: key("text") } },
-		{ name: "Value", visible: () => shape() === "number", control: { type: "number", disabled: () => !hasProperty(list), key: key("number") } },
-		{
-			name: "Date",
-			visible: () => shape() === "date",
-			control: { type: "dropdown", disabled: () => !hasProperty(list), key: key("dateMode"), options: DATE_MODE_OPTIONS },
-		},
-		{
-			name: "Fixed date",
-			visible: () => shape() === "date" && dateMode() === "fixed",
-			control: { type: "text", key: key("date"), placeholder: "YYYY-MM-DD", validate: fixedDateError },
-		},
-		{
-			name: "When",
-			visible: () => shape() === "date" && dateMode() === "relative",
-			control: { type: "dropdown", key: key("direction"), options: DIRECTION_OPTIONS },
-		},
-		{
-			name: "Number of days",
-			visible: () => shape() === "date" && dateMode() === "relative" && !relativeToday(),
-			control: { type: "number", key: key("days"), min: 1, step: 1 },
+			visible: () => list.source.kind === "filter",
+			render: (setting) => {
+				if (list.source.kind === "filter") renderFilter(setting, list.source.filter, context);
+			},
 		},
 	];
 }
@@ -443,8 +388,8 @@ function pageEntry(
 	context: ListPageContext,
 	items: SettingDefinitionItem[],
 ): IdentifiedPage {
-	const inapplicable = inapplicableCondition(list.source, context.propertyTypes);
-	return { type: "page", id, name, displayValue: listDisplayValue(list), status: inapplicable ? "warning" : null, items };
+	const status = sourceWarning(list.source, context) ? "warning" : null;
+	return { type: "page", id, name, displayValue: listDisplayValue(list), status, items };
 }
 
 function propertyInput(

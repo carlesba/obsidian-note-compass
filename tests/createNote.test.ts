@@ -3,9 +3,14 @@ import { strict as assert } from "node:assert";
 import { ENTRY_PLACEHOLDER, TYPE_A_NAME, creatableEntries, entryChoices, nameChoices, namePlaceholder } from "../src/createNote/choices.ts";
 import type { NameChoice } from "../src/createNote/choices.ts";
 import { createNote, createdNotice, noteCreationBlocker } from "../src/createNote/newNotes.ts";
+import type { Condition } from "../src/lists/conditions.ts";
 import type { EditableProperty, EditablePropertyType, ListSource } from "../src/settings.ts";
 import { fakeVault } from "./fakeVault.ts";
 import type { FakeNote, FakeVaultOptions } from "./fakeVault.ts";
+
+function propertyFilter(property: string, condition: Condition): ListSource {
+	return { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "property", property, condition }] } };
+}
 
 const PERSON = { kind: "linksToNote", note: "types/Person.md" } as const;
 
@@ -60,8 +65,8 @@ test("the first step lists each link entry whose source can hold a new note with
 			entry("related", "links", { prefix: "🔅", source: { kind: "modifiedToday" }, newNoteFolder: "/crm/" }),
 			entry("related", "link", { prefix: "📁", source: { kind: "inFolder", folder: "areas" } }),
 			entry("out", "links", { prefix: "🔗", source: { kind: "linksOut" } }),
-			entry("big", "links", { source: { kind: "frontmatter", property: "rating", condition: { operator: ">", value: 3 } } }),
-			entry("flag", "links", { source: { kind: "frontmatter", property: "flag", condition: { operator: "is set" } } }),
+			entry("big", "links", { source: propertyFilter("rating", { operator: ">", value: 3 }) }),
+			entry("flag", "links", { source: propertyFilter("flag", { operator: "is set" }) }),
 			entry("missing", "links", { source: { kind: "linksToNote", note: "Nowhere" } }),
 			entry("active", "checkbox", { source: { kind: "modifiedToday" } }),
 			entry("off", "links", { enabled: false }),
@@ -114,20 +119,20 @@ test("a source that cannot create notes says why", () => {
 	assert.equal(blocker(PERSON), undefined);
 	assert.equal(blocker({ kind: "modifiedToday" }), undefined);
 	assert.equal(blocker({ kind: "inFolder", folder: "people" }), undefined);
-	assert.equal(blocker({ kind: "frontmatter", property: "done", condition: { operator: "is set" } }), undefined);
+	assert.equal(blocker(propertyFilter("done", { operator: "is set" })), undefined);
 	for (const kind of ["adjacentDates", "linksOut", "linksIn", "sameDay"] as const) {
 		assert.equal(blocker({ kind }), "it lists notes by how they relate to the note in focus");
 	}
 	assert.equal(blocker({ kind: "currentPeriods", periods: ["day"] }), "it lists the date notes for the current periods");
 	assert.equal(blocker({ kind: "inFolder", folder: " / " }), "choose a folder first");
 	assert.equal(blocker({ kind: "linksToNote", note: "" }), "choose a note first");
-	assert.equal(blocker({ kind: "frontmatter", property: "", condition: { operator: "is true" } }), "choose a property first");
+	assert.equal(blocker(propertyFilter("", { operator: "is true" })), "choose a property first");
 	assert.equal(
-		blocker({ kind: "frontmatter", property: "rating", condition: { operator: ">", value: 3 } }),
+		blocker(propertyFilter("rating", { operator: ">", value: 3 })),
 		'">" gives no value to write into a new note',
 	);
 	assert.equal(
-		blocker({ kind: "frontmatter", property: "flag", condition: { operator: "is set" } }),
+		blocker(propertyFilter("flag", { operator: "is set" })),
 		'"is set" gives no value to write into a new note',
 	);
 });
@@ -182,13 +187,13 @@ test("a created note joins the entry's source", async () => {
 	assert.equal(linked.notice, 'Created "Zed" in inbox.');
 	assert.equal((await created({ kind: "inFolder", folder: "people/" })).vault.content("people/Zed.md"), "");
 	assert.equal((await created({ kind: "modifiedToday" })).vault.content("inbox/Zed.md"), "");
-	const evergreen = await created({ kind: "frontmatter", property: "evergreen", condition: { operator: "is true" } });
+	const evergreen = await created(propertyFilter("evergreen", { operator: "is true" }));
 	assert.deepEqual(evergreen.vault.frontmatter("inbox/Zed.md"), { evergreen: true });
-	const kind = await created({ kind: "frontmatter", property: "kind", condition: { operator: "is", value: "person" } });
+	const kind = await created(propertyFilter("kind", { operator: "is", value: "person" }));
 	assert.deepEqual(kind.vault.frontmatter("inbox/Zed.md"), { kind: "person" });
-	const tags = await created({ kind: "frontmatter", property: "tags", condition: { operator: "has item", value: "people" } });
+	const tags = await created(propertyFilter("tags", { operator: "has item", value: "people" }));
 	assert.deepEqual(tags.vault.frontmatter("inbox/Zed.md"), { tags: ["people"] });
-	const done = await created({ kind: "frontmatter", property: "done", condition: { operator: "is set" } }, {}, {
+	const done = await created(propertyFilter("done", { operator: "is set" }), {}, {
 		propertyTypes: { done: "checkbox" },
 	});
 	assert.deepEqual(done.vault.frontmatter("inbox/Zed.md"), { done: true });
@@ -246,7 +251,7 @@ test("with Templater enabled a template runs through Templater and the note stil
 	assert.equal(vault.content("people/Zed.md"), "ran # Person\n\n[[types/Person]]\n");
 	assert.equal(notice, 'Created "Zed" in people.');
 	const tagged = await created(
-		{ kind: "frontmatter", property: "tags", condition: { operator: "has item", value: "people" } },
+		propertyFilter("tags", { operator: "has item", value: "people" }),
 		{ newNoteTemplate: "templates/Core.md" },
 		{ templater: { calls: [] } },
 	);
@@ -259,7 +264,7 @@ test("Templater is not used without a template and a failed Templater run stops 
 	assert.equal((await created(PERSON, {}, { templater: unused })).vault.content("inbox/Zed.md"), "[[types/Person]]\n");
 	assert.deepEqual(unused.calls, []);
 	for (const result of ["undefined", "throws"] as const) {
-		const evergreen = { kind: "frontmatter", property: "evergreen", condition: { operator: "is true" } } as const;
+		const evergreen = propertyFilter("evergreen", { operator: "is true" });
 		const failed = await created(evergreen, { newNoteTemplate: "templates/Person.md" }, { templater: { result, calls: [] } });
 		assert.equal(failed.notice, 'Templater could not create "Zed".');
 		assert.equal(failed.vault.paths().includes("inbox/Zed.md"), false);

@@ -220,3 +220,69 @@
 .is-mobile .note-compass-row-action {
 	visibility: visible;
 }
+
+.setting-item.note-compass-filter-setting {
+	flex-wrap: wrap;
+}
+
+.note-compass-filter {
+	flex-basis: 100%;
+	min-width: 0;
+	padding-top: var(--size-4-2);
+}
+
+.note-compass-filter-group,
+.note-compass-filter-items {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-2);
+	min-width: 0;
+}
+
+.note-compass-filter-group.is-nested {
+	border-inline-start: 2px solid var(--background-modifier-border);
+	padding-inline-start: var(--size-4-3);
+}
+
+.note-compass-filter-rule {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-1);
+	min-width: 0;
+}
+
+.note-compass-filter-row,
+.note-compass-filter-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--size-4-2);
+	min-width: 0;
+}
+
+.note-compass-filter-row input[type="text"],
+.note-compass-filter-row input[type="number"] {
+	flex: 1 1 8em;
+	min-width: 6em;
+}
+
+.note-compass-filter-row input.note-compass-filter-number {
+	flex: 0 1 5em;
+	min-width: 4em;
+}
+
+.note-compass-filter-row select {
+	max-width: 100%;
+}
+
+.note-compass-filter-actions button.note-compass-filter-add {
+	background: none;
+	box-shadow: none;
+	color: var(--text-muted);
+	padding-inline: var(--size-4-1);
+}
+
+.note-compass-filter-actions button.note-compass-filter-add:hover {
+	color: var(--text-normal);
+	background: var(--background-modifier-hover);
+}

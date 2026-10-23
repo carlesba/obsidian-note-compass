@@ -36,6 +36,7 @@ function fakeVault(fakes: FakeNote[], plugins: FakePlugins = {}): JumpListVault 
 	return {
 		notes: () => notes,
 		frontmatter: (path) => byPath.get(path)?.frontmatter,
+		tags: () => [],
 		updateFrontmatter: async () => {},
 		linksFrom: (path) => byPath.get(path)?.links ?? [],
 		linksTo: (path) => fakes.filter((fake) => fake.links?.includes(path)).map((fake) => fake.path),
@@ -55,7 +56,11 @@ function onlyList(kind: RelationSourceKind): NoteList[] {
 }
 
 function propertyList(prefix: string, property: string, condition: Condition): NoteList {
-	return { id: `list-${prefix}`, enabled: true, prefix, source: { kind: "frontmatter", property, condition } };
+	return { id: `list-${prefix}`, enabled: true, prefix, source: propertyFilter(property, condition) };
+}
+
+function propertyFilter(property: string, condition: Condition): ListSource {
+	return { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "property", property, condition }] } };
 }
 
 function sourceList(source: ListSource): NoteList[] {

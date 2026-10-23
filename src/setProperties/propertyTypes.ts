@@ -4,7 +4,7 @@ export function decidedPropertyType(
 	properties: readonly EditableProperty[],
 	name: string,
 ): EditablePropertyType | undefined {
-	return properties.find((entry) => entry.enabled && entry.property === name)?.type;
+	return properties.find((entry) => entry.enabled && entry.source?.kind !== "unreadable" && entry.property === name)?.type;
 }
 
 export function mixedTypeProperties(properties: readonly EditableProperty[]): string[] {

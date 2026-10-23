@@ -2,6 +2,7 @@ import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { defaultDateNoteSettings } from "../src/lists/dateNotes.ts";
 import { defaultSettings, mergeSettings, newListId } from "../src/settings.ts";
+import type { Condition } from "../src/lists/conditions.ts";
 import type { EditableProperty, EditablePropertyType, ListSource, NoteList, SetPropertiesSettings } from "../src/settings.ts";
 
 const relationLists = (enabled = [true, true, true, true]): NoteList[] => [
@@ -11,7 +12,12 @@ const relationLists = (enabled = [true, true, true, true]): NoteList[] => [
 	{ id: "list-4", enabled: enabled[3], prefix: "🔅 ctx", source: { kind: "sameDay" } },
 ];
 
-const isTrue = (property: string) => ({ kind: "frontmatter", property, condition: { operator: "is true" } }) as const;
+const isTrue = (property: string) => propertyFilter(property, { operator: "is true" });
+
+const propertyFilter = (property: string, condition: Condition): ListSource => ({
+	kind: "filter",
+	filter: { kind: "group", mode: "all", items: [{ kind: "property", property, condition }] },
+});
 
 const linksTo = (note: string) => ({ kind: "linksToNote", note }) as const;
 
@@ -107,7 +113,7 @@ test("mergeSettings migrates any one legacy key and fills the others from the ol
 	]);
 });
 
-test("mergeSettings replaces mistyped legacy fields one by one and drops unreadable link lists", () => {
+test("mergeSettings replaces mistyped legacy fields one by one and keeps unreadable link lists as broken", () => {
 	const merged = mergeSettings({
 		setProperties: {
 			flagsPrefix: 4,
@@ -121,7 +127,11 @@ test("mergeSettings replaces mistyped legacy fields one by one and drops unreada
 		},
 	});
 	assert.deepEqual(merged.setProperties, {
-		properties: [checkbox("list-2", "done"), linked("list-1", "a", { kind: "modifiedToday" }, "seen")],
+		properties: [
+			checkbox("list-4", "done"),
+			linked("list-1", "a", { kind: "modifiedToday" }, "seen"),
+			linked("list-3", "c", { kind: "unreadable", stored: { kind: "nowhere" } }, "c", "link"),
+		],
 	});
 	assert.deepEqual(mergeSettings({ setProperties: "nonsense" }).setProperties, setPropertiesDefaults());
 });
@@ -142,7 +152,7 @@ test("mergeSettings keeps properties already in the new shape untouched", () => 
 	assert.deepEqual(mergeSettings({ setProperties: { properties: [] } }).setProperties, { properties: [] });
 });
 
-test("mergeSettings drops unreadable properties, mints missing ids and keeps sources only on link types", () => {
+test("mergeSettings drops unknown properties, keeps unreadable link sources as broken, mints missing ids and keeps sources only on link types", () => {
 	const merged = mergeSettings({
 		setProperties: {
 			properties: [
@@ -155,6 +165,16 @@ test("mergeSettings drops unreadable properties, mints missing ids and keeps sou
 		},
 	});
 	assert.deepEqual(merged.setProperties.properties, [
+		{
+			id: "p-3",
+			enabled: true,
+			prefix: "c",
+			property: "c",
+			type: "links",
+			source: { kind: "unreadable", stored: { kind: "nowhere" } },
+			excludedFolders: [],
+			createsNotes: false,
+		},
 		{ id: "p-4", enabled: false, prefix: "", property: "d", type: "text" },
 		{ id: "list-1", enabled: true, prefix: "e", property: "e", type: "link", source: { kind: "linksIn" }, excludedFolders: [], createsNotes: false },
 	]);
@@ -204,20 +224,20 @@ test("mergeSettings migrates the old shape into lists in picker order with custo
 			{ id: "list-2", enabled: true, prefix: "➡️", source: { kind: "linksOut" } },
 			{ id: "list-3", enabled: false, prefix: "⬅️", source: { kind: "linksIn" } },
 			{ id: "list-4", enabled: false, prefix: "☀️", source: { kind: "sameDay" } },
-			{ id: "list-5", enabled: true, prefix: "⭐", source: { kind: "frontmatter", property: "starred", condition: { operator: "is true" } } },
+			{ id: "list-5", enabled: true, prefix: "⭐", source: propertyFilter("starred", { operator: "is true" }) },
 			{
 				id: "list-6",
 				enabled: true,
 				prefix: "📚",
-				source: { kind: "frontmatter", property: "type", condition: { operator: "is", value: "book" } },
+				source: propertyFilter("type", { operator: "is", value: "book" }),
 			},
 			{
 				id: "list-7",
 				enabled: true,
 				prefix: "💼",
-				source: { kind: "frontmatter", property: "tags", condition: { operator: "has item", value: "work" } },
+				source: propertyFilter("tags", { operator: "has item", value: "work" }),
 			},
-			{ id: "list-8", enabled: true, prefix: "📝", source: { kind: "frontmatter", property: "summary", condition: { operator: "is set" } } },
+			{ id: "list-8", enabled: true, prefix: "📝", source: propertyFilter("summary", { operator: "is set" }) },
 		],
 		dateNotes: defaultDateNoteSettings(),
 		setProperties: setPropertiesDefaults(),
@@ -274,7 +294,7 @@ test("mergeSettings drops old custom lists it cannot read", () => {
 		],
 	});
 	assert.deepEqual(merged.lists.slice(4), [
-		{ id: "list-5", enabled: true, prefix: "✅", source: { kind: "frontmatter", property: "done", condition: { operator: "is true" } } },
+		{ id: "list-5", enabled: true, prefix: "✅", source: propertyFilter("done", { operator: "is true" }) },
 	]);
 	assert.deepEqual(mergeSettings({ customLists: { prefix: "📚" } }).lists, relationLists());
 });
@@ -287,7 +307,7 @@ test("mergeSettings keeps saved lists in their order and round-trips its own out
 				id: "list-9",
 				enabled: false,
 				prefix: "⏰",
-				source: { kind: "frontmatter", property: "due", condition: { operator: "before", value: { kind: "relative", days: 3 } } },
+				source: propertyFilter("due", { operator: "before", value: { kind: "relative", days: 3 } }),
 			},
 			{ id: "list-2", enabled: true, prefix: "🔗", source: { kind: "linksIn" } },
 			{ id: "list-3", enabled: true, prefix: "👤", source: { kind: "linksToNote", note: "types/Person 👤.md" } },
@@ -309,11 +329,26 @@ test("mergeSettings reads a saved showPrefixes boolean and shows prefixes otherw
 });
 
 test("mergeSettings keeps a list with a condition its property's type no longer offers", () => {
-	const lists = [{ id: "list-1", enabled: true, prefix: "#", source: { kind: "frontmatter", property: "n", condition: { operator: "has item", value: "x" } } }];
+	const lists = [{ id: "list-1", enabled: true, prefix: "#", source: propertyFilter("n", { operator: "has item", value: "x" }) }];
 	assert.deepEqual(mergeSettings({ lists }).lists, lists);
 });
 
-test("mergeSettings drops unreadable saved lists and mints ids that are missing or repeated", () => {
+test("mergeSettings turns a saved property list into a filter with that one condition", () => {
+	const condition = { operator: "before", value: { kind: "relative", days: -3 } } as const;
+	const merged = mergeSettings({
+		lists: [{ id: "list-1", enabled: true, prefix: "⏰", source: { kind: "frontmatter", property: "due", condition } }],
+		setProperties: {
+			properties: [
+				{ id: "p", enabled: true, prefix: "", property: "related", type: "links", source: { kind: "frontmatter", property: "active", condition: { operator: "is true" } } },
+			],
+		},
+	});
+	assert.deepEqual(merged.lists[0].source, propertyFilter("due", condition));
+	assert.deepEqual(merged.setProperties.properties[0].source, isTrue("active"));
+	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(merged))), merged);
+});
+
+test("mergeSettings keeps unreadable saved lists as broken and mints ids that are missing or repeated", () => {
 	const merged = mergeSettings({
 		lists: [
 			{ id: "list-3", enabled: true, prefix: "a", source: { kind: "linksOut" } },
@@ -329,6 +364,14 @@ test("mergeSettings drops unreadable saved lists and mints ids that are missing 
 		{ id: "list-3", enabled: true, prefix: "a", source: { kind: "linksOut" } },
 		{ id: "list-10", enabled: true, prefix: "b", source: { kind: "sameDay" } },
 		{ id: "list-11", enabled: true, prefix: "c", source: { kind: "linksIn" } },
+		{ id: "list-7", enabled: true, prefix: "d", source: { kind: "unreadable", stored: { kind: "inFolder" } } },
+		{ id: "list-12", enabled: true, prefix: "d", source: { kind: "unreadable", stored: { kind: "linksToNote", note: 3 } } },
+		{
+			id: "list-8",
+			enabled: true,
+			prefix: "e",
+			source: { kind: "unreadable", stored: { kind: "frontmatter", property: "p", condition: { operator: "is" } } },
+		},
 		{ id: "list-9", enabled: false, prefix: "", source: { kind: "adjacentDates" } },
 	]);
 	assert.deepEqual(mergeSettings({ lists: [] }).lists, []);

@@ -8,6 +8,7 @@ import type {
 import { createObsidianVault } from "./lists/obsidianVault";
 import type { JumpListVault } from "./lists/vault";
 import type NoteCompassPlugin from "./main";
+import { defaultSettings } from "./settings";
 import {
 	DATE_NOTE_SOURCE_KEY,
 	SHOW_PREFIXES_KEY,
@@ -23,22 +24,18 @@ import {
 	dateNoteSourceDescription,
 	formatError,
 } from "./settings/dateNotesForm";
-import { fitConditionToProperty, newList, propertySuggestions } from "./settings/listForm";
+import { newList, propertySuggestions } from "./settings/listForm";
 import type { PropertySuggestion } from "./settings/listForm";
 import { listPage, listRow, propertyPage, propertyRow } from "./settings/listPage";
 import type { ListPageContext } from "./settings/listPage";
 import { changedColor, changedPrefix } from "./settings/prefixChip";
 import type { PrefixDraft } from "./settings/prefixChip";
-import { hasSource, newProperty } from "./settings/setPropertiesForm";
+import { ResetSettingsModal } from "./settings/resetModal";
+import { newProperty } from "./settings/setPropertiesForm";
 
 const TYPED_FIELDS = [
 	"prefix",
 	"prefixColor",
-	"property",
-	"text",
-	"number",
-	"date",
-	"days",
 	"folder",
 	"newNoteFolder",
 	"format",
@@ -129,6 +126,23 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 					this.dateNoteFormatsPage(vault),
 				],
 			},
+			{
+				type: "group",
+				items: [
+					{
+						name: "Reset all settings",
+						desc: "Put every list, property and option back to the defaults.",
+						render: (setting) => {
+							setting.addButton((button) =>
+								button
+									.setButtonText("Reset")
+									.setDestructive()
+									.onClick(() => new ResetSettingsModal(this.app, () => void this.resetSettings()).open()),
+							);
+						},
+					},
+				],
+			},
 		];
 	}
 
@@ -165,7 +179,6 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 
 	async setControlValue(key: string, value: unknown): Promise<void> {
 		if (!writeControl(this.plugin.settings, key, value)) return;
-		if (key.endsWith("/property")) this.fitCondition(key);
 		await this.plugin.saveSettings();
 		if (TYPED_FIELDS.includes(key.split("/")[2] ?? "")) {
 			this.refreshAfterTyping();
@@ -175,14 +188,11 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 		this.update();
 	}
 
-	private fitCondition(key: string): void {
-		const [scope, id] = key.split("/");
-		const { lists, setProperties } = this.plugin.settings;
-		const propertyTypes = createObsidianVault(this.app).propertyTypes();
-		const list = scope === "list" ? lists.find((candidate) => candidate.id === id) : undefined;
-		if (list) fitConditionToProperty(list, propertyTypes);
-		const entry = scope === "propertySource" ? setProperties.properties.find((candidate) => candidate.id === id) : undefined;
-		if (entry && hasSource(entry)) fitConditionToProperty(entry, propertyTypes);
+	private async resetSettings(): Promise<void> {
+		this.plugin.settings = defaultSettings();
+		this.prefixDrafts.clear();
+		await this.plugin.saveSettings();
+		this.update();
 	}
 
 	private changeLists(change: () => unknown): void {

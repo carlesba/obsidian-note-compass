@@ -3,8 +3,10 @@ import { moment } from "./moment.ts";
 
 export interface FakeNote {
 	path: string;
+	ctime?: number;
 	mtime?: number;
 	frontmatter?: Frontmatter;
+	tags?: string[];
 	links?: string[];
 	content?: string;
 }
@@ -28,7 +30,7 @@ export const NOW = new Date(2024, 2, 9, 15).getTime();
 export const HOURS_AGO = (hours: number) => NOW - hours * 3600 * 1000;
 
 export function fakeVault(fakes: FakeNote[], options: FakeVaultOptions = {}): FakeVault {
-	const toNote = (fake: FakeNote) => ({ path: fake.path, basename: fake.path.split("/").pop()!.replace(/\.md$/, ""), ctime: 0 });
+	const toNote = (fake: FakeNote) => ({ path: fake.path, basename: fake.path.split("/").pop()!.replace(/\.md$/, ""), ctime: fake.ctime ?? 0 });
 	const byPath = (path: string) => fakes.find((fake) => fake.path === path);
 	const create = (path: string, content: string) => {
 		if (byPath(path)) throw new Error(`${path} exists`);
@@ -38,6 +40,7 @@ export function fakeVault(fakes: FakeNote[], options: FakeVaultOptions = {}): Fa
 	return {
 		notes: () => fakes.map(toNote),
 		frontmatter: (path) => byPath(path)?.frontmatter,
+		tags: (path) => byPath(path)?.tags ?? [],
 		updateFrontmatter: async (path, update) => {
 			const fake = byPath(path)!;
 			fake.frontmatter = { ...fake.frontmatter };

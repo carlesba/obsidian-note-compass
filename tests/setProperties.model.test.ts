@@ -6,6 +6,11 @@ import type { EditableProperty } from "../src/settings.ts";
 import { propertyRowName } from "../src/settings/setPropertiesForm.ts";
 import { decidedPropertyType, mixedTypeProperties } from "../src/setProperties/propertyTypes.ts";
 
+const asFilter = (source: { kind: string; property?: string; condition?: unknown }) =>
+	source.kind === "frontmatter"
+		? { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "property", property: source.property, condition: source.condition }] } }
+		: source;
+
 const v2Data = () => JSON.parse(readFileSync(new URL("./fixtures/data.v2.json", import.meta.url), "utf8"));
 
 const entry = (id: string, property: string, type: EditableProperty["type"], enabled = true): EditableProperty => ({
@@ -29,7 +34,11 @@ test("the test vault's v2 data migrates to properties and keeps its jump setting
 	);
 	assert.deepEqual(
 		merged.lists,
-		data.lists.map((list: { prefix: string }, index: number) => ({ ...list, prefix: merged.lists[index].prefix })),
+		data.lists.map((list: { prefix: string; source: { kind: string } }, index: number) => ({
+			...list,
+			prefix: merged.lists[index].prefix,
+			source: asFilter(list.source),
+		})),
 	);
 	assert.deepEqual(merged.dateNotes, data.dateNotes);
 	const rows = merged.setProperties.properties.map((property) => [property.id, property.type, property.property]);
@@ -51,7 +60,7 @@ test("the test vault's v2 data migrates to properties and keeps its jump setting
 	const related = merged.setProperties.properties.filter((property) => property.property === "related");
 	assert.deepEqual(
 		related.map((property) => property.source),
-		data.setProperties.linkLists.slice(4).map((list: { source: unknown }) => list.source),
+		data.setProperties.linkLists.slice(4).map((list: { source: { kind: string } }) => asFilter(list.source)),
 	);
 	assert.ok(merged.setProperties.properties.every((property) => property.enabled));
 	assert.deepEqual(related.map((property) => property.excludedFolders), related.map(() => ["templates"]));
