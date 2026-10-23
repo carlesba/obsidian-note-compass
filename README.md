@@ -49,6 +49,8 @@ A note appears under every list that holds it, in the order of your lists, and t
 
 Every row starts with its list's prefix, shown as a small chip so it stays apart from the name. All chips in a picker share the width of the widest one, up to about twelve characters, so the names line up, and a list with a prefix colour tints its chips. A date note adds its period after the name: the weekday for a day note, `week N` for a week note, `month - <Month>` for a month note and `year` for a year note.
 
+To edit a note's properties without opening it, press ⌥↵ (Alt+Enter) on its row, or tap the sliders icon at the end of the row, which shows on the highlighted row on desktop and on every row on phones. Either one opens "Set properties" for that note instead of the note in focus. Rows that would create a missing date note have no icon.
+
 Typing filters the rows by in-order matching. A row stays when the characters you typed appear in it in the same order, ignoring case, with anything in between. The prefix is part of the row, so typing part of a prefix narrows the picker to that list.
 
 ### Date notes

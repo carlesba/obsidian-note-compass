@@ -1,19 +1,39 @@
-import { App, Notice, SuggestModal } from "obsidian";
+import { App, Notice, Platform, SuggestModal, setIcon } from "obsidian";
 import { createDateNote } from "./lists/openDateNote";
-import type { JumpListEntry } from "./lists/vault";
+import type { JumpListEntry, VaultNote } from "./lists/vault";
 import { RESULTS_CLASS, entryLabel, entryParts, matchesInOrder, renderRow } from "./render";
+
+export const SET_PROPERTIES_ICON = "sliders-horizontal";
 
 export class JumpModal extends SuggestModal<JumpListEntry> {
 	private readonly entries: JumpListEntry[];
 	private readonly showPrefixes: boolean;
+	private readonly editProperties: (note: VaultNote) => void;
+	private readonly rowEntries = new WeakMap<HTMLElement, JumpListEntry>();
 
-	constructor(app: App, entries: JumpListEntry[], showPrefixes: boolean) {
+	constructor(app: App, entries: JumpListEntry[], showPrefixes: boolean, editProperties: (note: VaultNote) => void) {
 		super(app);
 		this.entries = entries;
 		this.showPrefixes = showPrefixes;
+		this.editProperties = editProperties;
 		this.limit = entries.length;
 		this.resultContainerEl.addClass(RESULTS_CLASS);
 		this.setPlaceholder("Pick one…");
+		this.scope.register(["Alt"], "Enter", (evt) => {
+			if (evt.isComposing) return;
+			evt.preventDefault();
+			const selected = this.resultContainerEl.querySelector<HTMLElement>(".suggestion-item.is-selected");
+			const entry = selected ? this.rowEntries.get(selected) : undefined;
+			if (entry && !entry.missing) this.editPropertiesOf(entry);
+			return false;
+		});
+		if (!Platform.isMobile) {
+			this.setInstructions([
+				{ command: "↵", purpose: "to open" },
+				{ command: "⌥ ↵", purpose: "to set properties" },
+				{ command: "esc", purpose: "to dismiss" },
+			]);
+		}
 	}
 
 	getSuggestions(query: string): JumpListEntry[] {
@@ -23,6 +43,25 @@ export class JumpModal extends SuggestModal<JumpListEntry> {
 
 	renderSuggestion(entry: JumpListEntry, el: HTMLElement): void {
 		renderRow(el, entryParts(entry, this.showPrefixes));
+		this.rowEntries.set(el, entry);
+		if (entry.missing) return;
+		const bodyEl = el.querySelector<HTMLElement>(".note-compass-row-body") ?? el;
+		const actionEl = bodyEl.createSpan({
+			cls: ["clickable-icon", "note-compass-row-action"],
+			attr: { role: "button", "aria-label": "Set properties" },
+		});
+		setIcon(actionEl, SET_PROPERTIES_ICON);
+		for (const type of ["pointerdown", "mousedown"]) {
+			actionEl.addEventListener(type, (event) => {
+				event.preventDefault();
+				event.stopPropagation();
+			});
+		}
+		actionEl.addEventListener("click", (event) => {
+			event.preventDefault();
+			event.stopPropagation();
+			this.editPropertiesOf(entry);
+		});
 	}
 
 	selectSuggestion(entry: JumpListEntry, evt: MouseEvent | KeyboardEvent): void {
@@ -42,5 +81,10 @@ export class JumpModal extends SuggestModal<JumpListEntry> {
 
 	onClose(): void {
 		if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+	}
+
+	private editPropertiesOf(entry: JumpListEntry): void {
+		this.close();
+		this.editProperties(entry.file);
 	}
 }

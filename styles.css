@@ -206,3 +206,17 @@
 	content: "· ";
 	color: var(--text-faint);
 }
+
+.note-compass-row-action {
+	flex-shrink: 0;
+	margin-inline-start: auto;
+	padding: var(--size-2-1);
+	--icon-size: var(--icon-s);
+	visibility: hidden;
+}
+
+.suggestion-item.is-selected .note-compass-row-action,
+.suggestion-item:hover .note-compass-row-action,
+.is-mobile .note-compass-row-action {
+	visibility: visible;
+}
