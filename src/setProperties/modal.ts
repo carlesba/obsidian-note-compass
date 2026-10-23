@@ -14,10 +14,14 @@ export function setProperties(
 	vault: JumpListVault,
 	settings: JumpSettings,
 	target: VaultNote,
+	back?: () => void,
 ): void {
 	const entries = offeredEntries(settings, vault, target);
 	const initial = initialPropertyState(settings.setProperties, vault.frontmatter(target.path));
-	const cancel = () => new Notice("Property changes cancelled.");
+	const cancel = () => {
+		new Notice("Property changes cancelled.");
+		back?.();
+	};
 	const save = async (state: PickerState) => {
 		try {
 			await vault.updateFrontmatter(target.path, (frontmatter) => writeProperties(frontmatter, initial, state.values));
