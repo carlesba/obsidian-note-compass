@@ -18,9 +18,9 @@ export type ConditionField = "operator" | "text" | "number" | "dateMode" | "date
 export type ConditionRule = PropertyRule | FileDateRule;
 
 export const FILTER_MODE_OPTIONS: Record<FilterMode, string> = {
-	all: "All of the following",
-	any: "Any of the following",
-	none: "None of the following",
+	all: "All the following are true",
+	any: "Any of the following are true",
+	none: "None of the following are true",
 };
 
 export const RULE_FIELD_OPTIONS: Record<RuleField, string> = {

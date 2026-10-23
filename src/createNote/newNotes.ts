@@ -71,7 +71,7 @@ export function noteCreationBlocker(source: ListSource, propertyTypes: Record<st
 
 function filterCreationBlocker(filter: FilterGroup, propertyTypes: Record<string, string>): string | undefined {
 	if (filterRules(filter).length === 0) return "add a condition first";
-	if (filter.mode !== "all") return 'only an "All of the following" filter can decide what a new note needs';
+	if (filter.mode !== "all") return 'only an "All the following are true" filter can decide what a new note needs';
 	const rule = soleTopLevelRule(filter);
 	if (rule === undefined) return "a filter with more than one condition, or with groups, can't decide what a new note needs";
 	if (rule.kind !== "property") return "only a property condition can decide what a new note needs";

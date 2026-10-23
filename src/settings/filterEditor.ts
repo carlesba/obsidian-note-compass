@@ -1,11 +1,10 @@
-import { ButtonComponent, DropdownComponent, ExtraButtonComponent, TextComponent, getAllTags } from "obsidian";
+import { DropdownComponent, TextComponent, getAllTags, setIcon } from "obsidian";
 import type { App, Setting } from "obsidian";
 import { propertyType } from "../lists/conditions";
-import type { FilterGroup, FilterRule } from "../lists/filters";
+import type { FilterGroup, FilterNode, FilterRule, PropertyRule } from "../lists/filters";
 import {
 	FILE_DATE_OPTIONS,
 	FILTER_MODE_OPTIONS,
-	RULE_FIELD_OPTIONS,
 	addCondition,
 	addGroup,
 	canAddGroup,
@@ -20,10 +19,10 @@ import {
 	writeMode,
 	writeRuleText,
 } from "./filterForm";
-import type { ConditionField, ConditionRule } from "./filterForm";
+import type { ConditionField, ConditionRule, RuleField } from "./filterForm";
 import { DATE_MODE_OPTIONS, DIRECTION_OPTIONS, fixedDateError, operatorOptions, valueShape } from "./listForm";
 import type { PropertySuggestion } from "./listForm";
-import { PropertySuggest, TextSuggest, warningDescription } from "./suggest";
+import { TextSuggest } from "./suggest";
 import type { TextSuggestion } from "./suggest";
 
 export interface FilterEditing {
@@ -63,86 +62,192 @@ const SUGGESTIONS: Partial<Record<FilterRule["kind"], Suggestions>> = {
 			.sort((a, b) => a.label.localeCompare(b.label)),
 };
 
-export function renderFilter(setting: Setting, filter: FilterGroup, editing: FilterEditing): void {
+const EDITOR_CLASS = "note-compass-filter";
+
+const FIELD_LABELS: Record<Exclude<RuleField, "property">, string> = {
+	folder: "folder",
+	tag: "tags",
+	linksTo: "links",
+	created: "created time",
+	modified: "modified time",
+};
+
+const FIXED_OPERATORS: Record<"folder" | "tag" | "linksTo", string> = {
+	folder: "is in",
+	tag: "has tag",
+	linksTo: "contains",
+};
+
+const FILE_FIELD_PREFIX = "file:";
+
+const PROPERTY_PREFIX = "property:";
+
+export function renderFilter(setting: Setting, filter: FilterGroup, editing: FilterEditing): () => void {
 	setting.settingEl.addClass("note-compass-filter-setting");
-	renderGroup(setting.settingEl.createDiv({ cls: "note-compass-filter" }), filter, 1, undefined, editing);
+	setting.settingEl.querySelectorAll(`:scope > .${EDITOR_CLASS}`).forEach((el) => el.remove());
+	const editorEl = setting.settingEl.createDiv({ cls: ["bases-query-container", EDITOR_CLASS] });
+	const redraw = () => {
+		editorEl.empty();
+		renderGroup(editorEl, filter, { depth: 1, editing: { ...editing, change } });
+	};
+	const change = (mutate: () => unknown) => {
+		editing.change(mutate);
+		if (editorEl.isConnected) redraw();
+	};
+	redraw();
+	return () => editorEl.remove();
 }
 
-function renderGroup(
-	parentEl: HTMLElement,
-	group: FilterGroup,
-	depth: number,
-	parent: FilterGroup | undefined,
-	editing: FilterEditing,
-): void {
-	const groupEl = parentEl.createDiv({ cls: parent ? ["note-compass-filter-group", "is-nested"] : "note-compass-filter-group" });
-	const headerEl = groupEl.createDiv({ cls: "note-compass-filter-row" });
-	new DropdownComponent(headerEl)
-		.addOptions(FILTER_MODE_OPTIONS)
-		.setValue(group.mode)
-		.onChange((mode) => editing.change(() => writeMode(group, mode)));
-	const itemsEl = groupEl.createDiv({ cls: "note-compass-filter-items" });
-	for (const item of group.items) {
-		if (item.kind === "group") renderGroup(itemsEl, item, depth + 1, group, editing);
-		else renderRule(itemsEl, item, group, editing);
-	}
-	const actionsEl = groupEl.createDiv({ cls: "note-compass-filter-actions" });
-	addButton(actionsEl, "+ Add condition", () => editing.change(() => addCondition(group)));
-	if (canAddGroup(depth)) addButton(actionsEl, "+ Add group", () => editing.change(() => addGroup(group)));
-	if (parent) {
-		addButton(actionsEl, "Remove group", () => editing.change(() => removeNode(parent, group))).buttonEl.addClass(
-			"note-compass-filter-remove-group",
-		);
-	}
+interface GroupPlace {
+	depth: number;
+	parent?: GroupPlace & { group: FilterGroup };
+	editing: FilterEditing;
 }
 
-function renderRule(parentEl: HTMLElement, rule: FilterRule, group: FilterGroup, editing: FilterEditing): void {
-	const ruleEl = parentEl.createDiv({ cls: "note-compass-filter-rule" });
-	const rowEl = ruleEl.createDiv({ cls: "note-compass-filter-row" });
-	new DropdownComponent(rowEl)
-		.addOptions(RULE_FIELD_OPTIONS)
-		.setValue(ruleField(rule))
-		.onChange((field) => editing.change(() => changeRuleField(group, rule, field)));
-	if (rule.kind === "file") {
-		new DropdownComponent(rowEl)
-			.addOptions(FILE_DATE_OPTIONS)
-			.setValue(rule.condition.operator)
-			.onChange((operator) => editing.change(() => writeConditionField(rule, "operator", operator)));
-		renderConditionValue(rowEl, ruleEl, rule, editing);
-	} else {
-		renderRuleText(rowEl, rule, editing);
+function renderGroup(parentEl: HTMLElement, group: FilterGroup, place: GroupPlace): void {
+	const { editing } = place;
+	const groupEl = parentEl.createDiv({ cls: "filter-group" });
+	const headerEl = groupEl.createDiv({ cls: "filter-group-header" });
+	const modeEl = headerEl.createEl("select", { cls: ["conjunction", "dropdown"] });
+	for (const [mode, label] of Object.entries(FILTER_MODE_OPTIONS)) {
+		modeEl.createEl("option", { text: label, attr: { value: mode } }).selected = mode === group.mode;
 	}
+	modeEl.addEventListener("change", () => editing.change(() => writeMode(group, modeEl.value)));
+	const headerActionsEl = headerEl.createDiv({ cls: "filter-group-header-actions" });
+	const { parent } = place;
+	if (parent) iconButton(headerActionsEl, "trash-2", "Remove filter group", () => editing.change(() => removeFrom(parent, group)));
+	const statementsEl = groupEl.createDiv({ cls: "filter-group-statements" });
+	const here = { ...place, group };
+	group.items.forEach((item, index) => {
+		const rowEl = statementsEl.createDiv({ cls: "filter-row" });
+		rowEl.createSpan({ cls: "conjunction", text: index === 0 ? "where" : group.mode === "all" ? "and" : "or" });
+		if (item.kind === "group") {
+			rowEl.addClass("mod-group");
+			renderGroup(rowEl, item, { depth: place.depth + 1, parent: here, editing });
+		} else {
+			renderRule(rowEl, item, here);
+		}
+	});
+	const actionsEl = groupEl.createDiv({ cls: "filter-group-actions" });
+	textIconButton(actionsEl, "plus", "Add filter", () => editing.change(() => addCondition(group)));
+	if (canAddGroup(place.depth)) textIconButton(actionsEl, "plus", "Add filter group", () => editing.change(() => addGroup(group)));
+}
+
+function removeFrom(place: GroupPlace & { group: FilterGroup }, node: FilterNode): void {
+	removeNode(place.group, node);
+	if (place.group.items.length === 0 && place.parent) removeFrom(place.parent, place.group);
+}
+
+function renderRule(parentEl: HTMLElement, rule: FilterRule, place: GroupPlace & { group: FilterGroup }): void {
+	const { editing, group } = place;
+	const statementEl = parentEl.createDiv({ cls: "filter-statement" });
+	const expressionEl = statementEl.createDiv({ cls: ["filter-expression", "metadata-property"] });
+	renderLeftSide(expressionEl, rule, group, editing);
+	const rightEl = createRightSide(expressionEl, statementEl, rule, editing);
+	const actionsEl = expressionEl.createDiv({ cls: "filter-row-actions" });
+	iconButton(actionsEl, "trash-2", "Remove filter", () => editing.change(() => removeFrom(place, rule)));
+	const inapplicable = inapplicableRule(rule, editing.propertyTypes);
+	if (inapplicable) statementEl.createDiv({ cls: "filter-row-error", text: inapplicable });
+	if (rightEl.childElementCount === 0) rightEl.addClass("is-empty");
+}
+
+function renderLeftSide(expressionEl: HTMLElement, rule: FilterRule, group: FilterGroup, editing: FilterEditing): void {
+	const shown = leftLabel(rule);
+	const commit = (value: string) =>
+		editing.change(() => {
+			const typed = value.trim();
+			if (typed === shown) return;
+			const field = fieldNamed(typed);
+			if (field) {
+				changeRuleField(group, rule, field);
+				return;
+			}
+			const target: PropertyRule | undefined = rule.kind === "property" ? rule : replaceWithProperty(group, rule);
+			if (!target) return;
+			writeRuleText(target, typed);
+			fitRuleToProperty(target, editing.propertyTypes);
+		});
+	const text = new TextComponent(expressionEl).setPlaceholder("Property").setValue(shown);
+	text.inputEl.addClass("filter-property-select");
+	text.inputEl.addEventListener("change", () => commit(text.getValue()));
+	const suggest = new TextSuggest(editing.app, text.inputEl, () => leftSuggestions(editing));
+	suggest.onSelect((suggestion) => {
+		suggest.close();
+		if (suggestion.value.startsWith(FILE_FIELD_PREFIX)) {
+			const field = suggestion.value.slice(FILE_FIELD_PREFIX.length);
+			editing.change(() => changeRuleField(group, rule, field));
+			return;
+		}
+		commit(suggestion.value.slice(PROPERTY_PREFIX.length));
+	});
+}
+
+function leftLabel(rule: FilterRule): string {
+	return rule.kind === "property" ? rule.property : FIELD_LABELS[ruleField(rule) as Exclude<RuleField, "property">];
+}
+
+function fieldNamed(typed: string): RuleField | undefined {
+	const entry = Object.entries(FIELD_LABELS).find(([, label]) => label === typed.toLowerCase());
+	return entry ? (entry[0] as RuleField) : undefined;
+}
+
+function replaceWithProperty(group: FilterGroup, rule: FilterRule): PropertyRule | undefined {
+	const index = group.items.indexOf(rule);
+	changeRuleField(group, rule, "property");
+	const replacement = group.items[index];
+	return replacement?.kind === "property" ? replacement : undefined;
+}
+
+function leftSuggestions(editing: FilterEditing): TextSuggestion[] {
+	const fields = Object.entries(FIELD_LABELS).map(([field, label]) => ({ value: FILE_FIELD_PREFIX + field, label, detail: "file" }));
+	const properties = editing.propertySuggestions().map((suggestion) => ({
+		value: PROPERTY_PREFIX + suggestion.name,
+		label: suggestion.name,
+		detail: suggestion.type,
+	}));
+	return [...fields, ...properties];
+}
+
+function createRightSide(expressionEl: HTMLElement, statementEl: HTMLElement, rule: FilterRule, editing: FilterEditing): HTMLElement {
 	if (rule.kind === "property") {
 		const chosen = rule.property !== "";
 		const type = propertyType(editing.propertyTypes, rule.property);
-		new DropdownComponent(rowEl)
-			.addOptions(operatorOptions(type, rule.condition.operator))
-			.setValue(rule.condition.operator)
-			.setDisabled(!chosen)
-			.onChange((operator) => editing.change(() => writeConditionField(rule, "operator", operator)));
-		if (chosen) renderConditionValue(rowEl, ruleEl, rule, editing);
+		operatorSelect(expressionEl, operatorOptions(type, rule.condition.operator), rule.condition.operator, !chosen, (operator) =>
+			editing.change(() => writeConditionField(rule, "operator", operator)),
+		);
+		const rightEl = expressionEl.createDiv({ cls: ["filter-rhs-container", "metadata-property-value"] });
+		if (chosen) renderConditionValue(rightEl, statementEl, rule, editing);
+		return rightEl;
 	}
-	removeButton(rowEl, "Remove condition", () => editing.change(() => removeNode(group, rule)));
-	const inapplicable = inapplicableRule(rule, editing.propertyTypes);
-	if (inapplicable) warningDescription(ruleEl.createDiv({ cls: "setting-item-description" }), inapplicable);
+	if (rule.kind === "file") {
+		operatorSelect(expressionEl, FILE_DATE_OPTIONS, rule.condition.operator, false, (operator) =>
+			editing.change(() => writeConditionField(rule, "operator", operator)),
+		);
+		const rightEl = expressionEl.createDiv({ cls: ["filter-rhs-container", "metadata-property-value"] });
+		renderConditionValue(rightEl, statementEl, rule, editing);
+		return rightEl;
+	}
+	const operator = FIXED_OPERATORS[rule.kind];
+	operatorSelect(expressionEl, { [operator]: operator }, operator, false, () => undefined);
+	const rightEl = expressionEl.createDiv({ cls: ["filter-rhs-container", "metadata-property-value"] });
+	renderRuleText(rightEl, rule, editing);
+	return rightEl;
 }
 
-function renderRuleText(rowEl: HTMLElement, rule: Exclude<FilterRule, { kind: "file" }>, editing: FilterEditing): void {
-	const commit = (value: string) =>
-		editing.change(() => {
-			writeRuleText(rule, value);
-			if (rule.kind === "property") fitRuleToProperty(rule, editing.propertyTypes);
-		});
-	const text = textInput(rowEl, ruleText(rule), TEXT_PLACEHOLDERS[rule.kind], { typing: (value) => writeRuleText(rule, value), commit });
-	if (rule.kind === "property") {
-		const suggest = new PropertySuggest(editing.app, text.inputEl, editing.propertySuggestions);
-		suggest.onSelect((suggestion) => {
-			suggest.setValue(suggestion.name);
-			suggest.close();
-			commit(suggestion.name);
-		});
-		return;
-	}
+function operatorSelect(
+	parentEl: HTMLElement,
+	options: Record<string, string>,
+	value: string,
+	disabled: boolean,
+	onChange: (operator: string) => void,
+): void {
+	const dropdown = new DropdownComponent(parentEl).addOptions(options).setValue(value).setDisabled(disabled).onChange(onChange);
+	dropdown.selectEl.addClass("filter-operator");
+}
+
+function renderRuleText(parentEl: HTMLElement, rule: Extract<FilterRule, { kind: "folder" | "tag" | "linksTo" }>, editing: FilterEditing): void {
+	const commit = (value: string) => editing.change(() => writeRuleText(rule, value));
+	const text = textInput(parentEl, ruleText(rule), TEXT_PLACEHOLDERS[rule.kind], { typing: (value) => writeRuleText(rule, value), commit });
 	const suggestions = SUGGESTIONS[rule.kind];
 	if (!suggestions) return;
 	let cached: TextSuggestion[] | undefined;
@@ -154,7 +259,7 @@ function renderRuleText(rowEl: HTMLElement, rule: Exclude<FilterRule, { kind: "f
 	});
 }
 
-function renderConditionValue(rowEl: HTMLElement, ruleEl: HTMLElement, rule: ConditionRule, editing: FilterEditing): void {
+function renderConditionValue(rowEl: HTMLElement, statementEl: HTMLElement, rule: ConditionRule, editing: FilterEditing): void {
 	const draft = (field: ConditionField, value: unknown) => writeConditionField(rule, field, value);
 	const write = (field: ConditionField, value: unknown) => editing.change(() => writeConditionField(rule, field, value));
 	const edit = (field: ConditionField): TextEdit => ({ typing: (value) => draft(field, value), commit: (value) => write(field, value) });
@@ -190,11 +295,11 @@ function renderConditionValue(rowEl: HTMLElement, ruleEl: HTMLElement, rule: Con
 		.setValue(readText("dateMode"))
 		.onChange((mode) => write("dateMode", mode));
 	if (readText("dateMode") === "fixed") {
-		const errorEl = ruleEl.createDiv({ cls: "setting-item-description" });
+		const errorEl = statementEl.createDiv({ cls: "filter-row-error" });
 		const valid = (value: string) => {
 			const error = value.trim() === "" ? undefined : fixedDateError(value.trim());
 			errorEl.toggle(error !== undefined);
-			if (error) warningDescription(errorEl, error);
+			errorEl.setText(error ?? "");
 			return value.trim() !== "" && error === undefined;
 		};
 		const date = readText("date");
@@ -241,17 +346,28 @@ function numberInput(parentEl: HTMLElement, value: number, edit: TextEdit, min?:
 	text.inputEl.step = "1";
 }
 
-function addButton(parentEl: HTMLElement, label: string, onClick: () => void): ButtonComponent {
-	const button = new ButtonComponent(parentEl).setButtonText(label).setClass("note-compass-filter-add").onClick(onClick);
-	keepFocusOnPress(button.buttonEl);
-	return button;
+function textIconButton(parentEl: HTMLElement, icon: string, label: string, onClick: () => void): void {
+	const buttonEl = parentEl.createDiv({ cls: ["text-icon-button", "tappable"], attr: { tabindex: "0", role: "button" } });
+	setIcon(buttonEl.createSpan({ cls: "text-button-icon" }), icon);
+	buttonEl.createSpan({ cls: "text-button-label", text: label });
+	pressable(buttonEl, onClick);
 }
 
-function removeButton(parentEl: HTMLElement, tooltip: string, onClick: () => void): void {
-	const button = new ExtraButtonComponent(parentEl).setIcon("x").setTooltip(tooltip).onClick(onClick);
-	keepFocusOnPress(button.extraSettingsEl);
+function iconButton(parentEl: HTMLElement, icon: string, label: string, onClick: () => void): void {
+	const buttonEl = parentEl.createEl("button", { cls: "clickable-icon", attr: { "aria-label": label } });
+	setIcon(buttonEl, icon);
+	pressable(buttonEl, onClick);
 }
 
-function keepFocusOnPress(el: HTMLElement): void {
+function pressable(el: HTMLElement, onClick: () => void): void {
 	el.addEventListener("mousedown", (event) => event.preventDefault());
+	el.addEventListener("click", (event) => {
+		event.preventDefault();
+		onClick();
+	});
+	el.addEventListener("keydown", (event) => {
+		if (el.tagName === "BUTTON" || (event.key !== "Enter" && event.key !== " ")) return;
+		event.preventDefault();
+		onClick();
+	});
 }

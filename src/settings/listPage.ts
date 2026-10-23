@@ -374,9 +374,7 @@ function sourceItems(
 			desc: filter && filterRules(filter).length === 0 ? "Add a condition to list notes." : "Notes that match the filter are listed.",
 			searchable: false,
 			visible: () => list.source.kind === "filter",
-			render: (setting) => {
-				if (list.source.kind === "filter") renderFilter(setting, list.source.filter, context);
-			},
+			render: (setting) => (list.source.kind === "filter" ? renderFilter(setting, list.source.filter, context) : undefined),
 		},
 	];
 }
