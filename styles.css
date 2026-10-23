@@ -286,3 +286,11 @@
 	color: var(--text-normal);
 	background: var(--background-modifier-hover);
 }
+
+.note-compass-filter-actions button.note-compass-filter-remove-group {
+	margin-inline-start: auto;
+}
+
+.note-compass-filter-actions button.note-compass-filter-remove-group:hover {
+	color: var(--text-error);
+}
