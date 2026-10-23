@@ -225,72 +225,57 @@
 	flex-wrap: wrap;
 }
 
-.note-compass-filter {
+.note-compass-filter.bases-query-container {
 	flex-basis: 100%;
 	min-width: 0;
-	padding-top: var(--size-4-2);
+	padding: var(--size-4-2) 0 0;
 }
 
-.note-compass-filter-group,
-.note-compass-filter-items {
-	display: flex;
-	flex-direction: column;
-	gap: var(--size-4-2);
+.note-compass-filter .filter-statement {
 	min-width: 0;
 }
 
-.note-compass-filter-group.is-nested {
-	border-inline-start: 2px solid var(--background-modifier-border);
-	padding-inline-start: var(--size-4-3);
-}
-
-.note-compass-filter-rule {
-	display: flex;
-	flex-direction: column;
-	gap: var(--size-4-1);
-	min-width: 0;
-}
-
-.note-compass-filter-row,
-.note-compass-filter-actions {
-	display: flex;
+.note-compass-filter .filter-expression {
 	flex-wrap: wrap;
-	align-items: center;
-	gap: var(--size-4-2);
 	min-width: 0;
+	border-radius: var(--input-radius);
+	box-shadow: 0 0 0 1px var(--background-modifier-border);
 }
 
-.note-compass-filter-row input[type="text"],
-.note-compass-filter-row input[type="number"] {
-	flex: 1 1 8em;
+.note-compass-filter .filter-expression input,
+.note-compass-filter .filter-expression select {
+	background: transparent;
+	border: none;
+	border-radius: 0;
+	box-shadow: none;
+	font-size: var(--font-ui-small);
+}
+
+.note-compass-filter .filter-expression input.filter-property-select {
+	flex: 0 1 12em;
 	min-width: 6em;
 }
 
-.note-compass-filter-row input.note-compass-filter-number {
+.note-compass-filter .filter-expression select.filter-operator {
+	border-inline: 1px solid var(--background-modifier-border);
+}
+
+.note-compass-filter .filter-rhs-container {
+	flex: 1 1 8em;
+	min-width: 0;
+	gap: var(--size-2-2);
+}
+
+.note-compass-filter .filter-rhs-container input {
+	flex: 1 1 6em;
+	min-width: 3em;
+	width: 100%;
+}
+
+.note-compass-filter .filter-rhs-container input[type="number"] {
 	flex: 0 1 5em;
-	min-width: 4em;
 }
 
-.note-compass-filter-row select {
-	max-width: 100%;
-}
-
-.note-compass-filter-actions button.note-compass-filter-add {
-	background: none;
-	box-shadow: none;
-	color: var(--text-muted);
-	padding-inline: var(--size-4-1);
-}
-
-.note-compass-filter-actions button.note-compass-filter-add:hover {
-	color: var(--text-normal);
-	background: var(--background-modifier-hover);
-}
-
-.note-compass-filter-actions button.note-compass-filter-remove-group {
-	margin-inline-start: auto;
-}
-
-.note-compass-filter-actions button.note-compass-filter-remove-group:hover {
-	color: var(--text-error);
+.note-compass-filter .filter-group-actions {
+	gap: var(--size-4-2);
 }
