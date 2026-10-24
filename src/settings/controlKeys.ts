@@ -36,6 +36,10 @@ export function presetValueKey(id: string, index: number): string {
 	return `property/${id}/presetValues/${index}`;
 }
 
+export function mainMenuPresetKey(id: string, index: number): string {
+	return `property/${id}/mainMenuPreset/${index}`;
+}
+
 export function propertySourceKey(id: string, field: ListField): string {
 	return `propertySource/${id}/${field}`;
 }

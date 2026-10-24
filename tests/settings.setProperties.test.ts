@@ -294,7 +294,7 @@ test("checkbox mode, preset values in the main picker and keeping empty values a
 		setProperties: {
 			properties: [
 				{ id: "a", enabled: true, prefix: "", property: "done", type: "checkbox", checkboxMode: "cycle", keepsEmpty: true },
-				{ id: "b", enabled: true, prefix: "", property: "status", type: "text", presetValues: ["todo"], presetsInMainMenu: true, checkboxMode: "bogus" },
+				{ id: "b", enabled: true, prefix: "", property: "status", type: "text", presetValues: ["todo", "done"], presetsInMainMenu: true, checkboxMode: "bogus" },
 			],
 		},
 	});
@@ -303,12 +303,38 @@ test("checkbox mode, preset values in the main picker and keeping empty values a
 	assert.equal(readPropertyField(done, "removesEmpty"), false);
 	assert.equal(readPropertyField(status, "checkboxMode"), "picker");
 	assert.equal(readPropertyField(status, "removesEmpty"), true);
-	assert.equal(readPropertyField(status, "presetsInMainMenu"), true);
+	assert.deepEqual(status.mainMenuPresets, ["todo", "done"]);
+	assert.equal(readPropertyField(status, "mainMenuPreset", "1"), true);
 	writePropertyField(done, "checkboxMode", "picker");
 	writePropertyField(done, "removesEmpty", true);
-	writePropertyField(status, "presetsInMainMenu", false);
-	assert.deepEqual([done.checkboxMode, done.keepsEmpty, status.presetsInMainMenu], [undefined, undefined, undefined]);
+	writePropertyField(status, "mainMenuPreset", false, "0");
+	writePropertyField(status, "mainMenuPreset", false, "1");
+	assert.deepEqual([done.checkboxMode, done.keepsEmpty, status.mainMenuPresets], [undefined, undefined, undefined]);
 	writePropertyField(done, "checkboxMode", "toggle");
 	writePropertyField(done, "removesEmpty", false);
 	assert.deepEqual([done.checkboxMode, done.keepsEmpty], ["toggle", true]);
+});
+
+test("each preset value has its own main menu switch, which follows the value when it is edited, moved or deleted", () => {
+	const settings = mergeSettings({
+		setProperties: {
+			properties: [
+				{ id: "p", enabled: true, prefix: "", property: "status", type: "text", presetValues: ["todo", "doing", "done"], mainMenuPresets: ["done", "ghost", "todo"] },
+			],
+		},
+	});
+	const [status] = settings.setProperties.properties;
+	assert.deepEqual(status.mainMenuPresets, ["todo", "done"]);
+	assert.deepEqual([0, 1, 2].map((index) => readPropertyField(status, "mainMenuPreset", String(index))), [true, false, true]);
+	writePropertyField(status, "mainMenuPreset", true, "1");
+	assert.deepEqual(status.mainMenuPresets, ["todo", "doing", "done"]);
+	writePropertyField(status, "presetValues", "finished", "2");
+	assert.deepEqual(status.mainMenuPresets, ["todo", "doing", "finished"]);
+	movePresetValue(status, 2, 0);
+	assert.deepEqual(status.mainMenuPresets, ["finished", "todo", "doing"]);
+	deletePresetValue(status, 1);
+	assert.deepEqual(status.presetValues, ["finished", "doing"]);
+	assert.deepEqual(status.mainMenuPresets, ["finished", "doing"]);
+	writePropertyField(status, "mainMenuPreset", false, "0");
+	assert.deepEqual(status.mainMenuPresets, ["doing"]);
 });

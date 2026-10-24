@@ -185,8 +185,10 @@ function entryChoices(
 		if (isUnset(pending) && offer(property, "")) {
 			choices.push(choice({ ...prefixPart(offered.entry, showPrefixes), content: property }, scalarAction(offered, state, pending)));
 		}
-		if (offered.entry.presetsInMainMenu) {
+		const mainMenu = offered.entry.mainMenuPresets ?? [];
+		if (mainMenu.length > 0) {
 			const presets = offered.presets
+				.filter((preset) => mainMenu.includes(preset))
 				.map((preset) => (offered.type === "number" ? Number(preset) : preset))
 				.filter((value) => !sameValue(value, pending) && offer(property, String(value)));
 			const rows = presets.map((value) =>
@@ -208,7 +210,7 @@ function useChoices(
 	if (name === undefined) return [];
 	const { property } = offered.entry;
 	const wanted = name.toLowerCase();
-	const known = offered.entry.presetsInMainMenu ? offered.presets : [];
+	const known = offered.presets.filter((preset) => (offered.entry.mainMenuPresets ?? []).includes(preset));
 	if (known.some((value) => value.toLowerCase() === wanted) || sameValue(state.values.get(property), name)) {
 		return [];
 	}

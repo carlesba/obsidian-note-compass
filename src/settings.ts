@@ -76,7 +76,7 @@ export interface EditableProperty {
 	newNoteFolder?: string;
 	newNoteTemplate?: string;
 	presetValues?: string[];
-	presetsInMainMenu?: true;
+	mainMenuPresets?: string[];
 	checkboxMode?: CheckboxMode;
 	keepsEmpty?: true;
 }
@@ -257,7 +257,8 @@ function readProperties(stored: unknown[]): EditableProperty[] {
 		writePrefixColor(property, entry.prefixColor);
 		const presetValues = readPresetValues(entry);
 		if (presetValues.length > 0) property.presetValues = presetValues;
-		if (entry.presetsInMainMenu === true) property.presetsInMainMenu = true;
+		const mainMenuPresets = readMainMenuPresets(entry, presetValues);
+		if (mainMenuPresets.length > 0) property.mainMenuPresets = mainMenuPresets;
 		const checkboxMode = CHECKBOX_MODES.find((mode) => mode === entry.checkboxMode);
 		if (checkboxMode && checkboxMode !== "picker") property.checkboxMode = checkboxMode;
 		if (entry.keepsEmpty === true) property.keepsEmpty = true;
@@ -293,6 +294,13 @@ function readPresetValues(entry: Record<string, unknown>): string[] {
 		.map((value) => value.trim())
 		.filter((value) => value !== "");
 	return [...new Set(values)];
+}
+
+function readMainMenuPresets(entry: Record<string, unknown>, presetValues: readonly string[]): string[] {
+	if (entry.presetsInMainMenu === true) return [...presetValues];
+	if (!Array.isArray(entry.mainMenuPresets)) return [];
+	const wanted = new Set(entry.mainMenuPresets.filter((value): value is string => typeof value === "string").map((value) => value.trim()));
+	return presetValues.filter((value) => wanted.has(value));
 }
 
 export function hasPresetValues(type: EditablePropertyType): boolean {

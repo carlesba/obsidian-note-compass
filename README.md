@@ -75,7 +75,7 @@ Below the set values, each enabled property offers what it can add, in the order
 
 - A link or links property lists the notes from its source that are not set yet, most recently modified first. Choosing one adds it to a links property, or replaces the note a link property holds. Links are saved as a list such as `["[[Alice]]", "[[Bob]]"]`, and links the property already holds that its source does not offer are kept.
 - A text, number, date or datetime property that is not set shows one row with its name, which opens its own picker. The values the vault already has are offered there, not here.
-- A text or number property with "Show preset values in the first menu" switched on also lists its preset values here, so one choice sets the value.
+- A text or number property also lists here the preset values whose main menu switch is on, so one choice sets the value.
 - A text property also offers `✏️ <property>: use "<what you typed>"` when you type something that is not one of those presets.
 - A checkbox that is not set shows one row with its name. By default it opens its own picker. With "Toggle between true and not set" choosing it sets `true`, and choosing it again while it is `true` clears it. With "Cycle through true, false and not set" each choice moves it one step, from not set to `true`, then `false`, then not set again.
 
@@ -178,7 +178,7 @@ A property's page has "Enabled", "Prefix" and "Prefix colour" as on a list's pag
 
 Every property has "Remove when empty", which is on by default and removes the property from the note once you clear its value or remove its last link. Switched off, the property stays in the note with an empty value. A checkbox also has "When chosen", which picks how choosing it in the main picker behaves: open its own picker, toggle between true and not set, or cycle through true, false and not set.
 
-A text or number property also has "Preset values", a list of values its own picker offers first, such as `todo`, `doing` and `done` for a `status` property. The `+` in its header adds a row with a text field for the value, rows can be dragged into the order the picker shows them, and each row can be deleted. A number property only keeps values written as numbers. Presets are helpers rather than limits: after them the picker still offers the other values the property already has in the vault, most used first, and anything you type. "Show preset values in the first menu" offers them in the main picker as well, so one choice sets the value.
+A text or number property also has "Preset values", a list of values its own picker offers first, such as `todo`, `doing` and `done` for a `status` property. The `+` in its header adds a row with a text field for the value and a switch, rows can be dragged into the order the picker shows them, and each row can be deleted. A number property only keeps values written as numbers. Presets are helpers rather than limits: after them the picker still offers the other values the property already has in the vault, most used first, and anything you type. The switch beside a preset also shows it in the main Set properties menu, so you can keep many presets and put only the few you use most one choice away. Every preset is always offered in the property's own picker.
 
 A link or links property has three more sections:
 

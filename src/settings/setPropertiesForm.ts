@@ -13,7 +13,7 @@ export type PropertyField =
 	| "name"
 	| "type"
 	| "presetValues"
-	| "presetsInMainMenu"
+	| "mainMenuPreset"
 	| "checkboxMode"
 	| "removesEmpty"
 	| LinkPropertyField;
@@ -82,7 +82,7 @@ export function hasSource(entry: EditableProperty): entry is LinkProperty {
 export function readPropertyField(entry: EditableProperty, field: PropertyField, index?: string): unknown {
 	if (field === "excludedFolders") return entry.excludedFolders?.[Number(index)];
 	if (field === "presetValues") return entry.presetValues?.[Number(index)];
-	if (field === "presetsInMainMenu") return entry.presetsInMainMenu === true;
+	if (field === "mainMenuPreset") return isMainMenuPreset(entry, Number(index));
 	if (field === "checkboxMode") return entry.checkboxMode ?? "picker";
 	if (field === "removesEmpty") return entry.keepsEmpty !== true;
 	if (field === "enabled") return entry.enabled;
@@ -97,8 +97,8 @@ export function writePropertyField(entry: EditableProperty, field: PropertyField
 	const text = typeof value === "string" ? value : "";
 	if (field === "excludedFolders") return writeExcludedFolder(entry, Number(index), text);
 	if (field === "presetValues") return writePresetValue(entry, Number(index), text);
-	if (field === "presetsInMainMenu") writeFlag(entry, "presetsInMainMenu", value === true);
-	else if (field === "removesEmpty") writeFlag(entry, "keepsEmpty", value !== true);
+	if (field === "mainMenuPreset") return writeMainMenuPreset(entry, Number(index), value === true);
+	if (field === "removesEmpty") writeFlag(entry, "keepsEmpty", value !== true);
 	else if (field === "checkboxMode") writeCheckboxMode(entry, value);
 	else if (field === "enabled") entry.enabled = value === true;
 	else if (field === "createsNotes") entry.createsNotes = value === true;
@@ -125,9 +125,28 @@ function writeExcludedFolder(entry: EditableProperty, index: number, folder: str
 	return true;
 }
 
-function writeFlag(entry: EditableProperty, flag: "presetsInMainMenu" | "keepsEmpty", on: boolean): void {
+function writeFlag(entry: EditableProperty, flag: "keepsEmpty", on: boolean): void {
 	if (on) entry[flag] = true;
 	else delete entry[flag];
+}
+
+export function isMainMenuPreset(entry: EditableProperty, index: number): boolean {
+	const value = entry.presetValues?.[index];
+	return value !== undefined && value !== "" && (entry.mainMenuPresets ?? []).includes(value);
+}
+
+function writeMainMenuPreset(entry: EditableProperty, index: number, shown: boolean): boolean {
+	const value = entry.presetValues?.[index];
+	if (value === undefined) return false;
+	const others = (entry.mainMenuPresets ?? []).filter((preset) => preset !== value);
+	setMainMenuPresets(entry, shown && value !== "" ? [...others, value] : others);
+	return true;
+}
+
+function setMainMenuPresets(entry: EditableProperty, values: string[]): void {
+	const ordered = (entry.presetValues ?? []).filter((value, index, all) => values.includes(value) && all.indexOf(value) === index);
+	if (ordered.length > 0) entry.mainMenuPresets = ordered;
+	else delete entry.mainMenuPresets;
 }
 
 function writeCheckboxMode(entry: EditableProperty, value: unknown): void {
@@ -141,13 +160,15 @@ export function addPresetValue(entry: EditableProperty): void {
 }
 
 export function deletePresetValue(entry: EditableProperty, index: number): void {
-	entry.presetValues?.splice(index, 1);
+	const [removed] = entry.presetValues?.splice(index, 1) ?? [];
 	if (entry.presetValues?.length === 0) delete entry.presetValues;
+	setMainMenuPresets(entry, (entry.mainMenuPresets ?? []).filter((value) => value !== removed || entry.presetValues?.includes(value)));
 }
 
 export function movePresetValue(entry: EditableProperty, from: number, to: number): void {
 	const values = entry.presetValues;
 	if (values) values.splice(to, 0, ...values.splice(from, 1));
+	setMainMenuPresets(entry, entry.mainMenuPresets ?? []);
 }
 
 export function presetValueError(entry: EditableProperty, value: string): string | undefined {
@@ -158,7 +179,10 @@ export function presetValueError(entry: EditableProperty, value: string): string
 function writePresetValue(entry: EditableProperty, index: number, value: string): boolean {
 	const values = entry.presetValues;
 	if (!values || !Number.isInteger(index) || index < 0 || index >= values.length) return false;
+	const previous = values[index];
+	const shown = (entry.mainMenuPresets ?? []).includes(previous);
 	values[index] = value.trim();
+	if (shown) setMainMenuPresets(entry, [...(entry.mainMenuPresets ?? []).filter((preset) => preset !== previous), values[index]]);
 	return true;
 }
 

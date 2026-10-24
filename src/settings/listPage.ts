@@ -13,7 +13,7 @@ import type { Period } from "../lists/dateNotes";
 import { noteCreationBlocker } from "../createNote/newNotes";
 import { hasPresetValues, isLinkType, isUnreadable } from "../settings";
 import type { EditableProperty, ListSource, NoteList } from "../settings";
-import { excludedFolderKey, listKey, presetValueKey, propertyKey, propertySourceKey } from "./controlKeys";
+import { excludedFolderKey, listKey, mainMenuPresetKey, presetValueKey, propertyKey, propertySourceKey } from "./controlKeys";
 import { PERIODS } from "../lists/dateNotes";
 import {
 	CURRENT_PERIOD_FIELDS,
@@ -36,6 +36,7 @@ import {
 	addPresetValue,
 	deleteExcludedFolder,
 	deletePresetValue,
+	isMainMenuPreset,
 	movePresetValue,
 	presetValueError,
 	hasSource,
@@ -253,9 +254,10 @@ export function propertyPage(
 	];
 	if (hasPresetValues(entry.type)) {
 		items.push(presetValuesList(entry, context), {
-			name: "Show preset values in the first menu",
-			desc: "Offer the preset values in the main picker too, so one choice sets the value. The property's own picker always offers them.",
-			control: { type: "toggle", disabled: () => (entry.presetValues ?? []).length === 0, key: key("presetsInMainMenu") },
+			name: "Preset values in the main menu",
+			desc: "The switch beside a preset also offers it in the main Set properties menu, so one choice sets it. Every preset is always offered in the property's own picker.",
+			searchable: false,
+			render: () => undefined,
 		});
 	}
 	if (isLinkType(entry.type) && hasSource(entry) && !isUnreadable(entry.source)) {
@@ -285,7 +287,7 @@ function presetValuesList(entry: EditableProperty, context: ListPageContext): Se
 	return {
 		type: "list",
 		heading: "Preset values",
-		emptyState: "No preset values. The picker still offers the values this property already has in the vault.",
+		emptyState: "No preset values. The property's own picker still offers the values it already has in the vault.",
 		items: values.map((value, index) => ({
 			name: `Preset value ${index + 1}`,
 			searchable: false,
@@ -300,6 +302,12 @@ function presetValuesList(entry: EditableProperty, context: ListPageContext): Se
 						if (error === undefined) context.write(presetValueKey(entry.id, index), typed);
 					});
 				});
+				setting.addToggle((toggle) =>
+					toggle
+						.setTooltip("Show in the main menu")
+						.setValue(isMainMenuPreset(entry, index))
+						.onChange((shown) => context.write(mainMenuPresetKey(entry.id, index), shown)),
+				);
 			},
 		})),
 		onReorder: (from, to) => context.change(() => movePresetValue(entry, from, to)),

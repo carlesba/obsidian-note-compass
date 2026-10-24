@@ -367,7 +367,7 @@ test("a link property on current date notes offers only the date notes that exis
 	);
 });
 
-test("preset values lead a text property's own picker, and show in the main picker only when switched on", () => {
+test("preset values lead a text property's own picker, and only the ones switched on show in the main menu", () => {
 	const status = entry("status", "text", { prefix: "📝", presetValues: ["todo", "done", "blocked"] });
 	const { choicesFor, valueChoicesFor } = setup([status]);
 	assert.deepEqual(labels(choicesFor()).slice(2), ["✓ 📝 status doing"]);
@@ -375,9 +375,10 @@ test("preset values lead a text property's own picker, and show in the main pick
 		valueChoicesFor(status).map((choice) => choice.label),
 		["todo", "done", "blocked", "✓ doing ×1", "Done ×1", "🗑️ Clear"],
 	);
-	const shown = setup([{ ...status, presetsInMainMenu: true }]);
-	assert.deepEqual(labels(shown.choicesFor()).slice(2), ["✓ 📝 status doing", "📝 status todo", "📝 status done", "📝 status blocked"]);
+	const shown = setup([{ ...status, mainMenuPresets: ["todo", "blocked"] }]);
+	assert.deepEqual(labels(shown.choicesFor()).slice(2), ["✓ 📝 status doing", "📝 status todo", "📝 status blocked"]);
 	assert.deepEqual(labels(shown.choicesFor(undefined, "blocked")), ["📝 status blocked"]);
+	assert.deepEqual(labels(shown.choicesFor(undefined, "done")), ['✏️ 📝 status: use "done"']);
 });
 
 test("a number property offers its preset values before the numbers the vault has", () => {
