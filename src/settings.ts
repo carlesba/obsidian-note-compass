@@ -71,6 +71,7 @@ export interface EditableProperty {
 	createsNotes?: boolean;
 	newNoteFolder?: string;
 	newNoteTemplate?: string;
+	presetValues?: string[];
 }
 
 export interface SetPropertiesSettings {
@@ -247,6 +248,8 @@ function readProperties(stored: unknown[]): EditableProperty[] {
 			type,
 		};
 		writePrefixColor(property, entry.prefixColor);
+		const presetValues = readPresetValues(entry);
+		if (presetValues.length > 0) property.presetValues = presetValues;
 		if (source) {
 			property.source = source;
 			property.excludedFolders = readExcludedFolders(entry);
@@ -270,6 +273,19 @@ function readExcludedFolders(entry: Record<string, unknown>): string[] {
 			.filter((folder) => folder !== "");
 	}
 	return typeof entry.excludedFolder === "string" ? folderList(entry.excludedFolder) : [];
+}
+
+function readPresetValues(entry: Record<string, unknown>): string[] {
+	if (!Array.isArray(entry.presetValues)) return [];
+	const values = entry.presetValues
+		.filter((value): value is string => typeof value === "string")
+		.map((value) => value.trim())
+		.filter((value) => value !== "");
+	return [...new Set(values)];
+}
+
+export function hasPresetValues(type: EditablePropertyType): boolean {
+	return type === "text" || type === "number";
 }
 
 function folderList(folder: string): string[] {

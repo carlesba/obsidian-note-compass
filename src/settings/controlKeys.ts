@@ -32,6 +32,10 @@ export function excludedFolderKey(id: string, index: number): string {
 	return `property/${id}/excludedFolders/${index}`;
 }
 
+export function presetValueKey(id: string, index: number): string {
+	return `property/${id}/presetValues/${index}`;
+}
+
 export function propertySourceKey(id: string, field: ListField): string {
 	return `propertySource/${id}/${field}`;
 }

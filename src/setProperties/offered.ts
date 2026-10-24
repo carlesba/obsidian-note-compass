@@ -25,9 +25,13 @@ export function offeredEntries(settings: JumpSettings, vault: JumpListVault, tar
 		const type = propertyType(settings.setProperties, entry);
 		const offered: OfferedEntry = { entry, type, notes: [], values: [] };
 		if (isLinkType(type)) offered.notes = pickableNotes(settings, vault, target, entry);
-		if (type === "text") offered.values = vaultTexts(vault, entry.property);
+		if (type === "text") offered.values = [...new Set([...presetTexts(entry), ...vaultTexts(vault, entry.property)])];
 		return offered;
 	});
+}
+
+function presetTexts(entry: EditableProperty): string[] {
+	return (entry.presetValues ?? []).map((value) => value.trim()).filter((value) => value !== "");
 }
 
 function vaultTexts(vault: JumpListVault, property: string): string[] {

@@ -66,7 +66,7 @@ function setup(
 	const choicesFor = (state: PickerState = pickerState(initial), query = "") => pickerChoices(entries, initial, state, query, showPrefixes);
 	const valueChoicesFor = (picked: EditableProperty, state: PickerState = pickerState(initial), query = "") =>
 		valueChoices(
-			valuePicker(vault, picked.property, propertyType(settings.setProperties, picked) as ScalarPropertyType),
+			valuePicker(vault, picked.property, propertyType(settings.setProperties, picked) as ScalarPropertyType, picked.presetValues),
 			state.values.get(picked.property),
 			query,
 		);
@@ -362,5 +362,21 @@ test("a link property on current date notes offers only the date notes that exis
 	assert.deepEqual(
 		offered.notes.map((note) => note.path),
 		["on/2024-03.md"],
+	);
+});
+
+test("a text property offers its preset values first, then the other values the vault has, and still takes a typed one", () => {
+	const { choicesFor } = setup([entry("status", "text", { prefix: "📝", presetValues: ["todo", "done", "blocked"] })]);
+	assert.deepEqual(labels(choicesFor()).slice(2), ["✓ 📝 status doing", "📝 status todo", "📝 status done", "📝 status blocked", "📝 status Done"]);
+	assert.deepEqual(labels(choicesFor(undefined, "waiting")), ['✏️ 📝 status: use "waiting"']);
+	assert.deepEqual(labels(choicesFor(undefined, "blocked")), ["📝 status blocked"]);
+});
+
+test("a number property offers its preset values before the numbers the vault has", () => {
+	const picked = entry("rating", "number", { presetValues: ["1", "3", "x", "5", "3"] });
+	const { valueChoicesFor } = setup([picked]);
+	assert.deepEqual(
+		valueChoicesFor(picked).map((choice) => choice.label),
+		["1", "3", "5", "4.5 ×1", "✓ Clear"],
 	);
 });

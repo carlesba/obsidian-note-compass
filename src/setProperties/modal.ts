@@ -46,7 +46,7 @@ export function setProperties(
 	const openValue = (state: PickerState, entry: EditableProperty, query: string): void => {
 		const type = propertyType(settings.setProperties, entry);
 		if (!isScalarType(type)) return openMain(state, query);
-		const picker = valuePicker(vault, entry.property, type);
+		const picker = valuePicker(vault, entry.property, type, entry.presetValues);
 		new ChoiceModal<ValueChoice>(
 			app,
 			entry.property,

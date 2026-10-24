@@ -2,10 +2,11 @@ import type { PropertyType } from "../lists/conditions.ts";
 import { EDITABLE_PROPERTY_TYPES, isLinkType, newListId, writePrefixColor } from "../settings.ts";
 import type { EditableProperty, EditablePropertyType, ListSource, NoteList } from "../settings.ts";
 import { mixedTypeProperties } from "../setProperties/propertyTypes.ts";
+import { parseNumber } from "../setProperties/values.ts";
 import { readListField, writeListField } from "./listForm.ts";
 import type { ListField } from "./listForm.ts";
 
-export type PropertyField = "enabled" | "prefix" | "prefixColor" | "name" | "type" | LinkPropertyField;
+export type PropertyField = "enabled" | "prefix" | "prefixColor" | "name" | "type" | "presetValues" | LinkPropertyField;
 
 type LinkPropertyField = "excludedFolders" | "createsNotes" | "newNoteFolder" | "newNoteTemplate";
 
@@ -64,6 +65,7 @@ export function hasSource(entry: EditableProperty): entry is LinkProperty {
 
 export function readPropertyField(entry: EditableProperty, field: PropertyField, index?: string): unknown {
 	if (field === "excludedFolders") return entry.excludedFolders?.[Number(index)];
+	if (field === "presetValues") return entry.presetValues?.[Number(index)];
 	if (field === "enabled") return entry.enabled;
 	if (field === "prefix") return entry.prefix;
 	if (field === "prefixColor") return entry.prefixColor ?? "";
@@ -75,6 +77,7 @@ export function readPropertyField(entry: EditableProperty, field: PropertyField,
 export function writePropertyField(entry: EditableProperty, field: PropertyField, value: unknown, index?: string): boolean {
 	const text = typeof value === "string" ? value : "";
 	if (field === "excludedFolders") return writeExcludedFolder(entry, Number(index), text);
+	if (field === "presetValues") return writePresetValue(entry, Number(index), text);
 	if (field === "enabled") entry.enabled = value === true;
 	else if (field === "createsNotes") entry.createsNotes = value === true;
 	else if (field === "prefix") entry.prefix = text;
@@ -97,6 +100,32 @@ function writeExcludedFolder(entry: EditableProperty, index: number, folder: str
 	const folders = entry.excludedFolders;
 	if (!folders || !Number.isInteger(index) || index < 0 || index >= folders.length) return false;
 	folders[index] = folder.trim();
+	return true;
+}
+
+export function addPresetValue(entry: EditableProperty): void {
+	entry.presetValues = [...(entry.presetValues ?? []), ""];
+}
+
+export function deletePresetValue(entry: EditableProperty, index: number): void {
+	entry.presetValues?.splice(index, 1);
+	if (entry.presetValues?.length === 0) delete entry.presetValues;
+}
+
+export function movePresetValue(entry: EditableProperty, from: number, to: number): void {
+	const values = entry.presetValues;
+	if (values) values.splice(to, 0, ...values.splice(from, 1));
+}
+
+export function presetValueError(entry: EditableProperty, value: string): string | undefined {
+	if (entry.type !== "number" || value.trim() === "" || parseNumber(value) !== undefined) return undefined;
+	return "Write a number, such as 3 or 2.5.";
+}
+
+function writePresetValue(entry: EditableProperty, index: number, value: string): boolean {
+	const values = entry.presetValues;
+	if (!values || !Number.isInteger(index) || index < 0 || index >= values.length) return false;
+	values[index] = value.trim();
 	return true;
 }
 

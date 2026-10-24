@@ -9,6 +9,7 @@ export type ScalarPropertyType = Extract<EditablePropertyType, "checkbox" | "num
 export interface ValuePicker {
 	type: ScalarPropertyType;
 	counts: PropertyValueCount[];
+	presets: number[];
 	now: number;
 }
 
@@ -30,10 +31,17 @@ export function isScalarType(type: EditablePropertyType): type is ScalarProperty
 	return type === "checkbox" || type === "number" || type === "date" || type === "datetime";
 }
 
-export function valuePicker(vault: JumpListVault, property: string, type: ScalarPropertyType): ValuePicker {
+export function valuePicker(
+	vault: JumpListVault,
+	property: string,
+	type: ScalarPropertyType,
+	presetValues: readonly string[] = [],
+): ValuePicker {
+	const numbers = type === "number" ? presetValues.map(parseNumber).filter((value): value is number => value !== undefined) : [];
 	return {
 		type,
 		counts: type === "number" ? vault.propertyValueCounts(property) : [],
+		presets: [...new Set(numbers)],
 		now: vault.now(),
 	};
 }
@@ -51,7 +59,12 @@ function typeChoices(picker: ValuePicker, pending: unknown, query: string): Valu
 		case "checkbox":
 			return [offer("true", true), offer("false", false), clear];
 		case "number":
-			return [...useChoice(parseNumber(query), pending), ...vaultNumbers(picker, pending), clear];
+			return [
+				...useChoice(parseNumber(query), pending),
+				...picker.presets.map((value) => offer(String(value), value)),
+				...vaultNumbers(picker, pending),
+				clear,
+			];
 		case "date":
 			return [
 				...useChoice(parseDate(query), pending),
@@ -78,7 +91,7 @@ function useChoice(value: string | number | undefined, pending: unknown): ValueC
 
 function vaultNumbers(picker: ValuePicker, pending: unknown): ValueChoice[] {
 	return picker.counts
-		.filter((count) => typeof count.value === "number")
+		.filter((count) => typeof count.value === "number" && !picker.presets.includes(count.value))
 		.sort((a, b) => b.count - a.count || String(a.value).localeCompare(String(b.value)))
 		.map((count) => choice(String(count.value), count.value, sameValue(count.value, pending), `×${count.count}`));
 }

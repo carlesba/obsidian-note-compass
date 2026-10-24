@@ -9,12 +9,18 @@ import { propertySuggestions } from "../src/settings/listForm.ts";
 import {
 	PROPERTY_TYPE_OPTIONS,
 	addExcludedFolder,
+	addPresetValue,
 	deleteExcludedFolder,
+	deletePresetValue,
 	mixedTypeWarning,
+	movePresetValue,
 	newProperty,
 	propertyLabel,
 	propertyRowName,
+	presetValueError,
 	propertyTypePreset,
+	readPropertyField,
+	writePropertyField,
 } from "../src/settings/setPropertiesForm.ts";
 import { moment } from "./moment.ts";
 
@@ -264,4 +270,21 @@ test("stored link properties without the create notes switch get it on only when
 	assert.equal(creates({ newNoteFolder: "people", createsNotes: false }), false);
 	assert.equal(creates({ createsNotes: true }), true);
 	assert.equal(creates({ createsNotes: "yes" }), false);
+});
+
+test("preset values are kept trimmed and without blanks or repeats, and the form adds, edits, moves and removes them", () => {
+	const settings = mergeSettings({
+		setProperties: { properties: [{ id: "p", enabled: true, prefix: "", property: "status", type: "text", presetValues: [" todo ", "", "done", "todo", 3] }] },
+	});
+	const [status] = settings.setProperties.properties;
+	assert.deepEqual(status.presetValues, ["todo", "done"]);
+	addPresetValue(status);
+	assert.equal(writePropertyField(status, "presetValues", " blocked ", "2"), true);
+	movePresetValue(status, 2, 0);
+	assert.deepEqual(status.presetValues, ["blocked", "todo", "done"]);
+	deletePresetValue(status, 1);
+	assert.equal(readPropertyField(status, "presetValues", "1"), "done");
+	assert.equal(presetValueError(status, "anything"), undefined);
+	assert.equal(presetValueError({ ...status, type: "number" }, "many"), "Write a number, such as 3 or 2.5.");
+	assert.equal(presetValueError({ ...status, type: "number" }, "2.5"), undefined);
 });

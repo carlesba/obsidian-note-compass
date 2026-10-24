@@ -11,9 +11,9 @@ import type {
 } from "obsidian";
 import type { Period } from "../lists/dateNotes";
 import { noteCreationBlocker } from "../createNote/newNotes";
-import { isLinkType, isUnreadable } from "../settings";
+import { hasPresetValues, isLinkType, isUnreadable } from "../settings";
 import type { EditableProperty, ListSource, NoteList } from "../settings";
-import { excludedFolderKey, listKey, propertyKey, propertySourceKey } from "./controlKeys";
+import { excludedFolderKey, listKey, presetValueKey, propertyKey, propertySourceKey } from "./controlKeys";
 import { PERIODS } from "../lists/dateNotes";
 import {
 	CURRENT_PERIOD_FIELDS,
@@ -32,7 +32,11 @@ import { PropertySuggest, warningDescription } from "./suggest";
 import {
 	PROPERTY_TYPE_OPTIONS,
 	addExcludedFolder,
+	addPresetValue,
 	deleteExcludedFolder,
+	deletePresetValue,
+	movePresetValue,
+	presetValueError,
 	hasSource,
 	mixedTypeWarning,
 	propertyLabel,
@@ -235,6 +239,7 @@ export function propertyPage(
 			control: { type: "dropdown", disabled: () => !chosen(), key: key("type"), options: PROPERTY_TYPE_OPTIONS },
 		},
 	];
+	if (hasPresetValues(entry.type)) items.push(presetValuesList(entry, context));
 	if (isLinkType(entry.type) && hasSource(entry) && !isUnreadable(entry.source)) {
 		items.push(
 			{
@@ -255,6 +260,27 @@ export function propertyPage(
 		items,
 	};
 	return page;
+}
+
+function presetValuesList(entry: EditableProperty, context: ListPageContext): SettingDefinitionList {
+	const values = entry.presetValues ?? [];
+	return {
+		type: "list",
+		heading: "Preset values",
+		emptyState: "No preset values. The picker still offers the values this property already has in the vault.",
+		items: values.map((_value, index) => ({
+			name: `Preset value ${index + 1}`,
+			control: {
+				type: "text",
+				key: presetValueKey(entry.id, index),
+				placeholder: entry.type === "number" ? "3" : "Doing",
+				validate: (value: string) => presetValueError(entry, value),
+			},
+		})),
+		onReorder: (from, to) => context.change(() => movePresetValue(entry, from, to)),
+		onDelete: (index) => context.change(() => deletePresetValue(entry, index)),
+		addItem: { name: "Add preset value", action: () => context.change(() => addPresetValue(entry)) },
+	};
 }
 
 function excludedFoldersList(entry: LinkProperty, context: ListPageContext): SettingDefinitionList {

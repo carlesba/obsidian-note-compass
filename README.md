@@ -74,7 +74,7 @@ Next come the values the note will be saved with, each marked `✓`: one row per
 Below the set values, each enabled property offers what it can add, in the order of your settings:
 
 - A link or links property lists the notes from its source that are not set yet, most recently modified first. Choosing one adds it to a links property, or replaces the note a link property holds. Links are saved as a list such as `["[[Alice]]", "[[Bob]]"]`, and links the property already holds that its source does not offer are kept.
-- A text property lists the values it already has across the vault, most used first, and choosing one replaces the value. When nothing matches what you typed, it also offers `✏️ <property>: use "<what you typed>"`.
+- A text property lists its preset values, then the other values it already has across the vault, most used first, and choosing one replaces the value. When nothing matches what you typed, it also offers `✏️ <property>: use "<what you typed>"`.
 - A checkbox, number, date or datetime property that is not set shows one row with its name, which opens its own picker.
 
 With nothing typed, each property shows at most five values, followed by `… N more, type to filter`, which types the property's prefix for you. Once you type, every matching row is shown. After you choose a value the picker reopens with the filter cleared, so `🏁 Save & close` is back at the top and the value you just chose shows up below it as set.
@@ -84,7 +84,7 @@ With nothing typed, each property shows at most five values, followed by `… N 
 A property's own picker marks its current value `✓` and ends with `🗑️ Clear`, which removes the property. Escape returns to the main picker without changing that property, and the changes you already made there are kept.
 
 - A checkbox offers `true` and `false`.
-- A number offers `✏️ Use "<what you typed>"` for a number, then the numbers the property already has in the vault, most used first.
+- A number offers `✏️ Use "<what you typed>"` for a number, then its preset values, then the other numbers the property already has in the vault, most used first.
 - A date offers "Use" for a date typed as `YYYYMMDD` or `YYYY-MM-DD`, then Today, Tomorrow, Next Monday and In a week, and is saved as `YYYY-MM-DD`.
 - A datetime offers "Use" for `YYYYMMDD HHmm`, `YYYY-MM-DD HH:mm` or `YYYY-MM-DDTHH:mm`, then Now, and is saved as `YYYY-MM-DDTHH:mm`.
 
@@ -172,6 +172,8 @@ A property condition asks for the property, suggesting the vault's properties wi
 A property's page has "Enabled", "Prefix" and "Prefix colour" as on a list's page, then "Property" and "Type". "Property" suggests the vault's properties with their types, and picking one sets the type to match: checkbox, number, date and datetime keep theirs, lists and tags become links, and anything else becomes text. "Type" can be checkbox, text, number, date, datetime, link for one note, or links for several, and stays disabled until a property is chosen.
 
 ![The page of the people links property, offering notes that link to Person, excluding the templates folder, and creating new notes in samples/people from a template](docs/images/settings-property.png)
+
+A text or number property also has "Preset values", a list of values the picker offers first, such as `todo`, `doing` and `done` for a `status` property. The `+` in its header adds a value, rows can be dragged into the order the picker shows them, and each row can be deleted. A number property only keeps values written as numbers. Presets are helpers rather than limits: after them the picker still offers the other values the property already has in the vault, most used first, and anything you type.
 
 A link or links property has three more sections:
 
