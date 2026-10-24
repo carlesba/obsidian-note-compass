@@ -4,12 +4,12 @@ import type { RowParts } from "../render";
 import type { EditablePropertyType } from "../settings";
 import { isUnset, parseDate, parseDateTime, parseNumber, sameValue } from "./values.ts";
 
-export type ScalarPropertyType = Extract<EditablePropertyType, "checkbox" | "number" | "date" | "datetime">;
+export type ScalarPropertyType = Extract<EditablePropertyType, "checkbox" | "text" | "number" | "date" | "datetime">;
 
 export interface ValuePicker {
 	type: ScalarPropertyType;
 	counts: PropertyValueCount[];
-	presets: number[];
+	presets: (string | number)[];
 	now: number;
 }
 
@@ -28,7 +28,7 @@ const SELECTED_MARK = "✓";
 export const CLEAR_LABEL = rowLabel({ mark: CLEAR_MARK, content: CLEAR_TEXT });
 
 export function isScalarType(type: EditablePropertyType): type is ScalarPropertyType {
-	return type === "checkbox" || type === "number" || type === "date" || type === "datetime";
+	return type === "checkbox" || type === "text" || type === "number" || type === "date" || type === "datetime";
 }
 
 export function valuePicker(
@@ -37,11 +37,16 @@ export function valuePicker(
 	type: ScalarPropertyType,
 	presetValues: readonly string[] = [],
 ): ValuePicker {
-	const numbers = type === "number" ? presetValues.map(parseNumber).filter((value): value is number => value !== undefined) : [];
+	const presets: (string | number)[] =
+		type === "number"
+			? presetValues.map(parseNumber).filter((value): value is number => value !== undefined)
+			: type === "text"
+				? presetValues.map((value) => value.trim()).filter((value) => value !== "")
+				: [];
 	return {
 		type,
-		counts: type === "number" ? vault.propertyValueCounts(property) : [],
-		presets: [...new Set(numbers)],
+		counts: type === "number" || type === "text" ? vault.propertyValueCounts(property) : [],
+		presets: [...new Set(presets)],
 		now: vault.now(),
 	};
 }
@@ -62,9 +67,15 @@ function typeChoices(picker: ValuePicker, pending: unknown, query: string): Valu
 			return [
 				...useChoice(parseNumber(query), pending),
 				...picker.presets.map((value) => offer(String(value), value)),
-				...vaultNumbers(picker, pending),
+				...vaultValues(picker, pending, "number"),
 				clear,
 			];
+		case "text": {
+			const typed = query.trim();
+			const known = [...picker.presets, ...picker.counts.map((count) => count.value)];
+			const use = typed !== "" && !known.some((value) => sameValue(value, typed)) ? useChoice(typed, pending) : [];
+			return [...use, ...picker.presets.map((value) => offer(String(value), value)), ...vaultValues(picker, pending, "string"), clear];
+		}
 		case "date":
 			return [
 				...useChoice(parseDate(query), pending),
@@ -89,9 +100,9 @@ function useChoice(value: string | number | undefined, pending: unknown): ValueC
 	return [{ ...choice(`Use "${value}"`, value, sameValue(value, pending), undefined, USE_MARK), typed: true }];
 }
 
-function vaultNumbers(picker: ValuePicker, pending: unknown): ValueChoice[] {
+function vaultValues(picker: ValuePicker, pending: unknown, kind: "number" | "string"): ValueChoice[] {
 	return picker.counts
-		.filter((count) => typeof count.value === "number" && !picker.presets.includes(count.value))
+		.filter((count) => typeof count.value === kind && !picker.presets.some((preset) => preset === count.value))
 		.sort((a, b) => b.count - a.count || String(a.value).localeCompare(String(b.value)))
 		.map((count) => choice(String(count.value), count.value, sameValue(count.value, pending), `×${count.count}`));
 }

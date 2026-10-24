@@ -8,6 +8,7 @@ import {
 	CANCEL_LABEL,
 	SAVE_LABEL,
 	initialPropertyState,
+	keptEmptyValues,
 	pickerChoices,
 	pickerState,
 	withValue,
@@ -111,8 +112,6 @@ test("the main picker lists save, cancel, the set values and then each entry's c
 		"👤 Bob",
 		"👤 Cy",
 		"👤 Today too",
-		"📝 status done",
-		"📝 status Done",
 	]);
 });
 
@@ -148,8 +147,6 @@ test("with prefixes hidden rows drop the prefix and link rows name the property 
 		"✓ status doing",
 		"✓ Ann people",
 		"✓ Stranger people",
-		"status done",
-		"status Done",
 		"Bob people",
 		"Cy people",
 		"Today too people",
@@ -221,15 +218,20 @@ test("a link matches a note by its link text when its alias differs", () => {
 	assert.deepEqual(labels(choicesFor(state)).slice(2), ["✓ • Annie", "Bob", "Cy", "Today too"]);
 });
 
-test("a text entry replaces from vault values, clears from its set row and uses a typed value", () => {
-	const { initial, choicesFor } = setup([entry("status", "text", { prefix: "📝" })]);
-	const done = chosen(pick(choicesFor(), "📝 status done"));
-	assert.deepEqual(written(initial, done), { status: "done" });
-	assert.deepEqual(written(initial, chosen(pick(choicesFor(), "✓ 📝 status doing")), { status: "doing" }), {});
-	assert.deepEqual(labels(choicesFor(undefined, "dne")), ["📝 status done", "📝 status Done", '✏️ 📝 status: use "dne"']);
+test("a text entry opens its own picker from its set row, which offers the vault's values, and the main picker still uses a typed value", () => {
+	const status = entry("status", "text", { prefix: "📝" });
+	const { initial, choicesFor, valueChoicesFor } = setup([status]);
+	assert.deepEqual(pick(choicesFor(), "✓ 📝 status doing").action, { action: "edit", entry: status });
+	assert.deepEqual(
+		valueChoicesFor(status).map((choice) => choice.label),
+		["done ×2", "✓ doing ×1", "Done ×1", "🗑️ Clear"],
+	);
+	assert.deepEqual(
+		valueChoicesFor(status, undefined, "waiting").map((choice) => choice.label),
+		['✏️ Use "waiting"'],
+	);
 	assert.deepEqual(labels(choicesFor(undefined, "zzz")), ['✏️ 📝 status: use "zzz"']);
 	assert.deepEqual(written(initial, chosen(pick(choicesFor(undefined, "zzz"), '✏️ 📝 status: use "zzz"'))), { status: "zzz" });
-	assert.deepEqual(labels(choicesFor(undefined, "DONE")), ["📝 status done", "📝 status Done"]);
 });
 
 test("a checkbox, number or date entry opens its own picker and hides its entry row once set", () => {
@@ -365,11 +367,17 @@ test("a link property on current date notes offers only the date notes that exis
 	);
 });
 
-test("a text property offers its preset values first, then the other values the vault has, and still takes a typed one", () => {
-	const { choicesFor } = setup([entry("status", "text", { prefix: "📝", presetValues: ["todo", "done", "blocked"] })]);
-	assert.deepEqual(labels(choicesFor()).slice(2), ["✓ 📝 status doing", "📝 status todo", "📝 status done", "📝 status blocked", "📝 status Done"]);
-	assert.deepEqual(labels(choicesFor(undefined, "waiting")), ['✏️ 📝 status: use "waiting"']);
-	assert.deepEqual(labels(choicesFor(undefined, "blocked")), ["📝 status blocked"]);
+test("preset values lead a text property's own picker, and show in the main picker only when switched on", () => {
+	const status = entry("status", "text", { prefix: "📝", presetValues: ["todo", "done", "blocked"] });
+	const { choicesFor, valueChoicesFor } = setup([status]);
+	assert.deepEqual(labels(choicesFor()).slice(2), ["✓ 📝 status doing"]);
+	assert.deepEqual(
+		valueChoicesFor(status).map((choice) => choice.label),
+		["todo", "done", "blocked", "✓ doing ×1", "Done ×1", "🗑️ Clear"],
+	);
+	const shown = setup([{ ...status, presetsInMainMenu: true }]);
+	assert.deepEqual(labels(shown.choicesFor()).slice(2), ["✓ 📝 status doing", "📝 status todo", "📝 status done", "📝 status blocked"]);
+	assert.deepEqual(labels(shown.choicesFor(undefined, "blocked")), ["📝 status blocked"]);
 });
 
 test("a number property offers its preset values before the numbers the vault has", () => {
@@ -379,4 +387,34 @@ test("a number property offers its preset values before the numbers the vault ha
 		valueChoicesFor(picked).map((choice) => choice.label),
 		["1", "3", "5", "4.5 ×1", "✓ Clear"],
 	);
+});
+
+test("a checkbox can open its picker, toggle between true and not set, or cycle through true, false and not set", () => {
+	const next = (mode: EditableProperty["checkboxMode"], row: string, frontmatter: Frontmatter) => {
+		const done = entry("done", "checkbox", { prefix: "☑️", checkboxMode: mode });
+		const { initial, choicesFor } = setup([done], [{ path: "Today.md", frontmatter }, { path: "types/Person.md" }]);
+		const action = pick(choicesFor(), row).action;
+		return action.action === "set" ? written(initial, action.state, { ...frontmatter }) : action.action;
+	};
+	assert.equal(next(undefined, "✓ ☑️ done true", { done: true }), "edit");
+	assert.deepEqual(next("toggle", "☑️ done", {}), { done: true });
+	assert.deepEqual(next("toggle", "✓ ☑️ done true", { done: true }), {});
+	assert.deepEqual(next("toggle", "✓ ☑️ done false", { done: false }), { done: true });
+	assert.deepEqual(next("cycle", "☑️ done", {}), { done: true });
+	assert.deepEqual(next("cycle", "✓ ☑️ done true", { done: true }), { done: false });
+	assert.deepEqual(next("cycle", "✓ ☑️ done false", { done: false }), {});
+});
+
+test("a property set to keep empty values is left empty instead of removed", () => {
+	const settings = defaultSettings();
+	settings.setProperties.properties = [
+		entry("people", "links", { keepsEmpty: true }),
+		entry("status", "text", { keepsEmpty: true }),
+		entry("topic", "text"),
+	];
+	const kept = keptEmptyValues(settings.setProperties);
+	const frontmatter: Frontmatter = { people: ["[[Ann]]"], status: "doing", topic: "x" };
+	const initial = new Map<string, unknown>(Object.entries(frontmatter));
+	writeProperties(frontmatter, initial, new Map([["people", []], ["status", undefined], ["topic", undefined]]), kept);
+	assert.deepEqual(frontmatter, { people: [], status: null });
 });

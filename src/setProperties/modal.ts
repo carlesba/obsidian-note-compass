@@ -4,7 +4,7 @@ import { ChoiceModal } from "../choiceModal";
 import type { JumpListVault, VaultNote } from "../lists/vault";
 import type { EditableProperty, JumpSettings } from "../settings";
 import { offeredEntries, propertyType } from "./offered";
-import { initialPropertyState, pickerChoices, pickerState, withValue, writeProperties } from "./picker";
+import { initialPropertyState, keptEmptyValues, pickerChoices, pickerState, withValue, writeProperties } from "./picker";
 import type { PickerChoice, PickerState } from "./picker";
 import { isScalarType, valueChoices, valuePicker } from "./valuePicker";
 import type { ValueChoice } from "./valuePicker";
@@ -18,13 +18,14 @@ export function setProperties(
 ): void {
 	const entries = offeredEntries(settings, vault, target);
 	const initial = initialPropertyState(settings.setProperties, vault.frontmatter(target.path));
+	const keptEmpty = keptEmptyValues(settings.setProperties);
 	const cancel = () => {
 		new Notice("Property changes cancelled.");
 		back?.();
 	};
 	const save = async (state: PickerState) => {
 		try {
-			await vault.updateFrontmatter(target.path, (frontmatter) => writeProperties(frontmatter, initial, state.values));
+			await vault.updateFrontmatter(target.path, (frontmatter) => writeProperties(frontmatter, initial, state.values, keptEmpty));
 			new Notice("Properties saved.");
 		} catch {
 			new Notice("Could not save the properties.");

@@ -4,7 +4,7 @@ import type { RowParts } from "../render";
 import { isLinkType } from "../settings.ts";
 import type { EditableProperty, SetPropertiesSettings } from "../settings";
 import { isPicked, linksTo, wikiLink } from "./links.ts";
-import { offeredProperties } from "./offered.ts";
+import { offeredProperties, propertyType } from "./offered.ts";
 import type { OfferedEntry } from "./offered";
 import { asList, formatPendingValue, isUnset, linkTitle, sameValue } from "./values.ts";
 
@@ -74,12 +74,29 @@ export function pickerChoices(
 	return [...matches, ...choices.filter((candidate) => candidate.kept)];
 }
 
-export function writeProperties(frontmatter: Frontmatter, initial: PropertyState, state: PropertyState): void {
+export function writeProperties(
+	frontmatter: Frontmatter,
+	initial: PropertyState,
+	state: PropertyState,
+	keptEmpty: PropertyState = new Map(),
+): void {
 	state.forEach((value, property) => {
 		if (sameValue(value, initial.get(property))) return;
-		if (isUnset(value)) delete frontmatter[property];
-		else frontmatter[property] = value;
+		if (!isUnset(value)) frontmatter[property] = value;
+		else if (keptEmpty.has(property)) frontmatter[property] = keptEmpty.get(property);
+		else delete frontmatter[property];
 	});
+}
+
+export function keptEmptyValues(settings: SetPropertiesSettings): PropertyState {
+	const kept = new Map<string, unknown>();
+	const decided = new Set<string>();
+	for (const entry of offeredProperties(settings)) {
+		if (decided.has(entry.property)) continue;
+		decided.add(entry.property);
+		if (entry.keepsEmpty) kept.set(entry.property, propertyType(settings, entry) === "links" ? [] : null);
+	}
+	return kept;
 }
 
 function selectedChoices(
@@ -101,9 +118,7 @@ function selectedChoices(
 				content: property,
 				value: formatPendingValue(offered.type, pending),
 			};
-			const action: PickerAction =
-				offered.type === "text" ? set(withValue(state, property, undefined)) : { action: "edit", entry: offered.entry };
-			choices.push(choice(parts, action));
+			choices.push(choice(parts, scalarAction(offered, state, pending)));
 			continue;
 		}
 		const links = asList(pending);
@@ -165,23 +180,21 @@ function entryChoices(
 				),
 			);
 			choices.push(...capped(offered, rows, query, showPrefixes));
-		} else if (offered.type === "text") {
-			const values = offered.values.filter((value) => !sameValue(value, pending) && offer(property, value));
-			const rows = values.map((value) =>
-				choice(
-					{ ...prefixPart(offered.entry, showPrefixes), content: property, value },
-					set(withValue(state, property, value)),
-				),
-			);
-			choices.push(
-				...capped(offered, rows, query, showPrefixes),
-				...useChoices(offered, state, typedName(offered), showPrefixes),
-			);
-		} else if (isUnset(pending) && offer(property, "")) {
-			choices.push(
-				choice({ ...prefixPart(offered.entry, showPrefixes), content: property }, { action: "edit", entry: offered.entry }),
-			);
+			continue;
 		}
+		if (isUnset(pending) && offer(property, "")) {
+			choices.push(choice({ ...prefixPart(offered.entry, showPrefixes), content: property }, scalarAction(offered, state, pending)));
+		}
+		if (offered.entry.presetsInMainMenu) {
+			const presets = offered.presets
+				.map((preset) => (offered.type === "number" ? Number(preset) : preset))
+				.filter((value) => !sameValue(value, pending) && offer(property, String(value)));
+			const rows = presets.map((value) =>
+				choice({ ...prefixPart(offered.entry, showPrefixes), content: property, value: String(value) }, set(withValue(state, property, value))),
+			);
+			choices.push(...capped(offered, rows, query, showPrefixes));
+		}
+		if (offered.type === "text") choices.push(...useChoices(offered, state, typedName(offered), showPrefixes));
 	}
 	return choices;
 }
@@ -195,7 +208,8 @@ function useChoices(
 	if (name === undefined) return [];
 	const { property } = offered.entry;
 	const wanted = name.toLowerCase();
-	if (offered.values.some((value) => value.toLowerCase() === wanted) || sameValue(state.values.get(property), name)) {
+	const known = offered.entry.presetsInMainMenu ? offered.presets : [];
+	if (known.some((value) => value.toLowerCase() === wanted) || sameValue(state.values.get(property), name)) {
 		return [];
 	}
 	const parts = { mark: USE_MARK, ...prefixPart(offered.entry, showPrefixes), content: `${property}: use "${name}"` };
@@ -224,6 +238,15 @@ function typedNameFor(
 	const name = (scope === undefined ? typed : typed.slice(scope.length)).trim();
 	return (offered) =>
 		name !== "" && (scope === undefined || offered.entry.prefix.trim() === scope) ? name : undefined;
+}
+
+function scalarAction(offered: OfferedEntry, state: PickerState, pending: unknown): PickerAction {
+	const { entry } = offered;
+	const mode = offered.type === "checkbox" ? (entry.checkboxMode ?? "picker") : "picker";
+	if (mode === "picker") return { action: "edit", entry };
+	if (mode === "toggle") return set(withValue(state, entry.property, pending === true ? undefined : true));
+	const next = pending === true ? false : pending === false ? undefined : true;
+	return set(withValue(state, entry.property, next));
 }
 
 function withLink(state: PickerState, offered: OfferedEntry, name: string): PickerState {

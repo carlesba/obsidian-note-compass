@@ -69,21 +69,24 @@ By default every period lives in `on/`, as `2024-03-05`, `2024-W10`, `2024-03` a
 
 Nothing is written while you work in the picker. The first two rows are always `🏁 Save & close`, which writes only the properties you changed, and `🛑 Cancel`, which discards every change. Escape does the same as Cancel. ⌘↵, or Ctrl+Enter on Windows and Linux, saves what you have so far and closes the picker from anywhere, including a property's own picker.
 
-Next come the values the note will be saved with, each marked `✓`: one row per linked note, and one row for each checkbox, text, number or date with its value beside it. A value you changed in this session is also marked `•`. Choosing a set link or text removes it, so a links property loses that one note. Choosing a set checkbox, number or date opens its own picker.
+Next come the values the note will be saved with, each marked `✓`: one row per linked note, and one row for each checkbox, text, number or date with its value beside it. A value you changed in this session is also marked `•`. Choosing a set link removes it, so a links property loses that one note. Choosing a set text, number or date opens its own picker, and a set checkbox does what its "When chosen" setting says.
 
 Below the set values, each enabled property offers what it can add, in the order of your settings:
 
 - A link or links property lists the notes from its source that are not set yet, most recently modified first. Choosing one adds it to a links property, or replaces the note a link property holds. Links are saved as a list such as `["[[Alice]]", "[[Bob]]"]`, and links the property already holds that its source does not offer are kept.
-- A text property lists its preset values, then the other values it already has across the vault, most used first, and choosing one replaces the value. When nothing matches what you typed, it also offers `✏️ <property>: use "<what you typed>"`.
-- A checkbox, number, date or datetime property that is not set shows one row with its name, which opens its own picker.
+- A text, number, date or datetime property that is not set shows one row with its name, which opens its own picker. The values the vault already has are offered there, not here.
+- A text or number property with "Show preset values in the first menu" switched on also lists its preset values here, so one choice sets the value.
+- A text property also offers `✏️ <property>: use "<what you typed>"` when you type something that is not one of those presets.
+- A checkbox that is not set shows one row with its name. By default it opens its own picker. With "Toggle between true and not set" choosing it sets `true`, and choosing it again while it is `true` clears it. With "Cycle through true, false and not set" each choice moves it one step, from not set to `true`, then `false`, then not set again.
 
 With nothing typed, each property shows at most five values, followed by `… N more, type to filter`, which types the property's prefix for you. Once you type, every matching row is shown. After you choose a value the picker reopens with the filter cleared, so `🏁 Save & close` is back at the top and the value you just chose shows up below it as set.
 
 ![Set properties after typing "joan": Joan Puig is now set and marked as changed, and the status property offers to use "joan" as a new value](docs/images/set-properties-search.png)
 
-A property's own picker marks its current value `✓` and ends with `🗑️ Clear`, which removes the property. Escape returns to the main picker without changing that property, and the changes you already made there are kept.
+A property's own picker marks its current value `✓` and ends with `🗑️ Clear`, which removes the property, or leaves it empty when "Remove when empty" is off. Escape returns to the main picker without changing that property, and the changes you already made there are kept.
 
 - A checkbox offers `true` and `false`.
+- A text offers `✏️ Use "<what you typed>"` for a new value, then its preset values, then the other values the property already has in the vault, most used first, with how often each is used.
 - A number offers `✏️ Use "<what you typed>"` for a number, then its preset values, then the other numbers the property already has in the vault, most used first.
 - A date offers "Use" for a date typed as `YYYYMMDD` or `YYYY-MM-DD`, then Today, Tomorrow, Next Monday and In a week, and is saved as `YYYY-MM-DD`.
 - A datetime offers "Use" for `YYYYMMDD HHmm`, `YYYY-MM-DD HH:mm` or `YYYY-MM-DDTHH:mm`, then Now, and is saved as `YYYY-MM-DDTHH:mm`.
@@ -173,7 +176,9 @@ A property's page has "Enabled", "Prefix" and "Prefix colour" as on a list's pag
 
 ![The page of the people links property, offering notes that link to Person, excluding the templates folder, and creating new notes in samples/people from a template](docs/images/settings-property.png)
 
-A text or number property also has "Preset values", a list of values the picker offers first, such as `todo`, `doing` and `done` for a `status` property. The `+` in its header adds a row with a text field for the value, rows can be dragged into the order the picker shows them, and each row can be deleted. A number property only keeps values written as numbers. Presets are helpers rather than limits: after them the picker still offers the other values the property already has in the vault, most used first, and anything you type.
+Every property has "Remove when empty", which is on by default and removes the property from the note once you clear its value or remove its last link. Switched off, the property stays in the note with an empty value. A checkbox also has "When chosen", which picks how choosing it in the main picker behaves: open its own picker, toggle between true and not set, or cycle through true, false and not set.
+
+A text or number property also has "Preset values", a list of values its own picker offers first, such as `todo`, `doing` and `done` for a `status` property. The `+` in its header adds a row with a text field for the value, rows can be dragged into the order the picker shows them, and each row can be deleted. A number property only keeps values written as numbers. Presets are helpers rather than limits: after them the picker still offers the other values the property already has in the vault, most used first, and anything you type. "Show preset values in the first menu" offers them in the main picker as well, so one choice sets the value.
 
 A link or links property has three more sections:
 

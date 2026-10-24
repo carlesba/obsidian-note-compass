@@ -1,12 +1,28 @@
 import type { PropertyType } from "../lists/conditions.ts";
-import { EDITABLE_PROPERTY_TYPES, isLinkType, newListId, writePrefixColor } from "../settings.ts";
-import type { EditableProperty, EditablePropertyType, ListSource, NoteList } from "../settings.ts";
+import { CHECKBOX_MODES, EDITABLE_PROPERTY_TYPES, isLinkType, newListId, writePrefixColor } from "../settings.ts";
+import type { CheckboxMode, EditableProperty, EditablePropertyType, ListSource, NoteList } from "../settings.ts";
 import { mixedTypeProperties } from "../setProperties/propertyTypes.ts";
 import { parseNumber } from "../setProperties/values.ts";
 import { readListField, writeListField } from "./listForm.ts";
 import type { ListField } from "./listForm.ts";
 
-export type PropertyField = "enabled" | "prefix" | "prefixColor" | "name" | "type" | "presetValues" | LinkPropertyField;
+export type PropertyField =
+	| "enabled"
+	| "prefix"
+	| "prefixColor"
+	| "name"
+	| "type"
+	| "presetValues"
+	| "presetsInMainMenu"
+	| "checkboxMode"
+	| "removesEmpty"
+	| LinkPropertyField;
+
+export const CHECKBOX_MODE_OPTIONS: Record<CheckboxMode, string> = {
+	picker: "Open a picker with true, false and Clear",
+	toggle: "Toggle between true and not set",
+	cycle: "Cycle through true, false and not set",
+};
 
 type LinkPropertyField = "excludedFolders" | "createsNotes" | "newNoteFolder" | "newNoteTemplate";
 
@@ -66,6 +82,9 @@ export function hasSource(entry: EditableProperty): entry is LinkProperty {
 export function readPropertyField(entry: EditableProperty, field: PropertyField, index?: string): unknown {
 	if (field === "excludedFolders") return entry.excludedFolders?.[Number(index)];
 	if (field === "presetValues") return entry.presetValues?.[Number(index)];
+	if (field === "presetsInMainMenu") return entry.presetsInMainMenu === true;
+	if (field === "checkboxMode") return entry.checkboxMode ?? "picker";
+	if (field === "removesEmpty") return entry.keepsEmpty !== true;
 	if (field === "enabled") return entry.enabled;
 	if (field === "prefix") return entry.prefix;
 	if (field === "prefixColor") return entry.prefixColor ?? "";
@@ -78,7 +97,10 @@ export function writePropertyField(entry: EditableProperty, field: PropertyField
 	const text = typeof value === "string" ? value : "";
 	if (field === "excludedFolders") return writeExcludedFolder(entry, Number(index), text);
 	if (field === "presetValues") return writePresetValue(entry, Number(index), text);
-	if (field === "enabled") entry.enabled = value === true;
+	if (field === "presetsInMainMenu") writeFlag(entry, "presetsInMainMenu", value === true);
+	else if (field === "removesEmpty") writeFlag(entry, "keepsEmpty", value !== true);
+	else if (field === "checkboxMode") writeCheckboxMode(entry, value);
+	else if (field === "enabled") entry.enabled = value === true;
 	else if (field === "createsNotes") entry.createsNotes = value === true;
 	else if (field === "prefix") entry.prefix = text;
 	else if (field === "prefixColor") writePrefixColor(entry, value);
@@ -101,6 +123,17 @@ function writeExcludedFolder(entry: EditableProperty, index: number, folder: str
 	if (!folders || !Number.isInteger(index) || index < 0 || index >= folders.length) return false;
 	folders[index] = folder.trim();
 	return true;
+}
+
+function writeFlag(entry: EditableProperty, flag: "presetsInMainMenu" | "keepsEmpty", on: boolean): void {
+	if (on) entry[flag] = true;
+	else delete entry[flag];
+}
+
+function writeCheckboxMode(entry: EditableProperty, value: unknown): void {
+	const mode = CHECKBOX_MODES.find((candidate) => candidate === value);
+	if (mode === undefined || mode === "picker") delete entry.checkboxMode;
+	else entry.checkboxMode = mode;
 }
 
 export function addPresetValue(entry: EditableProperty): void {

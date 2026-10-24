@@ -1,15 +1,17 @@
 import { buildJumpList } from "../lists/jumpList.ts";
 import type { JumpListVault, VaultNote } from "../lists/vault";
-import { isLinkType, isUnreadable } from "../settings.ts";
+import { hasPresetValues, isLinkType, isUnreadable } from "../settings.ts";
 import type { EditableProperty, EditablePropertyType, JumpSettings, SetPropertiesSettings } from "../settings";
 import type { PickableNote } from "./links";
 import { decidedPropertyType } from "./propertyTypes.ts";
+import { parseNumber } from "./values.ts";
 
 export interface OfferedEntry {
 	entry: EditableProperty;
 	type: EditablePropertyType;
 	notes: PickableNote[];
 	values: string[];
+	presets: string[];
 }
 
 export function offeredProperties(settings: SetPropertiesSettings): EditableProperty[] {
@@ -23,15 +25,18 @@ export function propertyType(settings: SetPropertiesSettings, entry: EditablePro
 export function offeredEntries(settings: JumpSettings, vault: JumpListVault, target: VaultNote): OfferedEntry[] {
 	return offeredProperties(settings.setProperties).map((entry) => {
 		const type = propertyType(settings.setProperties, entry);
-		const offered: OfferedEntry = { entry, type, notes: [], values: [] };
+		const offered: OfferedEntry = { entry, type, notes: [], values: [], presets: [] };
 		if (isLinkType(type)) offered.notes = pickableNotes(settings, vault, target, entry);
-		if (type === "text") offered.values = [...new Set([...presetTexts(entry), ...vaultTexts(vault, entry.property)])];
+		if (type === "text") offered.values = vaultTexts(vault, entry.property);
+		if (hasPresetValues(type)) offered.presets = presetValues(entry, type);
 		return offered;
 	});
 }
 
-function presetTexts(entry: EditableProperty): string[] {
-	return (entry.presetValues ?? []).map((value) => value.trim()).filter((value) => value !== "");
+export function presetValues(entry: EditableProperty, type: EditablePropertyType): string[] {
+	const values = (entry.presetValues ?? []).map((value) => value.trim()).filter((value) => value !== "");
+	const usable = type === "number" ? values.filter((value) => parseNumber(value) !== undefined) : values;
+	return [...new Set(usable)];
 }
 
 function vaultTexts(vault: JumpListVault, property: string): string[] {

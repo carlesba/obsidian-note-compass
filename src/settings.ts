@@ -59,6 +59,10 @@ export const EDITABLE_PROPERTY_TYPES: readonly EditablePropertyType[] = [
 	"links",
 ];
 
+export type CheckboxMode = "picker" | "toggle" | "cycle";
+
+export const CHECKBOX_MODES: readonly CheckboxMode[] = ["picker", "toggle", "cycle"];
+
 export interface EditableProperty {
 	id: string;
 	enabled: boolean;
@@ -72,6 +76,9 @@ export interface EditableProperty {
 	newNoteFolder?: string;
 	newNoteTemplate?: string;
 	presetValues?: string[];
+	presetsInMainMenu?: true;
+	checkboxMode?: CheckboxMode;
+	keepsEmpty?: true;
 }
 
 export interface SetPropertiesSettings {
@@ -250,6 +257,10 @@ function readProperties(stored: unknown[]): EditableProperty[] {
 		writePrefixColor(property, entry.prefixColor);
 		const presetValues = readPresetValues(entry);
 		if (presetValues.length > 0) property.presetValues = presetValues;
+		if (entry.presetsInMainMenu === true) property.presetsInMainMenu = true;
+		const checkboxMode = CHECKBOX_MODES.find((mode) => mode === entry.checkboxMode);
+		if (checkboxMode && checkboxMode !== "picker") property.checkboxMode = checkboxMode;
+		if (entry.keepsEmpty === true) property.keepsEmpty = true;
 		if (source) {
 			property.source = source;
 			property.excludedFolders = readExcludedFolders(entry);

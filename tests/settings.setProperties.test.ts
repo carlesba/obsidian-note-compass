@@ -288,3 +288,27 @@ test("preset values are kept trimmed and without blanks or repeats, and the form
 	assert.equal(presetValueError({ ...status, type: "number" }, "many"), "Write a number, such as 3 or 2.5.");
 	assert.equal(presetValueError({ ...status, type: "number" }, "2.5"), undefined);
 });
+
+test("checkbox mode, preset values in the main picker and keeping empty values are read, written and stored only when they differ from the default", () => {
+	const settings = mergeSettings({
+		setProperties: {
+			properties: [
+				{ id: "a", enabled: true, prefix: "", property: "done", type: "checkbox", checkboxMode: "cycle", keepsEmpty: true },
+				{ id: "b", enabled: true, prefix: "", property: "status", type: "text", presetValues: ["todo"], presetsInMainMenu: true, checkboxMode: "bogus" },
+			],
+		},
+	});
+	const [done, status] = settings.setProperties.properties;
+	assert.equal(readPropertyField(done, "checkboxMode"), "cycle");
+	assert.equal(readPropertyField(done, "removesEmpty"), false);
+	assert.equal(readPropertyField(status, "checkboxMode"), "picker");
+	assert.equal(readPropertyField(status, "removesEmpty"), true);
+	assert.equal(readPropertyField(status, "presetsInMainMenu"), true);
+	writePropertyField(done, "checkboxMode", "picker");
+	writePropertyField(done, "removesEmpty", true);
+	writePropertyField(status, "presetsInMainMenu", false);
+	assert.deepEqual([done.checkboxMode, done.keepsEmpty, status.presetsInMainMenu], [undefined, undefined, undefined]);
+	writePropertyField(done, "checkboxMode", "toggle");
+	writePropertyField(done, "removesEmpty", false);
+	assert.deepEqual([done.checkboxMode, done.keepsEmpty], ["toggle", true]);
+});
