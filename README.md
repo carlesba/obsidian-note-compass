@@ -148,10 +148,10 @@ A filter works like the filters in Obsidian Bases and looks the same. It is a gr
 Each condition starts by choosing what it looks at:
 
 - Property checks a property against a condition offered for its type, as described below.
-- Folder matches the notes in a folder and its subfolders.
-- Tag matches the notes with a tag in their properties or their text. A tag also matches its subtags, so `project` matches `#project/website`, and the case and a leading `#` do not matter.
-- Links to note matches the notes that link to a chosen note, in their text or in a property.
-- Created and Modified compare the day the note was created or last changed with a fixed date or one relative to today, using on, before or after.
+- Folder matches the notes in a folder and its subfolders with "is in", or every other note with "is not in".
+- Tag matches the notes with a tag in their properties or their text. A tag also matches its subtags, so `project` matches `#project/website`, and the case and a leading `#` do not matter. "Does not have tag" matches the notes without it.
+- Links to note matches the notes that link to a chosen note, in their text or in a property, and "does not contain" matches the notes that do not.
+- Created and Modified compare the day the note was created or last changed with a fixed date or one relative to today, using on, not on, before or after.
 
 A list's row shows the filter's only condition, such as `status is active` or `Tagged project`, or counts its conditions, as in `All of 3 conditions`.
 
@@ -160,12 +160,12 @@ Lists saved by earlier versions as "Notes with a property" open as a filter with
 A property condition asks for the property, suggesting the vault's properties with their types, then a condition offered for that type:
 
 - Checkbox properties can be true, false, set or not set. "Is false" needs an explicit `false`.
-- Text properties can be equal to a value, contain it, be set or not set.
-- List, tag and alias properties can have an item equal to the value, be set or not set. Wiki-links are compared by their link text, so `[[Project]]` matches the value `Project`.
-- Number properties can be equal to, less than or greater than a number, or be set.
-- Date properties can be on, before or after a fixed date, today, or a number of days ago or from now, or be set. A relative date is worked out each time the picker opens.
+- Text properties can be equal or not equal to a value, contain it or not contain it, be set or not set.
+- List, tag and alias properties can have or not have an item equal to the value, be set or not set. Wiki-links are compared by their link text, so `[[Project]]` matches the value `Project`.
+- Number properties can be equal to, not equal to, less than or greater than a number, be set or not set.
+- Date properties can be on, not on, before or after a fixed date, today, or a number of days ago or from now, be set or not set. A relative date is worked out each time the picker opens.
 
-"Is not set" also matches a property left blank.
+"Is not set" also matches a property left blank. The negated conditions, such as "is not" or "does not contain", match every note the positive condition does not, including notes without the property.
 
 ### Property pages
 

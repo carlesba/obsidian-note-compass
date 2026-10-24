@@ -21,9 +21,11 @@ export interface FilterGroup {
 }
 
 export type PropertyRule = { kind: "property"; property: string; condition: Condition };
-export type FolderRule = { kind: "folder"; folder: string };
-export type TagRule = { kind: "tag"; tag: string };
-export type LinksToRule = { kind: "linksTo"; note: string };
+export type FolderRule = { kind: "folder"; folder: string; negated?: true };
+export type TagRule = { kind: "tag"; tag: string; negated?: true };
+export type LinksToRule = { kind: "linksTo"; note: string; negated?: true };
+
+export type NegatableRule = FolderRule | TagRule | LinksToRule;
 export type FileDateRule = { kind: "file"; field: FileDateField; condition: DateCondition };
 
 export type FilterRule = PropertyRule | FolderRule | TagRule | LinksToRule | FileDateRule;
@@ -69,6 +71,12 @@ function compile(node: FilterNode, context: FilterContext): NotePredicate | unde
 }
 
 function compileRule(rule: FilterRule, context: FilterContext): NotePredicate {
+	const matches = compilePositiveRule(rule, context);
+	if (rule.kind === "property" || rule.kind === "file" || rule.negated !== true) return matches;
+	return (note) => !matches(note);
+}
+
+function compilePositiveRule(rule: FilterRule, context: FilterContext): NotePredicate {
 	const { vault, today } = context;
 	switch (rule.kind) {
 		case "property": {
@@ -128,11 +136,11 @@ function readRule(stored: unknown): FilterRule | undefined {
 			return typeof stored.property === "string" && condition ? { kind: "property", property: stored.property, condition } : undefined;
 		}
 		case "folder":
-			return typeof stored.folder === "string" ? { kind: "folder", folder: stored.folder } : undefined;
+			return typeof stored.folder === "string" ? withNegation({ kind: "folder", folder: stored.folder }, stored) : undefined;
 		case "tag":
-			return typeof stored.tag === "string" ? { kind: "tag", tag: stored.tag } : undefined;
+			return typeof stored.tag === "string" ? withNegation({ kind: "tag", tag: stored.tag }, stored) : undefined;
 		case "linksTo":
-			return typeof stored.note === "string" ? { kind: "linksTo", note: stored.note } : undefined;
+			return typeof stored.note === "string" ? withNegation({ kind: "linksTo", note: stored.note }, stored) : undefined;
 		case "file": {
 			const field = FILE_DATE_FIELDS.find((candidate) => candidate === stored.field);
 			const condition = readDateCondition(stored.condition);
@@ -141,6 +149,11 @@ function readRule(stored: unknown): FilterRule | undefined {
 		default:
 			return undefined;
 	}
+}
+
+function withNegation<T extends NegatableRule>(rule: T, stored: Record<string, unknown>): T | undefined {
+	if (stored.negated === undefined || stored.negated === false) return rule;
+	return stored.negated === true ? { ...rule, negated: true } : undefined;
 }
 
 function readDateCondition(stored: unknown): DateCondition | undefined {

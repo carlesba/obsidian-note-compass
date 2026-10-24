@@ -11,11 +11,11 @@ const TODAY = moment(new Date(2024, 2, 9, 15, 45).getTime()).startOf("day");
 const matches = (frontmatter: Frontmatter | undefined, type: PropertyType, condition: Condition) =>
 	matchesCondition(frontmatter, { property: "status", condition, type, today: TODAY });
 
-test("a note without frontmatter or without the property matches only is not set", () => {
+test("a note without frontmatter or without the property matches only is not set and the negated conditions", () => {
 	for (const [type, operators] of Object.entries(CONDITIONS_BY_TYPE) as [PropertyType, Condition["operator"][]][]) {
 		for (const operator of operators) {
 			const condition = { operator, value: "x" } as Condition;
-			const expected = operator === "is not set";
+			const expected = ["is not set", "is not", "does not contain", "does not have item", "≠", "not on"].includes(operator);
 			assert.equal(matches(undefined, type, condition), expected, `${type} ${operator}`);
 			assert.equal(matches({ other: "x" }, type, condition), expected, `${type} ${operator}`);
 		}
@@ -28,7 +28,8 @@ test("a condition the property's type does not offer matches nothing", () => {
 	assert.equal(matches({ status: 3 }, "text", { operator: "=", value: 3 }), false);
 	assert.equal(matches({ status: "2024-03-09" }, "number", { operator: "on", value: { kind: "fixed", date: "2024-03-09" } }), false);
 	assert.equal(conditionAppliesTo("has item", "text"), true);
-	assert.equal(conditionAppliesTo("is not set", "number"), false);
+	assert.equal(conditionAppliesTo("≠", "text"), false);
+	assert.equal(matches({ status: "open" }, "checkbox", { operator: "is not", value: "x" }), false);
 });
 
 test("checkbox is true matches true or the string true, and is false only an explicit false", () => {
@@ -156,4 +157,23 @@ test("readCondition keeps well-formed conditions and rejects the rest", () => {
 	assert.equal(readCondition({ operator: "on", value: { kind: "relative", days: 1.5 } }), undefined);
 	assert.equal(readCondition({ operator: "matches", value: "x" }), undefined);
 	assert.equal(readCondition("is true"), undefined);
+});
+
+test("negated conditions match exactly the notes their positive condition does not", () => {
+	const day = (date: string) => ({ kind: "fixed", date }) as const;
+	assert.equal(matches({ status: "open" }, "text", { operator: "is not", value: "open" }), false);
+	assert.equal(matches({ status: "closed" }, "text", { operator: "is not", value: "open" }), true);
+	assert.equal(matches({ status: "reopened" }, "text", { operator: "does not contain", value: "open" }), false);
+	assert.equal(matches({ status: "closed" }, "text", { operator: "does not contain", value: "open" }), true);
+	assert.equal(matches({ status: ["[[Ann]]", "Bob"] }, "multitext", { operator: "does not have item", value: "Ann" }), false);
+	assert.equal(matches({ status: ["Bob"] }, "multitext", { operator: "does not have item", value: "Ann" }), true);
+	assert.equal(matches({ status: 3 }, "number", { operator: "≠", value: 3 }), false);
+	assert.equal(matches({ status: 4 }, "number", { operator: "≠", value: 3 }), true);
+	assert.equal(matches({ status: "2024-03-09" }, "date", { operator: "not on", value: day("2024-03-09") }), false);
+	assert.equal(matches({ status: "2024-03-08" }, "date", { operator: "not on", value: { kind: "relative", days: 0 } }), true);
+});
+
+test("is not set applies to numbers and dates", () => {
+	assert.equal(matches({ status: 3 }, "number", { operator: "is not set" }), false);
+	assert.equal(matches({ status: null }, "date", { operator: "is not set" }), true);
 });

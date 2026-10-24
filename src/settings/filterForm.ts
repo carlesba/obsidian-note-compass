@@ -9,7 +9,7 @@ import {
 } from "../lists/conditions.ts";
 import type { Condition, DateCondition, DateValue } from "../lists/conditions.ts";
 import { FILTER_MODES, MAX_FILTER_DEPTH, filterRules } from "../lists/filters.ts";
-import type { FileDateRule, FilterGroup, FilterMode, FilterNode, FilterRule, PropertyRule } from "../lists/filters.ts";
+import type { FileDateRule, FilterGroup, FilterMode, FilterNode, FilterRule, NegatableRule, PropertyRule } from "../lists/filters.ts";
 
 export type RuleField = "property" | "folder" | "tag" | "linksTo" | "created" | "modified";
 
@@ -112,6 +112,11 @@ export function writeRuleText(rule: FilterRule, value: string): void {
 	else if (rule.kind === "linksTo") rule.note = text;
 }
 
+export function writeNegated(rule: NegatableRule, negated: boolean): void {
+	if (negated) rule.negated = true;
+	else delete rule.negated;
+}
+
 export function fitRuleToProperty(rule: PropertyRule, types: Record<string, string>): void {
 	if (rule.property === "") return;
 	const type = propertyType(types, rule.property);
@@ -148,14 +153,14 @@ export function describeRule(rule: FilterRule): string {
 			if (rule.property.trim() === "") return "Property not chosen";
 			return `${rule.property} ${describeCondition(rule.condition)}`;
 		case "folder":
-			return rule.folder === "" ? "Folder not chosen" : `In ${rule.folder}`;
+			return rule.folder === "" ? "Folder not chosen" : `${rule.negated ? "Not in" : "In"} ${rule.folder}`;
 		case "tag": {
 			const tag = rule.tag.trim().replace(/^#/, "");
-			return tag === "" ? "Tag not chosen" : `Tagged ${tag}`;
+			return tag === "" ? "Tag not chosen" : `${rule.negated ? "Not tagged" : "Tagged"} ${tag}`;
 		}
 		case "linksTo": {
 			const name = rule.note.split("/").pop()?.replace(/\.md$/, "") ?? "";
-			return name === "" ? "Note not chosen" : `Links to ${name}`;
+			return name === "" ? "Note not chosen" : `${rule.negated ? "Does not link to" : "Links to"} ${name}`;
 		}
 		case "file":
 			return `${FILE_DATE_NAMES[rule.field]} ${describeCondition(rule.condition)}`;

@@ -3,9 +3,9 @@ export const PROPERTY_TYPES = ["text", "multitext", "tags", "aliases", "number",
 export type PropertyType = (typeof PROPERTY_TYPES)[number];
 
 export const VALUELESS_OPERATORS = ["is true", "is false", "is set", "is not set"] as const;
-export const TEXT_OPERATORS = ["is", "contains", "has item"] as const;
-export const NUMBER_OPERATORS = ["=", "<", ">"] as const;
-export const DATE_OPERATORS = ["on", "before", "after"] as const;
+export const TEXT_OPERATORS = ["is", "is not", "contains", "does not contain", "has item", "does not have item"] as const;
+export const NUMBER_OPERATORS = ["=", "≠", "<", ">"] as const;
+export const DATE_OPERATORS = ["on", "not on", "before", "after"] as const;
 
 export type ValuelessOperator = (typeof VALUELESS_OPERATORS)[number];
 export type TextOperator = (typeof TEXT_OPERATORS)[number];
@@ -23,19 +23,32 @@ export type Condition = ValuelessCondition | TextCondition | NumberCondition | D
 
 export const CONDITIONS_BY_TYPE: Record<PropertyType, readonly ConditionOperator[]> = {
 	checkbox: ["is true", "is false", "is set", "is not set"],
-	text: ["is", "contains", "is set", "is not set"],
-	multitext: ["has item", "is set", "is not set"],
-	tags: ["has item", "is set", "is not set"],
-	aliases: ["has item", "is set", "is not set"],
-	number: ["=", "<", ">", "is set"],
-	date: ["on", "before", "after", "is set"],
-	datetime: ["on", "before", "after", "is set"],
+	text: ["is", "is not", "contains", "does not contain", "is set", "is not set"],
+	multitext: ["has item", "does not have item", "is set", "is not set"],
+	tags: ["has item", "does not have item", "is set", "is not set"],
+	aliases: ["has item", "does not have item", "is set", "is not set"],
+	number: ["=", "≠", "<", ">", "is set", "is not set"],
+	date: ["on", "not on", "before", "after", "is set", "is not set"],
+	datetime: ["on", "not on", "before", "after", "is set", "is not set"],
 };
 
 export const FIXED_DATE_FORMAT = "YYYY-MM-DD";
 
 export function conditionAppliesTo(operator: ConditionOperator, type: PropertyType): boolean {
-	return CONDITIONS_BY_TYPE[type].includes(operator) || (operator === "has item" && type === "text");
+	return CONDITIONS_BY_TYPE[type].includes(operator) || ((operator === "has item" || operator === "does not have item") && type === "text");
+}
+
+const POSITIVE_OPERATORS: Partial<Record<ConditionOperator, ConditionOperator>> = {
+	"is not": "is",
+	"does not contain": "contains",
+	"does not have item": "has item",
+	"≠": "=",
+	"not on": "on",
+};
+
+export function positiveCondition(condition: Condition): Condition | undefined {
+	const operator = POSITIVE_OPERATORS[condition.operator];
+	return operator === undefined ? undefined : ({ ...condition, operator } as Condition);
 }
 
 export function propertyType(types: Record<string, string>, property: string): PropertyType {

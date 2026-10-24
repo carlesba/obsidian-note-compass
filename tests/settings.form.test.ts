@@ -75,7 +75,15 @@ test("operator options follow the conditions table for every property type", () 
 });
 
 test("operator options keep a stored operator that the type does not offer", () => {
-	assert.deepEqual(operatorOptions("number", "is"), { "=": "=", "<": "<", ">": ">", "is set": "is set", is: "is (does not apply)" });
+	assert.deepEqual(operatorOptions("number", "is"), {
+		"=": "=",
+		"≠": "≠",
+		"<": "<",
+		">": ">",
+		"is set": "is set",
+		"is not set": "is not set",
+		is: "is (does not apply)",
+	});
 	assert.equal(operatorOptions("text", "has item")["has item"], "has item");
 	assert.equal(Object.keys(operatorOptions("checkbox", "is true")).length, 4);
 });

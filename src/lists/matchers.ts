@@ -1,4 +1,4 @@
-import { FIXED_DATE_FORMAT, conditionAppliesTo } from "./conditions.ts";
+import { FIXED_DATE_FORMAT, conditionAppliesTo, positiveCondition } from "./conditions.ts";
 import type { Condition, DateCondition, DateValue, PropertyType } from "./conditions.ts";
 import type { Frontmatter, MomentDate } from "./vault";
 
@@ -12,6 +12,8 @@ export interface PropertyCheck {
 export function matchesCondition(frontmatter: Frontmatter | undefined, check: PropertyCheck): boolean {
 	const { condition, type } = check;
 	if (!conditionAppliesTo(condition.operator, type)) return false;
+	const positive = positiveCondition(condition);
+	if (positive) return !matchesCondition(frontmatter, { ...check, condition: positive });
 	const present = frontmatter !== undefined && check.property in frontmatter;
 	const property = present ? frontmatter[check.property] : undefined;
 	if (condition.operator === "is not set") return !present || isEmpty(property);
@@ -37,11 +39,15 @@ export function matchesCondition(frontmatter: Frontmatter | undefined, check: Pr
 		case "before":
 		case "after":
 			return compareDay(property, condition.operator, targetDay(condition.value, check.today));
+		default:
+			return false;
 	}
 }
 
 export function matchesDay(day: string, condition: DateCondition, today: MomentDate): boolean {
-	return compareDay(day, condition.operator, targetDay(condition.value, today));
+	const target = targetDay(condition.value, today);
+	if (condition.operator === "not on") return !compareDay(day, "on", target);
+	return compareDay(day, condition.operator, target);
 }
 
 function isEmpty(property: unknown): boolean {

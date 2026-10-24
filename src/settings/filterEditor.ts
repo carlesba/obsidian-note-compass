@@ -1,7 +1,7 @@
 import { DropdownComponent, TextComponent, getAllTags, setIcon } from "obsidian";
 import type { App, Setting } from "obsidian";
 import { propertyType } from "../lists/conditions";
-import type { FilterGroup, FilterNode, FilterRule, PropertyRule } from "../lists/filters";
+import type { FilterGroup, FilterNode, FilterRule, NegatableRule, PropertyRule } from "../lists/filters";
 import {
 	FILE_DATE_OPTIONS,
 	FILTER_MODE_OPTIONS,
@@ -17,6 +17,7 @@ import {
 	ruleText,
 	writeConditionField,
 	writeMode,
+	writeNegated,
 	writeRuleText,
 } from "./filterForm";
 import type { ConditionField, ConditionRule, RuleField } from "./filterForm";
@@ -72,10 +73,10 @@ const FIELD_LABELS: Record<Exclude<RuleField, "property">, string> = {
 	modified: "modified time",
 };
 
-const FIXED_OPERATORS: Record<"folder" | "tag" | "linksTo", string> = {
-	folder: "is in",
-	tag: "has tag",
-	linksTo: "contains",
+const NEGATABLE_OPERATORS: Record<NegatableRule["kind"], { matches: string; negated: string }> = {
+	folder: { matches: "is in", negated: "is not in" },
+	tag: { matches: "has tag", negated: "does not have tag" },
+	linksTo: { matches: "contains", negated: "does not contain" },
 };
 
 const FILE_FIELD_PREFIX = "file:";
@@ -227,8 +228,10 @@ function createRightSide(expressionEl: HTMLElement, statementEl: HTMLElement, ru
 		renderConditionValue(rightEl, statementEl, rule, editing);
 		return rightEl;
 	}
-	const operator = FIXED_OPERATORS[rule.kind];
-	operatorSelect(expressionEl, { [operator]: operator }, operator, false, () => undefined);
+	const { matches, negated } = NEGATABLE_OPERATORS[rule.kind];
+	operatorSelect(expressionEl, { matches, negated }, rule.negated ? "negated" : "matches", false, (operator) =>
+		editing.change(() => writeNegated(rule, operator === "negated")),
+	);
 	const rightEl = expressionEl.createDiv({ cls: ["filter-rhs-container", "metadata-property-value"] });
 	renderRuleText(rightEl, rule, editing);
 	return rightEl;
@@ -245,7 +248,7 @@ function operatorSelect(
 	dropdown.selectEl.addClass("filter-operator");
 }
 
-function renderRuleText(parentEl: HTMLElement, rule: Extract<FilterRule, { kind: "folder" | "tag" | "linksTo" }>, editing: FilterEditing): void {
+function renderRuleText(parentEl: HTMLElement, rule: NegatableRule, editing: FilterEditing): void {
 	const commit = (value: string) => editing.change(() => writeRuleText(rule, value));
 	const text = textInput(parentEl, ruleText(rule), TEXT_PLACEHOLDERS[rule.kind], { typing: (value) => writeRuleText(rule, value), commit });
 	const suggestions = SUGGESTIONS[rule.kind];

@@ -188,3 +188,22 @@ test("a filter can create notes only when it is a single property condition the 
 	assert.ok(blocker(any(isTrue("a"))));
 	assert.ok(blocker(all({ kind: "folder", folder: "people" })));
 });
+
+test("folder, tag and links conditions can be negated, and the negation is stored and described", () => {
+	assert.deepEqual(listed(filter(all({ kind: "folder", folder: "projects", negated: true }))), ["Delta", "Gamma", "Person"]);
+	assert.deepEqual(listed(filter(all({ kind: "tag", tag: "work", negated: true }))), ["Delta", "Gamma", "Person"]);
+	assert.deepEqual(listed(filter(all({ kind: "linksTo", note: "Person", negated: true }))), ["Alpha", "Beta", "Person"]);
+	assert.deepEqual(listed(filter(all(property("status", { operator: "is not", value: "doing" })))), ["Beta", "Gamma", "Person"]);
+	const source = filter(all({ kind: "folder", folder: "projects", negated: true }));
+	const settings = defaultSettings();
+	settings.lists = [{ id: "list-1", enabled: true, prefix: "", source }];
+	const reloaded = mergeSettings(JSON.parse(JSON.stringify(storedSettings(settings))));
+	assert.deepEqual(reloaded.lists[0].source, source);
+	assert.equal(sourceSummary(source), "Not in projects");
+	assert.equal(sourceSummary(filter(all({ kind: "tag", tag: "work", negated: true }))), "Not tagged work");
+	assert.equal(sourceSummary(filter(all({ kind: "linksTo", note: "people/Person.md", negated: true }))), "Does not link to Person");
+});
+
+test("a negated condition cannot decide what a new note needs", () => {
+	assert.notEqual(noteCreationBlocker(filter(all(property("status", { operator: "is not", value: "doing" }))), {}), undefined);
+});
