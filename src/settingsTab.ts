@@ -26,7 +26,7 @@ import {
 } from "./settings/dateNotesForm";
 import { newList, propertySuggestions } from "./settings/listForm";
 import type { PropertySuggestion } from "./settings/listForm";
-import { listPage, listRow, propertyPage, propertyRow } from "./settings/listPage";
+import { listPage, listPageId, listRow, propertyPage, propertyPageId, propertyRow } from "./settings/listPage";
 import type { ListPageContext } from "./settings/listPage";
 import { changedColor, changedPrefix } from "./settings/prefixChip";
 import type { PrefixDraft } from "./settings/prefixChip";
@@ -103,7 +103,14 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 				emptyState: "No lists yet. Add one to show notes in the picker.",
 				items: lists.map((list) => listRow(list, context)),
 				...this.editableEntries(lists),
-				addItem: { name: "Add list", action: () => this.changeLists(() => lists.push(newList(lists))) },
+				addItem: {
+					name: "Add list",
+					action: () => {
+						const list = newList(lists);
+						this.changeLists(() => lists.push(list));
+						this.openPage(listPageId(list));
+					},
+				},
 			},
 			this.dateNotesSection(vault, context),
 			{
@@ -115,7 +122,11 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 				...this.editableEntries(properties),
 				addItem: {
 					name: "Add property",
-					action: () => this.changeLists(() => properties.push(newProperty(properties))),
+					action: () => {
+						const entry = newProperty(properties);
+						this.changeLists(() => properties.push(entry));
+						this.openPage(propertyPageId(entry));
+					},
 				},
 			},
 			{

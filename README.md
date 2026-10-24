@@ -131,7 +131,7 @@ Settings fit a narrow window and work the same on mobile. They are split into fo
 - Drag the handle on the left to reorder the rows. The order is the order of the picker.
 - Use the switch to show or hide a row in the picker without losing its setup.
 - Use the pencil to open the row's page, and the cross to delete it.
-- Use the `+` in the section header to add a row. A new row starts switched off, so it stays out of the picker until you fill it in and switch it on.
+- Use the `+` in the section header to add a row. Its page opens straight away so you can fill it in. A new row starts switched off, so it stays out of the picker until you switch it on.
 
 A row this version of Note Compass cannot read, such as one saved by a newer version, stays in the list with a warning: "This list can't be read by this version of Note Compass. Remove it and build a new one." Its switch is off and disabled and it has no pencil, so it never adds notes to a picker or to "Create note", but its saved setup is kept as it was until you delete it.
 
@@ -173,7 +173,7 @@ A property's page has "Enabled", "Prefix" and "Prefix colour" as on a list's pag
 
 ![The page of the people links property, offering notes that link to Person, excluding the templates folder, and creating new notes in samples/people from a template](docs/images/settings-property.png)
 
-A text or number property also has "Preset values", a list of values the picker offers first, such as `todo`, `doing` and `done` for a `status` property. The `+` in its header adds a value, rows can be dragged into the order the picker shows them, and each row can be deleted. A number property only keeps values written as numbers. Presets are helpers rather than limits: after them the picker still offers the other values the property already has in the vault, most used first, and anything you type.
+A text or number property also has "Preset values", a list of values the picker offers first, such as `todo`, `doing` and `done` for a `status` property. The `+` in its header adds a row with a text field for the value, rows can be dragged into the order the picker shows them, and each row can be deleted. A number property only keeps values written as numbers. Presets are helpers rather than limits: after them the picker still offers the other values the property already has in the vault, most used first, and anything you type.
 
 A link or links property has three more sections:
 

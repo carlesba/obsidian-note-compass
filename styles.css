@@ -279,3 +279,19 @@
 .note-compass-filter .filter-group-actions {
 	gap: var(--size-4-2);
 }
+
+.setting-item.note-compass-preset-value:not(.has-error) .setting-item-info {
+	display: none;
+}
+
+.setting-item.note-compass-preset-value.has-error .setting-item-description {
+	color: var(--text-error);
+}
+
+.setting-item.note-compass-preset-value .setting-item-control {
+	flex: 1 1 auto;
+}
+
+.setting-item.note-compass-preset-value .setting-item-control input[type="text"] {
+	width: 100%;
+}

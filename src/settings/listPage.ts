@@ -268,13 +268,20 @@ function presetValuesList(entry: EditableProperty, context: ListPageContext): Se
 		type: "list",
 		heading: "Preset values",
 		emptyState: "No preset values. The picker still offers the values this property already has in the vault.",
-		items: values.map((_value, index) => ({
+		items: values.map((value, index) => ({
 			name: `Preset value ${index + 1}`,
-			control: {
-				type: "text",
-				key: presetValueKey(entry.id, index),
-				placeholder: entry.type === "number" ? "3" : "Doing",
-				validate: (value: string) => presetValueError(entry, value),
+			searchable: false,
+			render: (setting: Setting) => {
+				setting.settingEl.addClass("note-compass-preset-value");
+				setting.addText((text) => {
+					text.setPlaceholder(entry.type === "number" ? "3" : "Doing").setValue(value);
+					text.onChange((typed) => {
+						const error = presetValueError(entry, typed);
+						setting.setDesc(error ?? "");
+						setting.settingEl.toggleClass("has-error", error !== undefined);
+						if (error === undefined) context.write(presetValueKey(entry.id, index), typed);
+					});
+				});
 			},
 		})),
 		onReorder: (from, to) => context.change(() => movePresetValue(entry, from, to)),
