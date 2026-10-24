@@ -37,7 +37,7 @@ function setup(
 	showPrefixes = true,
 ) {
 	const vault = fakeVault(fakes, options);
-	const entries = creatableEntries({ properties }, vault);
+	const entries = creatableEntries({ properties, checkboxMode: "picker" }, vault);
 	const entryRows = (query = "") => entryChoices(entries, vault, sourcePath, query, showPrefixes);
 	const nameRows = (index: number, query: string) => nameChoices(entryRows()[index].creatable, vault, sourcePath, query, showPrefixes);
 	return { vault, entries, entryRows, nameRows };

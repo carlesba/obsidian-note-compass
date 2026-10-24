@@ -67,7 +67,7 @@ type CurrentPeriodsSource = Extract<ListSource, { kind: "currentPeriods" }>;
 const FIXED_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export function newList(lists: readonly NoteList[]): NoteList {
-	return { id: newListId(lists), enabled: false, prefix: "", source: { kind: "filter", filter: emptyFilter() } };
+	return { id: newListId(lists), enabled: true, prefix: "", source: { kind: "filter", filter: emptyFilter() } };
 }
 
 export function listName(list: NoteList): string {

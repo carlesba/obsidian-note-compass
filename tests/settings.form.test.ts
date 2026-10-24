@@ -109,10 +109,10 @@ test("a row is named by its prefix and a summary of its source, and says off whe
 	assert.equal(listDisplayValue(lists[0]), "");
 });
 
-test("a new list is a disabled filter list with no conditions, the next id and no prefix", () => {
+test("a new list is an enabled filter list with no conditions, the next id and no prefix", () => {
 	assert.deepEqual(newList(defaultSettings().lists), {
 		id: "list-5",
-		enabled: false,
+		enabled: true,
 		prefix: "",
 		source: { kind: "filter", filter: { kind: "group", mode: "all", items: [] } },
 	});

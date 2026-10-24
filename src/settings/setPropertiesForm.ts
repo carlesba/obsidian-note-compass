@@ -1,5 +1,5 @@
 import type { PropertyType } from "../lists/conditions.ts";
-import { CHECKBOX_MODES, EDITABLE_PROPERTY_TYPES, isLinkType, newListId, writePrefixColor } from "../settings.ts";
+import { EDITABLE_PROPERTY_TYPES, isLinkType, newListId, writePrefixColor } from "../settings.ts";
 import type { CheckboxMode, EditableProperty, EditablePropertyType, ListSource, NoteList } from "../settings.ts";
 import { mixedTypeProperties } from "../setProperties/propertyTypes.ts";
 import { parseNumber } from "../setProperties/values.ts";
@@ -14,7 +14,6 @@ export type PropertyField =
 	| "type"
 	| "presetValues"
 	| "mainMenuPreset"
-	| "checkboxMode"
 	| "removesEmpty"
 	| LinkPropertyField;
 
@@ -67,7 +66,7 @@ export function propertyLabel(entry: EditableProperty): string {
 }
 
 export function newProperty(properties: readonly EditableProperty[]): EditableProperty {
-	return { id: newListId(properties), enabled: false, prefix: "", property: "", type: "checkbox" };
+	return { id: newListId(properties), enabled: true, prefix: "", property: "", type: "checkbox" };
 }
 
 export function mixedTypeWarning(entry: EditableProperty, properties: readonly EditableProperty[]): string | undefined {
@@ -83,7 +82,6 @@ export function readPropertyField(entry: EditableProperty, field: PropertyField,
 	if (field === "excludedFolders") return entry.excludedFolders?.[Number(index)];
 	if (field === "presetValues") return entry.presetValues?.[Number(index)];
 	if (field === "mainMenuPreset") return isMainMenuPreset(entry, Number(index));
-	if (field === "checkboxMode") return entry.checkboxMode ?? "picker";
 	if (field === "removesEmpty") return entry.keepsEmpty !== true;
 	if (field === "enabled") return entry.enabled;
 	if (field === "prefix") return entry.prefix;
@@ -99,7 +97,6 @@ export function writePropertyField(entry: EditableProperty, field: PropertyField
 	if (field === "presetValues") return writePresetValue(entry, Number(index), text);
 	if (field === "mainMenuPreset") return writeMainMenuPreset(entry, Number(index), value === true);
 	if (field === "removesEmpty") writeFlag(entry, "keepsEmpty", value !== true);
-	else if (field === "checkboxMode") writeCheckboxMode(entry, value);
 	else if (field === "enabled") entry.enabled = value === true;
 	else if (field === "createsNotes") entry.createsNotes = value === true;
 	else if (field === "prefix") entry.prefix = text;
@@ -147,12 +144,6 @@ function setMainMenuPresets(entry: EditableProperty, values: string[]): void {
 	const ordered = (entry.presetValues ?? []).filter((value, index, all) => values.includes(value) && all.indexOf(value) === index);
 	if (ordered.length > 0) entry.mainMenuPresets = ordered;
 	else delete entry.mainMenuPresets;
-}
-
-function writeCheckboxMode(entry: EditableProperty, value: unknown): void {
-	const mode = CHECKBOX_MODES.find((candidate) => candidate === value);
-	if (mode === undefined || mode === "picker") delete entry.checkboxMode;
-	else entry.checkboxMode = mode;
 }
 
 export function addPresetValue(entry: EditableProperty): void {

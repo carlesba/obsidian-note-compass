@@ -31,7 +31,6 @@ import { renderFilter } from "./filterEditor";
 import { PropertySuggest, warningDescription } from "./suggest";
 import {
 	PROPERTY_TYPE_OPTIONS,
-	CHECKBOX_MODE_OPTIONS,
 	addExcludedFolder,
 	addPresetValue,
 	deleteExcludedFolder,
@@ -239,12 +238,6 @@ export function propertyPage(
 			name: "Type",
 			desc: chosen() ? "Which value picker the property opens." : "Choose a property first.",
 			control: { type: "dropdown", disabled: () => !chosen(), key: key("type"), options: PROPERTY_TYPE_OPTIONS },
-		},
-		{
-			name: "When chosen",
-			desc: "What choosing the checkbox in the picker does.",
-			visible: entry.type === "checkbox",
-			control: { type: "dropdown", key: key("checkboxMode"), options: CHECKBOX_MODE_OPTIONS },
 		},
 		{
 			name: "Remove when empty",

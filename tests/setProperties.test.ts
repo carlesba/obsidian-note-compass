@@ -2,7 +2,7 @@ import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import type { Frontmatter } from "../src/lists/vault.ts";
 import { defaultSettings } from "../src/settings.ts";
-import type { EditableProperty, EditablePropertyType } from "../src/settings.ts";
+import type { CheckboxMode, EditableProperty, EditablePropertyType } from "../src/settings.ts";
 import { offeredEntries, propertyType } from "../src/setProperties/offered.ts";
 import {
 	CANCEL_LABEL,
@@ -71,7 +71,7 @@ function setup(
 			state.values.get(picked.property),
 			query,
 		);
-	return { settings, vault, target, initial, choicesFor, valueChoicesFor };
+	return { settings, vault, target, initial, entries, choicesFor, valueChoicesFor };
 }
 
 const labels = (choices: readonly { label: string }[]) => choices.map((choice) => choice.label);
@@ -391,10 +391,10 @@ test("a number property offers its preset values before the numbers the vault ha
 });
 
 test("a checkbox can open its picker, toggle between true and not set, or cycle through true, false and not set", () => {
-	const next = (mode: EditableProperty["checkboxMode"], row: string, frontmatter: Frontmatter) => {
-		const done = entry("done", "checkbox", { prefix: "☑️", checkboxMode: mode });
-		const { initial, choicesFor } = setup([done], [{ path: "Today.md", frontmatter }, { path: "types/Person.md" }]);
-		const action = pick(choicesFor(), row).action;
+	const next = (mode: CheckboxMode | undefined, row: string, frontmatter: Frontmatter) => {
+		const done = entry("done", "checkbox", { prefix: "☑️" });
+		const { initial, entries } = setup([done], [{ path: "Today.md", frontmatter }, { path: "types/Person.md" }]);
+		const action = pick(pickerChoices(entries, initial, pickerState(initial), "", true, mode), row).action;
 		return action.action === "set" ? written(initial, action.state, { ...frontmatter }) : action.action;
 	};
 	assert.equal(next(undefined, "✓ ☑️ done true", { done: true }), "edit");

@@ -69,7 +69,7 @@ By default every period lives in `on/`, as `2024-03-05`, `2024-W10`, `2024-03` a
 
 Nothing is written while you work in the picker. The first two rows are always `🏁 Save & close`, which writes only the properties you changed, and `🛑 Cancel`, which discards every change. Escape does the same as Cancel. ⌘↵, or Ctrl+Enter on Windows and Linux, saves what you have so far and closes the picker from anywhere, including a property's own picker.
 
-Next come the values the note will be saved with, each marked `✓`: one row per linked note, and one row for each checkbox, text, number or date with its value beside it. A value you changed in this session is also marked `•`. Choosing a set link removes it, so a links property loses that one note. Choosing a set text, number or date opens its own picker, and a set checkbox does what its "When chosen" setting says.
+Next come the values the note will be saved with, each marked `✓`: one row per linked note, and one row for each checkbox, text, number or date with its value beside it. A value you changed in this session is also marked `•`. Choosing a set link removes it, so a links property loses that one note. Choosing a set text, number or date opens its own picker, and a set checkbox does what the "Checkboxes when chosen" setting says.
 
 Below the set values, each enabled property offers what it can add, in the order of your settings:
 
@@ -134,7 +134,7 @@ Settings fit a narrow window and work the same on mobile. They are split into fo
 - Drag the handle on the left to reorder the rows. The order is the order of the picker.
 - Use the switch to show or hide a row in the picker without losing its setup.
 - Use the pencil to open the row's page, and the cross to delete it.
-- Use the `+` in the section header to add a row. Its page opens straight away so you can fill it in. A new row starts switched off, so it stays out of the picker until you switch it on.
+- Use the `+` in the section header to add a row. Its page opens straight away so you can fill it in, and the new row starts switched on.
 
 A row this version of Note Compass cannot read, such as one saved by a newer version, stays in the list with a warning: "This list can't be read by this version of Note Compass. Remove it and build a new one." Its switch is off and disabled and it has no pencil, so it never adds notes to a picker or to "Create note", but its saved setup is kept as it was until you delete it.
 
@@ -176,7 +176,7 @@ A property's page has "Enabled", "Prefix" and "Prefix colour" as on a list's pag
 
 ![The page of the people links property, offering notes that link to Person, excluding the templates folder, and creating new notes in samples/people from a template](docs/images/settings-property.png)
 
-Every property has "Remove when empty", which is on by default and removes the property from the note once you clear its value or remove its last link. Switched off, the property stays in the note with an empty value. A checkbox also has "When chosen", which picks how choosing it in the main picker behaves: open its own picker, toggle between true and not set, or cycle through true, false and not set.
+Every property has "Remove when empty", which is on by default and removes the property from the note once you clear its value or remove its last link. Switched off, the property stays in the note with an empty value.
 
 A text or number property also has "Preset values", a list of values its own picker offers first, such as `todo`, `doing` and `done` for a `status` property. The `+` in its header adds a row with a text field for the value and a switch, rows can be dragged into the order the picker shows them, and each row can be deleted. A number property only keeps values written as numbers. Presets are helpers rather than limits: after them the picker still offers the other values the property already has in the vault, most used first, and anything you type. The switch beside a preset also shows it in the main Set properties menu, so you can keep many presets and put only the few you use most one choice away. Every preset is always offered in the property's own picker.
 
@@ -187,6 +187,10 @@ A link or links property has three more sections:
 - "Create notes" decides whether the property appears in "Create note". "Allow creating notes" switches it on, "Folder" sets where new notes go, and "Template" sets the note new notes start from.
 
 Several rows may write the same property, such as the default `related` rows with different sources. They share one value, and the first enabled row decides its type. A row warns you when two rows for one property disagree on type.
+
+### Checkboxes when chosen
+
+"Checkboxes when chosen", below the Set properties list, decides what choosing a checkbox property in the main Set properties menu does, for every checkbox property: open its own picker with true, false and Clear, which is the default, toggle between true and not set, or cycle through true, false and not set. A mode chosen for a single property in 0.6.1 or 0.6.2 becomes this setting.
 
 ### Reset all settings
 

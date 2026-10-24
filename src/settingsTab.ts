@@ -10,6 +10,7 @@ import type { JumpListVault } from "./lists/vault";
 import type NoteCompassPlugin from "./main";
 import { defaultSettings } from "./settings";
 import {
+	CHECKBOX_MODE_KEY,
 	DATE_NOTE_SOURCE_KEY,
 	SHOW_PREFIXES_KEY,
 	periodKey,
@@ -31,7 +32,7 @@ import type { ListPageContext } from "./settings/listPage";
 import { changedColor, changedPrefix } from "./settings/prefixChip";
 import type { PrefixDraft } from "./settings/prefixChip";
 import { ResetSettingsModal } from "./settings/resetModal";
-import { newProperty } from "./settings/setPropertiesForm";
+import { CHECKBOX_MODE_OPTIONS, newProperty } from "./settings/setPropertiesForm";
 
 const TYPED_FIELDS = [
 	"prefix",
@@ -128,6 +129,16 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 						this.openPage(propertyPageId(entry));
 					},
 				},
+			},
+			{
+				type: "group",
+				items: [
+					{
+						name: "Checkboxes when chosen",
+						desc: "What choosing a checkbox property in the Set properties menu does.",
+						control: { type: "dropdown", key: CHECKBOX_MODE_KEY, options: CHECKBOX_MODE_OPTIONS },
+					},
+				],
 			},
 			{
 				type: "group",

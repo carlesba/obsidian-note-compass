@@ -2,7 +2,7 @@ import type { Frontmatter } from "../lists/vault";
 import { matchesInOrder, prefixParts, rowLabel } from "../render.ts";
 import type { RowParts } from "../render";
 import { isLinkType } from "../settings.ts";
-import type { EditableProperty, SetPropertiesSettings } from "../settings";
+import type { CheckboxMode, EditableProperty, SetPropertiesSettings } from "../settings";
 import { isPicked, linksTo, wikiLink } from "./links.ts";
 import { offeredProperties, propertyType } from "./offered.ts";
 import type { OfferedEntry } from "./offered";
@@ -62,12 +62,13 @@ export function pickerChoices(
 	state: PickerState,
 	query: string,
 	showPrefixes: boolean,
+	checkboxMode: CheckboxMode = "picker",
 ): PickerChoice[] {
 	const choices = [
 		choice({ mark: SAVE_MARK, content: SAVE_TEXT }, { action: "save" }),
 		choice({ mark: CANCEL_MARK, content: CANCEL_TEXT }, { action: "cancel" }),
-		...selectedChoices(entries, initial, state, showPrefixes),
-		...entryChoices(entries, state, query, showPrefixes),
+		...selectedChoices(entries, initial, state, showPrefixes, checkboxMode),
+		...entryChoices(entries, state, query, showPrefixes, checkboxMode),
 	];
 	if (!query) return choices;
 	const matches = choices.filter((candidate) => !candidate.kept && matchesInOrder(query, candidate.label));
@@ -104,6 +105,7 @@ function selectedChoices(
 	initial: PropertyState,
 	state: PickerState,
 	showPrefixes: boolean,
+	checkboxMode: CheckboxMode,
 ): PickerChoice[] {
 	const choices: PickerChoice[] = [];
 	for (const offered of firstPerProperty(entries)) {
@@ -118,7 +120,7 @@ function selectedChoices(
 				content: property,
 				value: formatPendingValue(offered.type, pending),
 			};
-			choices.push(choice(parts, scalarAction(offered, state, pending)));
+			choices.push(choice(parts, scalarAction(offered, state, pending, checkboxMode)));
 			continue;
 		}
 		const links = asList(pending);
@@ -158,6 +160,7 @@ function entryChoices(
 	state: PickerState,
 	query: string,
 	showPrefixes: boolean,
+	checkboxMode: CheckboxMode,
 ): PickerChoice[] {
 	const typedName = typedNameFor(entries, query, showPrefixes);
 	const offeredValues = new Set<string>();
@@ -183,7 +186,7 @@ function entryChoices(
 			continue;
 		}
 		if (isUnset(pending) && offer(property, "")) {
-			choices.push(choice({ ...prefixPart(offered.entry, showPrefixes), content: property }, scalarAction(offered, state, pending)));
+			choices.push(choice({ ...prefixPart(offered.entry, showPrefixes), content: property }, scalarAction(offered, state, pending, checkboxMode)));
 		}
 		const mainMenu = offered.entry.mainMenuPresets ?? [];
 		if (mainMenu.length > 0) {
@@ -242,9 +245,9 @@ function typedNameFor(
 		name !== "" && (scope === undefined || offered.entry.prefix.trim() === scope) ? name : undefined;
 }
 
-function scalarAction(offered: OfferedEntry, state: PickerState, pending: unknown): PickerAction {
+function scalarAction(offered: OfferedEntry, state: PickerState, pending: unknown, checkboxMode: CheckboxMode): PickerAction {
 	const { entry } = offered;
-	const mode = offered.type === "checkbox" ? (entry.checkboxMode ?? "picker") : "picker";
+	const mode = offered.type === "checkbox" ? checkboxMode : "picker";
 	if (mode === "picker") return { action: "edit", entry };
 	if (mode === "toggle") return set(withValue(state, entry.property, pending === true ? undefined : true));
 	const next = pending === true ? false : pending === false ? undefined : true;

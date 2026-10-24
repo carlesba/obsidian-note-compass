@@ -77,12 +77,12 @@ export interface EditableProperty {
 	newNoteTemplate?: string;
 	presetValues?: string[];
 	mainMenuPresets?: string[];
-	checkboxMode?: CheckboxMode;
 	keepsEmpty?: true;
 }
 
 export interface SetPropertiesSettings {
 	properties: EditableProperty[];
+	checkboxMode: CheckboxMode;
 }
 
 export interface JumpSettings {
@@ -197,8 +197,8 @@ export function mergeSettings(stored: unknown): JumpSettings {
 
 function readSetProperties(stored: unknown): SetPropertiesSettings {
 	const data = isRecord(stored) ? stored : {};
-	if (Array.isArray(data.properties)) return { properties: readProperties(data.properties) };
-	return { properties: migrateLegacySetProperties(readLegacySetProperties(data)) };
+	if (Array.isArray(data.properties)) return { properties: readProperties(data.properties), checkboxMode: readCheckboxMode(data) };
+	return { properties: migrateLegacySetProperties(readLegacySetProperties(data)), checkboxMode: "picker" };
 }
 
 function readLegacySetProperties(data: Record<string, unknown>): LegacySetPropertiesSettings {
@@ -259,8 +259,6 @@ function readProperties(stored: unknown[]): EditableProperty[] {
 		if (presetValues.length > 0) property.presetValues = presetValues;
 		const mainMenuPresets = readMainMenuPresets(entry, presetValues);
 		if (mainMenuPresets.length > 0) property.mainMenuPresets = mainMenuPresets;
-		const checkboxMode = CHECKBOX_MODES.find((mode) => mode === entry.checkboxMode);
-		if (checkboxMode && checkboxMode !== "picker") property.checkboxMode = checkboxMode;
 		if (entry.keepsEmpty === true) property.keepsEmpty = true;
 		if (source) {
 			property.source = source;
@@ -294,6 +292,14 @@ function readPresetValues(entry: Record<string, unknown>): string[] {
 		.map((value) => value.trim())
 		.filter((value) => value !== "");
 	return [...new Set(values)];
+}
+
+function readCheckboxMode(data: Record<string, unknown>): CheckboxMode {
+	const stored = CHECKBOX_MODES.find((mode) => mode === data.checkboxMode);
+	if (stored) return stored;
+	const properties = Array.isArray(data.properties) ? data.properties.filter(isRecord) : [];
+	const perProperty = properties.find((entry) => entry.type === "checkbox" && entry.checkboxMode !== "picker" && CHECKBOX_MODES.some((mode) => mode === entry.checkboxMode));
+	return CHECKBOX_MODES.find((mode) => mode === perProperty?.checkboxMode) ?? "picker";
 }
 
 function readMainMenuPresets(entry: Record<string, unknown>, presetValues: readonly string[]): string[] {

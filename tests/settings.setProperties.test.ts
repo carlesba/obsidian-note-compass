@@ -4,7 +4,7 @@ import { PROPERTY_TYPES } from "../src/lists/conditions.ts";
 import type { Frontmatter, JumpListVault } from "../src/lists/vault.ts";
 import { EDITABLE_PROPERTY_TYPES, defaultSettings, mergeSettings } from "../src/settings.ts";
 import type { EditableProperty } from "../src/settings.ts";
-import { excludedFolderKey, propertyKey, propertySourceKey, readControl, writeControl } from "../src/settings/controlKeys.ts";
+import { CHECKBOX_MODE_KEY, excludedFolderKey, propertyKey, propertySourceKey, readControl, writeControl } from "../src/settings/controlKeys.ts";
 import { propertySuggestions } from "../src/settings/listForm.ts";
 import {
 	PROPERTY_TYPE_OPTIONS,
@@ -92,11 +92,11 @@ test("a property row's label leaves the prefix to its chip", () => {
 	assert.equal(propertyLabel(entry({ prefix: "🎛️ meta", property: " ", type: "date" })), "New property");
 });
 
-test("adding a property appends a disabled checkbox entry with the next id", () => {
+test("adding a property appends an enabled checkbox entry with the next id", () => {
 	const { properties } = defaultSettings().setProperties;
 	assert.deepEqual(newProperty(properties), {
 		id: "list-14",
-		enabled: false,
+		enabled: true,
 		prefix: "",
 		property: "",
 		type: "checkbox",
@@ -289,30 +289,40 @@ test("preset values are kept trimmed and without blanks or repeats, and the form
 	assert.equal(presetValueError({ ...status, type: "number" }, "2.5"), undefined);
 });
 
-test("checkbox mode, preset values in the main picker and keeping empty values are read, written and stored only when they differ from the default", () => {
+test("keeping empty values is read and written per property and stored only when it differs from the default", () => {
 	const settings = mergeSettings({
 		setProperties: {
 			properties: [
-				{ id: "a", enabled: true, prefix: "", property: "done", type: "checkbox", checkboxMode: "cycle", keepsEmpty: true },
-				{ id: "b", enabled: true, prefix: "", property: "status", type: "text", presetValues: ["todo", "done"], presetsInMainMenu: true, checkboxMode: "bogus" },
+				{ id: "a", enabled: true, prefix: "", property: "done", type: "checkbox", keepsEmpty: true },
+				{ id: "b", enabled: true, prefix: "", property: "status", type: "text", presetValues: ["todo", "done"], presetsInMainMenu: true },
 			],
 		},
 	});
 	const [done, status] = settings.setProperties.properties;
-	assert.equal(readPropertyField(done, "checkboxMode"), "cycle");
 	assert.equal(readPropertyField(done, "removesEmpty"), false);
-	assert.equal(readPropertyField(status, "checkboxMode"), "picker");
 	assert.equal(readPropertyField(status, "removesEmpty"), true);
 	assert.deepEqual(status.mainMenuPresets, ["todo", "done"]);
 	assert.equal(readPropertyField(status, "mainMenuPreset", "1"), true);
-	writePropertyField(done, "checkboxMode", "picker");
 	writePropertyField(done, "removesEmpty", true);
 	writePropertyField(status, "mainMenuPreset", false, "0");
 	writePropertyField(status, "mainMenuPreset", false, "1");
-	assert.deepEqual([done.checkboxMode, done.keepsEmpty, status.mainMenuPresets], [undefined, undefined, undefined]);
-	writePropertyField(done, "checkboxMode", "toggle");
+	assert.deepEqual([done.keepsEmpty, status.mainMenuPresets], [undefined, undefined]);
 	writePropertyField(done, "removesEmpty", false);
-	assert.deepEqual([done.checkboxMode, done.keepsEmpty], ["toggle", true]);
+	assert.equal(done.keepsEmpty, true);
+});
+
+test("the checkbox mode is one Set properties setting, taken from an earlier per-property mode when there is one", () => {
+	assert.equal(defaultSettings().setProperties.checkboxMode, "picker");
+	const earlier = mergeSettings({
+		setProperties: { properties: [{ id: "a", enabled: true, prefix: "", property: "done", type: "checkbox", checkboxMode: "cycle" }] },
+	});
+	assert.equal(earlier.setProperties.checkboxMode, "cycle");
+	assert.equal("checkboxMode" in earlier.setProperties.properties[0], false);
+	const stored = mergeSettings({ setProperties: { properties: [], checkboxMode: "toggle" } });
+	assert.equal(readControl(stored, CHECKBOX_MODE_KEY), "toggle");
+	assert.equal(writeControl(stored, CHECKBOX_MODE_KEY, "bogus"), false);
+	assert.equal(writeControl(stored, CHECKBOX_MODE_KEY, "cycle"), true);
+	assert.equal(mergeSettings(JSON.parse(JSON.stringify(stored))).setProperties.checkboxMode, "cycle");
 });
 
 test("each preset value has its own main menu switch, which follows the value when it is edited, moved or deleted", () => {

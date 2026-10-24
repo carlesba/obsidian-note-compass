@@ -55,6 +55,7 @@ const setPropertiesDefaults = (): SetPropertiesSettings => ({
 		linked("list-7", "🏢 comp", linksTo("Org 🏢"), "related"),
 		linked("list-8", "🔅 tday", { kind: "modifiedToday" }, "related"),
 	],
+	checkboxMode: "picker",
 });
 
 test("defaultSettings enables every relation list in picker order and reads date notes automatically", () => {
@@ -92,6 +93,7 @@ test("mergeSettings migrates saved flags and link lists into properties, flags f
 			linked("list-2", "👤", linksTo("Person"), "related", "links", ["_templates"]),
 			linked("list-7", "🏢", linksTo("Org"), "related", "links", ["_templates"]),
 		],
+		checkboxMode: "picker",
 	});
 	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(merged))), merged);
 	const withoutTemplates = mergeSettings({ setProperties: { ...setProperties, templatesFolder: " " } }).setProperties.properties;
@@ -132,6 +134,7 @@ test("mergeSettings replaces mistyped legacy fields one by one and keeps unreada
 			linked("list-1", "a", { kind: "modifiedToday" }, "seen"),
 			linked("list-3", "c", { kind: "unreadable", stored: { kind: "nowhere" } }, "c", "link"),
 		],
+		checkboxMode: "picker",
 	});
 	assert.deepEqual(mergeSettings({ setProperties: "nonsense" }).setProperties, setPropertiesDefaults());
 });
@@ -147,9 +150,9 @@ test("mergeSettings keeps properties already in the new shape untouched", () => 
 		linked("p-7", "🔗", { kind: "linksOut" }, "related", "links", ["archive", "templates"], true),
 	];
 	const merged = mergeSettings({ setProperties: { properties, flags: ["ignored"] } });
-	assert.deepEqual(merged.setProperties, { properties });
+	assert.deepEqual(merged.setProperties, { properties, checkboxMode: "picker" });
 	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(merged))), merged);
-	assert.deepEqual(mergeSettings({ setProperties: { properties: [] } }).setProperties, { properties: [] });
+	assert.deepEqual(mergeSettings({ setProperties: { properties: [] } }).setProperties, { properties: [], checkboxMode: "picker" });
 });
 
 test("mergeSettings drops unknown properties, keeps unreadable link sources as broken, mints missing ids and keeps sources only on link types", () => {

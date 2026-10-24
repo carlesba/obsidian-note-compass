@@ -32,7 +32,7 @@ export function setProperties(
 		}
 	};
 	const openMain = (state: PickerState, query: string): void => {
-		new ChoiceModal<PickerChoice>(app, "Set properties…", (typed) => pickerChoices(entries, initial, state, typed, settings.showPrefixes), {
+		new ChoiceModal<PickerChoice>(app, "Set properties…", (typed) => pickerChoices(entries, initial, state, typed, settings.showPrefixes, settings.setProperties.checkboxMode), {
 			choose: ({ action }, typed) => {
 				if (action.action === "set") openMain(action.state, "");
 				else if (action.action === "expand") openMain(state, action.query);

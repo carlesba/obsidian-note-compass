@@ -1,4 +1,5 @@
 import type { Period } from "../lists/dateNotes.ts";
+import { CHECKBOX_MODES } from "../settings.ts";
 import type { JumpSettings } from "../settings.ts";
 import { isPeriod, readPeriodField, writeDateNoteSource, writePeriodField } from "./dateNotesForm.ts";
 import type { PeriodField } from "./dateNotesForm.ts";
@@ -15,6 +16,8 @@ import type { PropertyField } from "./setPropertiesForm.ts";
 export const DATE_NOTE_SOURCE_KEY = "dateNotes/from";
 
 export const SHOW_PREFIXES_KEY = "display/showPrefixes";
+
+export const CHECKBOX_MODE_KEY = "setProperties/checkboxMode";
 
 export function listKey(id: string, field: ListField): string {
 	return `list/${id}/${field}`;
@@ -51,6 +54,7 @@ export function periodKey(period: Period, field: PeriodField): string {
 export function readControl(settings: JumpSettings, key: string): unknown {
 	if (key === SHOW_PREFIXES_KEY) return settings.showPrefixes;
 	if (key === DATE_NOTE_SOURCE_KEY) return settings.dateNotes.from;
+	if (key === CHECKBOX_MODE_KEY) return settings.setProperties.checkboxMode;
 	const [scope, name, field, index] = key.split("/");
 	if (scope === "list") {
 		const list = settings.lists.find((candidate) => candidate.id === name);
@@ -73,6 +77,11 @@ export function writeControl(settings: JumpSettings, key: string, value: unknown
 	if (key === DATE_NOTE_SOURCE_KEY) {
 		writeDateNoteSource(settings.dateNotes, value);
 		return true;
+	}
+	if (key === CHECKBOX_MODE_KEY) {
+		const mode = CHECKBOX_MODES.find((candidate) => candidate === value);
+		if (mode) settings.setProperties.checkboxMode = mode;
+		return mode !== undefined;
 	}
 	const [scope, name, field, index] = key.split("/");
 	if (scope === "list") {
