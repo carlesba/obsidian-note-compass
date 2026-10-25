@@ -142,11 +142,17 @@ A row this version of Note Compass cannot read, such as one saved by a newer ver
 
 To edit a prefix, click its chip, or focus it and press Enter. A colour swatch and a reset button appear beside the text, and the chip previews the colour as you pick it. Enter or clicking away saves both the text and the colour, and Escape leaves both unchanged. An empty prefix shows as a faint `prefix` chip.
 
+Rows share a prefix when its text and its colour are the same, so `👤 peop` in red and `👤 peop` with no colour are two prefixes. While you edit a chip, a list under the text offers the other prefixes already in use, each with its colour and how many rows use it, such as a `📅 due` chip with `3 rows` beside it. Typing narrows it by in-order matching, as in the pickers. Click a suggestion, or move to it with the arrow keys and press Enter, to take both its text and its colour. Escape closes the list first, and a second Escape leaves the prefix unchanged.
+
+When other rows use the same prefix as the one you are editing, a checkbox under the chip reads "Also change the 2 other rows using “👤 peop”". It is ticked, so saving changes those rows to the new text and colour too, across "Jump to note" and "Set properties". Untick it to change only this row. The rows it changes are the ones that shared the prefix when you started editing, even if you then take a suggestion. Empty prefixes are never linked or suggested.
+
 ![A prefix chip being edited in place, with its colour swatch and reset button beside it](docs/images/settings-prefix-edit.png)
 
 ### List pages
 
 A list's page has "Enabled", "Prefix" and "Prefix colour", whose circular arrow removes the colour, then "Source", which chooses what the list holds: adjacent dates, outbound links, inbound links, same day, a filter, notes linking to a note, notes in a folder, notes modified today, or current date notes. Current date notes has one switch per period, from "Today" to "This year".
+
+"Prefix" suggests the prefixes in use, as the chip does, and picking one sets its colour too. When other rows share the list's prefix, a switch under "Prefix colour" reads "Also change the 2 other rows using “👤 peop”". It is on, so the text you type and the colour you pick change those rows as you go. Turn it off to change only this list. A property's page works the same way.
 
 A filter works like the filters in Obsidian Bases and looks the same. It is a group that starts with "All the following are true", "Any of the following are true" or "None of the following are true", so a note is listed when it matches every filter in the group, at least one, or none of them. Each filter row starts with what it tests: type a property name, or pick `folder`, `tags`, `links`, `created time` or `modified time` from the suggestions. Then choose the operator and the value, such as `folder is in projects`, `tags has tag client` or `modified time after 7 days ago`. "Add filter" adds a row to the group, and "Add filter group" adds a group inside it with its own choice. Groups can sit inside groups up to three levels deep, counting the filter itself. The trash button on a row or on an inner group removes it, and removing the last row of an inner group removes the group too. A new filter has no rows and lists nothing until you add one, and an empty group inside a filter is left out of the matching.
 
