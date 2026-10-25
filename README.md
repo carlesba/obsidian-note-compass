@@ -69,7 +69,7 @@ By default every period lives in `on/`, as `2024-03-05`, `2024-W10`, `2024-03` a
 
 Nothing is written while you work in the picker. The first two rows are always `🏁 Save & close`, which writes only the properties you changed, and `🛑 Cancel`, which discards every change. Escape does the same as Cancel. ⌘↵, or Ctrl+Enter on Windows and Linux, saves what you have so far and closes the picker from anywhere, including a property's own picker.
 
-Next come the values the note will be saved with, each marked `✓`: one row per linked note, and one row for each checkbox, text, number or date with its value beside it. A value you changed in this session is also marked `•`. Choosing a set link removes it, so a links property loses that one note. Choosing a set text, number or date opens its own picker, and a set checkbox does what the "Checkboxes when chosen" setting says.
+Next come the values the note will be saved with, each marked `✓`: one row per linked note, and one row for each checkbox, text, number or date with its value beside it. A value you changed in this session is also marked `•`. Choosing a set link removes it, so a links property loses that one note. Choosing a set text, number or date opens its own picker, and a set checkbox does what the "Checkbox behaviour" setting says.
 
 Below the set values, each enabled property offers what it can add, in the order of your settings:
 
@@ -188,9 +188,9 @@ A link or links property has three more sections:
 
 Several rows may write the same property, such as the default `related` rows with different sources. They share one value, and the first enabled row decides its type. A row warns you when two rows for one property disagree on type.
 
-### Checkboxes when chosen
+### Checkbox behaviour
 
-"Checkboxes when chosen", below the Set properties list, decides what choosing a checkbox property in the main Set properties menu does, for every checkbox property: open its own picker with true, false and Clear, which is the default, toggle between true and not set, or cycle through true, false and not set. A mode chosen for a single property in 0.6.1 or 0.6.2 becomes this setting.
+"Checkbox behaviour", below the Set properties list, decides what choosing a checkbox property in the main Set properties menu does, for every checkbox property: open its own picker with true, false and Clear, which is the default, toggle between true and not set, or cycle through true, false and not set. A mode chosen for a single property in 0.6.1 or 0.6.2 becomes this setting.
 
 ### Reset all settings
 

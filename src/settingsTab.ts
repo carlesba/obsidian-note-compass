@@ -134,8 +134,8 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 				type: "group",
 				items: [
 					{
-						name: "Checkboxes when chosen",
-						desc: "What choosing a checkbox property in the Set properties menu does.",
+						name: "Checkbox behaviour",
+						desc: "What choosing a checkbox property in Set properties does.",
 						control: { type: "dropdown", key: CHECKBOX_MODE_KEY, options: CHECKBOX_MODE_OPTIONS },
 					},
 				],
