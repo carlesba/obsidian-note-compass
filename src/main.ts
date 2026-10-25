@@ -1,5 +1,7 @@
 import { MarkdownView, Notice, Plugin, getLanguage } from "obsidian";
 import { createNoteFromEntries } from "./createNote/modal";
+import { fillForm, isRunnable, pickForm } from "./forms/modal";
+import { formName } from "./forms/questions";
 import { DEFAULT_LANGUAGE, setLanguage, t } from "./i18n";
 import { buildJumpList } from "./lists/jumpList";
 import { createObsidianVault } from "./lists/obsidianVault";
@@ -11,6 +13,7 @@ import { NoteCompassSettingTab } from "./settingsTab";
 
 export default class NoteCompassPlugin extends Plugin {
 	settings: JumpSettings = defaultSettings();
+	private formCommandIds: string[] = [];
 
 	async onload(): Promise<void> {
 		try {
@@ -47,10 +50,35 @@ export default class NoteCompassPlugin extends Plugin {
 			callback: () =>
 				createNoteFromEntries(this.app, createObsidianVault(this.app), this.settings, this.currentNote()?.path),
 		});
+
+		this.addCommand({
+			id: "fill-form",
+			name: t("fillForm"),
+			icon: "clipboard-list",
+			callback: () => pickForm(this.app, createObsidianVault(this.app), this.settings.forms, this.currentNote()?.path),
+		});
+
+		this.registerFormCommands();
 	}
 
 	async saveSettings(): Promise<void> {
 		await this.saveData(storedSettings(this.settings));
+		this.registerFormCommands();
+	}
+
+	private registerFormCommands(): void {
+		for (const id of this.formCommandIds) this.removeCommand(id);
+		this.formCommandIds = [];
+		for (const form of this.settings.forms.filter(isRunnable)) {
+			const id = `form-${form.id}`;
+			this.addCommand({
+				id,
+				name: formName(form),
+				icon: "clipboard-list",
+				callback: () => fillForm(this.app, createObsidianVault(this.app), form, this.currentNote()?.path),
+			});
+			this.formCommandIds.push(id);
+		}
 	}
 
 	private openJumpModal(query = ""): void {

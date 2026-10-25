@@ -12,6 +12,8 @@ const DATETIME_FORMS = [
 	/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/,
 ];
 
+const TIME_FORMS = [/^(\d{2})(\d{2})$/, /^(\d{1,2}):(\d{2})$/];
+
 const NUMBER_FORM = /^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$/;
 
 export function parseDate(input: string): string | undefined {
@@ -27,6 +29,14 @@ export function parseDateTime(input: string): string | undefined {
 	const [year, month, day, hour, minute] = parts;
 	if (!isCalendarDate(year, month, day) || Number(hour) > 23 || Number(minute) > 59) return undefined;
 	return `${year}-${month}-${day}T${hour}:${minute}`;
+}
+
+export function parseTime(input: string): string | undefined {
+	const parts = matchFirst(TIME_FORMS, input.trim());
+	if (!parts) return undefined;
+	const [hour, minute] = parts;
+	if (Number(hour) > 23 || Number(minute) > 59) return undefined;
+	return `${hour.padStart(2, "0")}:${minute}`;
 }
 
 export function parseNumber(input: string): number | undefined {

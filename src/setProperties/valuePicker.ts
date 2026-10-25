@@ -109,7 +109,7 @@ function vaultValues(picker: ValuePicker, pending: unknown, kind: "number" | "st
 		.map((count) => choice(String(count.value), count.value, sameValue(count.value, pending), `×${count.count}`));
 }
 
-function datePresets(now: number): [string, string][] {
+export function datePresets(now: number): [string, string][] {
 	const weekday = new Date(now).getDay();
 	const untilMonday = (8 - weekday) % 7 || 7;
 	return [
