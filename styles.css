@@ -346,11 +346,29 @@
 }
 
 .note-compass-sortable-list .setting-items .setting-item.note-compass-field-row {
+	flex-direction: row;
 	flex-wrap: wrap;
+	align-items: flex-start;
 	cursor: pointer;
 }
 
-.note-compass-sortable-list .setting-items .setting-item.note-compass-field-row.is-expanded .mod-drag-handle {
+.note-compass-sortable-list .setting-items .setting-item.note-compass-field-row > .setting-item-info {
+	flex: 1 1 0;
+	min-width: 0;
+	margin-inline-end: var(--size-4-2);
+	overflow-wrap: anywhere;
+}
+
+.note-compass-sortable-list .setting-items .setting-item.note-compass-field-row > .setting-item-control {
+	flex: 0 0 auto;
+	width: auto;
+	margin-top: 0;
+	align-self: flex-start;
+	flex-wrap: nowrap;
+	justify-content: flex-end;
+}
+
+.note-compass-sortable-list .setting-items .setting-item.note-compass-field-row .mod-drag-handle {
 	top: calc(var(--size-4-3) + var(--icon-size) / 2);
 }
 
