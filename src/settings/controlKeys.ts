@@ -3,6 +3,8 @@ import { CHECKBOX_MODES } from "../settings.ts";
 import type { JumpSettings } from "../settings.ts";
 import { isPeriod, readPeriodField, writeDateNoteSource, writePeriodField } from "./dateNotesForm.ts";
 import type { PeriodField } from "./dateNotesForm.ts";
+import { findField, readFieldSetting, readFormSetting, writeFieldSetting, writeFormSetting } from "./formsForm.ts";
+import type { FieldSetting, FormSetting } from "./formsForm.ts";
 import { readListField, writeListField } from "./listForm.ts";
 import type { ListField } from "./listForm.ts";
 import {
@@ -47,6 +49,15 @@ export function propertySourceKey(id: string, field: ListField): string {
 	return `propertySource/${id}/${field}`;
 }
 
+export function formKey(id: string, setting: FormSetting): string {
+	return `form/${id}/${setting}`;
+}
+
+export function formFieldKey(formId: string, fieldId: string, setting: FieldSetting, index?: number): string {
+	const key = `formField/${formId}.${fieldId}/${setting}`;
+	return index === undefined ? key : `${key}/${index}`;
+}
+
 export function periodKey(period: Period, field: PeriodField): string {
 	return `dateNotes/${period}/${field}`;
 }
@@ -56,6 +67,7 @@ export function readControl(settings: JumpSettings, key: string): unknown {
 	if (key === DATE_NOTE_SOURCE_KEY) return settings.dateNotes.from;
 	if (key === CHECKBOX_MODE_KEY) return settings.setProperties.checkboxMode;
 	const [scope, name, field, index] = key.split("/");
+	if (scope === "form" || scope === "formField") return readFormControl(settings, scope, name, field, index);
 	if (scope === "list") {
 		const list = settings.lists.find((candidate) => candidate.id === name);
 		return list ? readListField(list, field as ListField) : undefined;
@@ -84,6 +96,7 @@ export function writeControl(settings: JumpSettings, key: string, value: unknown
 		return mode !== undefined;
 	}
 	const [scope, name, field, index] = key.split("/");
+	if (scope === "form" || scope === "formField") return writeFormControl(settings, scope, name, field, index, value);
 	if (scope === "list") {
 		const list = settings.lists.find((candidate) => candidate.id === name);
 		if (list) writeListField(list, field as ListField, value);
@@ -98,4 +111,34 @@ export function writeControl(settings: JumpSettings, key: string, value: unknown
 	if (scope === "propertySource") return writePropertySourceField(entry, field as ListField, value);
 	if (scope !== "property") return false;
 	return writePropertyField(entry, field as PropertyField, value, index);
+}
+
+function formTarget(settings: JumpSettings, scope: string, name: string) {
+	const [formId, fieldId] = name.split(".");
+	const form = settings.forms.find((candidate) => candidate.id === formId && !candidate.unreadable);
+	if (!form) return undefined;
+	if (scope === "form") return { form, field: undefined };
+	const field = findField(form, fieldId ?? "");
+	return field ? { form, field } : undefined;
+}
+
+function readFormControl(settings: JumpSettings, scope: string, name: string, setting: string, index: string | undefined): unknown {
+	const target = formTarget(settings, scope, name);
+	if (!target) return undefined;
+	if (!target.field) return readFormSetting(target.form, setting as FormSetting);
+	return readFieldSetting(target.field, setting as FieldSetting, index === undefined ? undefined : Number(index));
+}
+
+function writeFormControl(
+	settings: JumpSettings,
+	scope: string,
+	name: string,
+	setting: string,
+	index: string | undefined,
+	value: unknown,
+): boolean {
+	const target = formTarget(settings, scope, name);
+	if (!target) return false;
+	if (!target.field) return writeFormSetting(target.form, setting as FormSetting, value);
+	return writeFieldSetting(target.field, setting as FieldSetting, value, index === undefined ? undefined : Number(index));
 }

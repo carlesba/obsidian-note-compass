@@ -361,3 +361,54 @@
 .setting-item.note-compass-preset-value .setting-item-control input[type="text"] {
 	width: 100%;
 }
+
+.setting-item.note-compass-list-items {
+	flex-wrap: wrap;
+}
+
+.setting-item.note-compass-list-items .setting-item-control {
+	flex: 1 1 16em;
+	min-width: 0;
+}
+
+.note-compass-chip-input {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--size-2-2);
+	width: 100%;
+	min-height: var(--input-height);
+	padding: var(--size-2-1) var(--size-2-3);
+	border-radius: var(--input-radius);
+	box-shadow: 0 0 0 1px var(--background-modifier-border);
+	cursor: text;
+}
+
+.note-compass-chip-input:focus-within {
+	box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
+}
+
+.note-compass-list-chip {
+	gap: var(--size-2-1);
+	padding-inline-end: 0;
+}
+
+.note-compass-list-chip .clickable-icon {
+	padding: 0 var(--size-2-1);
+	--icon-size: var(--icon-xs);
+}
+
+.note-compass-chip-input input.note-compass-chip-input-text {
+	flex: 1 1 6em;
+	min-width: 6em;
+	border: none;
+	background: transparent;
+	box-shadow: none;
+	padding: 0;
+	height: auto;
+}
+
+.setting-item.note-compass-form-choice .setting-item-control input[type="text"] {
+	flex: 1 1 0;
+	min-width: 0;
+}

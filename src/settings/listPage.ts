@@ -58,6 +58,7 @@ export interface ListPageContext {
 	propertySuggestions: () => PropertySuggestion[];
 	write: (key: string, value: unknown) => void;
 	openPage: (pageId: string) => void;
+	openPath: (path: string[]) => void;
 	change: (change: () => unknown) => void;
 	prefixDrafts: Map<string, PrefixDraft>;
 	prefixes: PrefixEdits;
@@ -84,13 +85,14 @@ export function propertyPageId(entry: EditableProperty): string {
 	return `property-${entry.id}`;
 }
 
-interface EditableRow {
+export interface EditableRow {
 	name: string;
 	label: string;
-	prefix: string;
+	prefix?: string;
 	prefixColor?: string;
-	prefixKey: string;
+	prefixKey?: string;
 	warning?: string;
+	desc?: string;
 	broken: boolean;
 	enabled: boolean;
 	enabledKey: string;
@@ -172,21 +174,22 @@ function propertyWarning(
 	return hasSource(entry) ? sourceWarning(entry.source, context) : undefined;
 }
 
-function editableRow(row: EditableRow, context: ListPageContext): SettingDefinition {
+export function editableRow(row: EditableRow, context: ListPageContext): SettingDefinition {
 	const definition: SettingDefinitionRender & { id: string } = {
 		id: `${row.pageId}-row`,
 		name: row.label,
 		aliases: [row.name],
-		desc: row.warning,
+		desc: row.warning ?? row.desc,
 		render: (setting) => {
 			setting.settingEl.addClass("note-compass-draggable-row");
-			const stopEditing = context.showPrefixes
-				? renderPrefixedName(
-						setting.nameEl,
-						{ key: row.prefixKey, prefix: row.prefix, prefixColor: row.prefixColor, label: row.label },
-						context,
-					)
-				: undefined;
+			const stopEditing =
+				context.showPrefixes && row.prefixKey !== undefined
+					? renderPrefixedName(
+							setting.nameEl,
+							{ key: row.prefixKey, prefix: row.prefix ?? "", prefixColor: row.prefixColor, label: row.label },
+							context,
+						)
+					: undefined;
 			if (row.warning) warningDescription(setting.descEl, row.warning);
 			setting.addToggle((toggle) =>
 				toggle
@@ -474,7 +477,7 @@ function pageEntry(
 	return { type: "page", id, name, displayValue: listDisplayValue(list), status, items };
 }
 
-function propertyInput(
+export function propertyInput(
 	context: ListPageContext,
 	key: string,
 	value: () => string,

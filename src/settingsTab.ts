@@ -25,6 +25,8 @@ import {
 	formatError,
 	periodName,
 } from "./settings/dateNotesForm";
+import { newForm } from "./forms/form";
+import { formPage, formPageId, formRow } from "./settings/formPage";
 import { newList, propertySuggestions } from "./settings/listForm";
 import type { PropertySuggestion } from "./settings/listForm";
 import { listPage, listPageId, listRow, propertyPage, propertyPageId, propertyRow } from "./settings/listPage";
@@ -46,7 +48,18 @@ const TYPED_FIELDS = [
 	"name",
 	"excludedFolders",
 	"presetValues",
+	"namePattern",
+	"contentPattern",
+	"key",
+	"question",
+	"text",
+	"number",
+	"customFormat",
+	"choiceValue",
+	"choiceLabel",
 ];
+
+const QUIET_FIELDS = ["listItems"];
 
 const TYPING_PAUSE_MS = 800;
 
@@ -77,7 +90,7 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 	}
 
 	getSettingDefinitions(): SettingDefinitionItem[] {
-		const { lists, setProperties, showPrefixes } = this.plugin.settings;
+		const { forms, lists, setProperties, showPrefixes } = this.plugin.settings;
 		const { properties } = setProperties;
 		const vault = createObsidianVault(this.app);
 		let suggestions: PropertySuggestion[] | undefined;
@@ -87,6 +100,7 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 			propertySuggestions: () => (suggestions = suggestions ?? propertySuggestions(vault)),
 			write: (key: string, value: unknown) => void this.setControlValue(key, value),
 			openPage: (pageId: string) => this.openPage(pageId),
+			openPath: (path: string[]) => this.openPath(path),
 			change: (change: () => unknown) => this.changeLists(change),
 			prefixDrafts: this.prefixDrafts,
 			prefixes: this.prefixes,
@@ -148,11 +162,28 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 				],
 			},
 			{
+				type: "list",
+				heading: t("forms"),
+				cls: SORTABLE_LIST_CLASS,
+				emptyState: t("noFormsListed"),
+				items: forms.map((form) => formRow(form, context)),
+				...this.editableEntries(forms),
+				addItem: {
+					name: t("addForm"),
+					action: () => {
+						const form = newForm(forms);
+						this.changeLists(() => forms.push(form));
+						this.openPage(formPageId(form));
+					},
+				},
+			},
+			{
 				type: "group",
 				visible: false,
 				items: [
 					...lists.map((list) => listPage(list, context)),
 					...properties.map((entry) => propertyPage(entry, properties, context)),
+					...forms.map((form) => formPage(form, context)),
 					this.dateNoteFormatsPage(vault),
 				],
 			},
@@ -190,12 +221,16 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 	}
 
 	private openPage(pageId: string): void {
+		this.openPath([pageId]);
+	}
+
+	private openPath(path: string[]): void {
 		const modal = (this.app as unknown as AppWithSettingModal).setting;
 		if (typeof modal?.openPagePath !== "function") {
 			new Notice(t("needsNewerObsidian"));
 			return;
 		}
-		modal.openPagePath(this.plugin.manifest.id, [pageId]);
+		modal.openPagePath(this.plugin.manifest.id, path);
 	}
 
 	private editableEntries(entries: unknown[]): Pick<SettingDefinitionList, "onReorder" | "onDelete"> {
@@ -212,7 +247,9 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 	async setControlValue(key: string, value: unknown): Promise<void> {
 		if (!writeControl(this.plugin.settings, key, value)) return;
 		await this.plugin.saveSettings();
-		if (TYPED_FIELDS.includes(key.split("/")[2] ?? "")) {
+		const field = key.split("/")[2] ?? "";
+		if (QUIET_FIELDS.includes(field)) return;
+		if (TYPED_FIELDS.includes(field)) {
 			this.refreshAfterTyping();
 			return;
 		}
