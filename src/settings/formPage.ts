@@ -68,6 +68,7 @@ const PRESET_ICONS: Record<FieldPreset, string> = {
 	time: "clock",
 	timestamp: "calendar-clock",
 	isoTimestamp: "globe",
+	entryTime: "history",
 };
 
 const PRESET_LABELS: Record<FieldPreset, () => string> = {
@@ -76,6 +77,7 @@ const PRESET_LABELS: Record<FieldPreset, () => string> = {
 	time: () => t("fieldPresetTime"),
 	timestamp: () => t("fieldPresetTimestamp"),
 	isoTimestamp: () => t("fieldPresetIsoTimestamp"),
+	entryTime: () => t("fieldPresetEntryTime"),
 };
 
 function presetTitle(preset: FieldPreset): DocumentFragment {
@@ -368,6 +370,7 @@ function fieldEditorRows(editorEl: HTMLElement, editor: FieldEditor, draw: Redra
 		const question = textRow(editorEl, editor, "question", t("formQuestion"), t("formQuestionDesc"), field.key);
 		questionInput.placeholderOf = question.text;
 		toggleRow(editorEl, editor, "optional", t("formOptional"), t("formOptionalDesc"));
+		if (isDateType(field.type)) toggleRow(editorEl, editor, "entryTime", t("formEntryTime"), t("formEntryTimeDesc"));
 	} else {
 		staticValueRows(editorEl, editor);
 	}

@@ -69,7 +69,7 @@ export function fillForm(app: App, vault: JumpListVault & NewNoteVault, form: Fo
 			if (editing) openConfirm(answers);
 			else if (index > 0) openQuestion(index - 1, answers, false);
 		};
-		new ChoiceModal<QuestionChoice>(app, questionPlaceholder(field), (typed) => questionChoices(question(field), answerOf(), typed), {
+		new ChoiceModal<QuestionChoice>(app, questionPlaceholder(field, clock.now, clock.moment), (typed) => questionChoices(question(field), answerOf(), typed), {
 			choose: ({ action }) => {
 				if (action.action === "answer") return after(index, withAnswer(action.answer), editing);
 				if (action.action === "toggle") return openQuestion(index, withAnswer(toggledChoice(answerOf(), action.value, field)), editing);

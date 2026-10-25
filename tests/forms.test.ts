@@ -219,3 +219,19 @@ test("a fixed date set to a typed date writes that date, typed with or without d
 		["start", "09:30"],
 	]);
 });
+
+test("an answered entry time moves every creation time of the form to it", () => {
+	const entry = moment("2028-10-30T09:00", "YYYY-MM-DDTHH:mm", true).valueOf();
+	const shape = form({
+		namePattern: "{{date:YYMMDDHHmm}} entry",
+		fields: [
+			field("1", "stamp", { mode: "static", type: "datetime" }),
+			variable("2", "entry-time", { type: "datetime", entryTime: true }),
+		],
+	});
+	const resolved = resolveForm(shape, answers({ "2": answered(entry) }), clock);
+	assert.equal(resolved.name, "2810300900 entry");
+	assert.deepEqual(resolved.frontmatter, [["stamp", "2028-10-30T09:00"]]);
+	const untouched = resolveForm(shape, new Map(), clock);
+	assert.equal(untouched.name, `${moment(NOW).format("YYMMDDHHmm")} entry`);
+});

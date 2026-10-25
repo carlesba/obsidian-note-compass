@@ -50,6 +50,7 @@ export interface FormField {
 	customFormat?: string;
 	from?: string;
 	at?: string;
+	entryTime?: true;
 }
 
 export interface Form {
@@ -82,6 +83,10 @@ export function askedFields(form: Form): FormField[] {
 
 export function questionText(field: FormField): string {
 	return field.question?.trim() || field.key;
+}
+
+export function entryTimeField(form: Form): FormField | undefined {
+	return form.fields.find((field) => field.entryTime === true && field.mode === "ask" && isDateType(field.type));
 }
 
 export function newFormId(forms: readonly { id: string }[]): string {
@@ -190,6 +195,7 @@ function readField(entry: unknown, known: readonly FormField[]): FormField | und
 		else if (isDateType(type) && typeof entry.at === "string") field.at = entry.at;
 	} else {
 		if (entry.optional === true) field.optional = true;
+		if (entry.entryTime === true && isDateType(type)) field.entryTime = true;
 		if (typeof entry.question === "string" && entry.question.trim() !== "") field.question = entry.question;
 	}
 	if (mode === "ask" && hasChoices(type)) {

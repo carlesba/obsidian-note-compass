@@ -6,6 +6,7 @@ import {
 	FIELD_MODES,
 	SAVE_AS,
 	STORED_CHOICE_TYPES,
+	entryTimeField,
 	hasChoices,
 	isDateType,
 	typesFor,
@@ -26,6 +27,7 @@ export type FieldSetting =
 	| "checked"
 	| "listItems"
 	| "optional"
+	| "entryTime"
 	| "question"
 	| "storeAs"
 	| "dateFormat"
@@ -136,7 +138,7 @@ export interface FieldBadge {
 }
 
 export function fieldBadges(field: FormField): FieldBadge[] {
-	const mode = field.mode === "static" ? t("formSummaryFixed") : field.optional ? t("formSummaryAskOptional") : t("formSummaryAsk");
+	const mode = field.mode === "static" ? t("formSummaryFixed") : field.entryTime ? t("formSummaryEntryTime") : field.optional ? t("formSummaryAskOptional") : t("formSummaryAsk");
 	return [
 		field.saveAs === "property" ? { kind: "property", text: t("formSummaryProperty") } : { kind: "variable", text: t("formSummaryVariable") },
 		{ kind: "mode", text: mode },
@@ -158,6 +160,7 @@ export function fieldWarning(form: Form, field: FormField): string | undefined {
 	if (field.mode === "static" && field.at !== undefined && isDateType(field.type) && !readsAsDate(field.type, field.at)) {
 		return t("formSetDateUnreadable", { format: SET_DATE_PLACEHOLDERS[field.type] });
 	}
+	if (field.entryTime && entryTimeField(form) !== field) return t("formSecondEntryTime");
 	if (hasChoices(field.type) && field.mode === "ask" && !(field.choices ?? []).some((choice) => choice.value.trim() !== "")) return t("formNeedsChoices");
 	return undefined;
 }
@@ -197,6 +200,8 @@ export function readFieldSetting(field: FormField, setting: FieldSetting, index?
 			return Array.isArray(field.value) ? field.value : [];
 		case "optional":
 			return field.optional === true;
+		case "entryTime":
+			return field.entryTime === true;
 		case "question":
 			return field.question ?? "";
 		case "dateFormat":
@@ -264,6 +269,10 @@ export function writeFieldSetting(field: FormField, setting: FieldSetting, value
 		case "optional":
 			if (value === true) field.optional = true;
 			else delete field.optional;
+			return true;
+		case "entryTime":
+			if (value === true && isDateType(field.type)) field.entryTime = true;
+			else delete field.entryTime;
 			return true;
 		case "question":
 			if (text.trim() === "") delete field.question;
@@ -369,6 +378,7 @@ function normalizeField(field: FormField, previous: FieldType): void {
 	if (field.mode === "static") {
 		delete field.optional;
 		delete field.question;
+		delete field.entryTime;
 	} else {
 		delete field.value;
 		delete field.from;
@@ -392,5 +402,6 @@ function normalizeField(field: FormField, previous: FieldType): void {
 		delete field.customFormat;
 		delete field.from;
 		delete field.at;
+		delete field.entryTime;
 	}
 }

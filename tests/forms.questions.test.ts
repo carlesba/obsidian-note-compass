@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import type { FormField } from "../src/forms/form.ts";
-import { confirmChoices, formChoices, questionChoices, toggledChoice } from "../src/forms/questions.ts";
+import { confirmChoices, formChoices, questionChoices, questionPlaceholder, toggledChoice } from "../src/forms/questions.ts";
 import type { Question } from "../src/forms/questions.ts";
 import { answered, resolveForm, skippedAnswer } from "../src/forms/resolve.ts";
 import { NOW } from "./fakeVault.ts";
@@ -81,4 +81,20 @@ test("the confirm view offers creating the named note, each field with its value
 	assert.deepEqual(choices[1].action, { action: "edit", field: shape.fields[0] });
 	assert.deepEqual(choices[3].action, { action: "stay" });
 	assert.deepEqual(labels(formChoices([shape, { ...shape, name: "" }], "")), ["Meeting", "Untitled form"]);
+});
+
+test("an entry time question shows the time it keeps as its placeholder and offers Keep first", () => {
+	const entry = question({ type: "datetime", entryTime: true, question: "When?" });
+	assert.equal(questionPlaceholder(entry.field, NOW, moment), `When? · ${moment(NOW).format("YYYYMMDDHHmm")}`);
+	const [first] = questionChoices(entry, undefined, "");
+	assert.ok(first);
+	assert.equal(first.parts.content, "Keep");
+	assert.deepEqual(first.action, { action: "answer", answer: answered(NOW) });
+	assert.equal(questionPlaceholder(question({ type: "datetime", question: "When?" }).field, NOW, moment), "When?");
+});
+
+test("a datetime question reads a bare time as that time today", () => {
+	const [first] = questionChoices(question({ type: "datetime" }), undefined, "0930");
+	const expected = moment(`${moment(NOW).format("YYYY-MM-DD")}T09:30`, "YYYY-MM-DDTHH:mm", true).valueOf();
+	assert.deepEqual(first?.action, { action: "answer", answer: answered(expected) });
 });

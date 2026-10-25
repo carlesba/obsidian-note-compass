@@ -2,7 +2,7 @@ import { coreDatePlaceholder, isCreatableName } from "../createNote/newNotes.ts"
 import type { MomentDate, MomentFactory } from "../lists/vault.ts";
 import { parseNumber } from "../setProperties/values.ts";
 import { typedTime } from "./dateInput.ts";
-import { DEFAULT_DATE_FORMATS, askedFields, isDateType } from "./form.ts";
+import { DEFAULT_DATE_FORMATS, askedFields, entryTimeField, isDateType } from "./form.ts";
 import type { DateFieldType, Form, FormField } from "./form.ts";
 
 export type Answer = { skipped: true } | { skipped: false; value: unknown };
@@ -54,7 +54,15 @@ export function isEmptyAnswer(value: unknown): boolean {
 	return value === undefined || value === null || value === "" || (Array.isArray(value) && value.length === 0);
 }
 
-export function resolveForm(form: Form, answers: Answers, clock: FormClock): ResolvedForm {
+export function entryClock(form: Form, answers: Answers, clock: FormClock): FormClock {
+	const field = entryTimeField(form);
+	const answer = field ? answers.get(field.id) : undefined;
+	if (!answer || answer.skipped || typeof answer.value !== "number") return clock;
+	return { ...clock, now: answer.value };
+}
+
+export function resolveForm(form: Form, answers: Answers, formClock: FormClock): ResolvedForm {
+	const clock = entryClock(form, answers, formClock);
 	const fields = resolveFields(form, answers, clock);
 	const name = noteName(fillPattern(form.namePattern, fields, clock));
 	const content = fillPattern(form.contentPattern, fields, clock, name);

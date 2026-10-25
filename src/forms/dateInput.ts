@@ -2,6 +2,12 @@ import type { MomentFactory } from "../lists/vault.ts";
 import { parseDate, parseDateTime, parseTime } from "../setProperties/values.ts";
 import type { DateFieldType } from "./form.ts";
 
+export const DIGIT_DATE_FORMATS: Record<DateFieldType, string> = {
+	date: "YYYYMMDD",
+	time: "HHmm",
+	datetime: "YYYYMMDDHHmm",
+};
+
 export const SET_DATE_PLACEHOLDERS: Record<DateFieldType, string> = {
 	date: "YYYYMMDD",
 	time: "HHmm",
@@ -20,7 +26,7 @@ export function typedTime(type: DateFieldType, query: string, now: number, momen
 			? timeToday(parseTime(query), now, moment)
 			: type === "date"
 				? fromText(parseDate(query), "YYYY-MM-DD", moment)
-				: fromText(parseDateTime(query), "YYYY-MM-DDTHH:mm", moment) ?? fromText(parseDate(query), "YYYY-MM-DD", moment);
+				: fromText(parseDateTime(query), "YYYY-MM-DDTHH:mm", moment) ?? fromText(parseDate(query), "YYYY-MM-DD", moment) ?? timeToday(parseTime(query), now, moment);
 	return parsed;
 }
 

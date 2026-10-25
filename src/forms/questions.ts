@@ -4,7 +4,7 @@ import { matchesInOrder, rowLabel } from "../render.ts";
 import type { RowParts } from "../render.ts";
 import { datePresets } from "../setProperties/valuePicker.ts";
 import { parseNumber, sameValue } from "../setProperties/values.ts";
-import { typedTime } from "./dateInput.ts";
+import { DIGIT_DATE_FORMATS, typedTime } from "./dateInput.ts";
 
 export { typedTime };
 import { isDateType, questionText } from "./form.ts";
@@ -62,8 +62,10 @@ export function formName(form: Form): string {
 	return form.name.trim() || t("untitledForm");
 }
 
-export function questionPlaceholder(field: FormField): string {
-	return questionText(field) || t("untitledField");
+export function questionPlaceholder(field: FormField, now: number, moment: MomentFactory): string {
+	const text = questionText(field) || t("untitledField");
+	if (!field.entryTime || !isDateType(field.type)) return text;
+	return t("entryTimePlaceholder", { question: text, value: moment(now).format(DIGIT_DATE_FORMATS[field.type]) });
 }
 
 export function questionChoices(question: Question, answer: Answer | undefined, query: string): QuestionChoice[] {
@@ -139,7 +141,7 @@ function dateRows(question: Question, type: DateFieldType, pending: unknown, que
 	const rows: QuestionChoice[] = [];
 	const typed = typedTime(type, query, now, moment);
 	if (typed !== undefined) rows.push({ ...row({ mark: markOf(typed === pending, USE_MARK), content: t("useValue", { value: shown(typed) }) }, answerWith(typed)), typed: true });
-	const presets: [string, number][] = [[t("now"), now]];
+	const presets: [string, number][] = [[question.field.entryTime ? t("keepEntryTime") : t("now"), now]];
 	if (type === "date") {
 		for (const [name, date] of datePresets(now)) presets.push([name, moment(date, "YYYY-MM-DD", true).valueOf()]);
 	}
