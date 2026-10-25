@@ -25,6 +25,7 @@ export interface MomentDate {
 	add(amount: number, unit: MomentUnit): MomentDate;
 	startOf(unit: MomentUnit): MomentDate;
 	format(format?: string): string;
+	toISOString(): string;
 	isValid(): boolean;
 	valueOf(): number;
 	day(): number;

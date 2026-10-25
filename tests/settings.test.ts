@@ -64,6 +64,7 @@ test("defaultSettings enables every relation list in picker order and reads date
 		lists: relationLists(),
 		dateNotes: defaultDateNoteSettings(),
 		setProperties: setPropertiesDefaults(),
+		forms: [],
 	});
 });
 
@@ -244,6 +245,7 @@ test("mergeSettings migrates the old shape into lists in picker order with custo
 		],
 		dateNotes: defaultDateNoteSettings(),
 		setProperties: setPropertiesDefaults(),
+		forms: [],
 	});
 });
 
@@ -320,7 +322,7 @@ test("mergeSettings keeps saved lists in their order and round-trips its own out
 		dateNotes: { from: "custom", custom: { ...defaultDateNoteSettings().custom, quarter: { enabled: true, folder: "q", format: "YYYY-[Q]Q" } } },
 	};
 	const merged = mergeSettings(saved);
-	assert.deepEqual(merged, { ...saved, setProperties: setPropertiesDefaults() });
+	assert.deepEqual(merged, { ...saved, setProperties: setPropertiesDefaults(), forms: [] });
 	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(merged))), merged);
 });
 

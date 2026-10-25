@@ -139,12 +139,16 @@ export function createdNotice(name: string, created: CreatedNote): string {
 }
 
 export function fillCoreTemplate(content: string, title: string, now: MomentDate, options: unknown): string {
-	const formats = coreTemplateFormats(options);
 	return content
 		.replace(/{{title}}/gi, () => title)
 		.replace(/{{(date|time)(?::(.*?))?}}/gi, (_match, kind: string, format: string | undefined) =>
-			now.format(format || (kind.toLowerCase() === "date" ? formats.date : formats.time)),
+			coreDatePlaceholder(kind, format, now, options),
 		);
+}
+
+export function coreDatePlaceholder(kind: string, format: string | undefined, now: MomentDate, options: unknown): string {
+	const formats = coreTemplateFormats(options);
+	return now.format(format || (kind.toLowerCase() === "date" ? formats.date : formats.time));
 }
 
 function coreTemplateFormats(options: unknown): { date: string; time: string } {
@@ -185,6 +189,6 @@ function withLink(content: string, note: VaultNote, notes: readonly VaultNote[])
 	return body === "" ? `${link}\n` : `${body}\n\n${link}\n`;
 }
 
-function trimSlashes(folder: string): string {
+export function trimSlashes(folder: string): string {
 	return folder.trim().replace(/^\/+|\/+$/g, "");
 }

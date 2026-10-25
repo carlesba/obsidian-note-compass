@@ -4,6 +4,8 @@ import { readFilter, singleRuleFilter } from "./lists/filters.ts";
 import type { FilterGroup } from "./lists/filters.ts";
 import { DEFAULT_CUSTOM_DATE_NOTES, PERIODS, defaultDateNoteSettings } from "./lists/dateNotes.ts";
 import type { DateNoteSettings, Period, PeriodFormat } from "./lists/dateNotes.ts";
+import { readForms, storedForms } from "./forms/form.ts";
+import type { Form } from "./forms/form.ts";
 
 export type RelationSourceKind = "adjacentDates" | "linksOut" | "linksIn" | "sameDay";
 
@@ -90,6 +92,7 @@ export interface JumpSettings {
 	lists: NoteList[];
 	dateNotes: DateNoteSettings;
 	setProperties: SetPropertiesSettings;
+	forms: Form[];
 }
 
 const DEFAULT_PREFIXES: Record<RelationSourceKind, string> = {
@@ -162,6 +165,7 @@ export function storedSettings(settings: JumpSettings): unknown {
 		...settings,
 		lists: settings.lists.map(withStoredSource),
 		setProperties: { ...settings.setProperties, properties: settings.setProperties.properties.map(withStoredSource) },
+		forms: storedForms(settings.forms),
 	};
 }
 
@@ -192,6 +196,7 @@ export function mergeSettings(stored: unknown): JumpSettings {
 		lists: Array.isArray(data.lists) ? readLists(data.lists, () => ({})) : migrateLegacyLists(data),
 		dateNotes: readDateNotes(data.dateNotes),
 		setProperties: readSetProperties(data.setProperties),
+		forms: readForms(data.forms),
 	};
 }
 
