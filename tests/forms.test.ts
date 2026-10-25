@@ -202,3 +202,20 @@ test("creating writes the content and then the properties in order, in the form'
 	const elsewhere = await createFormNote(vault, { ...shape, folder: "" }, resolved, "Today.md");
 	assert.equal(elsewhere.path, "inbox/Dune.md");
 });
+
+test("a fixed date set to a typed date writes that date, typed with or without dashes", () => {
+	const shape = form({
+		fields: [
+			field("1", "due", { mode: "static", type: "datetime", at: "202810300900" }),
+			field("2", "day", { mode: "static", type: "date", at: "2028-10-30" }),
+			field("3", "start", { mode: "static", type: "time", at: "0930" }),
+			field("4", "bad", { mode: "static", type: "date", at: "2028" }),
+		],
+	});
+	const resolved = resolveForm(shape, new Map(), clock);
+	assert.deepEqual(resolved.frontmatter, [
+		["due", "2028-10-30T09:00"],
+		["day", "2028-10-30"],
+		["start", "09:30"],
+	]);
+});

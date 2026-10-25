@@ -1,10 +1,11 @@
 import { DropdownComponent, ExtraButtonComponent, Menu, TextComponent, ToggleComponent, moment, setIcon, setTooltip } from "obsidian";
 import type { Setting, SettingDefinition, SettingDefinitionItem, SettingDefinitionList, SettingDefinitionPage, SettingDefinitionRender } from "obsidian";
 import { hasChoices, isDateType, newFormId } from "../forms/form";
+import { SET_DATE_PLACEHOLDERS, typedTime } from "../forms/dateInput";
 import { FIELD_PRESETS, presetField, presetFormat } from "../forms/presets";
 import type { FieldPreset } from "../forms/presets";
 import { duplicateEntry } from "./duplicate";
-import type { Form, FormField } from "../forms/form";
+import type { DateFieldType, Form, FormField } from "../forms/form";
 import { t } from "../i18n";
 import { formFieldKey, formKey } from "./controlKeys";
 import {
@@ -87,6 +88,12 @@ function presetTitle(preset: FieldPreset): DocumentFragment {
 	}
 	return title;
 }
+
+const SET_DATE_PREVIEWS: Record<DateFieldType, string> = {
+	date: "ddd D MMM YYYY",
+	time: "HH:mm",
+	datetime: "ddd D MMM YYYY, HH:mm",
+};
 
 const NAME_PATTERN_EXAMPLE = "{{date:YYMMDDHHmm}} {{book}}";
 
@@ -468,9 +475,40 @@ function staticValueRows(parentEl: HTMLElement, editor: FieldEditor): void {
 		case "list":
 			listItemsInput(editorRow(parentEl, t("formListItems"), t("formListItemsDesc"), true).controlEl, editor);
 			return;
-		default:
-			dropdownRow(parentEl, editor, "from", t("formValue"), t("formDateSourceDesc"), dateSourceOptions(form, field));
+		default: {
+			if (!isDateType(field.type)) return;
+			const type = field.type;
+			const showsSetDate = () => setDate.rowEl.toggle(field.at !== undefined);
+			dropdownRow(parentEl, editor, "from", t("formValue"), t("formDateSourceDesc"), dateSourceOptions(form, field), showsSetDate);
+			const setDate = setDateRow(parentEl, editor, type);
+			showsSetDate();
+		}
 	}
+}
+
+function setDateRow(parentEl: HTMLElement, editor: FieldEditor, type: DateFieldType): { rowEl: HTMLElement } {
+	const { rowEl, descEl, controlEl } = editorRow(parentEl, t("formSetDate"), "");
+	const text = new TextComponent(controlEl).setPlaceholder(SET_DATE_PLACEHOLDERS[type]);
+	text.inputEl.setAttr(FOCUS_ATTRIBUTE, "at");
+	text.inputEl.setAttr("inputmode", "numeric");
+	const preview = (typed: string) => {
+		const time = typed.trim() === "" ? undefined : typedTime(type, typed, Date.now(), moment);
+		const unreadable = typed.trim() !== "" && time === undefined;
+		descEl.setText(
+			time !== undefined
+				? `✓ ${moment(time).format(SET_DATE_PREVIEWS[type])}`
+				: unreadable
+					? t("formSetDateUnreadable", { format: SET_DATE_PLACEHOLDERS[type] })
+					: t("formSetDateDesc", { format: SET_DATE_PLACEHOLDERS[type] }),
+		);
+		rowEl.toggleClass("has-error", unreadable);
+	};
+	text.setValue(editor.field.at ?? "").onChange((typed) => {
+		write(editor, "at", typed);
+		preview(typed);
+	});
+	preview(editor.field.at ?? "");
+	return { rowEl };
 }
 
 function linkSuggestions(inputEl: HTMLInputElement, editor: FieldEditor, picked?: () => void): LinkSuggest {

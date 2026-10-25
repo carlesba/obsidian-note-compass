@@ -49,6 +49,7 @@ export interface FormField {
 	dateFormat?: DateFormat;
 	customFormat?: string;
 	from?: string;
+	at?: string;
 }
 
 export interface Form {
@@ -186,6 +187,7 @@ function readField(entry: unknown, known: readonly FormField[]): FormField | und
 		const value = readStaticValue(type, entry.value);
 		if (value !== undefined) field.value = value;
 		if (isDateType(type) && typeof entry.from === "string" && entry.from.trim() !== "") field.from = entry.from.trim();
+		else if (isDateType(type) && typeof entry.at === "string") field.at = entry.at;
 	} else {
 		if (entry.optional === true) field.optional = true;
 		if (typeof entry.question === "string" && entry.question.trim() !== "") field.question = entry.question;

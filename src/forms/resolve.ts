@@ -1,6 +1,7 @@
 import { coreDatePlaceholder, isCreatableName } from "../createNote/newNotes.ts";
 import type { MomentDate, MomentFactory } from "../lists/vault.ts";
 import { parseNumber } from "../setProperties/values.ts";
+import { typedTime } from "./dateInput.ts";
 import { DEFAULT_DATE_FORMATS, askedFields, isDateType } from "./form.ts";
 import type { DateFieldType, Form, FormField } from "./form.ts";
 
@@ -118,13 +119,18 @@ function resolveValue(
 
 function staticValue(field: FormField, clock: FormClock, dateFrom: (key: string) => MomentDate | undefined): Omit<ResolvedField, "field"> {
 	if (isDateType(field.type)) {
-		const date = field.from === undefined ? clock.moment(clock.now) : dateFrom(field.from);
+		const date = field.at !== undefined ? setDate(field.type, field.at, clock) : field.from === undefined ? clock.moment(clock.now) : dateFrom(field.from);
 		return date && date.isValid() ? dated(field, field.type, date.clone()) : SKIPPED;
 	}
 	if (field.type === "checkbox") return valued(field.value === true);
 	const { value } = field;
 	if (value === undefined || isEmptyAnswer(value)) return SKIPPED;
 	return valued(value);
+}
+
+function setDate(type: DateFieldType, text: string, clock: FormClock): MomentDate | undefined {
+	const time = typedTime(type, text, clock.now, clock.moment);
+	return time === undefined ? undefined : clock.moment(time);
 }
 
 function storedChoice(field: FormField, value: string): string | number {

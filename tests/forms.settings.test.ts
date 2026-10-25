@@ -93,7 +93,7 @@ test("date fields default their format per type and offer other date fields as a
 	writeControl(settings, dayKey("key"), "day");
 	writeControl(settings, dayKey("mode"), "static");
 	writeControl(settings, dayKey("type"), "date");
-	assert.deepEqual(dateSourceOptions(form, day), { "": "At creation", started: "From field started" });
+	assert.deepEqual(dateSourceOptions(form, day), { "": "At creation", "@set": "On a set date", started: "From field started" });
 	writeControl(settings, dayKey("from"), "started");
 	assert.equal(fieldWarning(form, day), undefined);
 	writeControl(settings, key("type"), "text");
@@ -118,4 +118,20 @@ test("a click on the field header or its chevron toggles, while its buttons and 
 	assert.equal(headerClickToggles({ inEditor: false, inControls: true, onChevron: true }), true);
 	assert.equal(headerClickToggles({ inEditor: false, inControls: true, onChevron: false }), false);
 	assert.equal(headerClickToggles({ inEditor: true, inControls: false, onChevron: false }), false);
+});
+
+test("a fixed date can be set to a typed date, and switching back clears it", () => {
+	const { settings, form, field } = settingsWithForm();
+	const key = (setting: Parameters<typeof formFieldKey>[2]) => formFieldKey(form.id, field.id, setting);
+	writeControl(settings, key("key"), "due");
+	writeControl(settings, key("mode"), "static");
+	writeControl(settings, key("type"), "datetime");
+	writeControl(settings, key("from"), "@set");
+	assert.equal(field.at, "");
+	writeControl(settings, key("at"), "202810300900");
+	assert.equal(fieldWarning(form, field), undefined);
+	writeControl(settings, key("at"), "2028103009");
+	assert.equal(fieldWarning(form, field), "Can't read this date. Type it as YYYYMMDDHHmm.");
+	writeControl(settings, key("from"), "");
+	assert.equal(field.at, undefined);
 });

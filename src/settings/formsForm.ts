@@ -12,6 +12,7 @@ import {
 } from "../forms/form.ts";
 import type { DateFormat, FieldMode, FieldType, Form, FormField, SaveAs, StoredChoiceType } from "../forms/form.ts";
 import { parseNumber } from "../setProperties/values.ts";
+import { SET_DATE_PLACEHOLDERS, readsAsDate } from "../forms/dateInput.ts";
 
 export type FormSetting = "enabled" | "name" | "namePattern" | "contentPattern" | "folder" | "opensNote";
 
@@ -30,10 +31,13 @@ export type FieldSetting =
 	| "dateFormat"
 	| "customFormat"
 	| "from"
+	| "at"
 	| "choiceValue"
 	| "choiceLabel";
 
 export const AT_CREATION = "";
+
+export const SET_DATE = "@set";
 
 const FORM_SETTINGS: readonly FormSetting[] = ["enabled", "name", "namePattern", "contentPattern", "folder", "opensNote"];
 
@@ -101,7 +105,7 @@ export function dateFormatOptions(): Record<string, string> {
 }
 
 export function dateSourceOptions(form: Form, field: FormField): Record<string, string> {
-	const options: Record<string, string> = { [AT_CREATION]: t("formAtCreation") };
+	const options: Record<string, string> = { [AT_CREATION]: t("formAtCreation"), [SET_DATE]: t("formOnSetDate") };
 	for (const other of form.fields) {
 		if (other === field || other.key === "" || !isDateType(other.type)) continue;
 		options[other.key] = t("formFromField", { key: other.key });
@@ -135,6 +139,9 @@ export function fieldWarning(form: Form, field: FormField): string | undefined {
 	if (form.fields.some((other) => other !== field && other.key === field.key)) return t("formFieldKeyRepeated", { key: field.key });
 	if (field.mode === "static" && field.from !== undefined && !form.fields.some((other) => other !== field && other.key === field.from && isDateType(other.type))) {
 		return t("formFromMissingField", { key: field.from });
+	}
+	if (field.mode === "static" && field.at !== undefined && isDateType(field.type) && !readsAsDate(field.type, field.at)) {
+		return t("formSetDateUnreadable", { format: SET_DATE_PLACEHOLDERS[field.type] });
 	}
 	if (hasChoices(field.type) && field.mode === "ask" && !(field.choices ?? []).some((choice) => choice.value.trim() !== "")) return t("formNeedsChoices");
 	return undefined;
@@ -182,7 +189,9 @@ export function readFieldSetting(field: FormField, setting: FieldSetting, index?
 		case "customFormat":
 			return field.customFormat ?? "";
 		case "from":
-			return field.from ?? AT_CREATION;
+			return field.at !== undefined ? SET_DATE : field.from ?? AT_CREATION;
+		case "at":
+			return field.at ?? "";
 		case "choiceValue":
 			return field.choices?.[index ?? -1]?.value;
 		case "choiceLabel":
@@ -255,8 +264,19 @@ export function writeFieldSetting(field: FormField, setting: FieldSetting, value
 			field.customFormat = text;
 			return true;
 		case "from":
-			if (text === AT_CREATION) delete field.from;
-			else field.from = text;
+			if (text === AT_CREATION) {
+				delete field.from;
+				delete field.at;
+			} else if (text === SET_DATE) {
+				delete field.from;
+				field.at = field.at ?? "";
+			} else {
+				field.from = text;
+				delete field.at;
+			}
+			return true;
+		case "at":
+			field.at = text;
 			return true;
 		case "choiceValue":
 		case "choiceLabel":
@@ -337,6 +357,7 @@ function normalizeField(field: FormField, previous: FieldType): void {
 	} else {
 		delete field.value;
 		delete field.from;
+		delete field.at;
 	}
 	if (previous !== field.type || field.mode === "ask") delete field.value;
 	if (field.mode === "ask" && hasChoices(field.type)) {
@@ -355,5 +376,6 @@ function normalizeField(field: FormField, previous: FieldType): void {
 		delete field.dateFormat;
 		delete field.customFormat;
 		delete field.from;
+		delete field.at;
 	}
 }

@@ -3,7 +3,10 @@ import type { MomentFactory, PropertyValueCount } from "../lists/vault.ts";
 import { matchesInOrder, rowLabel } from "../render.ts";
 import type { RowParts } from "../render.ts";
 import { datePresets } from "../setProperties/valuePicker.ts";
-import { parseDate, parseDateTime, parseNumber, parseTime, sameValue } from "../setProperties/values.ts";
+import { parseNumber, sameValue } from "../setProperties/values.ts";
+import { typedTime } from "./dateInput.ts";
+
+export { typedTime };
 import { isDateType, questionText } from "./form.ts";
 import type { DateFieldType, Form, FormField } from "./form.ts";
 import { answered, skippedAnswer } from "./resolve.ts";
@@ -144,27 +147,6 @@ function dateRows(question: Question, type: DateFieldType, pending: unknown, que
 		rows.push(row({ mark: SELECTED_MARK, content: shown(pending) }, answerWith(pending)));
 	}
 	return [...rows, ...presets.map(([name, time]) => offer(name, time))];
-}
-
-export function typedTime(type: DateFieldType, query: string, now: number, moment: MomentFactory): number | undefined {
-	const parsed =
-		type === "time"
-			? timeToday(parseTime(query), now, moment)
-			: type === "date"
-				? fromText(parseDate(query), "YYYY-MM-DD", moment)
-				: fromText(parseDateTime(query), "YYYY-MM-DDTHH:mm", moment) ?? fromText(parseDate(query), "YYYY-MM-DD", moment);
-	return parsed;
-}
-
-function timeToday(time: string | undefined, now: number, moment: MomentFactory): number | undefined {
-	if (time === undefined) return undefined;
-	return fromText(`${moment(now).format("YYYY-MM-DD")}T${time}`, "YYYY-MM-DDTHH:mm", moment);
-}
-
-function fromText(text: string | undefined, format: string, moment: MomentFactory): number | undefined {
-	if (text === undefined) return undefined;
-	const date = moment(text, format, true);
-	return date.isValid() ? date.valueOf() : undefined;
 }
 
 export function toggledChoice(answer: Answer | undefined, value: string, field: FormField): Answer {
