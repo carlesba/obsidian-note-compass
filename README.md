@@ -2,277 +2,97 @@
 
 **English** · [Español](README.es.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 
-Note Compass adds four commands that work from anywhere in Obsidian, with or without an editor open. "Jump to note" opens one picker with the notes related to the note in focus, such as its adjacent date notes and the notes it links to, alongside lists you define with filters on properties, folders, tags, links and dates. "Set properties" edits the properties of the note in focus from a single picker. "Create note" makes a new note that already belongs to one of your link properties, so "Jump to note" and "Set properties" offer it from then on. "Fill form" asks the questions of a form you define and creates one new note from the answers, with its name, text and properties filled in.
+Move between related notes, set properties, create linked notes and fill in forms, all from keyboard pickers that work anywhere in Obsidian.
+
+![The Jump to note picker on a daily note, listing the previous day, the projects and people it links to, and notes from the same day, each row with a coloured prefix chip](docs/images/hero.png)
+
+## What it does
+
+Note Compass adds four commands. Each opens a picker: type a few letters, press Enter, and you are done.
+
+### Jump to note
+
+Move to the notes related to the note in focus, or to any list you define.
+
+![The Jump to note picker on a daily note, with rows for the previous day, an inbound link and notes from the same day](docs/images/jump-to-note.png)
+
+- See the adjacent date notes, outbound links, inbound links and notes from the same day in one list.
+- Add your own lists with filters on properties, folders, tags, links and dates.
+- Edit a row's properties without opening the note.
+
+[Read more about Jump to note](docs/jump-to-note.md)
+
+### Set properties
+
+Edit the properties of the note in focus from one picker, and save every change at once.
 
 ![The Set properties picker, with Save & close and Cancel at the top, the note's current values marked with a check, and more values to add below](docs/images/set-properties.png)
+
+- Pick links to people, projects or any notes you choose, and set checkboxes, text, numbers and dates.
+- Offer preset values and the values your vault already uses.
+- Nothing is written until you choose "Save & close".
+
+[Read more about Set properties](docs/set-properties.md)
+
+### Create note
+
+Make a new note that already belongs to one of your link properties.
+
+![The first step of Create note, listing the people, collections and category properties with the folder each one creates notes in](docs/images/create-note-choose.png)
+
+- Choose the property, type the name, and the note is made in the right folder from the right template.
+- The new note joins the property's list, so "Set properties" offers it straight away.
+
+[Read more about Create note](docs/create-note.md)
+
+### Fill form
+
+Answer a few questions and get one new note with its name, text and properties filled in.
+
+![The Fill form picker listing the Reading log and Meeting note forms](docs/images/fill-form-picker.png)
+
+- Build forms such as a reading log or a meeting note, with fixed values and asked questions.
+- Each form is also a command, so you can give it a hotkey.
+- Review every answer before the note is created.
+
+[Read more about forms](docs/forms.md)
 
 ## Installation
 
 Once Note Compass is listed in the community plugins browser, open Settings → Community plugins → Browse, search for "Note Compass", then install and enable it.
 
-To install it by hand, download `main.js`, `manifest.json` and `styles.css` from the latest release on GitHub:
+To install it by hand:
 
-https://github.com/carlesba/obsidian-note-compass/releases/latest
-
-Put the three files in `<vault>/.obsidian/plugins/note-compass/`, reload Obsidian, and enable Note Compass under Settings → Community plugins.
+1. Download `main.js`, `manifest.json` and `styles.css` from the latest release:
+   https://github.com/carlesba/obsidian-note-compass/releases/latest
+2. Put the three files in `<vault>/.obsidian/plugins/note-compass/`.
+3. Reload Obsidian and enable Note Compass under Settings → Community plugins.
 
 Note Compass needs Obsidian 1.13.0 or later and runs on both desktop and mobile.
 
 ## Quick start
 
-The commands are meant to be used from the keyboard, so give each one a hotkey first. Open Settings → Hotkeys, search for "Note Compass", and assign keys to "Jump to note", "Set properties" and "Create note". You can also run them from the command palette.
-
-A typical flow looks like this. Open today's daily note and press the "Jump to note" hotkey to move to yesterday's note or to a note you linked from it. On a note you are working on, press the "Set properties" hotkey, type a few letters of a person's name, pick them, and choose "Save & close". When the person does not exist yet, press the "Create note" hotkey, choose the people property, type the name, and the new note is ready to be linked.
-
-The defaults give you the four relation lists in "Jump to note" and a set of common checkbox and link properties in "Set properties". Open Settings → Note Compass to switch off what you do not use and to point the link properties at your own folders and notes.
-
-## Jump to note
-
-"Jump to note" opens a picker of notes to move to. Picking a row opens the note in the active tab, or in a new tab when none is open.
-
-![The Jump to note picker on a daily note, with rows for the previous day, an inbound link and notes from the same day](docs/images/jump-to-note.png)
-
-The picker shows the lists you set up under "Jump to note" in settings, in the order you set. Four of the available lists depend on the markdown note in focus, and they are left out when anything else has focus or no tab is open:
-
-- Adjacent dates lists the previous and next note of the same period when the note in focus is a date note, as in `📅 day 2024-03-06 (next day - Wednesday)` or `📅 day 2024-W09 (prev week - week 9)`.
-- Outbound links lists the notes the note in focus links to, links in properties included.
-- Inbound links lists the notes that link to the note in focus.
-- Same day lists the notes created on the same day as the note in focus. For a day note it uses the date in its name rather than when the file was created.
-
-The other lists do not depend on the note in focus:
-
-- Filter lists the notes that match a set of conditions, such as `status is active`, notes tagged `#project`, or notes in `work` modified in the last week. The conditions can be grouped, as described under "List pages".
-- Links to note lists the notes that link to a chosen note, in their text or in a property.
-- In folder lists the notes in a folder and its subfolders.
-- Modified today lists the notes changed since midnight.
-- Current date notes lists the date notes for today, this week, this month, this quarter and this year, each one you switch on. They keep that order instead of being sorted by name, and each row says which period it is, such as `this week - week 10`. A note that does not exist yet shows as `create this week`, and choosing it creates and opens it the way your date notes plugin does, with the same template: Periodic Notes, or core Daily notes for days. Periods that come from the Custom formats start as an empty note. A link property on this source only offers the notes that exist.
-
-A note appears under every list that holds it, in the order of your lists, and the note in focus is left out. Within a list the notes are sorted by name. When no list has any note, the command says "No notes to jump to." instead of opening an empty picker.
-
-Every row starts with its list's prefix, shown as a small chip so it stays apart from the name. All chips in a picker share the width of the widest one, up to about twelve characters, so the names line up, and a list with a prefix colour tints its chips. A date note adds its period after the name: the weekday for a day note, `week N` for a week note, `month - <Month>` for a month note and `year` for a year note.
-
-To edit a note's properties without opening it, press ⌥↵ (Alt+Enter) on its row, or tap the sliders icon at the end of the row, which shows on the highlighted row on desktop and on every row on phones. Either one opens "Set properties" for that note instead of the note in focus. Rows that would create a missing date note have no icon. Escape or `🛑 Cancel` in that "Set properties" brings you back to the jump list with what you had typed, while `🏁 Save & close` closes both.
-
-Typing filters the rows by in-order matching. A row stays when the characters you typed appear in it in the same order, ignoring case, with anything in between. The prefix is part of the row, so typing part of a prefix narrows the picker to that list.
-
-### Date notes
-
-A note is a date note when it sits directly in the folder set for its period and its name matches that period's format exactly. There are five periods, day, week, month, quarter and year, and each has its own folder, format and on/off switch.
-
-The "Read from" setting under "Date notes" chooses where those formats come from. "Automatic" uses the Periodic Notes plugin when it is enabled, then the core Daily notes plugin, then the plugin's own Custom formats. Daily notes covers days only, so the other periods come from Custom. Whenever a period comes from Custom, a pencil next to "Read from" opens its formats, where you set each period's folder and its format as a Moment format:
-
-https://momentjs.com/docs/#/displaying/format/
-
-By default every period lives in `on/`, as `2024-03-05`, `2024-W10`, `2024-03` and `2024`, with quarters such as `2024-Q1` switched off.
-
-## Set properties
-
-"Set properties" edits the properties of the markdown note in focus from one picker. It only appears in the command palette when a markdown note has focus.
-
-Nothing is written while you work in the picker. The first two rows are always `🏁 Save & close`, which writes only the properties you changed, and `🛑 Cancel`, which discards every change. Escape does the same as Cancel. ⌘↵, or Ctrl+Enter on Windows and Linux, saves what you have so far and closes the picker from anywhere, including a property's own picker.
-
-Next come the values the note will be saved with, each marked `✓`: one row per linked note, and one row for each checkbox, text, number or date with its value beside it. A value you changed in this session is also marked `•`. Choosing a set link removes it, so a links property loses that one note. Choosing a set text, number or date opens its own picker, and a set checkbox does what the "Checkbox behaviour" setting says.
-
-Below the set values, each enabled property offers what it can add, in the order of your settings:
-
-- A link or links property lists the notes from its source that are not set yet, most recently modified first. Choosing one adds it to a links property, or replaces the note a link property holds. Links are saved as a list such as `["[[Alice]]", "[[Bob]]"]`, and links the property already holds that its source does not offer are kept.
-- A text, number, date or datetime property that is not set shows one row with its name, which opens its own picker. The values the vault already has are offered there, not here.
-- A text or number property also lists here the preset values whose main menu switch is on, so one choice sets the value.
-- A text property also offers `✏️ <property>: use "<what you typed>"` when you type something that is not one of those presets.
-- A checkbox that is not set shows one row with its name. By default it opens its own picker. With "Toggle between true and not set" choosing it sets `true`, and choosing it again while it is `true` clears it. With "Cycle through true, false and not set" each choice moves it one step, from not set to `true`, then `false`, then not set again.
-
-With nothing typed, each property shows at most five values, followed by `… N more, type to filter`, which types the property's prefix for you. Once you type, every matching row is shown. After you choose a value the picker reopens with the filter cleared, so `🏁 Save & close` is back at the top and the value you just chose shows up below it as set.
-
-![Set properties after typing "joan": Joan Puig is now set and marked as changed, and the status property offers to use "joan" as a new value](docs/images/set-properties-search.png)
-
-A property's own picker marks its current value `✓` and ends with `🗑️ Clear`, which removes the property, or leaves it empty when "Remove when empty" is off. Escape returns to the main picker without changing that property, and the changes you already made there are kept.
-
-- A checkbox offers `true` and `false`.
-- A text offers `✏️ Use "<what you typed>"` for a new value, then its preset values, then the other values the property already has in the vault, most used first, with how often each is used.
-- A number offers `✏️ Use "<what you typed>"` for a number, then its preset values, then the other numbers the property already has in the vault, most used first.
-- A date offers "Use" for a date typed as `YYYYMMDD` or `YYYY-MM-DD`, then Today, Tomorrow, Next Monday and In a week, and is saved as `YYYY-MM-DD`.
-- A datetime offers "Use" for `YYYYMMDDHHmm`, `YYYYMMDD HHmm`, `YYYY-MM-DD HH:mm` or `YYYY-MM-DDTHH:mm`, then Now, and is saved as `YYYY-MM-DDTHH:mm`.
-
-![The value picker of a date property, with Today, Tomorrow, Next Monday, In a week and Clear](docs/images/set-properties-date.png)
-
-Link properties never offer the note in focus, notes in the property's excluded folders, or notes with `archived: true`. The picker only links notes that already exist, so to link a new note, make it first with "Create note".
-
-## Create note
-
-"Create note" makes a new note that belongs to one of your link properties, so that property offers it from then on. It works with or without a note in focus, and it opens the new note once it is made, in place of the note in focus, without linking it from that note.
-
-It works in two steps. The first picker, "Create a note for…", has one row per enabled link or links property that has "Allow creating notes" switched on, with the folder the note will go to beside it, or `vault root`.
-
-![The first step of Create note, listing the people, collections and category properties with the folder each one creates notes in](docs/images/create-note-choose.png)
-
-Choosing a row opens the second prompt, where you type the name of the new note. A usable name shows a single row, `➕ Create "<name>" in <folder>`, and choosing it creates the note and says where, as in `Created "Ada Lovelace" in samples/people.` Escape goes back to the first step.
-
-![The second step of Create note, offering to create "Ada Lovelace" in samples/people](docs/images/create-note-name.png)
-
-A name with characters Obsidian cannot use in a file name is refused with a message saying so. A name that any note in the vault already has, in any folder and ignoring case, is refused too, as in `"Ann" already exists at people/Ann.md.`, because a second note with that name would make `[[Ann]]` links ambiguous. Choosing one of these rows keeps the prompt open with what you typed.
-
-The new note goes in the source's folder when the property offers notes from a folder. Otherwise it goes in the property's "Folder" under "Create notes", and when that is empty, where Obsidian puts new notes.
-
-When the property has a "Template", the note starts from it. If the Templater plugin is enabled, Templater creates the note, so its `<% %>` commands run; if Templater fails, nothing more is done. Without Templater, the template's content is copied, `{{title}}` becomes the note's name, and `{{date}}` and `{{time}}` become the current date and time in the formats set in the core Templates plugin, `YYYY-MM-DD` and `HH:mm` by default. `{{date:FORMAT}}` and `{{time:FORMAT}}` use the format given.
-
-Then the note joins the property's source, so it shows up in that property's list straight away. For a "Links to note" source, a link to that note is added at the end of the body unless the content already links there. For a filter with a single property condition, the note gets the property the condition asks for, such as `true` for "is true", the value for "is", or a list with the value for "has item". Finally, the new note opens in the current tab. When a note with that name already exists, nothing is created and nothing opens.
-
-Only sources that can hold a new note qualify: notes in a folder, notes linking to a note, notes modified today, and filters made of a single property condition under "All the following are true" that gives a value to write, such as "is true", "is", "has item", or "is set" on a checkbox. The relation sources, filters with more than one condition or with groups, and conditions such as "greater than" cannot, and the "Allow creating notes" switch explains why when it is disabled. When no property qualifies, the command says "No link property can create notes."
-
-## Forms
-
-A form creates one new note from a few questions, such as a reading log entry that asks for the book and its author, or a meeting note that asks for the topic and the people. You define forms in Settings → Note Compass → Forms. "Fill form" lists your enabled forms and runs the one you choose, and each enabled form is also a command of its own, named after the form, so you can give it a hotkey. Like the other commands, it works with or without a note in focus. When there are no forms, "Fill form" says "No forms yet. Add one in Settings → Note Compass → Forms."
-
-A form asks one question per asked field, in the order of its "Fields" list. Escape goes back to the previous question, and Escape on the first question closes the form without making a note. The answers you already gave are kept when you go back and show a check.
-
-After the last question, a summary opens. Its first row is `✅ Create "<name>"` with the note's name worked out from your answers, then one row per field with the value it will get, or `skipped`, then `🛑 Cancel`. Choosing an asked field opens its question again and comes back to the summary after you answer it, and Escape on the summary goes back to the last question, or closes the form when it asks no questions. ⌘↵, or Ctrl+Enter on Windows and Linux, creates the note from any question once every required question has an answer.
-
-The note goes in the form's "Folder", or where Obsidian puts new notes when that is empty. When a note with that name already exists there, ignoring case, the new one gets a number, as in `Dune 2`. The note's text is written first, then its properties in the order of the fields. Then Note Compass says where the note went, as in `Created "Dune" in reading.`, and opens it unless "Open the note after creating it" is off.
-
-### Form pages
-
-A form's page has:
-
-- "Enabled", which offers the form in "Fill form" and as a command.
-- "Name", shown in "Fill form" and as the command name.
-- "Note name", the pattern for the new note's name, such as `{{date:YYMMDDHHmm}} {{book}}`. Spaces repeated by an empty placeholder are collapsed, and a name that ends up empty or with characters Obsidian cannot use in a file name is refused with a message, keeping you on the summary.
-- "Note content", the new note's text, with the same placeholders.
-- "Folder", where new notes go.
-- "Open the note after creating it", on by default.
-- "Fields", the values the form fills in or asks for. Their order is the order of the questions.
-
-The fields list works like the other lists in the settings: drag the handle to reorder, the copy icon duplicates a field right below it, the cross deletes a field, and the `+` in the header adds one. The `+` opens a menu: "Blank field" adds an empty asked text field, while "Date", "Time", "Timestamp" and "ISO timestamp" add a fixed field set at creation, keyed `date`, `time`, `timestamp` or `iso-timestamp` and formatted as `YYYY-MM-DD`, `HH:mm`, `YYYY-MM-DDTHH:mm` or ISO 8601. Each item shows what it would write right now, and a key already in use gets a number, as in `timestamp-2`. "Entry time (confirm or change)" adds an asked time variable called `entry-time` with "Use as the entry time" switched on, so the note keeps today's date and you confirm or change the time.
-
-An asked date, time or datetime field with "Use as the entry time" works as a confirmation. Its placeholder is the time the form started, in digits, such as `0930` for a time field or `202810300900` for a datetime, and its first row is "Keep", so Enter accepts that time. Type another one in the same digits to change it; a datetime field also takes a bare `0930` as today at 09:30. The answer then replaces the form's time everywhere it is used: `{{date}}` and `{{time}}` in the name and content, and every fixed field set "At creation". Only one field of a form can be the entry time, and a second one shows a warning. Each row shows the field's key, followed by small badges for where it is saved, its mode and its type, as in `book` `variable` `ask` `text`. Property badges are blue and variable badges are purple. Click the row or its chevron to edit the field right below it, and click again to close it. One field is open at a time, and a new field opens straight away.
-
-The name and content understand these placeholders:
-
-- `{{date}}` and `{{time}}` are the time the form started, in the formats set in the core Templates plugin. `{{date:FORMAT}}` and `{{time:FORMAT}}` use the format given.
-- `{{key}}` is the value of the field called `key`. Lists are joined with commas, and a skipped field is empty.
-- `{{key:FORMAT}}` formats a date or time field with the format given, such as `{{started:dddd}}`.
-- `{{title}}`, in the content only, is the new note's name.
-
-Any other placeholder is left as it is.
-
-### Fields
-
-Every field has "Save as", then "Key", "Mode" and "Type". "Save as" is "Property", the default, to write the value to the new note's properties under its key, or "Variable" for a value that only fills placeholders in the name and content and is never written. "Key" is the property name or the variable's name, used as `{{key}}` in both cases. "Mode" is "Fixed" for a value filled in for you or "Ask" for a question.
-
-A fixed field can be text, number, checkbox, list, date, time or datetime. A number only keeps numbers, and a checkbox has a switch. A list has a box where each item shows as a chip: type an item and press Enter to add it, and use its × to remove it. Items may be links, so `[[Books]]` and `[[Reading]]` write `categories: ["[[Books]]", "[[Reading]]"]`, which is how a form links its notes to other notes. In a fixed text value or the list's box, typing `[[` suggests the vault's notes, and picking one writes its link, such as `[[Books]]`, using the folder only when two notes share the name. In the list's box the picked link becomes a chip straight away.
-
-An asked field can be text, number, checkbox, select, multiselect, date, time or datetime. "Question" is the prompt, and the field's key when empty. "Optional" puts `⏭️ Skip` first in the question; a skipped property is not written at all, and a skipped variable is empty. A text or number question takes anything you type, and a text or number property also offers the values the property already has in the vault.
-
-Select and multiselect have "Choices", each with a value and an optional label. The `+` in the "Choices" header adds one, the cross removes one, and dragging a choice's handle reorders it. The question shows the label, or the value when there is none, and the note gets the value. A multiselect question lets you pick several choices, marked with a check, and finish with `🏁 Done`. "Store values as" writes the values as text or as numbers, so a choice with the value `4` and the label `4 · Great` can write the number 4.
-
-Date, time and datetime fields have "Format": `YYYY-MM-DD`, `HH:mm`, `YYYY-MM-DDTHH:mm`, ISO 8601, or a custom Moment.js format. A fixed one takes its "Value" from "At creation", the time the form started, from "On a set date", a date you type below it, or from "From field …", the value of another date or time field of the form. A set date is typed as digits, `YYYYMMDD` for a date, `HHmm` for a time and `YYYYMMDDHHmm` for a datetime, or with dashes and colons, and the line under it shows how it was read, such as `✓ Mon 30 Oct 2028, 09:00`. One asked time can then feed several properties, such as a `day` with `YYYY-MM-DD` and a `timestamp` with ISO 8601. When the field it comes from is skipped, it is skipped too. An asked one offers "Now", and a date also offers "Today", "Tomorrow", "Next Monday" and "In a week". You can also type `20240311`, `2024-03-11`, `0930`, `09:30`, `202403110930` or `20240311 0930`, as in the date pickers of "Set properties". A time is that time today.
-
-A field without a key, two fields with the same key, a select without choices, or a date taken from a field that is not a date warn on the field's row and on the form. A form this version of Note Compass cannot read stays in the list switched off, with a warning and no pencil, like an unreadable list, and its saved setup is kept until you delete it.
-
-## Settings
-
-Settings fit a narrow window and work the same on mobile. They are split into five parts: "Display", the "Jump to note" lists, "Date notes", the "Set properties" list and "Forms", followed by "Reset all settings".
-
-![The settings tab, with the Jump to note lists, the Date notes source and the Set properties list, each row with a prefix chip, a switch, a pencil and a delete button](docs/images/settings.png)
-
-### Display
-
-"Show prefixes" is on by default. Turning it off removes the prefix from every row in all three pickers and leaves it out of what typing matches. Link rows in "Set properties" then show the property they write instead, as in `✓ Marta Vidal · people`. The settings hide the prefix chips and the prefix fields too, but your prefixes and colours stay saved, so turning the setting back on restores them.
-
-### Lists and properties
-
-"Jump to note" and "Set properties" are both lists of rows, and their rows work the same way. Each row shows its prefix chip and what it lists or writes, such as `status is active` or `people · links`.
-
-- Drag the handle on the left to reorder the rows. The order is the order of the picker.
-- Use the switch to show or hide a row in the picker without losing its setup.
-- Use the pencil to open the row's page, and the cross to delete it.
-- Use the copy icon to duplicate a row. The copy lands right below it with the same setup, and a form's copy is named `<name> copy`.
-- Use the `+` in the section header to add a row. Its page opens straight away so you can fill it in, and the new row starts switched on.
-
-A row this version of Note Compass cannot read, such as one saved by a newer version, stays in the list with a warning: "This list can't be read by this version of Note Compass. Remove it and build a new one." Its switch is off and disabled and it has no pencil, so it never adds notes to a picker or to "Create note", but its saved setup is kept as it was until you delete it.
-
-Click a prefix chip, tap it, or focus it and press Enter to open its menu, which a phone shows as a sheet from the bottom. The menu lists every prefix in use across "Jump to note" and "Set properties", each as its chip followed by how many rows use it, such as a `📅 due` chip with `· 3 rows`, most used first. The row's own prefix is ticked. Pick one to give this row its text and its colour, and no other row changes. "Edit prefix…" opens the row's page with the cursor in "Prefix", and "No prefix", shown when the row has one, clears its text and colour. An empty prefix shows as a faint `prefix` chip and is never listed.
-
-Rows share a prefix when its text and its colour are the same, so `👤 peop` in red and `👤 peop` with no colour are two prefixes.
-
-### List pages
-
-A list's page has "Enabled" and "Prefix", then "Source", which chooses what the list holds: adjacent dates, outbound links, inbound links, same day, a filter, notes linking to a note, notes in a folder, notes modified today, or current date notes. Current date notes has one switch per period, from "Today" to "This year".
-
-Under the "Prefix" description, one row holds the chip's preview, its text and its colour. The preview follows the text you type and the colour you pick, and the circular arrow removes the colour. When other rows shared the list's prefix as the page opened, "Change only this row" names them, as in "Used by 2 other rows: people · links, Outbound links". It is off, so the text you type and the colour you pick change those rows too, and they stay together even while the text is briefly empty. Turn it on to change only this list. A property's page works the same way.
-
-A filter works like the filters in Obsidian Bases and looks the same. It is a group that starts with "All the following are true", "Any of the following are true" or "None of the following are true", so a note is listed when it matches every filter in the group, at least one, or none of them. Each filter row starts with what it tests: type a property name, or pick `folder`, `tags`, `links`, `created time` or `modified time` from the suggestions. Then choose the operator and the value, such as `folder is in projects`, `tags has tag client` or `modified time after 7 days ago`. "Add filter" adds a row to the group, and "Add filter group" adds a group inside it with its own choice. Groups can sit inside groups up to three levels deep, counting the filter itself. The trash button on a row or on an inner group removes it, and removing the last row of an inner group removes the group too. A new filter has no rows and lists nothing until you add one, and an empty group inside a filter is left out of the matching.
-
-Each condition starts by choosing what it looks at:
-
-- Property checks a property against a condition offered for its type, as described below.
-- Folder matches the notes in a folder and its subfolders with "is in", or every other note with "is not in".
-- Tag matches the notes with a tag in their properties or their text. A tag also matches its subtags, so `project` matches `#project/website`, and the case and a leading `#` do not matter. "Does not have tag" matches the notes without it.
-- Links to note matches the notes that link to a chosen note, in their text or in a property, and "does not contain" matches the notes that do not.
-- Created and Modified compare the day the note was created or last changed with a fixed date or one relative to today, using on, not on, before or after.
-
-A list's row shows the filter's only condition, such as `status is active` or `Tagged project`, or counts its conditions, as in `All of 3 conditions`.
-
-Lists saved by earlier versions as "Notes with a property" open as a filter with that one property condition, and they list the same notes as before.
-
-A property condition asks for the property, suggesting the vault's properties with their types, then a condition offered for that type:
-
-- Checkbox properties can be true, false, set or not set. "Is false" needs an explicit `false`.
-- Text properties can be equal or not equal to a value, contain it or not contain it, be set or not set.
-- List, tag and alias properties can have or not have an item equal to the value, be set or not set. Wiki-links are compared by their link text, so `[[Project]]` matches the value `Project`.
-- Number properties can be equal to, not equal to, less than or greater than a number, be set or not set.
-- Date properties can be on, not on, before or after a fixed date, today, or a number of days ago or from now, be set or not set. A relative date is worked out each time the picker opens.
-
-"Is not set" also matches a property left blank. The negated conditions, such as "is not" or "does not contain", match every note the positive condition does not, including notes without the property.
-
-### Property pages
-
-A property's page has "Enabled" and "Prefix" as on a list's page, then "Property" and "Type". "Property" suggests the vault's properties with their types, and picking one sets the type to match: checkbox, number, date and datetime keep theirs, lists and tags become links, and anything else becomes text. "Type" can be checkbox, text, number, date, datetime, link for one note, or links for several, and stays disabled until a property is chosen.
-
-![The page of the people links property, offering notes that link to Person, excluding the templates folder, and creating new notes in samples/people from a template](docs/images/settings-property.png)
-
-Every property has "Remove when empty", which is on by default and removes the property from the note once you clear its value or remove its last link. Switched off, the property stays in the note with an empty value.
-
-A text or number property also has "Preset values", a list of values its own picker offers first, such as `todo`, `doing` and `done` for a `status` property. The `+` in its header adds a row with a text field for the value and a switch, rows can be dragged into the order the picker shows them, and each row can be deleted. A number property only keeps values written as numbers. Presets are helpers rather than limits: after them the picker still offers the other values the property already has in the vault, most used first, and anything you type. The switch beside a preset also shows it in the main Set properties menu, so you can keep many presets and put only the few you use most one choice away. Every preset is always offered in the property's own picker.
-
-A link or links property has three more sections:
-
-- "Offer notes from" chooses the notes the picker offers, with the same sources as a jump list.
-- "Excluded folders" lists folders whose notes are never offered. The `+` in its header adds a folder, each row can be deleted, and an empty row excludes nothing.
-- "Create notes" decides whether the property appears in "Create note". "Allow creating notes" switches it on, "Folder" sets where new notes go, and "Template" sets the note new notes start from.
-
-Several rows may write the same property, such as the default `related` rows with different sources. They share one value, and the first enabled row decides its type. A row warns you when two rows for one property disagree on type.
-
-### Checkbox behaviour
-
-"Checkbox behaviour", below the Set properties list, decides what choosing a checkbox property in the main Set properties menu does, for every checkbox property: open its own picker with true, false and Clear, which is the default, toggle between true and not set, or cycle through true, false and not set. A mode chosen for a single property in 0.6.1 or 0.6.2 becomes this setting.
-
-### Reset all settings
-
-"Reset all settings", at the bottom of the settings, puts every list, property, form and option back to the defaults, which have no forms. It asks first, and Cancel or Escape leaves everything as it was. The reset cannot be undone.
+1. Open Settings → Hotkeys, search for "Note Compass", and assign keys to "Jump to note", "Set properties", "Create note" and "Fill form". You can also run them from the command palette.
+2. Open today's daily note and press the "Jump to note" hotkey to move to yesterday's note or to a note you linked from it.
+3. On a note you are working on, press the "Set properties" hotkey, type a few letters of a person's name, pick them, and choose "Save & close".
+4. When the person does not exist yet, press the "Create note" hotkey, choose the people property and type the name.
+5. Open Settings → Note Compass to switch off what you do not use, point the link properties at your own folders and notes, and add a form.
+
+The defaults give you the four relation lists in "Jump to note" and a set of common checkbox and link properties in "Set properties".
+
+## Manual
+
+- [Jump to note](docs/jump-to-note.md): lists, relation lists, date notes and filtering.
+- [Set properties](docs/set-properties.md): picker rows, value pickers, presets and checkboxes.
+- [Create note](docs/create-note.md): folders, templates and which properties can create notes.
+- [Forms](docs/forms.md): running a form, form settings, fields and placeholders.
+- [Settings](docs/settings.md): display, rows, prefixes, list filters and property pages.
+- [Tips and known behaviour](docs/tips.md)
+- [Development](docs/development.md)
 
 ## Languages
 
-Note Compass follows the language you choose for Obsidian. It is available in English, Spanish, Simplified Chinese, Traditional Chinese, Japanese and Korean, and any other language shows English. Your settings, property names and the values written to your notes stay as you typed them, whatever the language.
-
-The translations live in `src/i18n/`, and this manual is also available in each of those languages from the links at the top. Both were drafted by machine, so some wording may read oddly, and this English manual is the reference. Corrections are welcome as pull requests. Adding a language takes one new file in that folder and one line in its registry, and any text a language does not translate yet shows in English.
-
-## Tips
-
-- Give the commands hotkeys you can press without looking. The plugin is built around opening a picker, typing a few letters and pressing Enter.
-- Keep prefixes short, such as an emoji and a three or four letter tag like `👤 peop` or `📅 due`. All chips share the width of the widest one, so one long prefix pushes every name to the right.
-- Use colours to group related lists, such as one colour for all your people and company lists and another for project lists, so you can tell them apart at a glance.
-- Type a prefix tag to narrow a picker towards one list, such as `peop` for the people rows in "Set properties".
-- Use a "Links to note" source as a lightweight tag. Create a note such as `Person` and point the people property at "Links to note: Person". Every note created through "Create note" for that property gets a link to `Person`, so it shows up in the list without you tagging it by hand.
-- Add your templates folder to "Excluded folders" on every link property, so template notes are never offered as values.
-- Turn "Show prefixes" off for a minimal look once you know your lists. Link rows then name their property instead.
-- In "Set properties", Escape in a value picker only steps back to the main picker. The changes you already made are kept until you choose "Save & close" or "Cancel".
-
-## Known behaviour
-
-- A day format containing `/`, such as `YYYY/MM/DD`, never matches, because a note's name is compared without its folders.
-- With the default formats, notes named after a year in the date notes folder, such as `on/2024`, count as year notes. Switch the year period off in the Custom formats if you keep other notes named that way in that folder.
-- If a property changes type, a filter condition on it keeps its old condition and matches nothing until you pick a new one. The condition, its list's row and its page say that the condition no longer applies.
-- "Create note" never touches an existing note. If a note already exists at the path it would create, it is left alone and the command says so.
+Note Compass follows the language you choose for Obsidian: English, Spanish, Simplified Chinese, Traditional Chinese, Japanese or Korean, and English for any other. The translated readmes are linked at the top, and this English manual is the reference.
 
 ## Development
 
@@ -284,13 +104,7 @@ npm test
 npm run lint
 ```
 
-`npm run dev` rebuilds on every change, `npm run build` typechecks and writes the production bundle, `npm test` runs the unit tests, and `npm run lint` runs the same Obsidian lint rules the community review applies.
-
-To try the plugin in a test vault, symlink the repository into its plugins folder, so the vault always loads the build `npm run dev` just wrote:
-
-```bash
-ln -s "$PWD" "<vault>/.obsidian/plugins/note-compass"
-```
+See [Development](docs/development.md) for what each command does and how to try the plugin in a test vault.
 
 ## License
 
