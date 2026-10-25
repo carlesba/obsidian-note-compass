@@ -81,7 +81,9 @@ function presetTitle(preset: FieldPreset): DocumentFragment {
 	const format = presetFormat(preset);
 	if (format !== undefined) {
 		const now = moment();
-		title.createSpan({ cls: "note-compass-menu-prefix-count", text: format === "iso" ? now.toISOString() : now.format(format) });
+		const example = format === "iso" ? now.toISOString() : now.format(format);
+		title.appendText(" ");
+		title.createSpan({ cls: "note-compass-menu-example", text: `(${example})` });
 	}
 	return title;
 }

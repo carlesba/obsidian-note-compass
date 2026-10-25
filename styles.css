@@ -486,3 +486,8 @@
 	flex: 1 1 9em;
 	min-width: 0;
 }
+
+.note-compass-menu-example {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
