@@ -58,6 +58,70 @@
 	max-width: 70%;
 }
 
+.setting-item-name.note-compass-prefixed-name.is-editing-prefix {
+	flex-wrap: wrap;
+}
+
+.note-compass-setting-prefix-panel {
+	display: flex;
+	flex-basis: 100%;
+	flex-direction: column;
+	gap: var(--size-4-1);
+	font-size: var(--font-ui-smaller);
+}
+
+.note-compass-setting-prefix-panel:not(:has(> :not(.is-hidden))) {
+	display: none;
+}
+
+.note-compass-prefix-suggestions {
+	max-height: 12em;
+	max-width: 24em;
+	overflow-y: auto;
+	padding: var(--size-2-1);
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+}
+
+.note-compass-prefix-suggestions.is-hidden {
+	display: none;
+}
+
+.note-compass-prefix-suggestion {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2);
+}
+
+.note-compass-prefix-suggestions .note-compass-prefix-suggestion {
+	padding: var(--size-2-1) var(--size-4-1);
+	border-radius: var(--radius-s);
+	cursor: var(--cursor);
+}
+
+.note-compass-prefix-suggestions .note-compass-prefix-suggestion.is-selected {
+	background: var(--background-modifier-hover);
+}
+
+.note-compass-prefix-suggestion-chip {
+	flex-shrink: 0;
+	max-width: 12em;
+}
+
+.note-compass-prefix-suggestion-count {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+.note-compass-prefix-linked {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-1);
+	color: var(--text-muted);
+	cursor: var(--cursor);
+}
+
 .note-compass-setting-prefix-input[type="text"] {
 	field-sizing: content;
 	min-width: max(4em, var(--note-compass-prefix-width, 0px));
@@ -156,7 +220,8 @@
 }
 
 .note-compass-row-prefix,
-.note-compass-setting-prefix {
+.note-compass-setting-prefix,
+.note-compass-prefix-suggestion-chip {
 	display: inline-flex;
 	align-items: center;
 	box-sizing: border-box;
@@ -172,7 +237,8 @@
 }
 
 .note-compass-row-prefix.has-color,
-.note-compass-setting-prefix.has-color {
+.note-compass-setting-prefix.has-color,
+.note-compass-prefix-suggestion-chip.has-color {
 	color: var(--text-normal);
 	background: color-mix(in srgb, var(--note-compass-chip-color) 28%, var(--background-primary));
 	border-color: color-mix(in srgb, var(--note-compass-chip-color) 50%, var(--background-modifier-border));

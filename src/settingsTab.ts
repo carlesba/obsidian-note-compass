@@ -15,7 +15,6 @@ import {
 	DATE_NOTE_SOURCE_KEY,
 	SHOW_PREFIXES_KEY,
 	periodKey,
-	prefixColorKey,
 	readControl,
 	writeControl,
 } from "./settings/controlKeys";
@@ -30,8 +29,10 @@ import { newList, propertySuggestions } from "./settings/listForm";
 import type { PropertySuggestion } from "./settings/listForm";
 import { listPage, listPageId, listRow, propertyPage, propertyPageId, propertyRow } from "./settings/listPage";
 import type { ListPageContext } from "./settings/listPage";
-import { changedColor, changedPrefix } from "./settings/prefixChip";
+import { draftChange } from "./settings/prefixChip";
 import type { PrefixDraft } from "./settings/prefixChip";
+import { PrefixEdits, applyPrefixChange, updatedPrefixKeys } from "./settings/prefixLinks";
+import type { PrefixRefresh } from "./settings/prefixLinks";
 import { ResetSettingsModal } from "./settings/resetModal";
 import { checkboxModeOptions, newProperty } from "./settings/setPropertiesForm";
 
@@ -65,6 +66,10 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 	private plugin: NoteCompassPlugin;
 	private readonly refreshAfterTyping = debounce(() => this.update(), TYPING_PAUSE_MS, true);
 	private readonly prefixDrafts = new Map<string, PrefixDraft>();
+	private readonly prefixes = new PrefixEdits(
+		() => this.plugin.settings,
+		(refresh) => void this.savePrefixes(refresh),
+	);
 
 	constructor(app: App, plugin: NoteCompassPlugin) {
 		super(app, plugin);
@@ -84,6 +89,7 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 			openPage: (pageId: string) => this.openPage(pageId),
 			change: (change: () => unknown) => this.changeLists(change),
 			prefixDrafts: this.prefixDrafts,
+			prefixes: this.prefixes,
 			showPrefixes,
 		};
 		return [
@@ -171,13 +177,15 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 	}
 
 	hide(): void {
+		let changed = false;
 		for (const [key, draft] of this.prefixDrafts) {
-			const prefix = changedPrefix(draft);
-			if (prefix !== undefined) void this.setControlValue(key, prefix);
-			const color = changedColor(draft);
-			if (color !== undefined) void this.setControlValue(prefixColorKey(key), color);
+			const change = draftChange(draft);
+			const keys = updatedPrefixKeys(key, draft.linked, draft.updatesLinked);
+			if (change && applyPrefixChange(this.plugin.settings, keys, change)) changed = true;
 		}
 		this.prefixDrafts.clear();
+		this.prefixes.clear();
+		if (changed) void this.plugin.saveSettings();
 		super.hide();
 	}
 
@@ -212,9 +220,20 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 		this.update();
 	}
 
+	private async savePrefixes(refresh: PrefixRefresh): Promise<void> {
+		await this.plugin.saveSettings();
+		if (refresh === "afterTyping") {
+			this.refreshAfterTyping();
+			return;
+		}
+		this.refreshDomState();
+		this.update();
+	}
+
 	private async resetSettings(): Promise<void> {
 		this.plugin.settings = defaultSettings();
 		this.prefixDrafts.clear();
+		this.prefixes.clear();
 		await this.plugin.saveSettings();
 		this.update();
 	}

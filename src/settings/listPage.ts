@@ -9,7 +9,7 @@ import type {
 	SettingDefinitionRender,
 	SettingGroupItem,
 } from "obsidian";
-import { t } from "../i18n";
+import { t, tCount } from "../i18n";
 import type { TranslationKey } from "../i18n";
 import type { Period } from "../lists/dateNotes";
 import { noteCreationBlocker } from "../createNote/newNotes";
@@ -30,7 +30,7 @@ import {
 import type { ListField, PropertySuggestion } from "./listForm";
 import { filterRules } from "../lists/filters";
 import { renderFilter } from "./filterEditor";
-import { PropertySuggest, warningDescription } from "./suggest";
+import { PrefixSuggest, PropertySuggest, warningDescription } from "./suggest";
 import {
 	addExcludedFolder,
 	addPresetValue,
@@ -49,6 +49,8 @@ import {
 import type { LinkProperty, PropertyField } from "./setPropertiesForm";
 import type { PrefixDraft } from "./prefixChip";
 import { renderPrefixedName } from "./prefixField";
+import { prefixSuggestions } from "./prefixLinks";
+import type { PrefixEdits } from "./prefixLinks";
 
 export interface ListPageContext {
 	app: App;
@@ -58,6 +60,7 @@ export interface ListPageContext {
 	openPage: (pageId: string) => void;
 	change: (change: () => unknown) => void;
 	prefixDrafts: Map<string, PrefixDraft>;
+	prefixes: PrefixEdits;
 	showPrefixes: boolean;
 }
 
@@ -222,13 +225,7 @@ export function propertyPage(
 			render: (setting) => warningDescription(setting.descEl, mixed ?? ""),
 		},
 		{ name: t("enabled"), desc: t("offerPropertyInPickerDesc"), control: { type: "toggle", key: key("enabled") } },
-		{
-			name: t("prefix"),
-			desc: t("propertyPrefixDesc"),
-			visible: context.showPrefixes,
-			control: { type: "text", key: key("prefix") },
-		},
-		...prefixColorItems(entry, key("prefixColor"), context),
+		...prefixItems(entry, key("prefix"), t("propertyPrefixDesc"), context),
 		{
 			name: t("property"),
 			desc: t("propertyDesc"),
@@ -359,23 +356,39 @@ export function listPageItems(list: NoteList, context: ListPageContext): Setting
 	const key = (field: ListField) => listKey(list.id, field);
 	return [
 		{ name: t("enabled"), desc: t("showListInPickerDesc"), control: { type: "toggle", key: key("enabled") } },
-		{
-			name: t("prefix"),
-			desc: t("listPrefixDesc"),
-			visible: context.showPrefixes,
-			control: { type: "text", key: key("prefix") },
-		},
-		...prefixColorItems(list, key("prefixColor"), context),
+		...prefixItems(list, key("prefix"), t("listPrefixDesc"), context),
 		...sourceItems(list, context, key),
 	];
 }
 
-function prefixColorItems(
-	target: { prefixColor?: string },
-	key: string,
+function prefixItems(
+	target: { prefix: string; prefixColor?: string },
+	prefixKey: string,
+	desc: string,
 	context: ListPageContext,
 ): SettingDefinitionItem[] {
+	const { prefixes } = context;
+	const linked = prefixes.linked(prefixKey);
 	return [
+		{
+			name: t("prefix"),
+			desc,
+			visible: context.showPrefixes,
+			render: (setting) => {
+				setting.addText((text) => {
+					text.setValue(target.prefix);
+					text.onChange((typed) => prefixes.type(prefixKey, { prefix: typed }));
+					const suggest = new PrefixSuggest(context.app, text.inputEl, (query) =>
+						prefixSuggestions(prefixes.rows(), prefixKey, query),
+					);
+					suggest.onSelect((suggestion) => {
+						suggest.setValue(suggestion.prefix);
+						prefixes.type(prefixKey, { prefix: suggestion.prefix, color: suggestion.color ?? "" }, "now");
+						suggest.close();
+					});
+				});
+			},
+		},
 		{
 			name: t("prefixColour"),
 			desc: target.prefixColor === undefined ? t("noPrefixColour") : t("prefixColourDesc"),
@@ -383,14 +396,31 @@ function prefixColorItems(
 			render: (setting) => {
 				setting.settingEl.addClass("note-compass-prefix-colour");
 				setting.addColorPicker((picker) =>
-					picker.setValue(target.prefixColor ?? NEUTRAL_PREFIX_COLOR).onChange((color) => context.write(key, color)),
+					picker
+						.setValue(target.prefixColor ?? NEUTRAL_PREFIX_COLOR)
+						.onChange((color) => prefixes.type(prefixKey, { color })),
 				);
 				if (target.prefixColor === undefined) return;
 				setting.addExtraButton((button) =>
 					button
 						.setIcon("rotate-ccw")
 						.setTooltip(t("removeColour"))
-						.onClick(() => context.write(key, "")),
+						.onClick(() => prefixes.type(prefixKey, { color: "" }, "now")),
+				);
+			},
+		},
+		{
+			name: tCount("linkedPrefixRowsOne", "linkedPrefixRowsOther", linked.length, {
+				prefix: prefixes.linkedPrefix(prefixKey),
+			}),
+			desc: t("linkedPrefixRowsDesc"),
+			searchable: false,
+			visible: context.showPrefixes && linked.length > 0,
+			render: (setting) => {
+				setting.addToggle((toggle) =>
+					toggle
+						.setValue(prefixes.updatesLinked(prefixKey))
+						.onChange((updatesLinked) => prefixes.setUpdatesLinked(prefixKey, updatesLinked)),
 				);
 			},
 		},
