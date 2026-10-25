@@ -2,7 +2,7 @@
 
 **English** · [Español](README.es.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 
-Note Compass adds three commands that work from anywhere in Obsidian, with or without an editor open. "Jump to note" opens one picker with the notes related to the note in focus, such as its adjacent date notes and the notes it links to, alongside lists you define with filters on properties, folders, tags, links and dates. "Set properties" edits the properties of the note in focus from a single picker. "Create note" makes a new note that already belongs to one of your link properties, so the other two commands offer it from then on. "Fill form" asks the questions of a form you define and creates one new note from the answers, with its name, text and properties filled in.
+Note Compass adds four commands that work from anywhere in Obsidian, with or without an editor open. "Jump to note" opens one picker with the notes related to the note in focus, such as its adjacent date notes and the notes it links to, alongside lists you define with filters on properties, folders, tags, links and dates. "Set properties" edits the properties of the note in focus from a single picker. "Create note" makes a new note that already belongs to one of your link properties, so "Jump to note" and "Set properties" offer it from then on. "Fill form" asks the questions of a form you define and creates one new note from the answers, with its name, text and properties filled in.
 
 ![The Set properties picker, with Save & close and Cancel at the top, the note's current values marked with a check, and more values to add below](docs/images/set-properties.png)
 
@@ -125,7 +125,7 @@ A form creates one new note from a few questions, such as a reading log entry th
 
 A form asks one question per asked field, in the order of its "Fields" list. Escape goes back to the previous question, and Escape on the first question closes the form without making a note. The answers you already gave are kept when you go back and show a check.
 
-After the last question, a summary opens. Its first row is `✅ Create "<name>"` with the note's name worked out from your answers, then one row per field with the value it will get, or `skipped`, then `🛑 Cancel`. Choosing an asked field opens its question again and comes back to the summary after you answer it, and Escape on the summary goes back to the last question. ⌘ Enter on macOS or Ctrl Enter elsewhere creates the note from any question once every required question has an answer.
+After the last question, a summary opens. Its first row is `✅ Create "<name>"` with the note's name worked out from your answers, then one row per field with the value it will get, or `skipped`, then `🛑 Cancel`. Choosing an asked field opens its question again and comes back to the summary after you answer it, and Escape on the summary goes back to the last question, or closes the form when it asks no questions. ⌘↵, or Ctrl+Enter on Windows and Linux, creates the note from any question once every required question has an answer.
 
 The note goes in the form's "Folder", or where Obsidian puts new notes when that is empty. When a note with that name already exists there, ignoring case, the new one gets a number, as in `Dune 2`. The note's text is written first, then its properties in the order of the fields. Then Note Compass says where the note went, as in `Created "Dune" in reading.`, and opens it unless "Open the note after creating it" is off.
 
@@ -158,11 +158,11 @@ Every field has "Save as", then "Key", "Mode" and "Type". "Save as" is "Property
 
 A fixed field can be text, number, checkbox, list, date, time or datetime. A number only keeps numbers, and a checkbox has a switch. A list has a box where each item shows as a chip: type an item and press Enter to add it, and use its × to remove it. Items may be links, so `[[Books]]` and `[[Reading]]` write `categories: ["[[Books]]", "[[Reading]]"]`, which is how a form links its notes to other notes.
 
-An asked field can be text, number, checkbox, select, multiselect, date, time or datetime. "Question" is the prompt, and the field's key when empty. "Optional" puts `⏭️ Skip` first in the question; a skipped property is not written at all, and a skipped variable is empty. A text or number property also offers the values the property already has in the vault, and anything you type.
+An asked field can be text, number, checkbox, select, multiselect, date, time or datetime. "Question" is the prompt, and the field's key when empty. "Optional" puts `⏭️ Skip` first in the question; a skipped property is not written at all, and a skipped variable is empty. A text or number question takes anything you type, and a text or number property also offers the values the property already has in the vault.
 
 Select and multiselect have "Choices", each with a value and an optional label. The `+` in the "Choices" header adds one, the cross removes one, and dragging a choice's handle reorders it. The question shows the label, or the value when there is none, and the note gets the value. A multiselect question lets you pick several choices, marked with a check, and finish with `🏁 Done`. "Store values as" writes the values as text or as numbers, so a choice with the value `4` and the label `4 · Great` can write the number 4.
 
-Date, time and datetime fields have "Format": `YYYY-MM-DD`, `HH:mm`, `YYYY-MM-DDTHH:mm`, ISO 8601, or a custom Moment.js format. A fixed one takes the time the form started, or the value of another date or time field of the form, chosen under "Value" as "From field …". One asked time can then feed several properties, such as a `day` with `YYYY-MM-DD` and a `timestamp` with ISO 8601. When the field it comes from is skipped, it is skipped too. An asked one offers "Now", and a date also offers "Today", "Tomorrow", "Next Monday" and "In a week". You can also type `20240311`, `2024-03-11`, `0930`, `09:30` or `20240311 0930`, as in the date pickers of "Set properties". A time is that time today.
+Date, time and datetime fields have "Format": `YYYY-MM-DD`, `HH:mm`, `YYYY-MM-DDTHH:mm`, ISO 8601, or a custom Moment.js format. A fixed one takes its "Value" from "At creation", the time the form started, or from "From field …", the value of another date or time field of the form. One asked time can then feed several properties, such as a `day` with `YYYY-MM-DD` and a `timestamp` with ISO 8601. When the field it comes from is skipped, it is skipped too. An asked one offers "Now", and a date also offers "Today", "Tomorrow", "Next Monday" and "In a week". You can also type `20240311`, `2024-03-11`, `0930`, `09:30` or `20240311 0930`, as in the date pickers of "Set properties". A time is that time today.
 
 A field without a key, two fields with the same key, a select without choices, or a date taken from a field that is not a date warn on the field's row and on the form. A form this version of Note Compass cannot read stays in the list switched off, with a warning and no pencil, like an unreadable list, and its saved setup is kept until you delete it.
 
@@ -259,7 +259,7 @@ The translations live in `src/i18n/`, and this manual is also available in each 
 
 ## Tips
 
-- Give the three commands hotkeys you can press without looking. The plugin is built around opening a picker, typing a few letters and pressing Enter.
+- Give the commands hotkeys you can press without looking. The plugin is built around opening a picker, typing a few letters and pressing Enter.
 - Keep prefixes short, such as an emoji and a three or four letter tag like `👤 peop` or `📅 due`. All chips share the width of the widest one, so one long prefix pushes every name to the right.
 - Use colours to group related lists, such as one colour for all your people and company lists and another for project lists, so you can tell them apart at a glance.
 - Type a prefix tag to narrow a picker towards one list, such as `peop` for the people rows in "Set properties".
