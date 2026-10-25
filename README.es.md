@@ -143,7 +143,7 @@ La página de un formulario tiene:
 - "Abrir la nota después de crearla", activado de forma predeterminada.
 - "Campos", los valores que el formulario rellena o pregunta. Su orden es el orden de las preguntas.
 
-La lista de campos funciona como las demás listas de los ajustes: arrastra el asa para reordenar, la cruz elimina un campo y el `+` de la cabecera añade uno. Cada fila resume su campo, como en `book · preguntar · texto · variable`. Haz clic en la fila o en su flecha para editar el campo justo debajo, y vuelve a hacer clic para cerrarlo. Solo hay un campo abierto a la vez, y un campo nuevo se abre directamente.
+La lista de campos funciona como las demás listas de los ajustes: arrastra el asa para reordenar, el icono de copiar duplica un campo justo debajo, la cruz elimina un campo y el `+` de la cabecera añade uno. El `+` abre un menú: "Campo vacío" añade un campo de texto preguntado vacío, mientras que "Fecha", "Hora", "Marca de tiempo" y "Marca de tiempo ISO" añaden un campo fijo que toma su valor al crear la nota, con la clave `date`, `time`, `timestamp` o `iso-timestamp` y el formato `YYYY-MM-DD`, `HH:mm`, `YYYY-MM-DDTHH:mm` o ISO 8601. Cada elemento muestra lo que escribiría en este momento, y una clave que ya está en uso recibe un número, como en `timestamp-2`. Cada fila resume su campo, como en `book · preguntar · texto · variable`. Haz clic en la fila o en su flecha para editar el campo justo debajo, y vuelve a hacer clic para cerrarlo. Solo hay un campo abierto a la vez, y un campo nuevo se abre directamente.
 
 El nombre y el contenido entienden estos marcadores:
 
@@ -158,7 +158,7 @@ Cualquier otro marcador se deja tal cual.
 
 Cada campo tiene "Guardar como" y después "Clave", "Modo" y "Tipo". "Guardar como" es "Propiedad", el valor predeterminado, para escribir el valor en las propiedades de la nota nueva con su clave, o "Variable" para un valor que solo rellena marcadores en el nombre y el contenido y nunca se escribe. "Clave" es el nombre de la propiedad o de la variable, que se usa como `{{key}}` en ambos casos. "Modo" es "Fijo" para un valor que se rellena solo o "Preguntar" para una pregunta.
 
-Un campo fijo puede ser texto, número, casilla de verificación, lista, fecha, hora o fecha y hora. Un número solo admite números, y una casilla tiene un interruptor. Una lista tiene un cuadro donde cada elemento aparece como un chip: escribe un elemento y pulsa Intro para añadirlo, y usa su × para quitarlo. Los elementos pueden ser enlaces, así que `[[Books]]` y `[[Reading]]` escriben `categories: ["[[Books]]", "[[Reading]]"]`, que es como un formulario enlaza sus notas con otras notas.
+Un campo fijo puede ser texto, número, casilla de verificación, lista, fecha, hora o fecha y hora. Un número solo admite números, y una casilla tiene un interruptor. Una lista tiene un cuadro donde cada elemento aparece como un chip: escribe un elemento y pulsa Intro para añadirlo, y usa su × para quitarlo. Los elementos pueden ser enlaces, así que `[[Books]]` y `[[Reading]]` escriben `categories: ["[[Books]]", "[[Reading]]"]`, que es como un formulario enlaza sus notas con otras notas. En un valor de texto fijo o en el cuadro de la lista, escribir `[[` sugiere las notas de la bóveda, y elegir una escribe su enlace, como `[[Books]]`, con la carpeta solo cuando dos notas comparten el nombre. En el cuadro de la lista, el enlace elegido se convierte en un chip al momento.
 
 Un campo preguntado puede ser texto, número, casilla de verificación, selección, selección múltiple, fecha, hora o fecha y hora. "Pregunta" es el texto que se muestra, y la clave del campo si está vacía. "Opcional" pone `⏭️ Omitir` en primer lugar en la pregunta; una propiedad omitida no se escribe en absoluto, y una variable omitida queda vacía. Una pregunta de texto o número acepta cualquier cosa que escribas, y una propiedad de texto o número ofrece además los valores que la propiedad ya tiene en la bóveda.
 
@@ -185,6 +185,7 @@ Los ajustes caben en una ventana estrecha y funcionan igual en móvil. Se divide
 - Arrastra el asa de la izquierda para reordenar las filas. El orden es el del selector.
 - Usa el interruptor para mostrar u ocultar una fila en el selector sin perder su configuración.
 - Usa el lápiz para abrir la página de la fila y la cruz para eliminarla.
+- Usa el icono de copiar para duplicar una fila. La copia aparece justo debajo con la misma configuración, y la copia de un formulario se llama `<nombre> copia`.
 - Usa el `+` de la cabecera de la sección para añadir una fila. Su página se abre al momento para que la completes, y la fila nueva empieza activada.
 
 Una fila que esta versión de Note Compass no puede leer, por ejemplo una guardada por una versión más reciente, se queda en la lista con un aviso: "Esta versión de Note Compass no puede leer esta lista. Elimínala y crea una nueva." Su interruptor está desactivado y deshabilitado y no tiene lápiz, así que nunca añade notas a un selector ni a "Crear nota", pero su configuración guardada se conserva tal cual hasta que la elimines.
