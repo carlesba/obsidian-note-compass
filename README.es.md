@@ -4,7 +4,7 @@
 
 Este manual es una traducción automática; la referencia es el README en inglés.
 
-Note Compass añade tres comandos que funcionan desde cualquier parte de Obsidian, con o sin un editor abierto. "Ir a una nota" abre un único selector con las notas relacionadas con la nota activa, como sus notas de fecha adyacentes y las notas a las que enlaza, junto con listas que defines tú mismo con filtros sobre propiedades, carpetas, etiquetas, enlaces y fechas. "Establecer propiedades" edita las propiedades de la nota activa desde un único selector. "Crear nota" crea una nota nueva que ya pertenece a una de tus propiedades de enlace, de modo que los otros dos comandos la ofrecen a partir de ese momento.
+Note Compass añade cuatro comandos que funcionan desde cualquier parte de Obsidian, con o sin un editor abierto. "Ir a una nota" abre un único selector con las notas relacionadas con la nota activa, como sus notas de fecha adyacentes y las notas a las que enlaza, junto con listas que defines tú mismo con filtros sobre propiedades, carpetas, etiquetas, enlaces y fechas. "Establecer propiedades" edita las propiedades de la nota activa desde un único selector. "Crear nota" crea una nota nueva que ya pertenece a una de tus propiedades de enlace, de modo que "Ir a una nota" y "Establecer propiedades" la ofrecen a partir de ese momento. "Rellenar formulario" hace las preguntas de un formulario que defines y crea una nota nueva a partir de las respuestas, con su nombre, su texto y sus propiedades ya rellenos.
 
 ![El selector Establecer propiedades, con Guardar y cerrar y Cancelar arriba, los valores actuales de la nota marcados con una marca de verificación y más valores para añadir debajo](docs/images/set-properties.png)
 
@@ -121,9 +121,56 @@ Después, la nota se incorpora al origen de la propiedad, así que aparece en la
 
 Solo sirven los orígenes que pueden contener una nota nueva: notas de una carpeta, notas que enlazan a una nota, notas modificadas hoy y filtros formados por una sola condición de propiedad bajo "Todos los siguientes son verdaderos" que dé un valor que escribir, como "es verdadero", "es", "tiene el elemento" o "tiene valor" en una casilla. Los orígenes de relación, los filtros con más de una condición o con grupos, y condiciones como mayor que no sirven, y el interruptor "Permitir crear notas" explica el motivo cuando está deshabilitado. Si ninguna propiedad cumple los requisitos, el comando muestra "Ninguna propiedad de enlace puede crear notas."
 
+## Formularios
+
+Un formulario crea una nota nueva a partir de unas pocas preguntas, como una entrada de un registro de lectura que pregunta por el libro y su autor, o una nota de reunión que pregunta por el tema y las personas. Los formularios se definen en Ajustes → Note Compass → Formularios. "Rellenar formulario" lista tus formularios activados y ejecuta el que elijas, y cada formulario activado es además un comando propio, con el nombre del formulario, para que puedas asignarle un atajo. Como los demás comandos, funciona con o sin una nota activa. Si no hay formularios, "Rellenar formulario" muestra "Aún no hay formularios. Añade uno en Ajustes → Note Compass → Formularios."
+
+Un formulario hace una pregunta por cada campo preguntado, en el orden de su lista "Campos". Escape vuelve a la pregunta anterior, y Escape en la primera pregunta cierra el formulario sin crear ninguna nota. Las respuestas que ya diste se conservan al volver atrás y se muestran con una marca de verificación.
+
+Tras la última pregunta se abre un resumen. Su primera fila es `✅ Crear "<nombre>"`, con el nombre de la nota calculado a partir de tus respuestas; después hay una fila por campo con el valor que recibirá, u `omitido`, y al final `🛑 Cancelar`. Al elegir un campo preguntado se vuelve a abrir su pregunta y, cuando la respondes, se vuelve al resumen. Escape en el resumen vuelve a la última pregunta, o cierra el formulario si no hace ninguna pregunta. ⌘↵, o Ctrl+Intro en Windows y Linux, crea la nota desde cualquier pregunta en cuanto todas las preguntas obligatorias tienen respuesta.
+
+La nota va a la "Carpeta" del formulario o, si está vacía, adonde Obsidian coloca las notas nuevas. Si ya existe allí una nota con ese nombre, sin distinguir mayúsculas, la nueva recibe un número, como en `Dune 2`. Primero se escribe el texto de la nota y después sus propiedades, en el orden de los campos. Luego Note Compass indica dónde se creó la nota, como en `Se creó "Dune" en reading.`, y la abre salvo que "Abrir la nota después de crearla" esté desactivado.
+
+### Páginas de formulario
+
+La página de un formulario tiene:
+
+- "Activado", que ofrece el formulario en "Rellenar formulario" y como comando.
+- "Nombre", que se muestra en "Rellenar formulario" y como nombre del comando.
+- "Nombre de la nota", el patrón del nombre de la nota nueva, como `{{date:YYMMDDHHmm}} {{book}}`. Los espacios repetidos por un marcador vacío se reducen a uno, y un nombre que queda vacío o con caracteres que Obsidian no puede usar en un nombre de archivo se rechaza con un mensaje, y te quedas en el resumen.
+- "Contenido de la nota", el texto de la nota nueva, con los mismos marcadores.
+- "Carpeta", adonde van las notas nuevas.
+- "Abrir la nota después de crearla", activado de forma predeterminada.
+- "Campos", los valores que el formulario rellena o pregunta. Su orden es el orden de las preguntas.
+
+La lista de campos funciona como las demás listas de los ajustes: arrastra el asa para reordenar, la cruz elimina un campo y el `+` de la cabecera añade uno. Cada fila resume su campo, como en `book · preguntar · texto · variable`. Haz clic en la fila o en su flecha para editar el campo justo debajo, y vuelve a hacer clic para cerrarlo. Solo hay un campo abierto a la vez, y un campo nuevo se abre directamente.
+
+El nombre y el contenido entienden estos marcadores:
+
+- `{{date}}` y `{{time}}` son el momento en que empezó el formulario, con los formatos configurados en el complemento principal Plantillas. `{{date:FORMAT}}` y `{{time:FORMAT}}` usan el formato indicado.
+- `{{key}}` es el valor del campo llamado `key`. Las listas se unen con comas, y un campo omitido queda vacío.
+- `{{key:FORMAT}}` da formato a un campo de fecha u hora con el formato indicado, como `{{started:dddd}}`.
+- `{{title}}`, solo en el contenido, es el nombre de la nota nueva.
+
+Cualquier otro marcador se deja tal cual.
+
+### Campos
+
+Cada campo tiene "Guardar como" y después "Clave", "Modo" y "Tipo". "Guardar como" es "Propiedad", el valor predeterminado, para escribir el valor en las propiedades de la nota nueva con su clave, o "Variable" para un valor que solo rellena marcadores en el nombre y el contenido y nunca se escribe. "Clave" es el nombre de la propiedad o de la variable, que se usa como `{{key}}` en ambos casos. "Modo" es "Fijo" para un valor que se rellena solo o "Preguntar" para una pregunta.
+
+Un campo fijo puede ser texto, número, casilla de verificación, lista, fecha, hora o fecha y hora. Un número solo admite números, y una casilla tiene un interruptor. Una lista tiene un cuadro donde cada elemento aparece como un chip: escribe un elemento y pulsa Intro para añadirlo, y usa su × para quitarlo. Los elementos pueden ser enlaces, así que `[[Books]]` y `[[Reading]]` escriben `categories: ["[[Books]]", "[[Reading]]"]`, que es como un formulario enlaza sus notas con otras notas.
+
+Un campo preguntado puede ser texto, número, casilla de verificación, selección, selección múltiple, fecha, hora o fecha y hora. "Pregunta" es el texto que se muestra, y la clave del campo si está vacía. "Opcional" pone `⏭️ Omitir` en primer lugar en la pregunta; una propiedad omitida no se escribe en absoluto, y una variable omitida queda vacía. Una pregunta de texto o número acepta cualquier cosa que escribas, y una propiedad de texto o número ofrece además los valores que la propiedad ya tiene en la bóveda.
+
+Selección y selección múltiple tienen "Opciones", cada una con un valor y una etiqueta opcional. El `+` de la cabecera de "Opciones" añade una, la cruz quita una, y arrastrar el asa de una opción la reordena. La pregunta muestra la etiqueta, o el valor si no la tiene, y la nota recibe el valor. Una pregunta de selección múltiple te deja elegir varias opciones, que se marcan con una marca de verificación, y terminar con `🏁 Listo`. "Guardar valores como" escribe los valores como texto o como números, así que una opción con el valor `4` y la etiqueta `4 · Genial` puede escribir el número 4.
+
+Los campos de fecha, hora y fecha y hora tienen "Formato": `YYYY-MM-DD`, `HH:mm`, `YYYY-MM-DDTHH:mm`, ISO 8601 o un formato personalizado de Moment.js. Uno fijo toma su "Valor" de "Al crear", el momento en que empezó el formulario, o de "Del campo …", el valor de otro campo de fecha u hora del formulario. Así, una sola hora preguntada puede alimentar varias propiedades, como un `day` con `YYYY-MM-DD` y un `timestamp` con ISO 8601. Si se omite el campo del que viene, también se omite. Uno preguntado ofrece "Ahora", y una fecha ofrece además "Hoy", "Mañana", "El próximo lunes" y "En una semana". También puedes escribir `20240311`, `2024-03-11`, `0930`, `09:30` o `20240311 0930`, como en los selectores de fecha de "Establecer propiedades". Una hora es esa hora de hoy.
+
+Un campo sin clave, dos campos con la misma clave, una selección sin opciones o una fecha tomada de un campo que no es una fecha muestran un aviso en la fila del campo y en el formulario. Un formulario que esta versión de Note Compass no puede leer se queda en la lista desactivado, con un aviso y sin lápiz, como una lista ilegible, y su configuración guardada se conserva hasta que lo eliminas.
+
 ## Ajustes
 
-Los ajustes caben en una ventana estrecha y funcionan igual en móvil. Se dividen en cuatro partes: "Visualización", las listas de "Ir a una nota", "Notas de fecha" y la lista de "Establecer propiedades", seguidas de "Restablecer todos los ajustes".
+Los ajustes caben en una ventana estrecha y funcionan igual en móvil. Se dividen en cinco partes: "Visualización", las listas de "Ir a una nota", "Notas de fecha", la lista de "Establecer propiedades" y "Formularios", seguidas de "Restablecer todos los ajustes".
 
 ![La pestaña de ajustes, con las listas de Ir a una nota, el origen de las notas de fecha y la lista de Establecer propiedades, cada fila con un chip de prefijo, un interruptor, un lápiz y un botón de eliminar](docs/images/settings.png)
 
@@ -198,7 +245,7 @@ Varias filas pueden escribir la misma propiedad, como las filas `related` predet
 
 ### Restablecer todos los ajustes
 
-"Restablecer todos los ajustes", al final de los ajustes, devuelve cada lista, propiedad y opción a los valores predeterminados. Primero pide confirmación, y Cancelar o Escape lo deja todo como estaba. El restablecimiento no se puede deshacer.
+"Restablecer todos los ajustes", al final de los ajustes, devuelve cada lista, propiedad, formulario y opción a los valores predeterminados, que no incluyen ningún formulario. Primero pide confirmación, y Cancelar o Escape lo deja todo como estaba. El restablecimiento no se puede deshacer.
 
 ## Idiomas
 
@@ -208,7 +255,7 @@ Las traducciones están en `src/i18n/`, y este manual también está disponible 
 
 ## Consejos
 
-- Asigna a los tres comandos atajos que puedas pulsar sin mirar. El complemento está pensado para abrir un selector, escribir unas letras y pulsar Intro.
+- Asigna a los comandos atajos que puedas pulsar sin mirar. El complemento está pensado para abrir un selector, escribir unas letras y pulsar Intro.
 - Usa prefijos cortos, como un emoji y una abreviatura de tres o cuatro letras, por ejemplo `👤 peop` o `📅 due`. Todos los chips comparten el ancho del más ancho, así que un solo prefijo largo empuja todos los nombres hacia la derecha.
 - Usa colores para agrupar listas relacionadas, como un color para todas tus listas de personas y empresas y otro para las de proyectos, y así distinguirlas de un vistazo.
 - Escribe la abreviatura de un prefijo para reducir un selector a una lista, como `peop` para las filas de personas en "Establecer propiedades".
