@@ -4,18 +4,19 @@ import {
 	DATE_FORMATS,
 	DEFAULT_DATE_FORMATS,
 	FIELD_MODES,
+	SAVE_AS,
 	STORED_CHOICE_TYPES,
-	formFields,
 	hasChoices,
 	isDateType,
 	typesFor,
 } from "../forms/form.ts";
-import type { DateFormat, FieldMode, FieldType, Form, FormField, StoredChoiceType } from "../forms/form.ts";
+import type { DateFormat, FieldMode, FieldType, Form, FormField, SaveAs, StoredChoiceType } from "../forms/form.ts";
 import { parseNumber } from "../setProperties/values.ts";
 
 export type FormSetting = "enabled" | "name" | "namePattern" | "contentPattern" | "folder" | "opensNote";
 
 export type FieldSetting =
+	| "saveAs"
 	| "key"
 	| "mode"
 	| "type"
@@ -53,6 +54,11 @@ const MODE_KEYS: Record<FieldMode, TranslationKey> = {
 	ask: "formModeAsk",
 };
 
+const SAVE_AS_KEYS: Record<SaveAs, TranslationKey> = {
+	property: "formSaveAsProperty",
+	variable: "formSaveAsVariable",
+};
+
 const STORED_CHOICE_KEYS: Record<StoredChoiceType, TranslationKey> = {
 	text: "typeText",
 	number: "typeNumber",
@@ -77,6 +83,10 @@ export function fieldTypeOptions(mode: FieldMode): Record<string, string> {
 	return options;
 }
 
+export function saveAsOptions(): Record<SaveAs, string> {
+	return translatedLabels(SAVE_AS_KEYS);
+}
+
 export function storeAsOptions(): Record<StoredChoiceType, string> {
 	return translatedLabels(STORED_CHOICE_KEYS);
 }
@@ -92,7 +102,7 @@ export function dateFormatOptions(): Record<string, string> {
 
 export function dateSourceOptions(form: Form, field: FormField): Record<string, string> {
 	const options: Record<string, string> = { [AT_CREATION]: t("formAtCreation") };
-	for (const other of formFields(form)) {
+	for (const other of form.fields) {
 		if (other === field || other.key === "" || !isDateType(other.type)) continue;
 		options[other.key] = t("formFromField", { key: other.key });
 	}
@@ -115,15 +125,15 @@ export function fieldRowName(field: FormField): string {
 }
 
 export function fieldSummary(field: FormField): string {
-	const type = fieldTypeLabel(field.type);
-	if (field.mode === "static") return t("formStaticSummary", { type });
-	return field.optional ? t("formAskOptionalSummary", { type }) : t("formAskSummary", { type });
+	const mode = field.mode === "static" ? t("formSummaryFixed") : field.optional ? t("formSummaryAskOptional") : t("formSummaryAsk");
+	const saveAs = field.saveAs === "property" ? t("formSummaryProperty") : t("formSummaryVariable");
+	return [fieldRowName(field), mode, fieldTypeLabel(field.type), saveAs].join(" · ");
 }
 
 export function fieldWarning(form: Form, field: FormField): string | undefined {
 	if (field.key.trim() === "") return t("formFieldNeedsKey");
-	if (formFields(form).some((other) => other !== field && other.key === field.key)) return t("formFieldKeyRepeated", { key: field.key });
-	if (field.mode === "static" && field.from !== undefined && !formFields(form).some((other) => other !== field && other.key === field.from && isDateType(other.type))) {
+	if (form.fields.some((other) => other !== field && other.key === field.key)) return t("formFieldKeyRepeated", { key: field.key });
+	if (field.mode === "static" && field.from !== undefined && !form.fields.some((other) => other !== field && other.key === field.from && isDateType(other.type))) {
 		return t("formFromMissingField", { key: field.from });
 	}
 	if (hasChoices(field.type) && field.mode === "ask" && !(field.choices ?? []).some((choice) => choice.value.trim() !== "")) return t("formNeedsChoices");
@@ -132,7 +142,7 @@ export function fieldWarning(form: Form, field: FormField): string | undefined {
 
 export function formWarning(form: Form): string | undefined {
 	if (form.unreadable) return t("unreadableFormWarning");
-	if (formFields(form).some((field) => fieldWarning(form, field) !== undefined)) return t("formFieldsNeedAttention");
+	if (form.fields.some((field) => fieldWarning(form, field) !== undefined)) return t("formFieldsNeedAttention");
 	return undefined;
 }
 
@@ -150,7 +160,7 @@ export function writeFormSetting(form: Form, setting: FormSetting, value: unknow
 }
 
 export function findField(form: Form, fieldId: string): FormField | undefined {
-	return formFields(form).find((field) => field.id === fieldId);
+	return form.fields.find((field) => field.id === fieldId);
 }
 
 export function readFieldSetting(field: FormField, setting: FieldSetting, index?: number): unknown {
@@ -187,6 +197,11 @@ export function readFieldSetting(field: FormField, setting: FieldSetting, index?
 export function writeFieldSetting(field: FormField, setting: FieldSetting, value: unknown, index?: number): boolean {
 	const text = typeof value === "string" ? value : "";
 	switch (setting) {
+		case "saveAs": {
+			const saveAs = SAVE_AS.find((candidate) => candidate === value);
+			if (saveAs) field.saveAs = saveAs;
+			return saveAs !== undefined;
+		}
 		case "key":
 			field.key = text.trim();
 			return true;

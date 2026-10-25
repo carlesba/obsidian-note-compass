@@ -31,10 +31,9 @@ export function isRunnable(form: Form): boolean {
 export function fillForm(app: App, vault: JumpListVault & NewNoteVault, form: Form, sourcePath: string | undefined): void {
 	const questions = askedFields(form);
 	const clock: FormClock = { now: vault.now(), moment: vault.moment, coreTemplatesOptions: vault.coreTemplatesOptions() };
-	const isProperty = (field: FormField) => form.properties.includes(field);
 	const question = (field: FormField): Question => ({
 		field,
-		vaultValues: isProperty(field) && (field.type === "text" || field.type === "number") && field.key !== "" ? vault.propertyValueCounts(field.key) : [],
+		vaultValues: field.saveAs === "property" && (field.type === "text" || field.type === "number") && field.key !== "" ? vault.propertyValueCounts(field.key) : [],
 		now: clock.now,
 		moment: clock.moment,
 	});

@@ -1,6 +1,6 @@
 import { ExtraButtonComponent } from "obsidian";
 import type { Setting, SettingDefinition, SettingDefinitionItem, SettingDefinitionList, SettingDefinitionPage } from "obsidian";
-import { formFields, hasChoices, isDateType, newField } from "../forms/form";
+import { hasChoices, isDateType, newField } from "../forms/form";
 import type { Form, FormField } from "../forms/form";
 import { t } from "../i18n";
 import { formFieldKey, formKey } from "./controlKeys";
@@ -19,6 +19,7 @@ import {
 	formSummary,
 	formWarning,
 	moveChoice,
+	saveAsOptions,
 	storeAsOptions,
 } from "./formsForm";
 import type { FieldSetting } from "./formsForm";
@@ -27,8 +28,6 @@ import type { ListPageContext } from "./listPage";
 import { warningDescription } from "./suggest";
 
 type IdentifiedPage = SettingDefinitionPage & { id: string };
-
-type FieldGroup = "variables" | "properties";
 
 const NAME_PATTERN_EXAMPLE = "{{date:YYMMDDHHmm}} {{book}}";
 
@@ -84,9 +83,8 @@ export function formPage(form: Form, context: ListPageContext): SettingDefinitio
 				},
 				{ name: t("folder"), desc: t("newNoteFolderDesc"), control: { type: "folder", key: key("folder") } },
 				{ name: t("formOpensNote"), desc: t("formOpensNoteDesc"), control: { type: "toggle", key: key("opensNote") } },
-				fieldList(form, "variables", context),
-				fieldList(form, "properties", context),
-				{ type: "group", visible: false, items: formFields(form).map((field) => fieldPage(form, field, context)) },
+				fieldList(form, context),
+				{ type: "group", visible: false, items: form.fields.map((field) => fieldPage(form, field, context)) },
 			];
 	const page: IdentifiedPage = {
 		type: "page",
@@ -99,19 +97,19 @@ export function formPage(form: Form, context: ListPageContext): SettingDefinitio
 	return page;
 }
 
-function fieldList(form: Form, group: FieldGroup, context: ListPageContext): SettingDefinitionList {
-	const fields = form[group];
+function fieldList(form: Form, context: ListPageContext): SettingDefinitionList {
+	const fields = form.fields;
 	const open = (field: FormField) => context.openPath([formPageId(form), fieldPageId(field)]);
 	return {
 		type: "list",
-		heading: group === "variables" ? t("formVariables") : t("formProperties"),
+		heading: t("formFields"),
 		cls: "note-compass-sortable-list",
-		emptyState: group === "variables" ? t("noVariablesYet") : t("noFormPropertiesYet"),
+		emptyState: t("noFormFieldsYet"),
 		items: fields.map((field) => fieldRow(form, field, () => open(field))),
 		onReorder: (from, to) => context.change(() => fields.splice(to, 0, ...fields.splice(from, 1))),
 		onDelete: (index) => context.change(() => fields.splice(index, 1)),
 		addItem: {
-			name: group === "variables" ? t("addVariable") : t("addFormProperty"),
+			name: t("addFormField"),
 			action: () => {
 				const field = newField(form);
 				context.change(() => fields.push(field));
@@ -125,8 +123,8 @@ function fieldRow(form: Form, field: FormField, open: () => void): SettingDefini
 	const warning = fieldWarning(form, field);
 	const definition: SettingDefinition & { id: string } = {
 		id: `${fieldPageId(field)}-row`,
-		name: fieldRowName(field),
-		desc: warning ?? fieldSummary(field),
+		name: fieldSummary(field),
+		desc: warning,
 		render: (setting) => {
 			setting.settingEl.addClass("note-compass-draggable-row");
 			if (warning) warningDescription(setting.descEl, warning);
@@ -139,7 +137,7 @@ function fieldRow(form: Form, field: FormField, open: () => void): SettingDefini
 function fieldPage(form: Form, field: FormField, context: ListPageContext): SettingDefinitionPage {
 	const key = (setting: FieldSetting, index?: number) => formFieldKey(form.id, field.id, setting, index);
 	const warning = fieldWarning(form, field);
-	const isProperty = form.properties.includes(field);
+	const isProperty = field.saveAs === "property";
 	const asks = field.mode === "ask";
 	const items: SettingDefinitionItem[] = [
 		{
@@ -149,14 +147,15 @@ function fieldPage(form: Form, field: FormField, context: ListPageContext): Sett
 			visible: warning !== undefined,
 			render: (setting) => warningDescription(setting.descEl, warning ?? ""),
 		},
+		{ name: t("formSaveAs"), desc: t("formSaveAsDesc"), control: { type: "dropdown", key: key("saveAs"), options: saveAsOptions() } },
 		isProperty
 			? {
-					name: t("property"),
+					name: t("formFieldKey"),
 					desc: t("formPropertyKeyDesc"),
 					render: propertyInput(context, key("key"), () => field.key, t("formPropertyKeyPlaceholder"), context.propertySuggestions),
 				}
 			: {
-					name: t("formVariableName"),
+					name: t("formFieldKey"),
 					desc: t("formVariableNameDesc"),
 					control: { type: "text", key: key("key"), placeholder: t("formVariableNamePlaceholder") },
 				},

@@ -1,7 +1,7 @@
 import { coreDatePlaceholder, isCreatableName } from "../createNote/newNotes.ts";
 import type { MomentDate, MomentFactory } from "../lists/vault.ts";
 import { parseNumber } from "../setProperties/values.ts";
-import { DEFAULT_DATE_FORMATS, askedFields, formFields, isDateType } from "./form.ts";
+import { DEFAULT_DATE_FORMATS, askedFields, isDateType } from "./form.ts";
 import type { DateFieldType, Form, FormField } from "./form.ts";
 
 export type Answer = { skipped: true } | { skipped: false; value: unknown };
@@ -58,7 +58,7 @@ export function resolveForm(form: Form, answers: Answers, clock: FormClock): Res
 	const name = noteName(fillPattern(form.namePattern, fields, clock));
 	const content = fillPattern(form.contentPattern, fields, clock, name);
 	const frontmatter: [string, unknown][] = fields
-		.filter((resolved) => form.properties.includes(resolved.field) && !resolved.skipped && resolved.field.key !== "")
+		.filter((resolved) => resolved.field.saveAs === "property" && !resolved.skipped && resolved.field.key !== "")
 		.map((resolved) => [resolved.field.key, resolved.value]);
 	return { fields, name, content, frontmatter };
 }
@@ -68,7 +68,7 @@ export function hasCreatableName(resolved: ResolvedForm): boolean {
 }
 
 export function resolveFields(form: Form, answers: Answers, clock: FormClock): ResolvedField[] {
-	const all = formFields(form);
+	const all = form.fields;
 	const resolved = new Map<string, ResolvedField>();
 	const visiting = new Set<string>();
 	const resolve = (field: FormField): ResolvedField => {

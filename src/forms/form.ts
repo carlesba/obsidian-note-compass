@@ -10,7 +10,11 @@ export type StoredChoiceType = "text" | "number";
 
 export type StaticValue = string | number | boolean | string[];
 
+export type SaveAs = "property" | "variable";
+
 export const FIELD_MODES: readonly FieldMode[] = ["static", "ask"];
+
+export const SAVE_AS: readonly SaveAs[] = ["property", "variable"];
 
 export const STATIC_FIELD_TYPES: readonly FieldType[] = ["text", "number", "checkbox", "list", "date", "time", "datetime"];
 
@@ -34,6 +38,7 @@ export interface FormChoice {
 export interface FormField {
 	id: string;
 	key: string;
+	saveAs: SaveAs;
 	mode: FieldMode;
 	type: FieldType;
 	value?: StaticValue;
@@ -54,8 +59,7 @@ export interface Form {
 	contentPattern: string;
 	folder: string;
 	opensNote: boolean;
-	variables: FormField[];
-	properties: FormField[];
+	fields: FormField[];
 	unreadable?: { stored: unknown };
 }
 
@@ -71,12 +75,8 @@ export function typesFor(mode: FieldMode): readonly FieldType[] {
 	return mode === "ask" ? ASK_FIELD_TYPES : STATIC_FIELD_TYPES;
 }
 
-export function formFields(form: Form): FormField[] {
-	return [...form.variables, ...form.properties];
-}
-
 export function askedFields(form: Form): FormField[] {
-	return formFields(form).filter((field) => field.mode === "ask");
+	return form.fields.filter((field) => field.mode === "ask");
 }
 
 export function questionText(field: FormField): string {
@@ -96,13 +96,12 @@ export function newForm(forms: readonly Form[]): Form {
 		contentPattern: "",
 		folder: "",
 		opensNote: true,
-		variables: [],
-		properties: [],
+		fields: [],
 	};
 }
 
 export function newField(form: Form): FormField {
-	return { id: newFormId(formFields(form)), key: "", mode: "ask", type: "text" };
+	return { id: newFormId(form.fields), key: "", saveAs: "property", mode: "ask", type: "text" };
 }
 
 export function readForms(stored: unknown): Form[] {
@@ -141,24 +140,31 @@ function readForm(entry: unknown, id: string): Form {
 		contentPattern: text(data.contentPattern),
 		folder: text(data.folder).trim(),
 		opensNote: typeof data.opensNote === "boolean" ? data.opensNote : true,
-		variables: [],
-		properties: [],
+		fields: [],
 	};
-	const variables = readFields(data.variables, []);
-	const properties = readFields(data.properties, variables ?? []);
-	if (!isRecord(entry) || variables === undefined || properties === undefined) {
-		return { ...form, enabled: false, unreadable: { stored: entry } };
-	}
-	return { ...form, variables, properties };
+	const fields = readFields(storedFields(data));
+	if (!isRecord(entry) || fields === undefined) return { ...form, enabled: false, unreadable: { stored: entry } };
+	return { ...form, fields };
 }
 
-function readFields(stored: unknown, taken: readonly FormField[]): FormField[] | undefined {
+function storedFields(data: Record<string, unknown>): unknown {
+	if (data.fields !== undefined || (data.variables === undefined && data.properties === undefined)) return data.fields;
+	const variables = withSaveAs(data.variables ?? [], "variable");
+	const properties = withSaveAs(data.properties ?? [], "property");
+	return variables && properties ? [...variables, ...properties] : null;
+}
+
+function withSaveAs(stored: unknown, saveAs: SaveAs): unknown[] | undefined {
+	if (!Array.isArray(stored)) return undefined;
+	return stored.map((entry: unknown) => (isRecord(entry) ? { ...entry, saveAs } : entry));
+}
+
+function readFields(stored: unknown): FormField[] | undefined {
 	if (stored === undefined) return [];
 	if (!Array.isArray(stored)) return undefined;
 	const fields: FormField[] = [];
 	for (const entry of stored) {
-		const known = [...taken, ...fields];
-		const field = readField(entry, known);
+		const field = readField(entry, fields);
 		if (!field) return undefined;
 		fields.push(field);
 	}
@@ -174,7 +180,8 @@ function readField(entry: unknown, known: readonly FormField[]): FormField | und
 		typeof entry.id === "string" && /^\d+$/.test(entry.id) && !known.some((field) => field.id === entry.id)
 			? entry.id
 			: newFormId(known);
-	const field: FormField = { id, key: entry.key.trim(), mode, type };
+	const saveAs = SAVE_AS.find((candidate) => candidate === entry.saveAs) ?? "property";
+	const field: FormField = { id, key: entry.key.trim(), saveAs, mode, type };
 	if (mode === "static") {
 		const value = readStaticValue(type, entry.value);
 		if (value !== undefined) field.value = value;

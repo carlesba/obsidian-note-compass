@@ -8,7 +8,7 @@ import { NOW } from "./fakeVault.ts";
 import { moment } from "./moment.ts";
 
 function question(extra: Partial<FormField>, vaultValues: Question["vaultValues"] = []): Question {
-	return { field: { id: "1", key: "topic", mode: "ask", type: "text", ...extra }, vaultValues, now: NOW, moment };
+	return { field: { id: "1", key: "topic", saveAs: "property", mode: "ask", type: "text", ...extra }, vaultValues, now: NOW, moment };
 }
 
 const labels = (choices: { label: string }[]) => choices.map((choice) => choice.label);
@@ -69,16 +69,16 @@ test("the confirm view offers creating the named note, each field with its value
 		contentPattern: "",
 		folder: "",
 		opensNote: true,
-		variables: [{ id: "1", key: "topic", mode: "ask" as const, type: "text" as const }],
-		properties: [
-			{ id: "2", key: "room", mode: "ask" as const, type: "text" as const, optional: true },
-			{ id: "3", key: "kind", mode: "static" as const, type: "text" as const, value: "meeting" },
+		fields: [
+			{ id: "1", key: "topic", saveAs: "variable" as const, mode: "ask" as const, type: "text" as const },
+			{ id: "2", key: "room", saveAs: "property" as const, mode: "ask" as const, type: "text" as const, optional: true },
+			{ id: "3", key: "kind", saveAs: "property" as const, mode: "static" as const, type: "text" as const, value: "meeting" },
 		],
 	};
 	const resolved = resolveForm(shape, new Map([["1", answered("Roadmap")], ["2", skippedAnswer()]]), { now: NOW, moment, coreTemplatesOptions: undefined });
 	const choices = confirmChoices(resolved, "");
 	assert.deepEqual(labels(choices), ['✅ Create "Meeting Roadmap"', "topic Roadmap", "room skipped", "kind meeting", "🛑 Cancel"]);
-	assert.deepEqual(choices[1].action, { action: "edit", field: shape.variables[0] });
+	assert.deepEqual(choices[1].action, { action: "edit", field: shape.fields[0] });
 	assert.deepEqual(choices[3].action, { action: "stay" });
 	assert.deepEqual(labels(formChoices([shape, { ...shape, name: "" }], "")), ["Meeting", "Untitled form"]);
 });

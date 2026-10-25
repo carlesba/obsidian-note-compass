@@ -10,7 +10,7 @@ function settingsWithForm() {
 	const form = newForm(settings.forms);
 	settings.forms.push(form);
 	const field = newField(form);
-	form.properties.push(field);
+	form.fields.push(field);
 	return { settings, form, field };
 }
 
@@ -19,7 +19,7 @@ test("a new form starts enabled, opens its note and has no fields, with the next
 	assert.equal(form.id, "5");
 	assert.equal(form.enabled, true);
 	assert.equal(form.opensNote, true);
-	assert.deepEqual([form.variables, form.properties], [[], []]);
+	assert.deepEqual(form.fields, []);
 });
 
 test("form settings are read and written through their control keys", () => {
@@ -40,9 +40,12 @@ test("switching a field to fixed keeps a type it can hold and drops the question
 	writeControl(settings, key("optional"), true);
 	assert.deepEqual(field.choices, []);
 	assert.equal(field.storeAs, "text");
-	assert.equal(fieldSummary(field), "multiselect, several choices · asked, optional");
+	assert.equal(fieldSummary(field), "tags · ask, optional · multiselect, several choices · property");
 	writeControl(settings, key("mode"), "static");
-	assert.deepEqual(field, { id: field.id, key: "tags", mode: "static", type: "list" });
+	assert.deepEqual(field, { id: field.id, key: "tags", saveAs: "property", mode: "static", type: "list" });
+	assert.equal(writeControl(settings, key("saveAs"), "variable"), true);
+	assert.equal(writeControl(settings, key("saveAs"), "frontmatter"), false);
+	assert.equal(fieldSummary(field), "tags · fixed · list · variable");
 	writeControl(settings, key("listItems"), ["[[Books]]", " ", "[[Reading]]"]);
 	assert.deepEqual(readControl(settings, key("listItems")), ["[[Books]]", "[[Reading]]"]);
 });
@@ -76,7 +79,7 @@ test("date fields default their format per type and offer other date fields as a
 	writeControl(settings, key("type"), "time");
 	assert.equal(field.dateFormat, "HH:mm");
 	const day = newField(form);
-	form.properties.push(day);
+	form.fields.push(day);
 	const dayKey = (setting: Parameters<typeof formFieldKey>[2]) => formFieldKey(form.id, day.id, setting);
 	writeControl(settings, dayKey("key"), "day");
 	writeControl(settings, dayKey("mode"), "static");
