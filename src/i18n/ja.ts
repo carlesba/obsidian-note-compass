@@ -146,8 +146,6 @@ export const ja: Translation = {
 	templateDesc:
 		"新しいノートはこのテンプレートから作成されます。Templater が有効な場合は Templater が実行し、そうでない場合はコアのテンプレートプラグインと同じように {{title}}、{{date}}、{{time}} が置き換えられます。",
 	prefixColour: "プレフィックスの色",
-	noPrefixColour: "色はありません。選ぶとプレフィックスのチップに色が付きます。",
-	prefixColourDesc: "プレフィックスのチップに色を付けます。",
 	removeColour: "色を削除",
 	editPrefix: "プレフィックスを編集…",
 	prefixPlaceholder: "プレフィックス",

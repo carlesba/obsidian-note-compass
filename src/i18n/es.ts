@@ -146,8 +146,6 @@ export const es: Translation = {
 	templateDesc:
 		"Las notas nuevas parten de esta plantilla. Templater la ejecuta si está activado; si no, {{title}}, {{date}} y {{time}} se rellenan como lo hace el complemento principal Plantillas.",
 	prefixColour: "Color del prefijo",
-	noPrefixColour: "Sin color. Elige uno para teñir el chip del prefijo.",
-	prefixColourDesc: "Tiñe el chip del prefijo.",
 	removeColour: "Quitar color",
 	editPrefix: "Editar prefijo…",
 	prefixPlaceholder: "prefijo",

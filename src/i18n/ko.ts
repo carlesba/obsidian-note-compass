@@ -146,8 +146,6 @@ export const ko: Translation = {
 	templateDesc:
 		"새 노트는 이 템플릿으로 시작합니다. Templater가 활성화되어 있으면 Templater가 실행하고, 아니면 코어 템플릿 플러그인처럼 {{title}}, {{date}}, {{time}}을 채웁니다.",
 	prefixColour: "접두사 색상",
-	noPrefixColour: "색상 없음. 색상을 고르면 접두사 칩에 색이 입혀집니다.",
-	prefixColourDesc: "접두사 칩에 색을 입힙니다.",
 	removeColour: "색상 제거",
 	editPrefix: "접두사 편집…",
 	prefixPlaceholder: "접두사",

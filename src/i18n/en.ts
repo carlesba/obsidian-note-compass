@@ -144,8 +144,6 @@ export const en = {
 	templateDesc:
 		"New notes start from this template. Templater runs it when enabled; otherwise {{title}}, {{date}} and {{time}} are filled in as the core Templates plugin does.",
 	prefixColour: "Prefix colour",
-	noPrefixColour: "No colour. Pick one to tint the prefix chip.",
-	prefixColourDesc: "Tints the prefix chip.",
 	removeColour: "Remove colour",
 	editPrefix: "Edit prefix…",
 	prefixPlaceholder: "prefix",

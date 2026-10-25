@@ -193,9 +193,9 @@ Rows share a prefix when its text and its colour are the same, so `👤 peop` in
 
 ### List pages
 
-A list's page has "Enabled", "Prefix" and "Prefix colour", whose circular arrow removes the colour, then "Source", which chooses what the list holds: adjacent dates, outbound links, inbound links, same day, a filter, notes linking to a note, notes in a folder, notes modified today, or current date notes. Current date notes has one switch per period, from "Today" to "This year".
+A list's page has "Enabled" and "Prefix", then "Source", which chooses what the list holds: adjacent dates, outbound links, inbound links, same day, a filter, notes linking to a note, notes in a folder, notes modified today, or current date notes. Current date notes has one switch per period, from "Today" to "This year".
 
-The prefix settings start with a large preview of the chip, which follows the text you type and the colour you pick. When other rows shared the list's prefix as the page opened, "Change only this row" names them, as in "Used by 2 other rows: people · links, Outbound links". It is off, so the text you type and the colour you pick change those rows too, and they stay together even while the text is briefly empty. Turn it on to change only this list. A property's page works the same way.
+"Prefix" holds the chip's preview, its text and its colour on one row. The preview follows the text you type and the colour you pick, and the circular arrow removes the colour. When other rows shared the list's prefix as the page opened, "Change only this row" names them, as in "Used by 2 other rows: people · links, Outbound links". It is off, so the text you type and the colour you pick change those rows too, and they stay together even while the text is briefly empty. Turn it on to change only this list. A property's page works the same way.
 
 A filter works like the filters in Obsidian Bases and looks the same. It is a group that starts with "All the following are true", "Any of the following are true" or "None of the following are true", so a note is listed when it matches every filter in the group, at least one, or none of them. Each filter row starts with what it tests: type a property name, or pick `folder`, `tags`, `links`, `created time` or `modified time` from the suggestions. Then choose the operator and the value, such as `folder is in projects`, `tags has tag client` or `modified time after 7 days ago`. "Add filter" adds a row to the group, and "Add filter group" adds a group inside it with its own choice. Groups can sit inside groups up to three levels deep, counting the filter itself. The trash button on a row or on an inner group removes it, and removing the last row of an inner group removes the group too. A new filter has no rows and lists nothing until you add one, and an empty group inside a filter is left out of the matching.
 
@@ -223,7 +223,7 @@ A property condition asks for the property, suggesting the vault's properties wi
 
 ### Property pages
 
-A property's page has "Enabled", "Prefix" and "Prefix colour" as on a list's page, then "Property" and "Type". "Property" suggests the vault's properties with their types, and picking one sets the type to match: checkbox, number, date and datetime keep theirs, lists and tags become links, and anything else becomes text. "Type" can be checkbox, text, number, date, datetime, link for one note, or links for several, and stays disabled until a property is chosen.
+A property's page has "Enabled" and "Prefix" as on a list's page, then "Property" and "Type". "Property" suggests the vault's properties with their types, and picking one sets the type to match: checkbox, number, date and datetime keep theirs, lists and tags become links, and anything else becomes text. "Type" can be checkbox, text, number, date, datetime, link for one note, or links for several, and stays disabled until a property is chosen.
 
 ![The page of the people links property, offering notes that link to Person, excluding the templates folder, and creating new notes in samples/people from a template](docs/images/settings-property.png)
 

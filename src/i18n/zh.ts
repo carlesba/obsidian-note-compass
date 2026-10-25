@@ -146,8 +146,6 @@ export const zh: Translation = {
 	templateDesc:
 		"新笔记以此模板开始。启用 Templater 时由它运行模板；否则会像核心模板插件一样填入 {{title}}、{{date}} 和 {{time}}。",
 	prefixColour: "前缀颜色",
-	noPrefixColour: "无颜色。选择一种颜色来为前缀标签着色。",
-	prefixColourDesc: "为前缀标签着色。",
 	removeColour: "移除颜色",
 	editPrefix: "编辑前缀…",
 	prefixPlaceholder: "前缀",

@@ -393,50 +393,25 @@ function prefixItems(
 	return [
 		{
 			name: t("prefix"),
-			searchable: false,
+			desc,
 			visible: context.showPrefixes,
 			render: (setting) => {
 				const win = setting.settingEl.win;
 				prefixes.hold(prefixKey);
-				setting.settingEl.addClass("note-compass-prefix-preview");
-				setting.nameEl.empty();
-				previewEl = setting.nameEl.createSpan({ cls: "note-compass-prefix-preview-chip" });
+				setting.settingEl.addClass("note-compass-prefix-setting");
+				previewEl = setting.controlEl.createSpan({ cls: "note-compass-prefix-preview-chip" });
 				showPreview();
-				return () => {
-					prefixes.release(prefixKey);
-					win.setTimeout(() => {
-						if (prefixes.closeUnheld(prefixKey)) context.prefixChanged();
-					}, 0);
-				};
-			},
-		},
-		{
-			name: t("prefix"),
-			desc,
-			visible: context.showPrefixes,
-			render: (setting) => {
+				let resetEl: HTMLElement | undefined;
+				const showReset = () => resetEl?.toggle(target.prefixColor !== undefined);
 				setting.addText((text) => {
 					text.setPlaceholder(t("prefixPlaceholder")).setValue(target.prefix);
 					text.onChange((typed) => edit({ prefix: typed }));
 					if (prefixes.takeFocus(prefixKey)) text.inputEl.win.setTimeout(() => text.inputEl.focus(), 0);
 				});
-			},
-		},
-		{
-			name: t("prefixColour"),
-			desc: target.prefixColor === undefined ? t("noPrefixColour") : t("prefixColourDesc"),
-			visible: context.showPrefixes,
-			render: (setting) => {
-				setting.settingEl.addClass("note-compass-prefix-colour");
-				let resetEl: HTMLElement | undefined;
-				const showColour = () => {
-					setting.setDesc(target.prefixColor === undefined ? t("noPrefixColour") : t("prefixColourDesc"));
-					resetEl?.toggle(target.prefixColor !== undefined);
-				};
 				setting.addColorPicker((picker) => {
 					picker.setValue(target.prefixColor ?? NEUTRAL_PREFIX_COLOR).onChange((color) => {
 						edit({ color });
-						showColour();
+						showReset();
 					});
 					setting.addExtraButton((button) => {
 						resetEl = button.extraSettingsEl;
@@ -446,11 +421,18 @@ function prefixItems(
 							.onClick(() => {
 								edit({ color: "" });
 								picker.setValue(NEUTRAL_PREFIX_COLOR);
-								showColour();
+								showReset();
 							});
 					});
 				});
-				showColour();
+				setting.controlEl.querySelector('input[type="color"]')?.setAttribute("aria-label", t("prefixColour"));
+				showReset();
+				return () => {
+					prefixes.release(prefixKey);
+					win.setTimeout(() => {
+						if (prefixes.closeUnheld(prefixKey)) context.prefixChanged();
+					}, 0);
+				};
 			},
 		},
 		{

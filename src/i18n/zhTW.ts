@@ -146,8 +146,6 @@ export const zhTW: Translation = {
 	templateDesc:
 		"新筆記以此模板為起點。啟用 Templater 時由它執行模板；否則會像核心「模板」外掛程式一樣填入 {{title}}、{{date}} 與 {{time}}。",
 	prefixColour: "前綴顏色",
-	noPrefixColour: "未設定顏色。選擇一種顏色為前綴標籤上色。",
-	prefixColourDesc: "為前綴標籤上色。",
 	removeColour: "移除顏色",
 	editPrefix: "編輯前綴…",
 	prefixPlaceholder: "前綴",
