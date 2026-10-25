@@ -50,111 +50,37 @@
 	box-shadow: inset 0 0 0 1px var(--background-modifier-border-focus);
 }
 
-.note-compass-setting-prefix-editor {
-	display: inline-flex;
-	flex-shrink: 0;
-	align-items: center;
-	gap: var(--size-4-1);
-	max-width: 70%;
-}
-
-.setting-item-name.note-compass-prefixed-name.is-editing-prefix {
-	flex-wrap: wrap;
-}
-
-.note-compass-setting-prefix-panel {
+.setting-item.note-compass-prefix-preview .setting-item-name {
 	display: flex;
-	flex-basis: 100%;
-	flex-direction: column;
-	gap: var(--size-4-1);
-	font-size: var(--font-ui-smaller);
 }
 
-.note-compass-setting-prefix-panel:not(:has(> :not(.is-hidden))) {
-	display: none;
+.note-compass-prefix-preview .note-compass-prefix-preview-chip {
+	max-width: 100%;
+	font-size: var(--font-ui-large);
+	height: calc(1.8em + 2px);
+	padding: 0 var(--size-4-3);
 }
 
-.note-compass-prefix-suggestions {
-	max-height: 12em;
-	max-width: 24em;
-	overflow-y: auto;
-	padding: var(--size-2-1);
-	background: var(--background-primary);
-	border: 1px solid var(--background-modifier-border);
-	border-radius: var(--radius-s);
+.note-compass-prefix-preview-chip.is-placeholder,
+.note-compass-menu-prefix.is-placeholder {
+	color: var(--text-faint);
+	background: transparent;
+	border-style: dashed;
 }
 
-.note-compass-prefix-suggestions.is-hidden {
-	display: none;
-}
-
-.note-compass-prefix-suggestion {
-	display: flex;
-	align-items: center;
-	gap: var(--size-4-2);
-}
-
-.note-compass-prefix-suggestions .note-compass-prefix-suggestion {
-	padding: var(--size-2-1) var(--size-4-1);
-	border-radius: var(--radius-s);
-	cursor: var(--cursor);
-}
-
-.note-compass-prefix-suggestions .note-compass-prefix-suggestion.is-selected {
-	background: var(--background-modifier-hover);
-}
-
-.note-compass-prefix-suggestion-chip {
+.note-compass-menu-prefix {
 	flex-shrink: 0;
 	max-width: 12em;
 }
 
-.note-compass-prefix-suggestion-count {
+.note-compass-menu-prefix-count {
+	margin-inline-start: var(--size-4-2);
 	color: var(--text-muted);
 	font-size: var(--font-ui-smaller);
-}
-
-.note-compass-prefix-linked {
-	display: flex;
-	align-items: center;
-	gap: var(--size-4-1);
-	color: var(--text-muted);
-	cursor: var(--cursor);
-}
-
-.note-compass-setting-prefix-input[type="text"] {
-	field-sizing: content;
-	min-width: max(4em, var(--note-compass-prefix-width, 0px));
-	max-width: 12em;
-	height: calc(1.6em + 2px);
-	box-sizing: border-box;
-	font-size: var(--font-ui-smaller);
-	line-height: 1;
-	color: var(--text-normal);
-	padding: 0 var(--size-4-1);
-	border-radius: var(--radius-s);
-}
-
-.note-compass-setting-prefix-input[type="text"].has-color {
-	background: color-mix(in srgb, var(--note-compass-chip-color) 28%, var(--background-primary));
-	border-color: color-mix(in srgb, var(--note-compass-chip-color) 50%, var(--background-modifier-border));
-}
-
-.note-compass-setting-prefix-color[type="color"] {
-	--swatch-width: var(--font-ui-smaller);
-	--swatch-height: var(--font-ui-smaller);
-	--swatch-radius: 50%;
-	flex-shrink: 0;
-	width: calc(var(--swatch-width) + 4px);
-	height: calc(var(--swatch-height) + 4px);
 }
 
 .note-compass-prefix-colour input[type="color"] {
 	height: calc(var(--swatch-height) + 4px);
-}
-
-.note-compass-setting-prefix-color[type="color"]::-webkit-color-swatch {
-	border-radius: 50%;
 }
 
 .setting-item-description.note-compass-warning {
@@ -221,7 +147,8 @@
 
 .note-compass-row-prefix,
 .note-compass-setting-prefix,
-.note-compass-prefix-suggestion-chip {
+.note-compass-prefix-preview-chip,
+.note-compass-menu-prefix {
 	display: inline-flex;
 	align-items: center;
 	box-sizing: border-box;
@@ -238,7 +165,8 @@
 
 .note-compass-row-prefix.has-color,
 .note-compass-setting-prefix.has-color,
-.note-compass-prefix-suggestion-chip.has-color {
+.note-compass-prefix-preview-chip.has-color,
+.note-compass-menu-prefix.has-color {
 	color: var(--text-normal);
 	background: color-mix(in srgb, var(--note-compass-chip-color) 28%, var(--background-primary));
 	border-color: color-mix(in srgb, var(--note-compass-chip-color) 50%, var(--background-modifier-border));

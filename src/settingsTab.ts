@@ -32,10 +32,7 @@ import { newList, propertySuggestions } from "./settings/listForm";
 import type { PropertySuggestion } from "./settings/listForm";
 import { listPage, listPageId, listRow, propertyPage, propertyPageId, propertyRow } from "./settings/listPage";
 import type { ListPageContext } from "./settings/listPage";
-import { draftChange } from "./settings/prefixChip";
-import type { PrefixDraft } from "./settings/prefixChip";
-import { PrefixEdits, applyPrefixChange, updatedPrefixKeys } from "./settings/prefixLinks";
-import type { PrefixRefresh } from "./settings/prefixLinks";
+import { PrefixPages } from "./settings/prefixLinks";
 import { ResetSettingsModal } from "./settings/resetModal";
 import { checkboxModeOptions, newProperty } from "./settings/setPropertiesForm";
 import { tabPastRows } from "./settings/tabOrder";
@@ -74,13 +71,9 @@ interface AppWithSettingModal {
 export class NoteCompassSettingTab extends PluginSettingTab {
 	private plugin: NoteCompassPlugin;
 	private readonly refreshAfterTyping = debounce(() => this.update(), TYPING_PAUSE_MS, true);
-	private readonly prefixDrafts = new Map<string, PrefixDraft>();
 	private readonly fieldEditor: FieldEditorState = { expanded: new Map() };
 	private definitionsAreStale = false;
-	private readonly prefixes = new PrefixEdits(
-		() => this.plugin.settings,
-		(refresh) => void this.savePrefixes(refresh),
-	);
+	private readonly prefixes = new PrefixPages(() => this.plugin.settings);
 
 	constructor(app: App, plugin: NoteCompassPlugin) {
 		super(app, plugin);
@@ -101,8 +94,9 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 			write: (key: string, value: unknown) => void this.setControlValue(key, value),
 			openPage: (pageId: string) => this.openPage(pageId),
 			change: (change: () => unknown) => this.changeLists(change),
-			prefixDrafts: this.prefixDrafts,
 			prefixes: this.prefixes,
+			prefixChanged: () => void this.savePrefixes(true),
+			prefixTyped: () => void this.savePrefixes(false),
 			showPrefixes,
 		};
 		const formContext: FormPageContext = {
@@ -217,16 +211,8 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 	}
 
 	hide(): void {
-		let changed = false;
-		for (const [key, draft] of this.prefixDrafts) {
-			const change = draftChange(draft);
-			const keys = updatedPrefixKeys(key, draft.linked, draft.updatesLinked);
-			if (change && applyPrefixChange(this.plugin.settings, keys, change)) changed = true;
-		}
-		this.prefixDrafts.clear();
 		this.fieldEditor.expanded.clear();
 		this.prefixes.clear();
-		if (changed) void this.plugin.saveSettings();
 		super.hide();
 	}
 
@@ -291,19 +277,15 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 		this.update();
 	}
 
-	private async savePrefixes(refresh: PrefixRefresh): Promise<void> {
+	private async savePrefixes(rerender: boolean): Promise<void> {
 		await this.plugin.saveSettings();
-		if (refresh === "afterTyping") {
-			this.refreshAfterTyping();
-			return;
-		}
+		if (!rerender) return;
 		this.refreshDomState();
 		this.update();
 	}
 
 	private async resetSettings(): Promise<void> {
 		this.plugin.settings = defaultSettings();
-		this.prefixDrafts.clear();
 		this.prefixes.clear();
 		await this.plugin.saveSettings();
 		this.update();

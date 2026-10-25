@@ -4,15 +4,17 @@ import { defaultSettings } from "../src/settings.ts";
 import type { EditableProperty, JumpSettings, NoteList } from "../src/settings.ts";
 import { listKey, propertyKey } from "../src/settings/controlKeys.ts";
 import {
-	PrefixEdits,
+	PrefixPages,
 	applyPrefixChange,
+	assignPrefix,
+	clearPrefix,
 	linkedPrefixKeys,
+	linkedRowsText,
+	prefixMenu,
 	prefixRows,
-	prefixSuggestions,
 	samePrefix,
-	updatedPrefixKeys,
 } from "../src/settings/prefixLinks.ts";
-import type { PrefixRefresh, PrefixRow } from "../src/settings/prefixLinks.ts";
+import type { PrefixRow } from "../src/settings/prefixLinks.ts";
 
 const list = (id: string, prefix: string, prefixColor?: string): NoteList => ({
 	id,
@@ -32,7 +34,7 @@ const property = (id: string, prefix: string, prefixColor?: string): EditablePro
 });
 
 const row = (key: string, prefix: string, prefixColor?: string): PrefixRow =>
-	prefixColor === undefined ? { key, prefix } : { key, prefix, prefixColor };
+	prefixColor === undefined ? { key, prefix, label: key } : { key, prefix, prefixColor, label: key };
 
 function settingsWith(lists: NoteList[], properties: EditableProperty[]): JumpSettings {
 	const settings = defaultSettings();
@@ -41,6 +43,8 @@ function settingsWith(lists: NoteList[], properties: EditableProperty[]): JumpSe
 	return settings;
 }
 
+const shown = (settings: JumpSettings) => prefixRows(settings).map(({ prefix, prefixColor }) => [prefix, prefixColor]);
+
 test("rows share a prefix when the trimmed text and the colour are equal", () => {
 	assert.equal(samePrefix({ prefix: " 👤 peop " }, { prefix: "👤 peop" }), true);
 	assert.equal(samePrefix({ prefix: "👤 peop", prefixColor: "#ff0000" }, { prefix: "👤 peop", prefixColor: "#ff0000" }), true);
@@ -48,11 +52,11 @@ test("rows share a prefix when the trimmed text and the colour are equal", () =>
 	assert.equal(samePrefix({ prefix: "👤 peop" }, { prefix: "👤 Peop" }), false);
 });
 
-test("prefix rows cover every list and every property, keyed by their prefix control", () => {
-	const settings = settingsWith([list("list-1", "🔗 out", "#00ff00")], [property("property-1", "📅 due")]);
+test("prefix rows cover every list and every property, keyed by their prefix control and labelled as their row", () => {
+	const settings = settingsWith([list("list-1", "🔗 out", "#00ff00")], [property("status", "📅 due")]);
 	assert.deepEqual(prefixRows(settings), [
-		{ key: listKey("list-1", "prefix"), prefix: "🔗 out", prefixColor: "#00ff00" },
-		{ key: propertyKey("property-1", "prefix"), prefix: "📅 due", prefixColor: undefined },
+		{ key: listKey("list-1", "prefix"), prefix: "🔗 out", prefixColor: "#00ff00", label: "Outbound links" },
+		{ key: propertyKey("status", "prefix"), prefix: "📅 due", prefixColor: undefined, label: "status · checkbox" },
 	]);
 });
 
@@ -74,76 +78,73 @@ test("rows with an empty prefix never link", () => {
 	assert.deepEqual(linkedPrefixKeys(rows, "a"), []);
 });
 
-test("suggestions group the other rows' prefixes by text and colour, with how many rows use each", () => {
+test("the prefix menu lists every prefix in use once, with how many rows use it, most used first then by text", () => {
 	const rows = [
 		row("own", "🔗 out"),
 		row("a", "📅 due", "#ff0000"),
 		row("b", "📅 due ", "#ff0000"),
-		row("c", "📅 due"),
-		row("d", "👤 peop"),
+		row("c", "👤 peop"),
+		row("d", "📅 due"),
 		row("e", "📅 due", "#ff0000"),
 	];
-	assert.deepEqual(prefixSuggestions(rows, "own", ""), [
-		{ prefix: "📅 due", color: "#ff0000", count: 3 },
-		{ prefix: "📅 due", count: 1 },
-		{ prefix: "👤 peop", count: 1 },
+	assert.deepEqual(prefixMenu(rows, "own").choices, [
+		{ prefix: "📅 due", color: "#ff0000", count: 3, checked: false },
+		{ prefix: "👤 peop", count: 1, checked: false },
+		{ prefix: "📅 due", count: 1, checked: false },
+		{ prefix: "🔗 out", count: 1, checked: true },
 	]);
 });
 
-test("suggestions leave out empty prefixes and the row's own prefix", () => {
-	const rows = [row("own", "🔗 out"), row("a", ""), row("b", "  "), row("c", "🔗 out"), row("d", "🔗 out", "#00ff00")];
-	assert.deepEqual(prefixSuggestions(rows, "own", ""), [{ prefix: "🔗 out", color: "#00ff00", count: 1 }]);
+test("the prefix menu checks the row's own prefix and counts the row in it", () => {
+	const rows = [row("own", " 👤 peop", "#ff0000"), row("a", "👤 peop", "#ff0000"), row("b", "👤 peop")];
+	assert.deepEqual(prefixMenu(rows, "own").choices, [
+		{ prefix: "👤 peop", color: "#ff0000", count: 2, checked: true },
+		{ prefix: "👤 peop", count: 1, checked: false },
+	]);
 });
 
-test("suggestions are filtered by in-order matching, ignoring case", () => {
-	const rows = [row("own", ""), row("a", "👤 peop"), row("b", "📅 due"), row("c", "🏢 Comp")];
-	assert.deepEqual(
-		prefixSuggestions(rows, "own", "pp").map((suggestion) => suggestion.prefix),
-		["👤 peop"],
-	);
-	assert.deepEqual(
-		prefixSuggestions(rows, "own", "CMP").map((suggestion) => suggestion.prefix),
-		["🏢 Comp"],
-	);
-	assert.deepEqual(prefixSuggestions(rows, "own", "xyz"), []);
+test("the prefix menu never lists an empty prefix, and offers No prefix only to a row that has one", () => {
+	const rows = [row("own", "  "), row("a", ""), row("b", "📅 due")];
+	assert.deepEqual(prefixMenu(rows, "own"), { choices: [{ prefix: "📅 due", count: 1, checked: false }], clears: false });
+	assert.equal(prefixMenu(rows, "b").clears, true);
+	assert.deepEqual(prefixMenu([row("own", "")], "own"), { choices: [], clears: false });
 });
 
-test("a linked change sets the text and colour of the row and every linked row only", () => {
-	const settings = settingsWith(
-		[list("list-1", "👤 peop", "#ff0000"), list("list-2", "👤 peop", "#ff0000"), list("list-3", "👤 peop")],
-		[property("property-1", "👤 peop", "#ff0000"), property("property-2", "📅 due", "#ff0000")],
-	);
-	const key = listKey("list-1", "prefix");
-	const keys = updatedPrefixKeys(key, linkedPrefixKeys(prefixRows(settings), key), true);
-	assert.equal(applyPrefixChange(settings, keys, { prefix: "👥 team", color: "#0000ff" }), true);
-	assert.deepEqual(
-		prefixRows(settings).map(({ prefix, prefixColor }) => [prefix, prefixColor]),
-		[
-			["👥 team", "#0000ff"],
-			["👥 team", "#0000ff"],
-			["👤 peop", undefined],
-			["👥 team", "#0000ff"],
-			["📅 due", "#ff0000"],
-		],
-	);
+test("picking a prefix from the menu gives this row its text and colour, and leaves the other rows alone", () => {
+	const settings = settingsWith([list("list-1", "🔗 out", "#00ff00"), list("list-2", "🔗 out", "#00ff00")], [property("status", "📅 due")]);
+	assert.equal(assignPrefix(settings, listKey("list-1", "prefix"), { prefix: "📅 due" }), true);
+	assert.deepEqual(shown(settings), [
+		["📅 due", undefined],
+		["🔗 out", "#00ff00"],
+		["📅 due", undefined],
+	]);
+	assert.equal("prefixColor" in settings.lists[0], false);
+	assert.equal(assignPrefix(settings, propertyKey("status", "prefix"), { prefix: "🔗 out", color: "#00ff00" }), true);
+	assert.deepEqual(shown(settings)[2], ["🔗 out", "#00ff00"]);
 });
 
-test("an unlinked change updates only the edited row", () => {
-	const settings = settingsWith([list("list-1", "👤 peop"), list("list-2", "👤 peop")], []);
-	const key = listKey("list-1", "prefix");
-	const keys = updatedPrefixKeys(key, linkedPrefixKeys(prefixRows(settings), key), false);
-	applyPrefixChange(settings, keys, { prefix: "👥 team" });
-	assert.deepEqual(
-		settings.lists.map((entry) => entry.prefix),
-		["👥 team", "👤 peop"],
-	);
+test("picking the row's own prefix or an unknown row changes nothing", () => {
+	const settings = settingsWith([list("list-1", " 🔗 out", "#00ff00")], []);
+	assert.equal(assignPrefix(settings, listKey("list-1", "prefix"), { prefix: "🔗 out", color: "#00ff00" }), false);
+	assert.equal(settings.lists[0].prefix, " 🔗 out");
+	assert.equal(assignPrefix(settings, "list/missing/prefix", { prefix: "x" }), false);
+});
+
+test("No prefix clears this row's text and colour only", () => {
+	const settings = settingsWith([list("list-1", "🔗 out", "#00ff00"), list("list-2", "🔗 out", "#00ff00")], []);
+	assert.equal(clearPrefix(settings, listKey("list-1", "prefix")), true);
+	assert.deepEqual(shown(settings), [
+		["", undefined],
+		["🔗 out", "#00ff00"],
+	]);
+	assert.equal("prefixColor" in settings.lists[0], false);
 });
 
 test("a change can set only the colour, and an empty colour removes it", () => {
 	const settings = settingsWith([list("list-1", "👤 peop", "#ff0000"), list("list-2", "👤 peop", "#ff0000")], []);
 	const keys = [listKey("list-1", "prefix"), listKey("list-2", "prefix")];
 	applyPrefixChange(settings, keys, { color: "#00ff00" });
-	assert.deepEqual(settings.lists.map((entry) => [entry.prefix, entry.prefixColor]), [
+	assert.deepEqual(shown(settings), [
 		["👤 peop", "#00ff00"],
 		["👤 peop", "#00ff00"],
 	]);
@@ -157,60 +158,87 @@ test("a change to unknown rows reports that nothing changed", () => {
 	assert.equal(settings.lists[0].prefix, "👤 peop");
 });
 
-function editsOn(settings: JumpSettings): { edits: PrefixEdits; refreshes: PrefixRefresh[] } {
-	const refreshes: PrefixRefresh[] = [];
-	return { edits: new PrefixEdits(() => settings, (refresh) => refreshes.push(refresh)), refreshes };
-}
-
-test("typing a prefix on a page keeps the rows that shared it in step, even through an empty prefix", () => {
-	const settings = settingsWith([list("list-1", "👤 peop"), list("list-2", "👤 peop"), list("list-3", "📅 due")], []);
-	const { edits, refreshes } = editsOn(settings);
-	const key = listKey("list-1", "prefix");
-	assert.deepEqual(edits.linked(key), [listKey("list-2", "prefix")]);
-	for (const typed of ["👤 pe", "", "👥", "👥 team"]) edits.type(key, { prefix: typed });
-	assert.deepEqual(
-		settings.lists.map((entry) => entry.prefix),
-		["👥 team", "👥 team", "📅 due"],
-	);
-	assert.equal(edits.linkedPrefix(key), "👥 team");
-	assert.deepEqual(refreshes, ["afterTyping", "afterTyping", "afterTyping", "afterTyping"]);
+test("the rows sharing a prefix are named by their labels, cut after three", () => {
+	assert.equal(linkedRowsText(["a"]), "a");
+	assert.equal(linkedRowsText(["a", "b", "c"]), "a, b, c");
+	assert.equal(linkedRowsText(["a", "b", "c", "d"]), "a, b, c, …");
 });
 
-test("typing a prefix with the linked rows turned off changes only that row", () => {
-	const settings = settingsWith([list("list-1", "👤 peop")], [property("property-1", "👤 peop")]);
-	const { edits } = editsOn(settings);
-	const key = propertyKey("property-1", "prefix");
-	assert.equal(edits.updatesLinked(key), true);
-	edits.setUpdatesLinked(key, false);
-	edits.type(key, { prefix: "👥 team", color: "#0000ff" });
-	assert.deepEqual(prefixRows(settings).map(({ prefix, prefixColor }) => [prefix, prefixColor]), [
+test("a page's edits change the rows that shared its prefix when it opened, even through an empty prefix", () => {
+	const settings = settingsWith(
+		[list("list-1", "👤 peop"), list("list-2", "👤 peop"), list("list-3", "📅 due")],
+		[property("status", "👤 peop"), property("owner", "👤 peop", "#ff0000")],
+	);
+	const pages = new PrefixPages(() => settings);
+	const key = listKey("list-1", "prefix");
+	pages.hold(key);
+	assert.deepEqual(
+		pages.linkedRows(key).map((linked) => linked.key),
+		[listKey("list-2", "prefix"), propertyKey("status", "prefix")],
+	);
+	assert.equal(pages.onlyThisRow(key), false);
+	for (const typed of ["👤 pe", "", "📅 due", "👥 team"]) pages.edit(key, { prefix: typed });
+	pages.edit(key, { color: "#0000ff" });
+	assert.deepEqual(shown(settings), [
+		["👥 team", "#0000ff"],
+		["👥 team", "#0000ff"],
+		["📅 due", undefined],
+		["👥 team", "#0000ff"],
+		["👤 peop", "#ff0000"],
+	]);
+});
+
+test("with Change only this row on, a page's edits change only that row", () => {
+	const settings = settingsWith([list("list-1", "👤 peop")], [property("status", "👤 peop")]);
+	const pages = new PrefixPages(() => settings);
+	const key = propertyKey("status", "prefix");
+	pages.hold(key);
+	pages.setOnlyThisRow(key, true);
+	pages.edit(key, { prefix: "👥 team", color: "#0000ff" });
+	assert.deepEqual(shown(settings), [
 		["👤 peop", undefined],
 		["👥 team", "#0000ff"],
 	]);
-	edits.clear();
-	assert.equal(edits.updatesLinked(key), true);
+	assert.deepEqual(pages.linkedRows(key).map((linked) => linked.label), ["Outbound links"]);
 });
 
-test("saving from a chip changes the given rows and refreshes at once when other rows changed", () => {
+test("a page keeps its linked rows and switch across re-renders and starts over once it closes", () => {
 	const settings = settingsWith([list("list-1", "👤 peop"), list("list-2", "👤 peop")], []);
-	const { edits, refreshes } = editsOn(settings);
-	const keys = [listKey("list-1", "prefix"), listKey("list-2", "prefix")];
-	edits.save(keys, { prefix: "👥 team" });
-	edits.save(keys.slice(0, 1), { prefix: "👥 crew" });
-	edits.save(["list/missing/prefix"], { prefix: "x" });
-	assert.deepEqual(
-		settings.lists.map((entry) => entry.prefix),
-		["👥 crew", "👥 team"],
-	);
-	assert.deepEqual(refreshes, ["now", "afterTyping"]);
+	const pages = new PrefixPages(() => settings);
+	const key = listKey("list-1", "prefix");
+	pages.hold(key);
+	pages.setOnlyThisRow(key, true);
+	pages.edit(key, { prefix: "" });
+	pages.release(key);
+	pages.hold(key);
+	assert.equal(pages.closeUnheld(key), false);
+	assert.equal(pages.onlyThisRow(key), true);
+	assert.equal(pages.linkedRows(key).length, 1);
+	pages.release(key);
+	assert.equal(pages.closeUnheld(key), true);
+	assert.equal(pages.onlyThisRow(key), false);
+	assert.deepEqual(pages.linkedRows(key), []);
 });
 
-test("a chip save ends the page's typing, so the next page edit links by the prefix as it is then", () => {
-	const settings = settingsWith([list("list-1", "👤 peop"), list("list-2", "👤 peop"), list("list-3", "📅 due")], []);
-	const { edits } = editsOn(settings);
+test("closing a page reports whether it changed anything", () => {
+	const settings = settingsWith([list("list-1", "👤 peop")], []);
+	const pages = new PrefixPages(() => settings);
 	const key = listKey("list-1", "prefix");
-	edits.type(key, { prefix: "👤 peopl" });
-	edits.save([listKey("list-2", "prefix")], { prefix: "📅 due" });
-	assert.deepEqual(edits.linked(key), []);
-	assert.deepEqual(edits.linked(listKey("list-2", "prefix")), [listKey("list-3", "prefix")]);
+	pages.hold(key);
+	pages.release(key);
+	assert.equal(pages.closeUnheld(key), false);
+	assert.equal(pages.closeUnheld(key), false);
+});
+
+test("Edit prefix starts the page afresh and focuses its prefix field once", () => {
+	const settings = settingsWith([list("list-1", "👤 peop"), list("list-2", "👤 peop")], []);
+	const pages = new PrefixPages(() => settings);
+	const key = listKey("list-1", "prefix");
+	pages.hold(key);
+	pages.setOnlyThisRow(key, true);
+	pages.startEditing(key);
+	assert.equal(pages.onlyThisRow(key), false);
+	assert.equal(pages.takeFocus(listKey("list-2", "prefix")), false);
+	assert.equal(pages.takeFocus(key), true);
+	assert.equal(pages.takeFocus(key), false);
 });
