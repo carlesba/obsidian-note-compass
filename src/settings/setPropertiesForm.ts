@@ -1,3 +1,6 @@
+import { t, translatedLabels } from "../i18n/index.ts";
+import type { TranslationKey } from "../i18n/index.ts";
+import { typeLabel } from "../i18n/labels.ts";
 import type { PropertyType } from "../lists/conditions.ts";
 import { EDITABLE_PROPERTY_TYPES, isLinkType, newListId, writePrefixColor } from "../settings.ts";
 import type { CheckboxMode, EditableProperty, EditablePropertyType, ListSource, NoteList } from "../settings.ts";
@@ -17,30 +20,36 @@ export type PropertyField =
 	| "removesEmpty"
 	| LinkPropertyField;
 
-export const CHECKBOX_MODE_OPTIONS: Record<CheckboxMode, string> = {
-	picker: "Open a picker with true, false and Clear",
-	toggle: "Toggle between true and not set",
-	cycle: "Cycle through true, false and not set",
+const CHECKBOX_MODE_KEYS: Record<CheckboxMode, TranslationKey> = {
+	picker: "checkboxModePicker",
+	toggle: "checkboxModeToggle",
+	cycle: "checkboxModeCycle",
 };
+
+export function checkboxModeOptions(): Record<CheckboxMode, string> {
+	return translatedLabels(CHECKBOX_MODE_KEYS);
+}
 
 type LinkPropertyField = "excludedFolders" | "createsNotes" | "newNoteFolder" | "newNoteTemplate";
 
 export type LinkProperty = EditableProperty & NoteList;
 
-const TYPE_NAMES: Record<EditablePropertyType, string> = {
-	checkbox: "checkbox",
-	text: "text",
-	number: "number",
-	date: "date",
-	datetime: "datetime",
-	link: "link, one note",
-	links: "links, several notes",
+const TYPE_OPTION_KEYS: Record<EditablePropertyType, TranslationKey> = {
+	checkbox: "typeCheckbox",
+	text: "typeText",
+	number: "typeNumber",
+	date: "typeDate",
+	datetime: "typeDatetime",
+	link: "typeOptionLink",
+	links: "typeOptionLinks",
 };
 
-export const PROPERTY_TYPE_OPTIONS = EDITABLE_PROPERTY_TYPES.reduce<Record<string, string>>(
-	(options, type) => ({ ...options, [type]: TYPE_NAMES[type] }),
-	{},
-);
+export function propertyTypeOptions(): Record<string, string> {
+	return EDITABLE_PROPERTY_TYPES.reduce<Record<string, string>>(
+		(options, type) => ({ ...options, [type]: t(TYPE_OPTION_KEYS[type]) }),
+		{},
+	);
+}
 
 const PRESETS: Partial<Record<PropertyType, EditablePropertyType>> = {
 	checkbox: "checkbox",
@@ -56,13 +65,13 @@ export function propertyTypePreset(vaultType: PropertyType): EditablePropertyTyp
 }
 
 export function propertyRowName(entry: EditableProperty): string {
-	if (entry.property.trim() === "") return "New property";
+	if (entry.property.trim() === "") return t("newProperty");
 	return `${entry.prefix} ${propertyLabel(entry)}`.trim();
 }
 
 export function propertyLabel(entry: EditableProperty): string {
-	if (entry.property.trim() === "") return "New property";
-	return `${entry.property} · ${entry.type}`;
+	if (entry.property.trim() === "") return t("newProperty");
+	return `${entry.property} · ${typeLabel(entry.type)}`;
 }
 
 export function newProperty(properties: readonly EditableProperty[]): EditableProperty {
@@ -71,7 +80,7 @@ export function newProperty(properties: readonly EditableProperty[]): EditablePr
 
 export function mixedTypeWarning(entry: EditableProperty, properties: readonly EditableProperty[]): string | undefined {
 	if (entry.property.trim() === "" || !mixedTypeProperties(properties).includes(entry.property)) return undefined;
-	return `Another entry writes ${entry.property} as a different type. The first enabled one decides.`;
+	return t("mixedTypeWarning", { property: entry.property });
 }
 
 export function hasSource(entry: EditableProperty): entry is LinkProperty {
@@ -164,7 +173,7 @@ export function movePresetValue(entry: EditableProperty, from: number, to: numbe
 
 export function presetValueError(entry: EditableProperty, value: string): string | undefined {
 	if (entry.type !== "number" || value.trim() === "" || parseNumber(value) !== undefined) return undefined;
-	return "Write a number, such as 3 or 2.5.";
+	return t("presetNumberError");
 }
 
 function writePresetValue(entry: EditableProperty, index: number, value: string): boolean {

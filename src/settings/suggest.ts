@@ -1,5 +1,6 @@
 import { AbstractInputSuggest, setIcon } from "obsidian";
 import type { App } from "obsidian";
+import { typeLabel } from "../i18n/labels";
 import { matchingSuggestions } from "./listForm";
 import type { PropertySuggestion } from "./listForm";
 
@@ -23,7 +24,7 @@ export class PropertySuggest extends AbstractInputSuggest<PropertySuggestion> {
 
 	renderSuggestion(suggestion: PropertySuggestion, el: HTMLElement): void {
 		el.createDiv({ text: suggestion.name });
-		el.createDiv({ text: suggestion.type, cls: "setting-item-description" });
+		el.createDiv({ text: typeLabel(suggestion.type), cls: "setting-item-description" });
 	}
 }
 

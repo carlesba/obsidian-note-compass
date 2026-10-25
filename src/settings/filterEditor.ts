@@ -1,10 +1,11 @@
 import { DropdownComponent, TextComponent, getAllTags, setIcon } from "obsidian";
 import type { App, Setting } from "obsidian";
+import { t } from "../i18n";
+import type { TranslationKey } from "../i18n";
+import { typeLabel } from "../i18n/labels";
 import { propertyType } from "../lists/conditions";
 import type { FilterGroup, FilterNode, FilterRule, NegatableRule, PropertyRule } from "../lists/filters";
 import {
-	FILE_DATE_OPTIONS,
-	FILTER_MODE_OPTIONS,
 	addCondition,
 	addGroup,
 	canAddGroup,
@@ -13,6 +14,8 @@ import {
 	readConditionField,
 	removeNode,
 	ruleField,
+	fileDateOptions,
+	filterModeOptions,
 	fitRuleToProperty,
 	ruleText,
 	writeConditionField,
@@ -21,7 +24,7 @@ import {
 	writeRuleText,
 } from "./filterForm";
 import type { ConditionField, ConditionRule, RuleField } from "./filterForm";
-import { DATE_MODE_OPTIONS, DIRECTION_OPTIONS, fixedDateError, operatorOptions, valueShape } from "./listForm";
+import { dateModeOptions, directionOptions, fixedDateError, operatorOptions, valueShape } from "./listForm";
 import type { PropertySuggestion } from "./listForm";
 import { TextSuggest } from "./suggest";
 import type { TextSuggestion } from "./suggest";
@@ -35,11 +38,11 @@ export interface FilterEditing {
 
 type Suggestions = (app: App) => TextSuggestion[];
 
-const TEXT_PLACEHOLDERS: Record<Exclude<FilterRule["kind"], "file">, string> = {
-	property: "Property",
-	folder: "Folder",
-	tag: "Tag",
-	linksTo: "Note",
+const TEXT_PLACEHOLDERS: Record<Exclude<FilterRule["kind"], "file">, TranslationKey> = {
+	property: "property",
+	folder: "folder",
+	tag: "tag",
+	linksTo: "note",
 };
 
 const SUGGESTIONS: Partial<Record<FilterRule["kind"], Suggestions>> = {
@@ -65,18 +68,20 @@ const SUGGESTIONS: Partial<Record<FilterRule["kind"], Suggestions>> = {
 
 const EDITOR_CLASS = "note-compass-filter";
 
-const FIELD_LABELS: Record<Exclude<RuleField, "property">, string> = {
-	folder: "folder",
-	tag: "tags",
-	linksTo: "links",
-	created: "created time",
-	modified: "modified time",
+type FileField = Exclude<RuleField, "property">;
+
+const FIELD_KEYS: Record<FileField, TranslationKey> = {
+	folder: "fieldFolder",
+	tag: "fieldTags",
+	linksTo: "fieldLinks",
+	created: "fieldCreatedTime",
+	modified: "fieldModifiedTime",
 };
 
-const NEGATABLE_OPERATORS: Record<NegatableRule["kind"], { matches: string; negated: string }> = {
-	folder: { matches: "is in", negated: "is not in" },
-	tag: { matches: "has tag", negated: "does not have tag" },
-	linksTo: { matches: "contains", negated: "does not contain" },
+const NEGATABLE_OPERATORS: Record<NegatableRule["kind"], { matches: TranslationKey; negated: TranslationKey }> = {
+	folder: { matches: "operatorIsIn", negated: "operatorIsNotIn" },
+	tag: { matches: "operatorHasTag", negated: "operatorDoesNotHaveTag" },
+	linksTo: { matches: "operatorContains", negated: "operatorDoesNotContain" },
 };
 
 const FILE_FIELD_PREFIX = "file:";
@@ -110,18 +115,18 @@ function renderGroup(parentEl: HTMLElement, group: FilterGroup, place: GroupPlac
 	const groupEl = parentEl.createDiv({ cls: "filter-group" });
 	const headerEl = groupEl.createDiv({ cls: "filter-group-header" });
 	const modeEl = headerEl.createEl("select", { cls: ["conjunction", "dropdown"] });
-	for (const [mode, label] of Object.entries(FILTER_MODE_OPTIONS)) {
+	for (const [mode, label] of Object.entries(filterModeOptions())) {
 		modeEl.createEl("option", { text: label, attr: { value: mode } }).selected = mode === group.mode;
 	}
 	modeEl.addEventListener("change", () => editing.change(() => writeMode(group, modeEl.value)));
 	const headerActionsEl = headerEl.createDiv({ cls: "filter-group-header-actions" });
 	const { parent } = place;
-	if (parent) iconButton(headerActionsEl, "trash-2", "Remove filter group", () => editing.change(() => removeFrom(parent, group)));
+	if (parent) iconButton(headerActionsEl, "trash-2", t("removeFilterGroup"), () => editing.change(() => removeFrom(parent, group)));
 	const statementsEl = groupEl.createDiv({ cls: "filter-group-statements" });
 	const here = { ...place, group };
 	group.items.forEach((item, index) => {
 		const rowEl = statementsEl.createDiv({ cls: "filter-row" });
-		rowEl.createSpan({ cls: "conjunction", text: index === 0 ? "where" : group.mode === "all" ? "and" : "or" });
+		rowEl.createSpan({ cls: "conjunction", text: t(index === 0 ? "where" : group.mode === "all" ? "and" : "or") });
 		if (item.kind === "group") {
 			rowEl.addClass("mod-group");
 			renderGroup(rowEl, item, { depth: place.depth + 1, parent: here, editing });
@@ -130,8 +135,8 @@ function renderGroup(parentEl: HTMLElement, group: FilterGroup, place: GroupPlac
 		}
 	});
 	const actionsEl = groupEl.createDiv({ cls: "filter-group-actions" });
-	textIconButton(actionsEl, "plus", "Add filter", () => editing.change(() => addCondition(group)));
-	if (canAddGroup(place.depth)) textIconButton(actionsEl, "plus", "Add filter group", () => editing.change(() => addGroup(group)));
+	textIconButton(actionsEl, "plus", t("addFilter"), () => editing.change(() => addCondition(group)));
+	if (canAddGroup(place.depth)) textIconButton(actionsEl, "plus", t("addFilterGroup"), () => editing.change(() => addGroup(group)));
 }
 
 function removeFrom(place: GroupPlace & { group: FilterGroup }, node: FilterNode): void {
@@ -146,7 +151,7 @@ function renderRule(parentEl: HTMLElement, rule: FilterRule, place: GroupPlace &
 	renderLeftSide(expressionEl, rule, group, editing);
 	const rightEl = createRightSide(expressionEl, statementEl, rule, editing);
 	const actionsEl = expressionEl.createDiv({ cls: "filter-row-actions" });
-	iconButton(actionsEl, "trash-2", "Remove filter", () => editing.change(() => removeFrom(place, rule)));
+	iconButton(actionsEl, "trash-2", t("removeFilter"), () => editing.change(() => removeFrom(place, rule)));
 	const inapplicable = inapplicableRule(rule, editing.propertyTypes);
 	if (inapplicable) statementEl.createDiv({ cls: "filter-row-error", text: inapplicable });
 	if (rightEl.childElementCount === 0) rightEl.addClass("is-empty");
@@ -168,7 +173,7 @@ function renderLeftSide(expressionEl: HTMLElement, rule: FilterRule, group: Filt
 			writeRuleText(target, typed);
 			fitRuleToProperty(target, editing.propertyTypes);
 		});
-	const text = new TextComponent(expressionEl).setPlaceholder("Property").setValue(shown);
+	const text = new TextComponent(expressionEl).setPlaceholder(t("property")).setValue(shown);
 	text.inputEl.addClass("filter-property-select");
 	text.inputEl.addEventListener("change", () => commit(text.getValue()));
 	const suggest = new TextSuggest(editing.app, text.inputEl, () => leftSuggestions(editing));
@@ -184,12 +189,12 @@ function renderLeftSide(expressionEl: HTMLElement, rule: FilterRule, group: Filt
 }
 
 function leftLabel(rule: FilterRule): string {
-	return rule.kind === "property" ? rule.property : FIELD_LABELS[ruleField(rule) as Exclude<RuleField, "property">];
+	return rule.kind === "property" ? rule.property : t(FIELD_KEYS[ruleField(rule) as FileField]);
 }
 
 function fieldNamed(typed: string): RuleField | undefined {
-	const entry = Object.entries(FIELD_LABELS).find(([, label]) => label === typed.toLowerCase());
-	return entry ? (entry[0] as RuleField) : undefined;
+	const wanted = typed.toLowerCase();
+	return (Object.keys(FIELD_KEYS) as FileField[]).find((field) => t(FIELD_KEYS[field]).toLowerCase() === wanted);
 }
 
 function replaceWithProperty(group: FilterGroup, rule: FilterRule): PropertyRule | undefined {
@@ -200,11 +205,15 @@ function replaceWithProperty(group: FilterGroup, rule: FilterRule): PropertyRule
 }
 
 function leftSuggestions(editing: FilterEditing): TextSuggestion[] {
-	const fields = Object.entries(FIELD_LABELS).map(([field, label]) => ({ value: FILE_FIELD_PREFIX + field, label, detail: "file" }));
+	const fields = (Object.keys(FIELD_KEYS) as FileField[]).map((field) => ({
+		value: FILE_FIELD_PREFIX + field,
+		label: t(FIELD_KEYS[field]),
+		detail: t("fileField"),
+	}));
 	const properties = editing.propertySuggestions().map((suggestion) => ({
 		value: PROPERTY_PREFIX + suggestion.name,
 		label: suggestion.name,
-		detail: suggestion.type,
+		detail: typeLabel(suggestion.type),
 	}));
 	return [...fields, ...properties];
 }
@@ -221,7 +230,7 @@ function createRightSide(expressionEl: HTMLElement, statementEl: HTMLElement, ru
 		return rightEl;
 	}
 	if (rule.kind === "file") {
-		operatorSelect(expressionEl, FILE_DATE_OPTIONS, rule.condition.operator, false, (operator) =>
+		operatorSelect(expressionEl, fileDateOptions(), rule.condition.operator, false, (operator) =>
 			editing.change(() => writeConditionField(rule, "operator", operator)),
 		);
 		const rightEl = expressionEl.createDiv({ cls: ["filter-rhs-container", "metadata-property-value"] });
@@ -229,7 +238,7 @@ function createRightSide(expressionEl: HTMLElement, statementEl: HTMLElement, ru
 		return rightEl;
 	}
 	const { matches, negated } = NEGATABLE_OPERATORS[rule.kind];
-	operatorSelect(expressionEl, { matches, negated }, rule.negated ? "negated" : "matches", false, (operator) =>
+	operatorSelect(expressionEl, { matches: t(matches), negated: t(negated) }, rule.negated ? "negated" : "matches", false, (operator) =>
 		editing.change(() => writeNegated(rule, operator === "negated")),
 	);
 	const rightEl = expressionEl.createDiv({ cls: ["filter-rhs-container", "metadata-property-value"] });
@@ -250,7 +259,7 @@ function operatorSelect(
 
 function renderRuleText(parentEl: HTMLElement, rule: NegatableRule, editing: FilterEditing): void {
 	const commit = (value: string) => editing.change(() => writeRuleText(rule, value));
-	const text = textInput(parentEl, ruleText(rule), TEXT_PLACEHOLDERS[rule.kind], { typing: (value) => writeRuleText(rule, value), commit });
+	const text = textInput(parentEl, ruleText(rule), t(TEXT_PLACEHOLDERS[rule.kind]), { typing: (value) => writeRuleText(rule, value), commit });
 	const suggestions = SUGGESTIONS[rule.kind];
 	if (!suggestions) return;
 	let cached: TextSuggestion[] | undefined;
@@ -285,7 +294,7 @@ function renderConditionValue(rowEl: HTMLElement, statementEl: HTMLElement, rule
 	};
 	const shape = valueShape(rule.condition.operator);
 	if (shape === "text") {
-		textInput(rowEl, readText("text"), "Value", edit("text"));
+		textInput(rowEl, readText("text"), t("value"), edit("text"));
 		return;
 	}
 	if (shape === "number") {
@@ -294,7 +303,7 @@ function renderConditionValue(rowEl: HTMLElement, statementEl: HTMLElement, rule
 	}
 	if (shape !== "date") return;
 	new DropdownComponent(rowEl)
-		.addOptions(DATE_MODE_OPTIONS)
+		.addOptions(dateModeOptions())
 		.setValue(readText("dateMode"))
 		.onChange((mode) => write("dateMode", mode));
 	if (readText("dateMode") === "fixed") {
@@ -318,7 +327,7 @@ function renderConditionValue(rowEl: HTMLElement, statementEl: HTMLElement, rule
 		return;
 	}
 	new DropdownComponent(rowEl)
-		.addOptions(DIRECTION_OPTIONS)
+		.addOptions(directionOptions())
 		.setValue(readText("direction"))
 		.onChange((direction) => write("direction", direction));
 	if (readText("direction") !== "today") numberInput(rowEl, readNumber("days"), numberEdit("days"), 1);

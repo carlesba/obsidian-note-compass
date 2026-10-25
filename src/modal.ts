@@ -1,4 +1,5 @@
 import { App, Notice, Platform, SuggestModal, setIcon } from "obsidian";
+import { t } from "./i18n";
 import { createDateNote } from "./lists/openDateNote";
 import type { JumpListEntry, VaultNote } from "./lists/vault";
 import { RESULTS_CLASS, entryLabel, entryParts, matchesInOrder, renderRow } from "./render";
@@ -23,7 +24,7 @@ export class JumpModal extends SuggestModal<JumpListEntry> {
 		this.editProperties = editProperties;
 		this.limit = entries.length;
 		this.resultContainerEl.addClass(RESULTS_CLASS);
-		this.setPlaceholder("Pick one…");
+		this.setPlaceholder(t("pickOne"));
 		this.scope.register(["Alt"], "Enter", (evt) => {
 			if (evt.isComposing) return;
 			evt.preventDefault();
@@ -34,9 +35,9 @@ export class JumpModal extends SuggestModal<JumpListEntry> {
 		});
 		if (!Platform.isMobile) {
 			this.setInstructions([
-				{ command: "↵", purpose: "to open" },
-				{ command: "⌥ ↵", purpose: "to set properties" },
-				{ command: "esc", purpose: "to dismiss" },
+				{ command: "↵", purpose: t("instructionOpen") },
+				{ command: "⌥ ↵", purpose: t("instructionSetProperties") },
+				{ command: "esc", purpose: t("instructionDismiss") },
 			]);
 		}
 	}
@@ -60,7 +61,7 @@ export class JumpModal extends SuggestModal<JumpListEntry> {
 		const bodyEl = el.querySelector<HTMLElement>(".note-compass-row-body") ?? el;
 		const actionEl = bodyEl.createSpan({
 			cls: ["clickable-icon", "note-compass-row-action"],
-			attr: { role: "button", "aria-label": "Set properties" },
+			attr: { role: "button", "aria-label": t("setProperties") },
 		});
 		setIcon(actionEl, SET_PROPERTIES_ICON);
 		for (const type of ["pointerdown", "mousedown"]) {
@@ -84,7 +85,7 @@ export class JumpModal extends SuggestModal<JumpListEntry> {
 
 	onChooseSuggestion(entry: JumpListEntry): void {
 		if (entry.missing) {
-			createDateNote(this.app, entry, entry.missing).catch(() => new Notice(`Could not create "${entry.name}".`));
+			createDateNote(this.app, entry, entry.missing).catch(() => new Notice(t("couldNotCreate", { name: entry.name })));
 			return;
 		}
 		const file = this.app.vault.getFileByPath(entry.file.path);

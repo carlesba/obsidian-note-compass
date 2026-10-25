@@ -1,3 +1,5 @@
+import { t } from "../i18n/index.ts";
+
 export interface PrefixChip {
 	text: string;
 	placeholder: boolean;
@@ -12,11 +14,9 @@ export interface PrefixDraft {
 	selectionEnd: number;
 }
 
-export const PREFIX_PLACEHOLDER = "prefix";
-
 export function prefixChip(prefix: string): PrefixChip {
 	const shown = prefix.trim();
-	return shown === "" ? { text: PREFIX_PLACEHOLDER, placeholder: true } : { text: shown, placeholder: false };
+	return shown === "" ? { text: t("prefixPlaceholder"), placeholder: true } : { text: shown, placeholder: false };
 }
 
 export function startDraft(prefix: string, color?: string): PrefixDraft {

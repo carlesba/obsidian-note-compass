@@ -5,6 +5,7 @@ import type {
 	SettingDefinitionList,
 	SettingDefinitionPage,
 } from "obsidian";
+import { t } from "./i18n";
 import { createObsidianVault } from "./lists/obsidianVault";
 import type { JumpListVault } from "./lists/vault";
 import type NoteCompassPlugin from "./main";
@@ -19,11 +20,11 @@ import {
 	writeControl,
 } from "./settings/controlKeys";
 import {
-	DATE_NOTE_SOURCE_OPTIONS,
-	PERIOD_NAMES,
 	customPeriods,
 	dateNoteSourceDescription,
+	dateNoteSourceOptions,
 	formatError,
+	periodName,
 } from "./settings/dateNotesForm";
 import { newList, propertySuggestions } from "./settings/listForm";
 import type { PropertySuggestion } from "./settings/listForm";
@@ -32,7 +33,7 @@ import type { ListPageContext } from "./settings/listPage";
 import { changedColor, changedPrefix } from "./settings/prefixChip";
 import type { PrefixDraft } from "./settings/prefixChip";
 import { ResetSettingsModal } from "./settings/resetModal";
-import { CHECKBOX_MODE_OPTIONS, newProperty } from "./settings/setPropertiesForm";
+import { checkboxModeOptions, newProperty } from "./settings/setPropertiesForm";
 
 const TYPED_FIELDS = [
 	"prefix",
@@ -88,24 +89,24 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 		return [
 			{
 				type: "group",
-				heading: "Display",
+				heading: t("display"),
 				items: [
 					{
-						name: "Show prefixes",
-						desc: "Start each row in the pickers with its list's or property's prefix.",
+						name: t("showPrefixes"),
+						desc: t("showPrefixesDesc"),
 						control: { type: "toggle", key: SHOW_PREFIXES_KEY },
 					},
 				],
 			},
 			{
 				type: "list",
-				heading: "Jump to note",
+				heading: t("jumpToNote"),
 				cls: SORTABLE_LIST_CLASS,
-				emptyState: "No lists yet. Add one to show notes in the picker.",
+				emptyState: t("noListsYet"),
 				items: lists.map((list) => listRow(list, context)),
 				...this.editableEntries(lists),
 				addItem: {
-					name: "Add list",
+					name: t("addList"),
 					action: () => {
 						const list = newList(lists);
 						this.changeLists(() => lists.push(list));
@@ -116,13 +117,13 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 			this.dateNotesSection(vault, context),
 			{
 				type: "list",
-				heading: "Set properties",
+				heading: t("setProperties"),
 				cls: SORTABLE_LIST_CLASS,
-				emptyState: "No properties yet. Add one to edit it from the picker.",
+				emptyState: t("noPropertiesYet"),
 				items: properties.map((entry) => propertyRow(entry, properties, context)),
 				...this.editableEntries(properties),
 				addItem: {
-					name: "Add property",
+					name: t("addProperty"),
 					action: () => {
 						const entry = newProperty(properties);
 						this.changeLists(() => properties.push(entry));
@@ -134,9 +135,9 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 				type: "group",
 				items: [
 					{
-						name: "Checkbox behaviour",
-						desc: "What choosing a checkbox property in Set properties does.",
-						control: { type: "dropdown", key: CHECKBOX_MODE_KEY, options: CHECKBOX_MODE_OPTIONS },
+						name: t("checkboxBehaviour"),
+						desc: t("checkboxBehaviourDesc"),
+						control: { type: "dropdown", key: CHECKBOX_MODE_KEY, options: checkboxModeOptions() },
 					},
 				],
 			},
@@ -153,12 +154,12 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 				type: "group",
 				items: [
 					{
-						name: "Reset all settings",
-						desc: "Put every list, property and option back to the defaults.",
+						name: t("resetAllSettings"),
+						desc: t("resetAllSettingsDesc"),
 						render: (setting) => {
 							setting.addButton((button) =>
 								button
-									.setButtonText("Reset")
+									.setButtonText(t("reset"))
 									.setDestructive()
 									.onClick(() => new ResetSettingsModal(this.app, () => void this.resetSettings()).open()),
 							);
@@ -183,7 +184,7 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 	private openPage(pageId: string): void {
 		const modal = (this.app as unknown as AppWithSettingModal).setting;
 		if (typeof modal?.openPagePath !== "function") {
-			new Notice("Editing a list needs Obsidian 1.13 or later.");
+			new Notice(t("needsNewerObsidian"));
 			return;
 		}
 		modal.openPagePath(this.plugin.manifest.id, [pageId]);
@@ -228,15 +229,15 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 		const { dateNotes } = this.plugin.settings;
 		return {
 			type: "group",
-			heading: "Date notes",
+			heading: t("dateNotes"),
 			items: [
 				{
-					name: "Read from",
+					name: t("readFrom"),
 					desc: dateNoteSourceDescription(dateNotes, vault),
 					render: (setting) => {
 						setting.addDropdown((dropdown) =>
 							dropdown
-								.addOptions(DATE_NOTE_SOURCE_OPTIONS)
+								.addOptions(dateNoteSourceOptions())
 								.setValue(dateNotes.from)
 								.onChange((from) => context.write(DATE_NOTE_SOURCE_KEY, from)),
 						);
@@ -244,7 +245,7 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 						setting.addExtraButton((button) =>
 							button
 								.setIcon("pencil")
-								.setTooltip("Edit formats")
+								.setTooltip(t("editFormats"))
 								.onClick(() => context.openPage(DATE_NOTE_FORMATS_PAGE_ID)),
 						);
 					},
@@ -257,19 +258,19 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 		const page: SettingDefinitionPage & { id: string } = {
 			type: "page",
 			id: DATE_NOTE_FORMATS_PAGE_ID,
-			name: "Date note formats",
+			name: t("dateNoteFormats"),
 			items: customPeriods(this.plugin.settings.dateNotes, vault).map((period) => ({
 				type: "group" as const,
-				heading: PERIOD_NAMES[period],
+				heading: periodName(period),
 				items: [
-					{ name: "Enabled", control: { type: "toggle" as const, key: periodKey(period, "enabled") } },
+					{ name: t("enabled"), control: { type: "toggle" as const, key: periodKey(period, "enabled") } },
 					{
-						name: "Folder",
+						name: t("folder"),
 						control: { type: "folder" as const, key: periodKey(period, "folder"), includeRoot: true },
 					},
 					{
-						name: "Format",
-						desc: "A Moment format the note's name must match exactly.",
+						name: t("format"),
+						desc: t("formatDesc"),
 						control: { type: "text" as const, key: periodKey(period, "format"), validate: formatError },
 					},
 				],

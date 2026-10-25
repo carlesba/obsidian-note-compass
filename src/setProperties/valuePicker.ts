@@ -1,3 +1,4 @@
+import { t } from "../i18n/index.ts";
 import type { JumpListVault, PropertyValueCount } from "../lists/vault";
 import { matchesInOrder, rowLabel } from "../render.ts";
 import type { RowParts } from "../render";
@@ -21,11 +22,12 @@ export interface ValueChoice {
 }
 
 const CLEAR_MARK = "🗑️";
-const CLEAR_TEXT = "Clear";
 const USE_MARK = "✏️";
 const SELECTED_MARK = "✓";
 
-export const CLEAR_LABEL = rowLabel({ mark: CLEAR_MARK, content: CLEAR_TEXT });
+export function clearLabel(): string {
+	return rowLabel({ mark: CLEAR_MARK, content: t("clear") });
+}
 
 export function isScalarType(type: EditablePropertyType): type is ScalarPropertyType {
 	return type === "checkbox" || type === "text" || type === "number" || type === "date" || type === "datetime";
@@ -58,7 +60,7 @@ export function valueChoices(picker: ValuePicker, pending: unknown, query: strin
 }
 
 function typeChoices(picker: ValuePicker, pending: unknown, query: string): ValueChoice[] {
-	const clear = choice(CLEAR_TEXT, undefined, isUnset(pending), undefined, CLEAR_MARK);
+	const clear = choice(t("clear"), undefined, isUnset(pending), undefined, CLEAR_MARK);
 	const offer = (label: string, value: unknown, detail?: string) => choice(label, value, sameValue(value, pending), detail);
 	switch (picker.type) {
 		case "checkbox":
@@ -84,7 +86,7 @@ function typeChoices(picker: ValuePicker, pending: unknown, query: string): Valu
 			];
 		case "datetime": {
 			const now = `${localDate(picker.now)}T${localTime(picker.now)}`;
-			return [...useChoice(parseDateTime(query), pending), offer("Now", now, now), clear];
+			return [...useChoice(parseDateTime(query), pending), offer(t("now"), now, now), clear];
 		}
 	}
 }
@@ -97,7 +99,7 @@ function choice(content: string, value: unknown, selected: boolean, detail?: str
 
 function useChoice(value: string | number | undefined, pending: unknown): ValueChoice[] {
 	if (value === undefined) return [];
-	return [{ ...choice(`Use "${value}"`, value, sameValue(value, pending), undefined, USE_MARK), typed: true }];
+	return [{ ...choice(t("useValue", { value }), value, sameValue(value, pending), undefined, USE_MARK), typed: true }];
 }
 
 function vaultValues(picker: ValuePicker, pending: unknown, kind: "number" | "string"): ValueChoice[] {
@@ -111,10 +113,10 @@ function datePresets(now: number): [string, string][] {
 	const weekday = new Date(now).getDay();
 	const untilMonday = (8 - weekday) % 7 || 7;
 	return [
-		["Today", localDate(now)],
-		["Tomorrow", localDate(now, 1)],
-		["Next Monday", localDate(now, untilMonday)],
-		["In a week", localDate(now, 7)],
+		[t("today"), localDate(now)],
+		[t("tomorrow"), localDate(now, 1)],
+		[t("nextMonday"), localDate(now, untilMonday)],
+		[t("inAWeek"), localDate(now, 7)],
 	];
 }
 

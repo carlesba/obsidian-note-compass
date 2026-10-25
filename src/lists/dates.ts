@@ -1,12 +1,49 @@
+import { t } from "../i18n/index.ts";
+import type { TranslationKey } from "../i18n/index.ts";
 import { PERIODS } from "./dateNotes.ts";
 import type { Period, ResolvedDateNotes } from "./dateNotes.ts";
 import type { MomentDate, MomentFactory, VaultNote } from "./vault";
 
-const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-const MONTHS = [
-	"January", "February", "March", "April", "May", "June",
-	"July", "August", "September", "October", "November", "December",
+const WEEKDAYS: readonly TranslationKey[] = [
+	"weekdaySunday",
+	"weekdayMonday",
+	"weekdayTuesday",
+	"weekdayWednesday",
+	"weekdayThursday",
+	"weekdayFriday",
+	"weekdaySaturday",
 ];
+
+const MONTHS: readonly TranslationKey[] = [
+	"monthJanuary",
+	"monthFebruary",
+	"monthMarch",
+	"monthApril",
+	"monthMay",
+	"monthJune",
+	"monthJuly",
+	"monthAugust",
+	"monthSeptember",
+	"monthOctober",
+	"monthNovember",
+	"monthDecember",
+];
+
+const PREVIOUS_LABELS: Record<Period, TranslationKey> = {
+	day: "previousDay",
+	week: "previousWeek",
+	month: "previousMonth",
+	quarter: "previousQuarter",
+	year: "previousYear",
+};
+
+const NEXT_LABELS: Record<Period, TranslationKey> = {
+	day: "nextDay",
+	week: "nextWeek",
+	month: "nextMonth",
+	quarter: "nextQuarter",
+	year: "nextYear",
+};
 
 export interface DateNote {
 	period: Period;
@@ -39,8 +76,8 @@ export function adjacentDatePaths(dateNote: DateNote): AdjacentDatePaths {
 	return {
 		previous: pathAt(-1),
 		next: pathAt(1),
-		previousLabel: `prev ${period}`,
-		nextLabel: `next ${period}`,
+		previousLabel: t(PREVIOUS_LABELS[period]),
+		nextLabel: t(NEXT_LABELS[period]),
 	};
 }
 
@@ -54,15 +91,15 @@ export function dateNoteSuffix(dateNote: DateNote): string {
 	const { date } = dateNote;
 	switch (dateNote.period) {
 		case "day":
-			return WEEKDAYS[date.day()];
+			return t(WEEKDAYS[date.day()]);
 		case "week":
-			return `week ${usesIsoWeeks(dateNote.format) ? date.isoWeek() : date.week()}`;
+			return t("suffixWeek", { week: usesIsoWeeks(dateNote.format) ? date.isoWeek() : date.week() });
 		case "month":
-			return `month - ${MONTHS[date.month()]}`;
+			return t("suffixMonth", { month: t(MONTHS[date.month()]) });
 		case "quarter":
-			return `quarter ${date.quarter()}`;
+			return t("suffixQuarter", { quarter: date.quarter() });
 		case "year":
-			return "year";
+			return t("suffixYear");
 	}
 }
 

@@ -1,4 +1,5 @@
 import { ExtraButtonComponent } from "obsidian";
+import { t } from "../i18n/index.ts";
 import { paintChip } from "../render.ts";
 import { prefixColorKey } from "./controlKeys.ts";
 import { changedColor, changedPrefix, prefixChip, startDraft } from "./prefixChip.ts";
@@ -53,7 +54,7 @@ export function renderPrefixedName(nameEl: HTMLElement, field: PrefixField, edit
 		const chip = prefixChip(saved);
 		const chipEl = createSpan({
 			cls: chip.placeholder ? [CHIP_CLASS, "is-placeholder"] : CHIP_CLASS,
-			attr: { role: "button", tabindex: "0", "aria-label": "Edit prefix" },
+			attr: { role: "button", tabindex: "0", "aria-label": t("editPrefix") },
 		});
 		chipEl.createSpan({ cls: "note-compass-chip-text", text: chip.text });
 		if (!chip.placeholder) paintChip(chipEl, savedColor);
@@ -97,17 +98,17 @@ export function renderPrefixedName(nameEl: HTMLElement, field: PrefixField, edit
 			cls: "note-compass-setting-prefix-input",
 			type: "text",
 			value: draft.text,
-			attr: { "aria-label": "Prefix", spellcheck: "false" },
+			attr: { "aria-label": t("prefix"), spellcheck: "false" },
 		});
 		const colorEl = editorEl.createEl("input", {
 			cls: "note-compass-setting-prefix-color",
 			type: "color",
 			value: draft.color ?? NEUTRAL_COLOR,
-			attr: { "aria-label": "Prefix colour" },
+			attr: { "aria-label": t("prefixColour") },
 		});
 		new ExtraButtonComponent(editorEl)
 			.setIcon("rotate-ccw")
-			.setTooltip("Remove colour")
+			.setTooltip(t("removeColour"))
 			.onClick(() => {
 				draft.color = undefined;
 				paintChip(textEl, undefined);

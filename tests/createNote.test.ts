@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
-import { ENTRY_PLACEHOLDER, TYPE_A_NAME, creatableEntries, entryChoices, nameChoices, namePlaceholder } from "../src/createNote/choices.ts";
+import { t } from "../src/i18n/index.ts";
+import { creatableEntries, entryChoices, nameChoices, namePlaceholder } from "../src/createNote/choices.ts";
 import type { NameChoice } from "../src/createNote/choices.ts";
 import { createNote, createdNotice, noteCreationBlocker } from "../src/createNote/newNotes.ts";
 import type { Condition } from "../src/lists/conditions.ts";
@@ -79,7 +80,7 @@ test("the first step lists each link entry whose source can hold a new note with
 	assert.deepEqual(labels(entryRows("rel")), ["🔅 related crm", "📁 related areas"]);
 	assert.deepEqual(labels(entryRows("peop people")), ["👤 peop people vault root"]);
 	assert.deepEqual(labels(entryRows("zzz")), []);
-	assert.equal(ENTRY_PLACEHOLDER, "Create a note for…");
+	assert.equal(t("createNoteFor"), "Create a note for…");
 });
 
 test("both steps carry the entry's prefix colour outside the label, and drop it with the prefix", () => {
@@ -142,10 +143,9 @@ test("the second step asks for a name and only offers creating a valid, unused o
 	const { entries, nameRows } = setup([entry("people", "links", { prefix: "👤 peop" })], {}, fakes);
 	assert.equal(namePlaceholder(entries[0]), "Name of the new people note…");
 	for (const typed of ["", "   "]) {
-		assert.deepEqual(labels(nameRows(0, typed)), [TYPE_A_NAME]);
+		assert.deepEqual(labels(nameRows(0, typed)), ["Type a name"]);
 		assert.deepEqual(nameRows(0, typed)[0].action, { action: "reopen" });
 	}
-	assert.equal(TYPE_A_NAME, "Type a name");
 	for (const name of ["a/b", "what?", ".hidden", "x#y"]) {
 		const rows = nameRows(0, name);
 		assert.deepEqual(labels(rows), [`"${name}" has characters Obsidian cannot use in a file name.`]);

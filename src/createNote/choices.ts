@@ -1,4 +1,5 @@
 import type { JumpListVault, NewNoteVault } from "../lists/vault";
+import { t } from "../i18n/index.ts";
 import { matchesInOrder, prefixParts, rowLabel } from "../render.ts";
 import type { RowParts } from "../render";
 import { offeredProperties, propertyType } from "../setProperties/offered.ts";
@@ -23,9 +24,6 @@ export interface NameChoice {
 	action: NameAction;
 }
 
-export const ENTRY_PLACEHOLDER = "Create a note for…";
-export const TYPE_A_NAME = "Type a name";
-
 const CREATE_MARK = "➕";
 
 export function creatableEntries(settings: SetPropertiesSettings, vault: JumpListVault): CreatableEntry[] {
@@ -47,14 +45,14 @@ export function entryChoices(
 ): EntryChoice[] {
 	const choices = entries.map((creatable) => {
 		const folder = newNoteFolder(vault, sourcePath, creatable);
-		const parts = { ...prefixPart(creatable, showPrefixes), content: creatable.entry.property, value: folder || "vault root" };
+		const parts = { ...prefixPart(creatable, showPrefixes), content: creatable.entry.property, value: folder || t("vaultRoot") };
 		return { label: rowLabel(parts), parts, creatable };
 	});
 	return query ? choices.filter((choice) => matchesInOrder(query, choice.label)) : choices;
 }
 
 export function namePlaceholder({ entry }: CreatableEntry): string {
-	return `Name of the new ${entry.property} note…`;
+	return t("newNoteName", { property: entry.property });
 }
 
 export function nameChoices(
@@ -65,13 +63,13 @@ export function nameChoices(
 	showPrefixes: boolean,
 ): NameChoice[] {
 	const name = query.trim();
-	if (name === "") return [reopen({ content: TYPE_A_NAME })];
-	if (!isCreatableName(name)) return [reopen({ content: `"${name}" has characters Obsidian cannot use in a file name.` })];
+	if (name === "") return [reopen({ content: t("typeAName") })];
+	if (!isCreatableName(name)) return [reopen({ content: t("nameHasUnsafeCharacters", { name }) })];
 	const wanted = name.toLowerCase();
 	const existing = vault.notes().find((note) => note.basename.toLowerCase() === wanted);
-	if (existing) return [reopen({ content: `"${name}" already exists at ${existing.path}.` })];
+	if (existing) return [reopen({ content: t("nameExistsAt", { name, path: existing.path }) })];
 	const folder = folderName(newNoteFolder(vault, sourcePath, creatable));
-	const parts = { mark: CREATE_MARK, ...prefixPart(creatable, showPrefixes), content: `Create "${name}" in ${folder}` };
+	const parts = { mark: CREATE_MARK, ...prefixPart(creatable, showPrefixes), content: t("createNameIn", { name, folder }) };
 	return [{ label: rowLabel(parts), parts, action: { action: "create", creation: { ...creatable, name } } }];
 }
 

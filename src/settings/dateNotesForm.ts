@@ -1,27 +1,34 @@
+import { t } from "../i18n/index.ts";
+import type { TranslationKey } from "../i18n/index.ts";
 import { PERIODS, resolveDateNotes } from "../lists/dateNotes.ts";
 import type { DateNoteSettings, Period, PeriodFormat } from "../lists/dateNotes.ts";
 import type { JumpListVault } from "../lists/vault.ts";
 
-export const DATE_NOTE_SOURCE_OPTIONS: Record<DateNoteSettings["from"], string> = {
-	auto: "Automatic",
-	periodicNotes: "Periodic Notes",
-	dailyNotes: "Daily notes",
-	custom: "Custom",
+type DateNoteSource = DateNoteSettings["from"];
+
+const DATE_NOTE_SOURCES: readonly DateNoteSource[] = ["auto", "periodicNotes", "dailyNotes", "custom"];
+
+const PERIODIC_NOTES = "Periodic Notes";
+
+const PERIOD_KEYS: Record<Period, TranslationKey> = {
+	day: "periodDay",
+	week: "periodWeek",
+	month: "periodMonth",
+	quarter: "periodQuarter",
+	year: "periodYear",
 };
 
-export const PERIOD_NAMES: Record<Period, string> = {
-	day: "Day",
-	week: "Week",
-	month: "Month",
-	quarter: "Quarter",
-	year: "Year",
-};
+export function dateNoteSourceOptions(): Record<DateNoteSource, string> {
+	return { auto: t("automatic"), periodicNotes: PERIODIC_NOTES, dailyNotes: t("dailyNotes"), custom: t("custom") };
+}
+
+export function periodName(period: Period): string {
+	return t(PERIOD_KEYS[period]);
+}
 
 export type PeriodField = keyof PeriodFormat;
 
 type DateNoteVault = Pick<JumpListVault, "periodicNotesSettings" | "dailyNotesOptions">;
-
-const AUTOMATIC_ORDER = "Automatic picks Periodic Notes, then Daily notes, then Custom.";
 
 export function customPeriods(settings: DateNoteSettings, vault: DateNoteVault): Period[] {
 	const { from } = resolveDateNotes(settings, vault);
@@ -33,17 +40,17 @@ export function dateNoteSourceDescription(settings: DateNoteSettings, vault: Dat
 	const { from } = resolveDateNotes(settings, vault);
 	const reading =
 		from === "periodicNotes"
-			? "Every period comes from Periodic Notes."
+			? t("readingPeriodicNotes")
 			: from === "dailyNotes"
-				? "Days come from Daily notes. Edit the other periods with the pencil."
-				: "Edit each period's folder and format with the pencil.";
-	if (settings.from === "auto") return `${AUTOMATIC_ORDER} ${reading}`;
-	if (settings.from !== from) return `${DATE_NOTE_SOURCE_OPTIONS[settings.from]} is not enabled. ${reading}`;
+				? t("readingDailyNotes")
+				: t("readingCustom");
+	if (settings.from === "auto") return `${t("automaticOrder")} ${reading}`;
+	if (settings.from !== from) return `${t("sourceNotEnabled", { source: dateNoteSourceOptions()[settings.from] })} ${reading}`;
 	return reading;
 }
 
 export function writeDateNoteSource(settings: DateNoteSettings, value: unknown): void {
-	const from = (Object.keys(DATE_NOTE_SOURCE_OPTIONS) as DateNoteSettings["from"][]).find((source) => source === value);
+	const from = DATE_NOTE_SOURCES.find((source) => source === value);
 	if (from) settings.from = from;
 }
 
@@ -58,7 +65,7 @@ export function writePeriodField(settings: DateNoteSettings, period: Period, fie
 }
 
 export function formatError(value: string): string | undefined {
-	return value.trim() === "" ? "Enter a Moment format, such as YYYY-MM-DD." : undefined;
+	return value.trim() === "" ? t("formatRequired") : undefined;
 }
 
 export function isPeriod(value: string): value is Period {

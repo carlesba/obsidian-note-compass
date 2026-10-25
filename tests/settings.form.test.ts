@@ -33,7 +33,7 @@ import {
 	valueShape,
 	writeListField,
 } from "../src/settings/listForm.ts";
-import { PREFIX_PLACEHOLDER, changedColor, changedPrefix, prefixChip, startDraft } from "../src/settings/prefixChip.ts";
+import { changedColor, changedPrefix, prefixChip, startDraft } from "../src/settings/prefixChip.ts";
 import { moment } from "./moment.ts";
 
 interface FakeVault {
@@ -297,8 +297,8 @@ test("a list row's label leaves the prefix to its chip", () => {
 test("the prefix chip shows the trimmed prefix, or a placeholder when blank", () => {
 	assert.deepEqual(prefixChip(" 🔗 out "), { text: "🔗 out", placeholder: false });
 	assert.deepEqual(prefixChip("📅"), { text: "📅", placeholder: false });
-	assert.deepEqual(prefixChip(""), { text: PREFIX_PLACEHOLDER, placeholder: true });
-	assert.deepEqual(prefixChip("  "), { text: PREFIX_PLACEHOLDER, placeholder: true });
+	assert.deepEqual(prefixChip(""), { text: "prefix", placeholder: true });
+	assert.deepEqual(prefixChip("  "), { text: "prefix", placeholder: true });
 });
 
 test("editing a prefix starts from the raw prefix selected and saves only a changed value", () => {

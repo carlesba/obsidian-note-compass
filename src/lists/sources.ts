@@ -1,3 +1,5 @@
+import { t } from "../i18n/index.ts";
+import type { TranslationKey } from "../i18n/index.ts";
 import type { Period, ResolvedDateNotes } from "./dateNotes.ts";
 import { adjacentDatePaths, currentDatePath, isSameLocalDay, parseDateNote } from "./dates.ts";
 import type { JumpListVault, MomentDate, VaultNote } from "./vault";
@@ -22,12 +24,12 @@ export function adjacentDateNotes(vault: JumpListVault, current: VaultNote, date
 	return listed;
 }
 
-const CURRENT_PERIOD_LABELS: Record<Period, string> = {
-	day: "today",
-	week: "this week",
-	month: "this month",
-	quarter: "this quarter",
-	year: "this year",
+const CURRENT_PERIOD_LABELS: Record<Period, TranslationKey> = {
+	day: "currentDay",
+	week: "currentWeek",
+	month: "currentMonth",
+	quarter: "currentQuarter",
+	year: "currentYear",
 };
 
 export function currentPeriodNotes(
@@ -42,8 +44,8 @@ export function currentPeriodNotes(
 		const path = currentDatePath(dateNotes, period, today);
 		if (path === undefined) continue;
 		const file = notes.find((note) => note.path === path);
-		if (file) listed.push({ file, direction: CURRENT_PERIOD_LABELS[period] });
-		else listed.push({ file: unsavedNote(path), direction: `create ${CURRENT_PERIOD_LABELS[period]}`, missing: period });
+		if (file) listed.push({ file, direction: t(CURRENT_PERIOD_LABELS[period]) });
+		else listed.push({ file: unsavedNote(path), direction: t("createCurrentPeriod", { period: t(CURRENT_PERIOD_LABELS[period]) }), missing: period });
 	}
 	return listed;
 }

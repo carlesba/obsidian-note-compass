@@ -1,3 +1,6 @@
+import { t, translatedLabels } from "../i18n/index.ts";
+import type { TranslationKey } from "../i18n/index.ts";
+import { operatorLabel } from "../i18n/labels.ts";
 import { CONDITIONS_BY_TYPE, DATE_OPERATORS, NUMBER_OPERATORS, TEXT_OPERATORS, conditionAppliesTo, propertyType } from "../lists/conditions.ts";
 import type { ConditionOperator, PropertyType } from "../lists/conditions.ts";
 import { PERIODS } from "../lists/dateNotes.ts";
@@ -10,27 +13,37 @@ import { filterSummary, inapplicableFilter } from "./filterForm.ts";
 
 export type SourceChoice = Exclude<ListSource["kind"], "unreadable">;
 
-export const UNREADABLE_LIST_WARNING = "This list can't be read by this version of Note Compass. Remove it and build a new one.";
-
-export const SOURCE_OPTIONS: Record<SourceChoice, string> = {
-	adjacentDates: "Adjacent dates",
-	linksOut: "Outbound links",
-	linksIn: "Inbound links",
-	sameDay: "Same day",
-	filter: "Filter",
-	linksToNote: "Links to note",
-	inFolder: "In folder",
-	modifiedToday: "Modified today",
-	currentPeriods: "Current date notes",
+const SOURCE_KEYS: Record<SourceChoice, TranslationKey> = {
+	adjacentDates: "sourceAdjacentDates",
+	linksOut: "sourceLinksOut",
+	linksIn: "sourceLinksIn",
+	sameDay: "sourceSameDay",
+	filter: "filter",
+	linksToNote: "sourceLinksToNote",
+	inFolder: "sourceInFolder",
+	modifiedToday: "sourceModifiedToday",
+	currentPeriods: "sourceCurrentPeriods",
 };
 
-export const CURRENT_PERIOD_NAMES: Record<Period, string> = {
-	day: "Today",
-	week: "This week",
-	month: "This month",
-	quarter: "This quarter",
-	year: "This year",
+const CURRENT_PERIOD_KEYS: Record<Period, TranslationKey> = {
+	day: "today",
+	week: "thisWeek",
+	month: "thisMonth",
+	quarter: "thisQuarter",
+	year: "thisYear",
 };
+
+export function unreadableListWarning(): string {
+	return t("unreadableListWarning");
+}
+
+export function sourceOptions(): Record<SourceChoice, string> {
+	return translatedLabels(SOURCE_KEYS);
+}
+
+export function currentPeriodName(period: Period): string {
+	return t(CURRENT_PERIOD_KEYS[period]);
+}
 
 export type CurrentPeriodField = "currentDay" | "currentWeek" | "currentMonth" | "currentQuarter" | "currentYear";
 
@@ -42,9 +55,13 @@ export const CURRENT_PERIOD_FIELDS: Record<Period, CurrentPeriodField> = {
 	year: "currentYear",
 };
 
-export const DATE_MODE_OPTIONS = { fixed: "Fixed date", relative: "Relative to today" };
+export function dateModeOptions(): Record<"fixed" | "relative", string> {
+	return { fixed: t("fixedDate"), relative: t("relativeToToday") };
+}
 
-export const DIRECTION_OPTIONS = { ago: "Days ago", today: "Today", fromNow: "Days from now" };
+export function directionOptions(): Record<"ago" | "today" | "fromNow", string> {
+	return { ago: t("daysAgo"), today: t("today"), fromNow: t("daysFromNow") };
+}
 
 export type ListField =
 	| "enabled"
@@ -77,20 +94,22 @@ export function listName(list: NoteList): string {
 export function sourceSummary(source: ListSource): string {
 	if (source.kind === "linksToNote") {
 		const name = source.note.split("/").pop()?.replace(/\.md$/, "") ?? "";
-		return name === "" ? "Note not chosen" : `Links to ${name}`;
+		return name === "" ? t("noteNotChosen") : t("linksTo", { name });
 	}
-	if (source.kind === "inFolder") return source.folder === "" ? "Folder not chosen" : `In ${source.folder}`;
+	if (source.kind === "inFolder") return source.folder === "" ? t("folderNotChosen") : t("inFolder", { folder: source.folder });
 	if (source.kind === "currentPeriods") {
-		if (source.periods.length === 0) return "No date notes chosen";
-		return source.periods.map((period, index) => (index === 0 ? CURRENT_PERIOD_NAMES[period] : CURRENT_PERIOD_NAMES[period].toLowerCase())).join(", ");
+		if (source.periods.length === 0) return t("noDateNotesChosen");
+		return source.periods
+			.map((period, index) => (index === 0 ? currentPeriodName(period) : currentPeriodName(period).toLowerCase()))
+			.join(t("listSeparator"));
 	}
 	if (source.kind === "filter") return filterSummary(source.filter);
-	if (source.kind === "unreadable") return "Unreadable list";
-	return SOURCE_OPTIONS[source.kind];
+	if (source.kind === "unreadable") return t("unreadableList");
+	return t(SOURCE_KEYS[source.kind]);
 }
 
 export function listDisplayValue(list: NoteList): string {
-	return list.enabled && list.source.kind !== "unreadable" ? "" : "off";
+	return list.enabled && list.source.kind !== "unreadable" ? "" : t("off");
 }
 
 export function inapplicableCondition(source: ListSource, types: Record<string, string>): string | undefined {
@@ -99,9 +118,10 @@ export function inapplicableCondition(source: ListSource, types: Record<string, 
 
 export function operatorOptions(type: PropertyType, current?: ConditionOperator): Record<string, string> {
 	const options: Record<string, string> = {};
-	for (const operator of CONDITIONS_BY_TYPE[type]) options[operator] = operator;
+	for (const operator of CONDITIONS_BY_TYPE[type]) options[operator] = operatorLabel(operator);
 	if (current !== undefined && !(current in options)) {
-		options[current] = conditionAppliesTo(current, type) ? current : `${current} (does not apply)`;
+		const label = operatorLabel(current);
+		options[current] = conditionAppliesTo(current, type) ? label : t("operatorDoesNotApply", { operator: label });
 	}
 	return options;
 }
@@ -169,7 +189,7 @@ function writeCurrentPeriod(source: CurrentPeriodsSource, field: ListField, valu
 
 export function fixedDateError(value: string): string | undefined {
 	if (FIXED_DATE_PATTERN.test(value) && !Number.isNaN(Date.parse(value))) return undefined;
-	return "Write the date as YYYY-MM-DD.";
+	return t("fixedDateFormat");
 }
 
 function sourceFor(kind: unknown, current: ListSource): ListSource {

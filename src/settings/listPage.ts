@@ -9,6 +9,8 @@ import type {
 	SettingDefinitionRender,
 	SettingGroupItem,
 } from "obsidian";
+import { t } from "../i18n";
+import type { TranslationKey } from "../i18n";
 import type { Period } from "../lists/dateNotes";
 import { noteCreationBlocker } from "../createNote/newNotes";
 import { hasPresetValues, isLinkType, isUnreadable } from "../settings";
@@ -17,20 +19,19 @@ import { excludedFolderKey, listKey, mainMenuPresetKey, presetValueKey, property
 import { PERIODS } from "../lists/dateNotes";
 import {
 	CURRENT_PERIOD_FIELDS,
-	CURRENT_PERIOD_NAMES,
-	SOURCE_OPTIONS,
-	UNREADABLE_LIST_WARNING,
+	currentPeriodName,
 	inapplicableCondition,
 	listDisplayValue,
 	listName,
+	sourceOptions,
 	sourceSummary,
+	unreadableListWarning,
 } from "./listForm";
 import type { ListField, PropertySuggestion } from "./listForm";
 import { filterRules } from "../lists/filters";
 import { renderFilter } from "./filterEditor";
 import { PropertySuggest, warningDescription } from "./suggest";
 import {
-	PROPERTY_TYPE_OPTIONS,
 	addExcludedFolder,
 	addPresetValue,
 	deleteExcludedFolder,
@@ -42,6 +43,7 @@ import {
 	mixedTypeWarning,
 	propertyLabel,
 	propertyRowName,
+	propertyTypeOptions,
 	propertyTypePreset,
 } from "./setPropertiesForm";
 import type { LinkProperty, PropertyField } from "./setPropertiesForm";
@@ -63,12 +65,12 @@ type IdentifiedPage = SettingDefinitionPage & { id: string };
 
 const NEUTRAL_PREFIX_COLOR = "#888888";
 
-const PERIOD_NOUNS: Record<Period, string> = {
-	day: "daily",
-	week: "weekly",
-	month: "monthly",
-	quarter: "quarterly",
-	year: "yearly",
+const CURRENT_PERIOD_DESCRIPTIONS: Record<Period, TranslationKey> = {
+	day: "currentDayDesc",
+	week: "currentWeekDesc",
+	month: "currentMonthDesc",
+	quarter: "currentQuarterDesc",
+	year: "currentYearDesc",
 };
 
 export function listPageId(list: NoteList): string {
@@ -101,16 +103,16 @@ export function listPage(list: NoteList, context: ListPageContext): SettingDefin
 
 function unreadableItem(): SettingDefinitionItem {
 	return {
-		name: "List can't be read",
-		desc: UNREADABLE_LIST_WARNING,
+		name: t("listUnreadable"),
+		desc: unreadableListWarning(),
 		searchable: false,
-		render: (setting) => warningDescription(setting.descEl, UNREADABLE_LIST_WARNING),
+		render: (setting) => warningDescription(setting.descEl, unreadableListWarning()),
 	};
 }
 
 function sourceWarning(source: ListSource, context: ListPageContext): string | undefined {
-	if (isUnreadable(source)) return UNREADABLE_LIST_WARNING;
-	return inapplicableCondition(source, context.propertyTypes) ? "Condition does not apply. Edit to see why." : undefined;
+	if (isUnreadable(source)) return unreadableListWarning();
+	return inapplicableCondition(source, context.propertyTypes) ? t("conditionDoesNotApply") : undefined;
 }
 
 export function listRow(list: NoteList, context: ListPageContext): SettingDefinition {
@@ -125,9 +127,9 @@ export function listRow(list: NoteList, context: ListPageContext): SettingDefini
 			broken: isUnreadable(list.source),
 			enabled: list.enabled,
 			enabledKey: listKey(list.id, "enabled"),
-			enabledTooltip: "Show this list in the picker",
+			enabledTooltip: t("showListInPicker"),
 			pageId: listPageId(list),
-			editTooltip: "Edit list",
+			editTooltip: t("editList"),
 		},
 		context,
 	);
@@ -149,9 +151,9 @@ export function propertyRow(
 			broken: isUnreadable(entry.source),
 			enabled: entry.enabled,
 			enabledKey: propertyKey(entry.id, "enabled"),
-			enabledTooltip: "Offer this property in the picker",
+			enabledTooltip: t("offerPropertyInPicker"),
 			pageId: propertyPageId(entry),
-			editTooltip: "Edit property",
+			editTooltip: t("editProperty"),
 		},
 		context,
 	);
@@ -162,8 +164,8 @@ function propertyWarning(
 	properties: readonly EditableProperty[],
 	context: ListPageContext,
 ): string | undefined {
-	if (isUnreadable(entry.source)) return UNREADABLE_LIST_WARNING;
-	if (mixedTypeWarning(entry, properties)) return "Type differs from another row. Edit to see why.";
+	if (isUnreadable(entry.source)) return unreadableListWarning();
+	if (mixedTypeWarning(entry, properties)) return t("typeDiffersWarning");
 	return hasSource(entry) ? sourceWarning(entry.source, context) : undefined;
 }
 
@@ -213,42 +215,42 @@ export function propertyPage(
 	const mixed = mixedTypeWarning(entry, properties);
 	const items: SettingDefinitionItem[] = isUnreadable(entry.source) ? [unreadableItem()] : [
 		{
-			name: "Type differs from another row",
+			name: t("typeDiffers"),
 			desc: mixed,
 			searchable: false,
 			visible: mixed !== undefined,
 			render: (setting) => warningDescription(setting.descEl, mixed ?? ""),
 		},
-		{ name: "Enabled", desc: "Offer this property in the picker.", control: { type: "toggle", key: key("enabled") } },
+		{ name: t("enabled"), desc: t("offerPropertyInPickerDesc"), control: { type: "toggle", key: key("enabled") } },
 		{
-			name: "Prefix",
-			desc: "Text shown before this property's rows in the picker, such as an emoji and a short tag.",
+			name: t("prefix"),
+			desc: t("propertyPrefixDesc"),
 			visible: context.showPrefixes,
 			control: { type: "text", key: key("prefix") },
 		},
 		...prefixColorItems(entry, key("prefixColor"), context),
 		{
-			name: "Property",
-			desc: "The property the picker writes.",
-			render: propertyInput(context, key("name"), () => entry.property, "Status", context.propertySuggestions, (suggestion) =>
+			name: t("property"),
+			desc: t("propertyDesc"),
+			render: propertyInput(context, key("name"), () => entry.property, t("propertyPlaceholder"), context.propertySuggestions, (suggestion) =>
 				context.write(key("type"), propertyTypePreset(suggestion.type)),
 			),
 		},
 		{
-			name: "Type",
-			desc: chosen() ? "Which value picker the property opens." : "Choose a property first.",
-			control: { type: "dropdown", disabled: () => !chosen(), key: key("type"), options: PROPERTY_TYPE_OPTIONS },
+			name: t("type"),
+			desc: chosen() ? t("typeDesc") : t("chooseAPropertyFirst"),
+			control: { type: "dropdown", disabled: () => !chosen(), key: key("type"), options: propertyTypeOptions() },
 		},
 		{
-			name: "Remove when empty",
-			desc: "Remove the property from the note once it has no value left. Off keeps it as an empty property.",
+			name: t("removeWhenEmpty"),
+			desc: t("removeWhenEmptyDesc"),
 			control: { type: "toggle", key: key("removesEmpty") },
 		},
 	];
 	if (hasPresetValues(entry.type)) {
 		items.push(presetValuesList(entry, context), {
-			name: "Preset values in the main menu",
-			desc: "The switch beside a preset also offers it in the main Set properties menu, so one choice sets it. Every preset is always offered in the property's own picker.",
+			name: t("presetsInMainMenu"),
+			desc: t("presetsInMainMenuDesc"),
 			searchable: false,
 			render: () => undefined,
 		});
@@ -257,7 +259,7 @@ export function propertyPage(
 		items.push(
 			{
 				type: "group",
-				heading: "Offer notes from",
+				heading: t("offerNotesFrom"),
 				items: sourceItems(entry, context, (field) => propertySourceKey(entry.id, field)),
 			},
 			excludedFoldersList(entry, context),
@@ -268,7 +270,7 @@ export function propertyPage(
 		type: "page",
 		id: propertyPageId(entry),
 		name: propertyRowName(entry),
-		displayValue: entry.enabled && !isUnreadable(entry.source) ? "" : "off",
+		displayValue: entry.enabled && !isUnreadable(entry.source) ? "" : t("off"),
 		status: propertyWarning(entry, properties, context) ? "warning" : null,
 		items,
 	};
@@ -279,15 +281,15 @@ function presetValuesList(entry: EditableProperty, context: ListPageContext): Se
 	const values = entry.presetValues ?? [];
 	return {
 		type: "list",
-		heading: "Preset values",
-		emptyState: "No preset values. The property's own picker still offers the values it already has in the vault.",
+		heading: t("presetValues"),
+		emptyState: t("noPresetValues"),
 		items: values.map((value, index) => ({
-			name: `Preset value ${index + 1}`,
+			name: t("presetValueNumber", { number: index + 1 }),
 			searchable: false,
 			render: (setting: Setting) => {
 				setting.settingEl.addClass("note-compass-preset-value");
 				setting.addText((text) => {
-					text.setPlaceholder(entry.type === "number" ? "3" : "Doing").setValue(value);
+					text.setPlaceholder(entry.type === "number" ? "3" : t("presetTextPlaceholder")).setValue(value);
 					text.onChange((typed) => {
 						const error = presetValueError(entry, typed);
 						setting.setDesc(error ?? "");
@@ -297,7 +299,7 @@ function presetValuesList(entry: EditableProperty, context: ListPageContext): Se
 				});
 				setting.addToggle((toggle) =>
 					toggle
-						.setTooltip("Show in the main menu")
+						.setTooltip(t("showInMainMenu"))
 						.setValue(isMainMenuPreset(entry, index))
 						.onChange((shown) => context.write(mainMenuPresetKey(entry.id, index), shown)),
 				);
@@ -305,7 +307,7 @@ function presetValuesList(entry: EditableProperty, context: ListPageContext): Se
 		})),
 		onReorder: (from, to) => context.change(() => movePresetValue(entry, from, to)),
 		onDelete: (index) => context.change(() => deletePresetValue(entry, index)),
-		addItem: { name: "Add preset value", action: () => context.change(() => addPresetValue(entry)) },
+		addItem: { name: t("addPresetValue"), action: () => context.change(() => addPresetValue(entry)) },
 	};
 }
 
@@ -313,14 +315,14 @@ function excludedFoldersList(entry: LinkProperty, context: ListPageContext): Set
 	const folders = entry.excludedFolders ?? [];
 	return {
 		type: "list",
-		heading: "Excluded folders",
-		emptyState: "No folders are excluded.",
+		heading: t("excludedFolders"),
+		emptyState: t("noExcludedFolders"),
 		items: folders.map((_folder, index) => ({
-			name: `Excluded folder ${index + 1}`,
+			name: t("excludedFolderNumber", { number: index + 1 }),
 			control: { type: "folder", key: excludedFolderKey(entry.id, index) },
 		})),
 		onDelete: (index) => context.change(() => deleteExcludedFolder(entry, index)),
-		addItem: { name: "Add excluded folder", action: () => context.change(() => addExcludedFolder(entry)) },
+		addItem: { name: t("addExcludedFolder"), action: () => context.change(() => addExcludedFolder(entry)) },
 	};
 }
 
@@ -330,22 +332,22 @@ function createNotesGroup(entry: LinkProperty, context: ListPageContext): Settin
 	const creating = () => entry.createsNotes === true && blocker === undefined;
 	return {
 		type: "group",
-		heading: "Create notes",
+		heading: t("createNotes"),
 		items: [
 			{
-				name: "Allow creating notes",
-				desc: blocker ? `This source cannot create notes: ${blocker}.` : "Offer this property in the Create note command.",
+				name: t("allowCreatingNotes"),
+				desc: blocker ? t("sourceCannotCreate", { reason: blocker }) : t("allowCreatingNotesDesc"),
 				control: { type: "toggle", disabled: blocker !== undefined, key: key("createsNotes") },
 			},
 			{
-				name: "Folder",
-				desc: "New notes go here. Empty uses the default location for new notes.",
+				name: t("folder"),
+				desc: t("newNoteFolderDesc"),
 				visible: () => creating() && entry.source.kind !== "inFolder",
 				control: { type: "folder", key: key("newNoteFolder") },
 			},
 			{
-				name: "Template",
-				desc: "New notes start from this template. Templater runs it when enabled; otherwise {{title}}, {{date}} and {{time}} are filled in as the core Templates plugin does.",
+				name: t("template"),
+				desc: t("templateDesc"),
 				visible: creating,
 				control: { type: "file", key: key("newNoteTemplate"), filter: (file) => file.extension === "md" },
 			},
@@ -356,10 +358,10 @@ function createNotesGroup(entry: LinkProperty, context: ListPageContext): Settin
 export function listPageItems(list: NoteList, context: ListPageContext): SettingDefinitionItem[] {
 	const key = (field: ListField) => listKey(list.id, field);
 	return [
-		{ name: "Enabled", desc: "Show this list in the picker.", control: { type: "toggle", key: key("enabled") } },
+		{ name: t("enabled"), desc: t("showListInPickerDesc"), control: { type: "toggle", key: key("enabled") } },
 		{
-			name: "Prefix",
-			desc: "Text shown before each note from this list, such as an emoji and a short tag.",
+			name: t("prefix"),
+			desc: t("listPrefixDesc"),
 			visible: context.showPrefixes,
 			control: { type: "text", key: key("prefix") },
 		},
@@ -375,8 +377,8 @@ function prefixColorItems(
 ): SettingDefinitionItem[] {
 	return [
 		{
-			name: "Prefix colour",
-			desc: target.prefixColor === undefined ? "No colour. Pick one to tint the prefix chip." : "Tints the prefix chip.",
+			name: t("prefixColour"),
+			desc: target.prefixColor === undefined ? t("noPrefixColour") : t("prefixColourDesc"),
 			visible: context.showPrefixes,
 			render: (setting) => {
 				setting.settingEl.addClass("note-compass-prefix-colour");
@@ -387,7 +389,7 @@ function prefixColorItems(
 				setting.addExtraButton((button) =>
 					button
 						.setIcon("rotate-ccw")
-						.setTooltip("Remove colour")
+						.setTooltip(t("removeColour"))
 						.onClick(() => context.write(key, "")),
 				);
 			},
@@ -402,28 +404,28 @@ function sourceItems(
 ): SettingGroupItem[] {
 	const filter = list.source.kind === "filter" ? list.source.filter : undefined;
 	return [
-		{ name: "Source", control: { type: "dropdown", key: key("source"), options: SOURCE_OPTIONS } },
+		{ name: t("source"), control: { type: "dropdown", key: key("source"), options: sourceOptions() } },
 		{
-			name: "Note",
-			desc: "Notes that link to this note, in the text or in a property, are listed.",
+			name: t("note"),
+			desc: t("noteDesc"),
 			visible: () => list.source.kind === "linksToNote",
-			control: { type: "file", key: key("note"), placeholder: "Person", filter: (file) => file.extension === "md" },
+			control: { type: "file", key: key("note"), placeholder: t("notePlaceholder"), filter: (file) => file.extension === "md" },
 		},
 		{
-			name: "Folder",
-			desc: "Notes in this folder and its subfolders are listed.",
+			name: t("folder"),
+			desc: t("folderDesc"),
 			visible: () => list.source.kind === "inFolder",
 			control: { type: "folder", key: key("folder") },
 		},
 		...PERIODS.map((period) => ({
-			name: CURRENT_PERIOD_NAMES[period],
-			desc: `List the ${PERIOD_NOUNS[period]} note for the current ${period}, when it exists.`,
+			name: currentPeriodName(period),
+			desc: t(CURRENT_PERIOD_DESCRIPTIONS[period]),
 			visible: () => list.source.kind === "currentPeriods",
 			control: { type: "toggle" as const, key: key(CURRENT_PERIOD_FIELDS[period]) },
 		})),
 		{
-			name: "Filter",
-			desc: filter && filterRules(filter).length === 0 ? "Add a condition to list notes." : "Notes that match the filter are listed.",
+			name: t("filter"),
+			desc: filter && filterRules(filter).length === 0 ? t("filterEmptyDesc") : t("filterDesc"),
 			searchable: false,
 			visible: () => list.source.kind === "filter",
 			render: (setting) => (list.source.kind === "filter" ? renderFilter(setting, list.source.filter, context) : undefined),

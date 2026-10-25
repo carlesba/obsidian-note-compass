@@ -1,6 +1,7 @@
 import { Notice } from "obsidian";
 import type { App } from "obsidian";
 import { ChoiceModal } from "../choiceModal";
+import { t } from "../i18n";
 import type { JumpListVault, VaultNote } from "../lists/vault";
 import type { EditableProperty, JumpSettings } from "../settings";
 import { offeredEntries, propertyType } from "./offered";
@@ -20,19 +21,19 @@ export function setProperties(
 	const initial = initialPropertyState(settings.setProperties, vault.frontmatter(target.path));
 	const keptEmpty = keptEmptyValues(settings.setProperties);
 	const cancel = () => {
-		new Notice("Property changes cancelled.");
+		new Notice(t("propertyChangesCancelled"));
 		back?.();
 	};
 	const save = async (state: PickerState) => {
 		try {
 			await vault.updateFrontmatter(target.path, (frontmatter) => writeProperties(frontmatter, initial, state.values, keptEmpty));
-			new Notice("Properties saved.");
+			new Notice(t("propertiesSaved"));
 		} catch {
-			new Notice("Could not save the properties.");
+			new Notice(t("couldNotSaveProperties"));
 		}
 	};
 	const openMain = (state: PickerState, query: string): void => {
-		new ChoiceModal<PickerChoice>(app, "Set properties…", (typed) => pickerChoices(entries, initial, state, typed, settings.showPrefixes, settings.setProperties.checkboxMode), {
+		new ChoiceModal<PickerChoice>(app, t("setPropertiesPlaceholder"), (typed) => pickerChoices(entries, initial, state, typed, settings.showPrefixes, settings.setProperties.checkboxMode), {
 			choose: ({ action }, typed) => {
 				if (action.action === "set") openMain(action.state, "");
 				else if (action.action === "expand") openMain(state, action.query);

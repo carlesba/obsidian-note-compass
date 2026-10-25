@@ -1,5 +1,6 @@
-import { MarkdownView, Notice, Plugin } from "obsidian";
+import { MarkdownView, Notice, Plugin, getLanguage } from "obsidian";
 import { createNoteFromEntries } from "./createNote/modal";
+import { DEFAULT_LANGUAGE, setLanguage, t } from "./i18n";
 import { buildJumpList } from "./lists/jumpList";
 import { createObsidianVault } from "./lists/obsidianVault";
 import type { VaultNote } from "./lists/vault";
@@ -12,19 +13,24 @@ export default class NoteCompassPlugin extends Plugin {
 	settings: JumpSettings = defaultSettings();
 
 	async onload(): Promise<void> {
+		try {
+			setLanguage(getLanguage());
+		} catch {
+			setLanguage(DEFAULT_LANGUAGE);
+		}
 		this.settings = mergeSettings(await this.loadData());
 		this.addSettingTab(new NoteCompassSettingTab(this.app, this));
 
 		this.addCommand({
 			id: "jump-to-note",
-			name: "Jump to note",
+			name: t("jumpToNote"),
 			icon: "compass",
 			callback: () => this.openJumpModal(),
 		});
 
 		this.addCommand({
 			id: "set-properties",
-			name: "Set properties",
+			name: t("setProperties"),
 			icon: SET_PROPERTIES_ICON,
 			checkCallback: (checking) => {
 				const target = this.currentNote();
@@ -36,7 +42,7 @@ export default class NoteCompassPlugin extends Plugin {
 
 		this.addCommand({
 			id: "create-note",
-			name: "Create note",
+			name: t("createNote"),
 			icon: "file-plus",
 			callback: () =>
 				createNoteFromEntries(this.app, createObsidianVault(this.app), this.settings, this.currentNote()?.path),
@@ -55,7 +61,7 @@ export default class NoteCompassPlugin extends Plugin {
 			this.settings.dateNotes,
 		);
 		if (!entries.length) {
-			new Notice("No notes to jump to.");
+			new Notice(t("noNotesToJumpTo"));
 			return;
 		}
 		new JumpModal(this.app, entries, this.settings.showPrefixes, (note, typed) =>

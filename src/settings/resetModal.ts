@@ -1,9 +1,6 @@
 import { Modal, Setting } from "obsidian";
 import type { App } from "obsidian";
-
-const RESET_TITLE = "Reset all Note Compass settings?";
-
-const RESET_MESSAGE = "Your lists, properties and options go back to the defaults. This can't be undone.";
+import { t } from "../i18n";
 
 export class ResetSettingsModal extends Modal {
 	private readonly reset: () => void;
@@ -14,13 +11,13 @@ export class ResetSettingsModal extends Modal {
 	}
 
 	onOpen(): void {
-		this.setTitle(RESET_TITLE);
-		this.contentEl.createEl("p", { text: RESET_MESSAGE });
+		this.setTitle(t("resetTitle"));
+		this.contentEl.createEl("p", { text: t("resetMessage") });
 		new Setting(this.contentEl)
-			.addButton((button) => button.setButtonText("Cancel").onClick(() => this.close()))
+			.addButton((button) => button.setButtonText(t("cancel")).onClick(() => this.close()))
 			.addButton((button) =>
 				button
-					.setButtonText("Reset")
+					.setButtonText(t("reset"))
 					.setDestructive()
 					.onClick(() => {
 						this.close();

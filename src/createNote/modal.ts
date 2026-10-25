@@ -1,9 +1,10 @@
 import { Notice } from "obsidian";
 import type { App } from "obsidian";
 import { ChoiceModal } from "../choiceModal";
+import { t } from "../i18n";
 import type { JumpListVault, NewNoteVault } from "../lists/vault";
 import type { JumpSettings } from "../settings";
-import { ENTRY_PLACEHOLDER, creatableEntries, entryChoices, nameChoices, namePlaceholder } from "./choices";
+import { creatableEntries, entryChoices, nameChoices, namePlaceholder } from "./choices";
 import type { CreatableEntry, EntryChoice, NameChoice } from "./choices";
 import { createNote, createdNotice } from "./newNotes";
 import type { NoteCreation } from "./newNotes";
@@ -16,7 +17,7 @@ export function createNoteFromEntries(
 ): void {
 	const entries = creatableEntries(settings.setProperties, vault);
 	if (!entries.length) {
-		new Notice("No link property can create notes.");
+		new Notice(t("noCreatableProperty"));
 		return;
 	}
 	const create = async (creation: NoteCreation) => {
@@ -27,11 +28,11 @@ export function createNoteFromEntries(
 			const file = app.vault.getFileByPath(created.path);
 			if (file) await app.workspace.getLeaf(false).openFile(file);
 		} catch {
-			new Notice(`Could not create "${creation.name}".`);
+			new Notice(t("couldNotCreate", { name: creation.name }));
 		}
 	};
 	const openEntries = (query: string): void => {
-		new ChoiceModal<EntryChoice>(app, ENTRY_PLACEHOLDER, (typed) => entryChoices(entries, vault, sourcePath, typed, settings.showPrefixes), {
+		new ChoiceModal<EntryChoice>(app, t("createNoteFor"), (typed) => entryChoices(entries, vault, sourcePath, typed, settings.showPrefixes), {
 			choose: ({ creatable }, typed) => openName(creatable, "", typed),
 			dismiss: () => undefined,
 		}).openWithQuery(query);

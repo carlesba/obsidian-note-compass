@@ -7,7 +7,7 @@ import type { EditableProperty } from "../src/settings.ts";
 import { CHECKBOX_MODE_KEY, excludedFolderKey, propertyKey, propertySourceKey, readControl, writeControl } from "../src/settings/controlKeys.ts";
 import { propertySuggestions } from "../src/settings/listForm.ts";
 import {
-	PROPERTY_TYPE_OPTIONS,
+	propertyTypeOptions,
 	addExcludedFolder,
 	addPresetValue,
 	deleteExcludedFolder,
@@ -120,7 +120,7 @@ test("entries that write one property with different types carry a warning, and 
 });
 
 test("the type dropdown offers every editable type", () => {
-	assert.deepEqual(Object.keys(PROPERTY_TYPE_OPTIONS), EDITABLE_PROPERTY_TYPES);
+	assert.deepEqual(Object.keys(propertyTypeOptions()), EDITABLE_PROPERTY_TYPES);
 });
 
 test("property keys read and write the entry's fields and ignore unknown ids", () => {

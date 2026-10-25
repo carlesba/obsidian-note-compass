@@ -1,3 +1,5 @@
+import { t } from "../i18n/index.ts";
+import { operatorLabel } from "../i18n/labels.ts";
 import { propertyType } from "../lists/conditions.ts";
 import { filterRules } from "../lists/filters.ts";
 import type { FilterGroup, FilterRule, PropertyRule } from "../lists/filters.ts";
@@ -53,31 +55,31 @@ export function newNoteRule(source: ListSource | undefined, vault: JumpListVault
 export function noteCreationBlocker(source: ListSource, propertyTypes: Record<string, string>): string | undefined {
 	switch (source.kind) {
 		case "inFolder":
-			return trimSlashes(source.folder) === "" ? "choose a folder first" : undefined;
+			return trimSlashes(source.folder) === "" ? t("blockerChooseFolder") : undefined;
 		case "linksToNote":
-			return source.note.trim() === "" ? "choose a note first" : undefined;
+			return source.note.trim() === "" ? t("blockerChooseNote") : undefined;
 		case "modifiedToday":
 			return undefined;
 		case "currentPeriods":
-			return "it lists the date notes for the current periods";
+			return t("blockerCurrentPeriods");
 		case "filter":
 			return filterCreationBlocker(source.filter, propertyTypes);
 		case "unreadable":
-			return "this version of Note Compass can't read its source";
+			return t("blockerUnreadable");
 		default:
-			return "it lists notes by how they relate to the note in focus";
+			return t("blockerRelation");
 	}
 }
 
 function filterCreationBlocker(filter: FilterGroup, propertyTypes: Record<string, string>): string | undefined {
-	if (filterRules(filter).length === 0) return "add a condition first";
-	if (filter.mode !== "all") return 'only an "All the following are true" filter can decide what a new note needs';
+	if (filterRules(filter).length === 0) return t("blockerAddCondition");
+	if (filter.mode !== "all") return t("blockerNotAll", { mode: t("modeAll") });
 	const rule = soleTopLevelRule(filter);
-	if (rule === undefined) return "a filter with more than one condition, or with groups, can't decide what a new note needs";
-	if (rule.kind !== "property") return "only a property condition can decide what a new note needs";
-	if (rule.property === "") return "choose a property first";
+	if (rule === undefined) return t("blockerSeveralConditions");
+	if (rule.kind !== "property") return t("blockerNotProperty");
+	if (rule.property === "") return t("blockerChooseProperty");
 	if (satisfyingValue(rule, propertyType(propertyTypes, rule.property)) !== undefined) return undefined;
-	return `"${rule.condition.operator}" gives no value to write into a new note`;
+	return t("blockerNoValue", { operator: operatorLabel(rule.condition.operator) });
 }
 
 function soleTopLevelRule(filter: FilterGroup): FilterRule | undefined {
@@ -127,13 +129,13 @@ export function newNoteFolder(vault: NewNoteVault, sourcePath: string | undefine
 }
 
 export function folderName(folder: string): string {
-	return folder === "" ? "the vault root" : folder;
+	return folder === "" ? t("theVaultRoot") : folder;
 }
 
 export function createdNotice(name: string, created: CreatedNote): string {
-	if (created.outcome === "exists") return `"${name}" already exists.`;
-	if (created.outcome === "templaterFailed") return `Templater could not create "${name}".`;
-	return `Created "${name}" in ${folderName(created.folder)}.`;
+	if (created.outcome === "exists") return t("noteExists", { name });
+	if (created.outcome === "templaterFailed") return t("templaterFailed", { name });
+	return t("noteCreated", { name, folder: folderName(created.folder) });
 }
 
 export function fillCoreTemplate(content: string, title: string, now: MomentDate, options: unknown): string {

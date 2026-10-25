@@ -1,5 +1,7 @@
 # Note Compass
 
+**English** · [Español](README.es.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
+
 Note Compass adds three commands that work from anywhere in Obsidian, with or without an editor open. "Jump to note" opens one picker with the notes related to the note in focus, such as its adjacent date notes and the notes it links to, alongside lists you define with filters on properties, folders, tags, links and dates. "Set properties" edits the properties of the note in focus from a single picker. "Create note" makes a new note that already belongs to one of your link properties, so the other two commands offer it from then on.
 
 ![The Set properties picker, with Save & close and Cancel at the top, the note's current values marked with a check, and more values to add below](docs/images/set-properties.png)
@@ -195,6 +197,12 @@ Several rows may write the same property, such as the default `related` rows wit
 ### Reset all settings
 
 "Reset all settings", at the bottom of the settings, puts every list, property and option back to the defaults. It asks first, and Cancel or Escape leaves everything as it was. The reset cannot be undone.
+
+## Languages
+
+Note Compass follows the language you choose for Obsidian. It is available in English, Spanish, Simplified Chinese, Traditional Chinese, Japanese and Korean, and any other language shows English. Your settings, property names and the values written to your notes stay as you typed them, whatever the language.
+
+The translations live in `src/i18n/`, and this manual is also available in each of those languages from the links at the top. Both were drafted by machine, so some wording may read oddly, and this English manual is the reference. Corrections are welcome as pull requests. Adding a language takes one new file in that folder and one line in its registry, and any text a language does not translate yet shows in English.
 
 ## Tips
 

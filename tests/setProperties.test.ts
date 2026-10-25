@@ -5,8 +5,8 @@ import { defaultSettings } from "../src/settings.ts";
 import type { CheckboxMode, EditableProperty, EditablePropertyType } from "../src/settings.ts";
 import { offeredEntries, propertyType } from "../src/setProperties/offered.ts";
 import {
-	CANCEL_LABEL,
-	SAVE_LABEL,
+	cancelLabel,
+	saveLabel,
 	initialPropertyState,
 	keptEmptyValues,
 	pickerChoices,
@@ -15,7 +15,7 @@ import {
 	writeProperties,
 } from "../src/setProperties/picker.ts";
 import type { PickerChoice, PickerState, PropertyState } from "../src/setProperties/picker.ts";
-import { CLEAR_LABEL, valueChoices, valuePicker } from "../src/setProperties/valuePicker.ts";
+import { clearLabel, valueChoices, valuePicker } from "../src/setProperties/valuePicker.ts";
 import type { ScalarPropertyType, ValueChoice } from "../src/setProperties/valuePicker.ts";
 import { HOURS_AGO, fakeVault } from "./fakeVault.ts";
 import type { FakeNote } from "./fakeVault.ts";
@@ -102,8 +102,8 @@ test("the main picker lists save, cancel, the set values and then each entry's c
 		entry("hidden", "text", { enabled: false }),
 	]);
 	assert.deepEqual(labels(choicesFor()), [
-		SAVE_LABEL,
-		CANCEL_LABEL,
+		saveLabel(),
+		cancelLabel(),
 		"✓ 🎛️ active true",
 		"✓ 👤 Ann",
 		"✓ 👤 Stranger",
@@ -120,9 +120,9 @@ test("a row splits into mark, prefix, content and value parts", () => {
 	const choices = choicesFor();
 	assert.deepEqual(pick(choices, "✓ 📝 status doing").parts, { mark: "✓", prefix: "📝", content: "status", value: "doing" });
 	assert.deepEqual(pick(choices, "👤 Bob").parts, { prefix: "👤", content: "Bob" });
-	assert.deepEqual(pick(choices, SAVE_LABEL).parts, { mark: "🏁", content: "Save & close" });
-	assert.deepEqual(pick(choices, CANCEL_LABEL).parts, { mark: "🛑", content: "Cancel" });
-	assert.deepEqual([SAVE_LABEL, CANCEL_LABEL], ["🏁 Save & close", "🛑 Cancel"]);
+	assert.deepEqual(pick(choices, saveLabel()).parts, { mark: "🏁", content: "Save & close" });
+	assert.deepEqual(pick(choices, cancelLabel()).parts, { mark: "🛑", content: "Cancel" });
+	assert.deepEqual([saveLabel(), cancelLabel()], ["🏁 Save & close", "🛑 Cancel"]);
 });
 
 test("rows carry their entry's prefix colour outside the label, and drop it with the prefix", () => {
@@ -130,7 +130,7 @@ test("rows carry their entry's prefix colour outside the label, and drop it with
 	const choices = setup(properties).choicesFor();
 	assert.deepEqual(pick(choices, "✓ 📝 status doing").parts, { mark: "✓", prefix: "📝", prefixColor: "#e0a030", content: "status", value: "doing" });
 	assert.deepEqual(pick(choices, "👤 Bob").parts, { prefix: "👤", prefixColor: "#33aa66", content: "Bob" });
-	assert.deepEqual(pick(choices, SAVE_LABEL).parts, { mark: "🏁", content: "Save & close" });
+	assert.deepEqual(pick(choices, saveLabel()).parts, { mark: "🏁", content: "Save & close" });
 	const hidden = setup(properties, vaultNotes(), {}, false).choicesFor();
 	assert.ok(hidden.every((choice) => choice.parts.prefixColor === undefined));
 });
@@ -297,10 +297,10 @@ test("a checkbox offers true, false and clear, marks the pending value and can w
 	const active = entry("active", "checkbox");
 	const { initial, valueChoicesFor } = setup([active]);
 	const choices = valueChoicesFor(active);
-	assert.deepEqual(valueLabels(choices), ["✓ true", "false", CLEAR_LABEL]);
+	assert.deepEqual(valueLabels(choices), ["✓ true", "false", clearLabel()]);
 	const state = withValue(pickerState(initial), "active", pick(choices, "false").value);
 	assert.deepEqual(written(initial, state, { active: true }), { active: false });
-	assert.deepEqual(valueLabels(valueChoicesFor(active, state)), ["true", "✓ false", CLEAR_LABEL]);
+	assert.deepEqual(valueLabels(valueChoicesFor(active, state)), ["true", "✓ false", clearLabel()]);
 });
 
 test("a number picker offers use only for numbers, with vault numbers by count", () => {
@@ -326,7 +326,7 @@ test("a date picker accepts YYYYMMDD and YYYY-MM-DD and offers presets from toda
 	assert.equal(valueChoicesFor(due, undefined, "2024-04-02")[0].label, '✏️ Use "2024-04-02"');
 	assert.deepEqual(valueChoicesFor(due, undefined, "2024-04-02")[0].parts, { mark: "✏️", content: 'Use "2024-04-02"' });
 	const setDue = valueChoicesFor(due, withValue(pickerState(new Map()), "due", "2024-03-09"));
-	assert.deepEqual([labels(setDue)[0], labels(setDue)[setDue.length - 1]], ["✓ Today 2024-03-09", CLEAR_LABEL]);
+	assert.deepEqual([labels(setDue)[0], labels(setDue)[setDue.length - 1]], ["✓ Today 2024-03-09", clearLabel()]);
 	assert.deepEqual(setDue[setDue.length - 1].parts, { mark: "🗑️", content: "Clear" });
 	assert.deepEqual(valueLabels(valueChoicesFor(due, undefined, "2024-02-30")), []);
 	assert.deepEqual(valueLabels(valueChoicesFor(due, undefined, "tmrw")), ["Tomorrow 2024-03-10"]);

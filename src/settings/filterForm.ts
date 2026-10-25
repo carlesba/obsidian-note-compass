@@ -1,3 +1,6 @@
+import { t, tCount, translatedLabels } from "../i18n/index.ts";
+import type { TranslationKey } from "../i18n/index.ts";
+import { operatorLabel, typeLabel } from "../i18n/labels.ts";
 import {
 	CONDITIONS_BY_TYPE,
 	DATE_OPERATORS,
@@ -17,26 +20,25 @@ export type ConditionField = "operator" | "text" | "number" | "dateMode" | "date
 
 export type ConditionRule = PropertyRule | FileDateRule;
 
-export const FILTER_MODE_OPTIONS: Record<FilterMode, string> = {
-	all: "All the following are true",
-	any: "Any of the following are true",
-	none: "None of the following are true",
+const RULE_FIELDS: readonly RuleField[] = ["property", "folder", "tag", "linksTo", "created", "modified"];
+
+const FILTER_MODE_KEYS: Record<FilterMode, TranslationKey> = { all: "modeAll", any: "modeAny", none: "modeNone" };
+
+const SUMMARY_KEYS: Record<FilterMode, { one: TranslationKey; other: TranslationKey }> = {
+	all: { one: "allOfOne", other: "allOfOther" },
+	any: { one: "anyOfOne", other: "anyOfOther" },
+	none: { one: "noneOfOne", other: "noneOfOther" },
 };
 
-export const RULE_FIELD_OPTIONS: Record<RuleField, string> = {
-	property: "Property",
-	folder: "Folder",
-	tag: "Tag",
-	linksTo: "Links to note",
-	created: "Created",
-	modified: "Modified",
-};
+const FILE_DATE_KEYS: Record<FileDateRule["field"], TranslationKey> = { created: "createdCondition", modified: "modifiedCondition" };
 
-export const FILE_DATE_OPTIONS: Record<string, string> = Object.fromEntries(DATE_OPERATORS.map((operator) => [operator, operator]));
+export function filterModeOptions(): Record<FilterMode, string> {
+	return translatedLabels(FILTER_MODE_KEYS);
+}
 
-const MODE_NAMES: Record<FilterMode, string> = { all: "All", any: "Any", none: "None" };
-
-const FILE_DATE_NAMES = { created: "Created", modified: "Modified" };
+export function fileDateOptions(): Record<string, string> {
+	return Object.fromEntries(DATE_OPERATORS.map((operator) => [operator, operatorLabel(operator)]));
+}
 
 export function ruleField(rule: FilterRule): RuleField {
 	return rule.kind === "file" ? rule.field : rule.kind;
@@ -76,7 +78,7 @@ export function removeNode(group: FilterGroup, node: FilterNode): void {
 }
 
 export function changeRuleField(group: FilterGroup, rule: FilterRule, chosen: string): void {
-	const field = (Object.keys(RULE_FIELD_OPTIONS) as RuleField[]).find((candidate) => candidate === chosen);
+	const field = RULE_FIELDS.find((candidate) => candidate === chosen);
 	const index = group.items.indexOf(rule);
 	if (field === undefined || index === -1 || ruleField(rule) === field) return;
 	const replacement = newRule(field);
@@ -128,7 +130,7 @@ export function inapplicableRule(rule: FilterRule, types: Record<string, string>
 	if (rule.kind !== "property") return undefined;
 	const type = propertyType(types, rule.property);
 	if (conditionAppliesTo(rule.condition.operator, type)) return undefined;
-	return `"${rule.condition.operator}" does not apply to a ${type} property, so this condition matches nothing until you change it.`;
+	return t("inapplicableRule", { operator: operatorLabel(rule.condition.operator), type: typeLabel(type) });
 }
 
 export function inapplicableFilter(filter: FilterGroup, types: Record<string, string>): string | undefined {
@@ -141,42 +143,45 @@ export function inapplicableFilter(filter: FilterGroup, types: Record<string, st
 
 export function filterSummary(filter: FilterGroup): string {
 	const rules = filterRules(filter);
-	if (rules.length === 0) return "No conditions yet";
+	if (rules.length === 0) return t("noConditionsYet");
 	const [only] = filter.items;
 	if (filter.mode === "all" && filter.items.length === 1 && only.kind !== "group") return describeRule(only);
-	return `${MODE_NAMES[filter.mode]} of ${rules.length} ${rules.length === 1 ? "condition" : "conditions"}`;
+	const { one, other } = SUMMARY_KEYS[filter.mode];
+	return tCount(one, other, rules.length);
 }
 
 export function describeRule(rule: FilterRule): string {
 	switch (rule.kind) {
 		case "property":
-			if (rule.property.trim() === "") return "Property not chosen";
+			if (rule.property.trim() === "") return t("propertyNotChosen");
 			return `${rule.property} ${describeCondition(rule.condition)}`;
 		case "folder":
-			return rule.folder === "" ? "Folder not chosen" : `${rule.negated ? "Not in" : "In"} ${rule.folder}`;
+			if (rule.folder === "") return t("folderNotChosen");
+			return t(rule.negated ? "notInFolder" : "inFolder", { folder: rule.folder });
 		case "tag": {
 			const tag = rule.tag.trim().replace(/^#/, "");
-			return tag === "" ? "Tag not chosen" : `${rule.negated ? "Not tagged" : "Tagged"} ${tag}`;
+			return tag === "" ? t("tagNotChosen") : t(rule.negated ? "notTagged" : "tagged", { tag });
 		}
 		case "linksTo": {
 			const name = rule.note.split("/").pop()?.replace(/\.md$/, "") ?? "";
-			return name === "" ? "Note not chosen" : `${rule.negated ? "Does not link to" : "Links to"} ${name}`;
+			return name === "" ? t("noteNotChosen") : t(rule.negated ? "doesNotLinkTo" : "linksTo", { name });
 		}
 		case "file":
-			return `${FILE_DATE_NAMES[rule.field]} ${describeCondition(rule.condition)}`;
+			return t(FILE_DATE_KEYS[rule.field], { condition: describeCondition(rule.condition) });
 	}
 }
 
 function describeCondition(condition: Condition): string {
-	return "value" in condition ? `${condition.operator} ${describeValue(condition.value)}` : condition.operator;
+	const operator = operatorLabel(condition.operator);
+	return "value" in condition ? `${operator} ${describeValue(condition.value)}` : operator;
 }
 
 export function describeValue(value: string | number | DateValue): string {
 	if (typeof value !== "object") return String(value);
 	if (value.kind === "fixed") return value.date;
-	if (value.days === 0) return "today";
-	const days = Math.abs(value.days) === 1 ? "1 day" : `${Math.abs(value.days)} days`;
-	return value.days < 0 ? `${days} ago` : `${days} from now`;
+	if (value.days === 0) return t("relativeToday");
+	const count = Math.abs(value.days);
+	return value.days < 0 ? tCount("daysAgoOne", "daysAgoOther", count) : tCount("daysFromNowOne", "daysFromNowOther", count);
 }
 
 export function readConditionField(rule: ConditionRule, field: ConditionField): unknown {

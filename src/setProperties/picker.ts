@@ -1,3 +1,4 @@
+import { t } from "../i18n/index.ts";
 import type { Frontmatter } from "../lists/vault";
 import { matchesInOrder, prefixParts, rowLabel } from "../render.ts";
 import type { RowParts } from "../render";
@@ -29,12 +30,15 @@ export interface PickerChoice {
 }
 
 const SAVE_MARK = "🏁";
-const SAVE_TEXT = "Save & close";
 const CANCEL_MARK = "🛑";
-const CANCEL_TEXT = "Cancel";
 
-export const SAVE_LABEL = rowLabel({ mark: SAVE_MARK, content: SAVE_TEXT });
-export const CANCEL_LABEL = rowLabel({ mark: CANCEL_MARK, content: CANCEL_TEXT });
+export function saveLabel(): string {
+	return rowLabel({ mark: SAVE_MARK, content: t("saveAndClose") });
+}
+
+export function cancelLabel(): string {
+	return rowLabel({ mark: CANCEL_MARK, content: t("cancel") });
+}
 
 const SELECTED_MARK = "✓";
 const CHANGED_MARK = "•";
@@ -65,8 +69,8 @@ export function pickerChoices(
 	checkboxMode: CheckboxMode = "picker",
 ): PickerChoice[] {
 	const choices = [
-		choice({ mark: SAVE_MARK, content: SAVE_TEXT }, { action: "save" }),
-		choice({ mark: CANCEL_MARK, content: CANCEL_TEXT }, { action: "cancel" }),
+		choice({ mark: SAVE_MARK, content: t("saveAndClose") }, { action: "save" }),
+		choice({ mark: CANCEL_MARK, content: t("cancel") }, { action: "cancel" }),
 		...selectedChoices(entries, initial, state, showPrefixes, checkboxMode),
 		...entryChoices(entries, state, query, showPrefixes, checkboxMode),
 	];
@@ -217,14 +221,14 @@ function useChoices(
 	if (known.some((value) => value.toLowerCase() === wanted) || sameValue(state.values.get(property), name)) {
 		return [];
 	}
-	const parts = { mark: USE_MARK, ...prefixPart(offered.entry, showPrefixes), content: `${property}: use "${name}"` };
+	const parts = { mark: USE_MARK, ...prefixPart(offered.entry, showPrefixes), content: t("useTypedValue", { property, value: name }) };
 	return [{ ...choice(parts, set(withValue(state, property, name))), kept: true }];
 }
 
 function capped(offered: OfferedEntry, rows: PickerChoice[], query: string, showPrefixes: boolean): PickerChoice[] {
 	if (query || rows.length <= UNFILTERED_ROWS_PER_ENTRY) return rows;
 	const { prefix, property } = offered.entry;
-	const content = `… ${rows.length - UNFILTERED_ROWS_PER_ENTRY} more, type to filter`;
+	const content = t("moreRows", { count: rows.length - UNFILTERED_ROWS_PER_ENTRY });
 	const more = showPrefixes ? { ...prefixPart(offered.entry, showPrefixes), content } : { content, value: property };
 	const expandQuery = (showPrefixes && prefix.trim()) || property;
 	return [...rows.slice(0, UNFILTERED_ROWS_PER_ENTRY), choice(more, { action: "expand", query: expandQuery })];
