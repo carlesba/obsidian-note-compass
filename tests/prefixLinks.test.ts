@@ -4,6 +4,7 @@ import { defaultSettings } from "../src/settings.ts";
 import type { EditableProperty, JumpSettings, NoteList } from "../src/settings.ts";
 import { listKey, propertyKey } from "../src/settings/controlKeys.ts";
 import {
+	PrefixEdits,
 	applyPrefixChange,
 	linkedPrefixKeys,
 	prefixRows,
@@ -11,7 +12,7 @@ import {
 	samePrefix,
 	updatedPrefixKeys,
 } from "../src/settings/prefixLinks.ts";
-import type { PrefixRow } from "../src/settings/prefixLinks.ts";
+import type { PrefixRefresh, PrefixRow } from "../src/settings/prefixLinks.ts";
 
 const list = (id: string, prefix: string, prefixColor?: string): NoteList => ({
 	id,
@@ -154,4 +155,62 @@ test("a change to unknown rows reports that nothing changed", () => {
 	const settings = settingsWith([list("list-1", "👤 peop")], []);
 	assert.equal(applyPrefixChange(settings, ["list/missing/prefix"], { prefix: "x" }), false);
 	assert.equal(settings.lists[0].prefix, "👤 peop");
+});
+
+function editsOn(settings: JumpSettings): { edits: PrefixEdits; refreshes: PrefixRefresh[] } {
+	const refreshes: PrefixRefresh[] = [];
+	return { edits: new PrefixEdits(() => settings, (refresh) => refreshes.push(refresh)), refreshes };
+}
+
+test("typing a prefix on a page keeps the rows that shared it in step, even through an empty prefix", () => {
+	const settings = settingsWith([list("list-1", "👤 peop"), list("list-2", "👤 peop"), list("list-3", "📅 due")], []);
+	const { edits, refreshes } = editsOn(settings);
+	const key = listKey("list-1", "prefix");
+	assert.deepEqual(edits.linked(key), [listKey("list-2", "prefix")]);
+	for (const typed of ["👤 pe", "", "👥", "👥 team"]) edits.type(key, { prefix: typed });
+	assert.deepEqual(
+		settings.lists.map((entry) => entry.prefix),
+		["👥 team", "👥 team", "📅 due"],
+	);
+	assert.equal(edits.linkedPrefix(key), "👥 team");
+	assert.deepEqual(refreshes, ["afterTyping", "afterTyping", "afterTyping", "afterTyping"]);
+});
+
+test("typing a prefix with the linked rows turned off changes only that row", () => {
+	const settings = settingsWith([list("list-1", "👤 peop")], [property("property-1", "👤 peop")]);
+	const { edits } = editsOn(settings);
+	const key = propertyKey("property-1", "prefix");
+	assert.equal(edits.updatesLinked(key), true);
+	edits.setUpdatesLinked(key, false);
+	edits.type(key, { prefix: "👥 team", color: "#0000ff" });
+	assert.deepEqual(prefixRows(settings).map(({ prefix, prefixColor }) => [prefix, prefixColor]), [
+		["👤 peop", undefined],
+		["👥 team", "#0000ff"],
+	]);
+	edits.clear();
+	assert.equal(edits.updatesLinked(key), true);
+});
+
+test("saving from a chip changes the given rows and refreshes at once when other rows changed", () => {
+	const settings = settingsWith([list("list-1", "👤 peop"), list("list-2", "👤 peop")], []);
+	const { edits, refreshes } = editsOn(settings);
+	const keys = [listKey("list-1", "prefix"), listKey("list-2", "prefix")];
+	edits.save(keys, { prefix: "👥 team" });
+	edits.save(keys.slice(0, 1), { prefix: "👥 crew" });
+	edits.save(["list/missing/prefix"], { prefix: "x" });
+	assert.deepEqual(
+		settings.lists.map((entry) => entry.prefix),
+		["👥 crew", "👥 team"],
+	);
+	assert.deepEqual(refreshes, ["now", "afterTyping"]);
+});
+
+test("a chip save ends the page's typing, so the next page edit links by the prefix as it is then", () => {
+	const settings = settingsWith([list("list-1", "👤 peop"), list("list-2", "👤 peop"), list("list-3", "📅 due")], []);
+	const { edits } = editsOn(settings);
+	const key = listKey("list-1", "prefix");
+	edits.type(key, { prefix: "👤 peopl" });
+	edits.save([listKey("list-2", "prefix")], { prefix: "📅 due" });
+	assert.deepEqual(edits.linked(key), []);
+	assert.deepEqual(edits.linked(listKey("list-2", "prefix")), [listKey("list-3", "prefix")]);
 });

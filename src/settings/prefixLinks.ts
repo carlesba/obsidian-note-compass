@@ -74,3 +74,59 @@ export function applyPrefixChange(settings: JumpSettings, keys: readonly string[
 	}
 	return targets.length > 0;
 }
+
+export type PrefixRefresh = "now" | "afterTyping";
+
+interface TypedPrefix {
+	key: string;
+	linked: string[];
+}
+
+export class PrefixEdits {
+	private readonly settings: () => JumpSettings;
+	private readonly saved: (refresh: PrefixRefresh) => void;
+	private readonly updatesLinkedChoices = new Map<string, boolean>();
+	private typed: TypedPrefix | undefined;
+
+	constructor(settings: () => JumpSettings, saved: (refresh: PrefixRefresh) => void) {
+		this.settings = settings;
+		this.saved = saved;
+	}
+
+	rows(): PrefixRow[] {
+		return prefixRows(this.settings());
+	}
+
+	linked(key: string): string[] {
+		return this.typed?.key === key ? this.typed.linked : linkedPrefixKeys(this.rows(), key);
+	}
+
+	linkedPrefix(key: string): string {
+		const linked = this.linked(key);
+		return this.rows().find((row) => linked.includes(row.key))?.prefix.trim() ?? "";
+	}
+
+	updatesLinked(key: string): boolean {
+		return this.updatesLinkedChoices.get(key) ?? true;
+	}
+
+	setUpdatesLinked(key: string, updatesLinked: boolean): void {
+		this.updatesLinkedChoices.set(key, updatesLinked);
+	}
+
+	save(keys: readonly string[], change: PrefixChange): void {
+		this.typed = undefined;
+		if (applyPrefixChange(this.settings(), keys, change)) this.saved(keys.length > 1 ? "now" : "afterTyping");
+	}
+
+	type(key: string, change: PrefixChange, refresh: PrefixRefresh = "afterTyping"): void {
+		if (this.typed?.key !== key) this.typed = { key, linked: linkedPrefixKeys(this.rows(), key) };
+		const keys = updatedPrefixKeys(key, this.typed.linked, this.updatesLinked(key));
+		if (applyPrefixChange(this.settings(), keys, change)) this.saved(refresh);
+	}
+
+	clear(): void {
+		this.typed = undefined;
+		this.updatesLinkedChoices.clear();
+	}
+}

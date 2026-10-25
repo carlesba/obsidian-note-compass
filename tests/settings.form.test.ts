@@ -33,7 +33,15 @@ import {
 	valueShape,
 	writeListField,
 } from "../src/settings/listForm.ts";
-import { changedColor, changedPrefix, prefixChip, startDraft } from "../src/settings/prefixChip.ts";
+import {
+	changedColor,
+	changedPrefix,
+	draftChange,
+	movedHighlight,
+	pickSuggestion,
+	prefixChip,
+	startDraft,
+} from "../src/settings/prefixChip.ts";
 import { moment } from "./moment.ts";
 
 interface FakeVault {
@@ -303,7 +311,14 @@ test("the prefix chip shows the trimmed prefix, or a placeholder when blank", ()
 
 test("editing a prefix starts from the raw prefix selected and saves only a changed value", () => {
 	const draft = startDraft("🔗 out");
-	assert.deepEqual(draft, { original: "🔗 out", text: "🔗 out", selectionStart: 0, selectionEnd: 6 });
+	assert.deepEqual(draft, {
+		original: "🔗 out",
+		text: "🔗 out",
+		selectionStart: 0,
+		selectionEnd: 6,
+		linked: [],
+		updatesLinked: true,
+	});
 	assert.equal(changedPrefix(draft), undefined);
 	assert.equal(changedPrefix({ ...draft, text: "🔗 links" }), "🔗 links");
 	assert.equal(changedPrefix({ ...startDraft(""), text: "⭐" }), "⭐");
@@ -333,6 +348,38 @@ test("editing a prefix tracks its colour and reports a colour change, a removal 
 	assert.equal(changedColor({ ...startDraft("🔗"), color: "#336699" }), "#336699");
 	assert.equal(changedColor(startDraft("🔗")), undefined);
 	assert.equal(changedPrefix({ ...draft, color: "#336699" }), undefined);
+});
+
+test("a prefix draft remembers the rows linked to its original prefix and updates them by default", () => {
+	const draft = startDraft("🔗 out", "#e0a030", ["list/list-3/prefix"]);
+	assert.deepEqual(draft.linked, ["list/list-3/prefix"]);
+	assert.equal(draft.updatesLinked, true);
+});
+
+test("a prefix draft's change holds only what changed, or nothing", () => {
+	const draft = startDraft("🔗 out", "#e0a030");
+	assert.equal(draftChange(draft), undefined);
+	assert.deepEqual(draftChange({ ...draft, text: "🔗 links" }), { prefix: "🔗 links" });
+	assert.deepEqual(draftChange({ ...draft, color: undefined }), { color: "" });
+	assert.deepEqual(draftChange({ ...draft, text: "📅", color: "#336699" }), { prefix: "📅", color: "#336699" });
+});
+
+test("picking a suggested prefix sets the draft's text and colour, and keeps its linked rows", () => {
+	const draft = startDraft("🔗 out", "#e0a030", ["list/list-3/prefix"]);
+	pickSuggestion(draft, { prefix: "📅 due", count: 2 });
+	assert.equal(draft.text, "📅 due");
+	assert.equal(draft.color, undefined);
+	assert.deepEqual(draft.linked, ["list/list-3/prefix"]);
+	assert.deepEqual(draftChange(draft), { prefix: "📅 due", color: "" });
+});
+
+test("arrow keys move the suggestion highlight around the list, starting from either end", () => {
+	assert.equal(movedHighlight(undefined, 3, 1), 0);
+	assert.equal(movedHighlight(undefined, 3, -1), 2);
+	assert.equal(movedHighlight(0, 3, 1), 1);
+	assert.equal(movedHighlight(2, 3, 1), 0);
+	assert.equal(movedHighlight(0, 3, -1), 2);
+	assert.equal(movedHighlight(undefined, 0, 1), undefined);
 });
 
 test("a current date notes list toggles each period and names the chosen ones", () => {
