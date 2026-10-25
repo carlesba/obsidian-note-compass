@@ -28,7 +28,7 @@ import type { FieldSetting } from "./formsForm";
 import { editableRow } from "./listPage";
 import type { EditableRow, ListPageContext } from "./listPage";
 import { sortableRows } from "./sortable";
-import { PropertySuggest, warningDescription } from "./suggest";
+import { LinkSuggest, PropertySuggest, warningDescription } from "./suggest";
 import { ROW_CONTROL_CLASS } from "./tabOrder";
 
 export interface FieldEditorState {
@@ -407,7 +407,7 @@ function staticValueRows(parentEl: HTMLElement, editor: FieldEditor): void {
 	const { form, field } = editor;
 	switch (field.type) {
 		case "text":
-			textRow(parentEl, editor, "text", t("formValue"), t("formStaticValueDesc"), "");
+			linkSuggestions(textRow(parentEl, editor, "text", t("formValue"), t("formStaticValueDesc"), t("formLinkHint")).text.inputEl, editor);
 			return;
 		case "number":
 			numberRow(parentEl, editor);
@@ -421,6 +421,10 @@ function staticValueRows(parentEl: HTMLElement, editor: FieldEditor): void {
 		default:
 			dropdownRow(parentEl, editor, "from", t("formValue"), t("formDateSourceDesc"), dateSourceOptions(form, field));
 	}
+}
+
+function linkSuggestions(inputEl: HTMLInputElement, editor: FieldEditor, picked?: () => void): LinkSuggest {
+	return new LinkSuggest(editor.context.app, inputEl, picked);
 }
 
 function numberRow(parentEl: HTMLElement, editor: FieldEditor): void {
@@ -523,8 +527,9 @@ function listItemsInput(controlEl: HTMLElement, editor: FieldEditor): void {
 		if (keepsFocus) inputEl.focus();
 		save();
 	};
+	const suggest = linkSuggestions(inputEl, editor, () => add(true));
 	inputEl.addEventListener("keydown", (event) => {
-		if (event.isComposing) return;
+		if (event.isComposing || suggest.isOpen) return;
 		if (event.key === "Enter") {
 			event.preventDefault();
 			event.stopPropagation();

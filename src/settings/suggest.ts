@@ -1,8 +1,9 @@
 import { AbstractInputSuggest, setIcon } from "obsidian";
-import type { App } from "obsidian";
+import type { App, TFile } from "obsidian";
 import { typeLabel } from "../i18n/labels";
 import { matchingSuggestions } from "./listForm";
 import type { PropertySuggestion } from "./listForm";
+import { LINK_SUGGESTION_LIMIT, insertLink, matchingLinkCandidates, openLinkAt } from "./wikiLinks";
 
 export interface TextSuggestion {
 	value: string;
@@ -44,6 +45,59 @@ export class TextSuggest extends AbstractInputSuggest<TextSuggestion> {
 	renderSuggestion(suggestion: TextSuggestion, el: HTMLElement): void {
 		el.createDiv({ text: suggestion.label ?? suggestion.value });
 		if (suggestion.detail) el.createDiv({ text: suggestion.detail, cls: "setting-item-description" });
+	}
+}
+
+export class LinkSuggest extends AbstractInputSuggest<TFile> {
+	private readonly inputEl: HTMLInputElement;
+	private readonly picked: () => void;
+	isOpen = false;
+
+	constructor(app: App, inputEl: HTMLInputElement, picked: () => void = () => undefined) {
+		super(app, inputEl);
+		this.inputEl = inputEl;
+		this.picked = picked;
+		this.limit = LINK_SUGGESTION_LIMIT;
+	}
+
+	open(): void {
+		super.open();
+		this.isOpen = true;
+	}
+
+	close(): void {
+		super.close();
+		this.isOpen = false;
+	}
+
+	protected getSuggestions(): TFile[] {
+		const link = openLinkAt(this.inputEl.value, this.caret());
+		if (!link) return [];
+		return matchingLinkCandidates(this.app.vault.getMarkdownFiles(), link.query);
+	}
+
+	renderSuggestion(file: TFile, el: HTMLElement): void {
+		el.createDiv({ text: file.basename });
+		const folder = file.parent?.path ?? "/";
+		if (folder !== "/") el.createDiv({ text: folder, cls: "setting-item-description" });
+	}
+
+	selectSuggestion(file: TFile): void {
+		const caret = this.caret();
+		const link = openLinkAt(this.inputEl.value, caret);
+		if (link) {
+			const linktext = this.app.metadataCache.fileToLinktext(file, "", true);
+			const inserted = insertLink(this.inputEl.value, caret, link, linktext);
+			this.inputEl.value = inserted.text;
+			this.inputEl.setSelectionRange(inserted.caret, inserted.caret);
+			this.inputEl.dispatchEvent(new Event("input", { bubbles: true }));
+		}
+		this.close();
+		this.picked();
+	}
+
+	private caret(): number {
+		return this.inputEl.selectionStart ?? this.inputEl.value.length;
 	}
 }
 
