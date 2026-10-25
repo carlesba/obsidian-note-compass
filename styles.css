@@ -362,15 +362,6 @@
 	width: 100%;
 }
 
-.setting-item.note-compass-list-items {
-	flex-wrap: wrap;
-}
-
-.setting-item.note-compass-list-items .setting-item-control {
-	flex: 1 1 16em;
-	min-width: 0;
-}
-
 .note-compass-chip-input {
 	display: flex;
 	flex-wrap: wrap;
@@ -408,7 +399,118 @@
 	height: auto;
 }
 
-.setting-item.note-compass-form-choice .setting-item-control input[type="text"] {
-	flex: 1 1 0;
+.note-compass-sortable-list .setting-items .setting-item.note-compass-field-row {
+	flex-wrap: wrap;
+	cursor: pointer;
+}
+
+.note-compass-sortable-list .setting-items .setting-item.note-compass-field-row.is-expanded .mod-drag-handle {
+	top: calc(var(--size-4-3) + var(--icon-size) / 2);
+}
+
+.note-compass-field-editor {
+	container-type: inline-size;
+	flex: 1 0 100%;
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-3);
+	margin-top: var(--size-4-2);
+	padding: var(--size-4-1) 0 var(--size-4-1) var(--size-4-3);
+	border-inline-start: 2px solid var(--background-modifier-border);
+	cursor: auto;
+}
+
+.note-compass-field-setting {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--size-2-3) var(--size-4-3);
+}
+
+.note-compass-field-setting-info {
+	flex: 1 1 12em;
+	min-width: 0;
+}
+
+.note-compass-field-setting-control {
+	display: flex;
+	justify-content: flex-end;
+	flex: 0 1 auto;
+	min-width: 0;
+	max-width: 100%;
+}
+
+.note-compass-field-setting-control input[type="text"],
+.note-compass-field-setting-control select {
+	max-width: 100%;
+}
+
+.note-compass-field-setting.mod-wide .note-compass-field-setting-control {
+	flex: 1 1 100%;
+}
+
+.note-compass-field-setting.has-error .setting-item-description {
+	color: var(--text-error);
+}
+
+@container (max-width: 30em) {
+	.note-compass-field-setting {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.note-compass-field-setting-info {
+		flex-basis: auto;
+	}
+
+	.note-compass-field-setting-control {
+		justify-content: flex-start;
+	}
+
+	.note-compass-field-setting-control input[type="text"],
+	.note-compass-field-setting-control select {
+		width: 100%;
+	}
+}
+
+.note-compass-field-choices {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: var(--size-2-3);
+}
+
+.note-compass-form-choice-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-2-2);
+	width: 100%;
+}
+
+.note-compass-form-choice {
+	display: flex;
+	align-items: center;
+	gap: var(--size-2-2);
+}
+
+.note-compass-form-choice.is-dragging {
+	opacity: 0.6;
+}
+
+.note-compass-form-choice-handle {
+	cursor: grab;
+	touch-action: none;
+}
+
+.note-compass-form-choice-inputs {
+	display: flex;
+	flex-wrap: wrap;
+	flex: 1 1 auto;
+	gap: var(--size-2-2);
+	min-width: 0;
+}
+
+.note-compass-form-choice-inputs input[type="text"] {
+	flex: 1 1 9em;
 	min-width: 0;
 }

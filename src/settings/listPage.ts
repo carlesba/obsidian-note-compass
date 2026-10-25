@@ -58,7 +58,6 @@ export interface ListPageContext {
 	propertySuggestions: () => PropertySuggestion[];
 	write: (key: string, value: unknown) => void;
 	openPage: (pageId: string) => void;
-	openPath: (path: string[]) => void;
 	change: (change: () => unknown) => void;
 	prefixDrafts: Map<string, PrefixDraft>;
 	prefixes: PrefixEdits;
@@ -174,7 +173,7 @@ function propertyWarning(
 	return hasSource(entry) ? sourceWarning(entry.source, context) : undefined;
 }
 
-export function editableRow(row: EditableRow, context: ListPageContext): SettingDefinition {
+export function editableRow(row: EditableRow, context: ListPageContext): SettingDefinitionRender & { id: string } {
 	const definition: SettingDefinitionRender & { id: string } = {
 		id: `${row.pageId}-row`,
 		name: row.label,
