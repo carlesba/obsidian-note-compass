@@ -141,7 +141,7 @@ A form's page has:
 - "Open the note after creating it", on by default.
 - "Fields", the values the form fills in or asks for. Their order is the order of the questions.
 
-The fields list works like the other lists in the settings: drag the handle to reorder, the cross deletes a field, and the `+` in the header adds one. Each row sums up its field, as in `book · ask · text · variable`. Click the row or its chevron to edit the field right below it, and click again to close it. One field is open at a time, and a new field opens straight away.
+The fields list works like the other lists in the settings: drag the handle to reorder, the copy icon duplicates a field right below it, the cross deletes a field, and the `+` in the header adds one. The `+` opens a menu: "Blank field" adds an empty asked text field, while "Date", "Time", "Timestamp" and "ISO timestamp" add a fixed field set at creation, keyed `date`, `time`, `timestamp` or `iso-timestamp` and formatted as `YYYY-MM-DD`, `HH:mm`, `YYYY-MM-DDTHH:mm` or ISO 8601. Each item shows what it would write right now, and a key already in use gets a number, as in `timestamp-2`. Each row sums up its field, as in `book · ask · text · variable`. Click the row or its chevron to edit the field right below it, and click again to close it. One field is open at a time, and a new field opens straight away.
 
 The name and content understand these placeholders:
 
@@ -183,6 +183,7 @@ Settings fit a narrow window and work the same on mobile. They are split into fi
 - Drag the handle on the left to reorder the rows. The order is the order of the picker.
 - Use the switch to show or hide a row in the picker without losing its setup.
 - Use the pencil to open the row's page, and the cross to delete it.
+- Use the copy icon to duplicate a row. The copy lands right below it with the same setup, and a form's copy is named `<name> copy`.
 - Use the `+` in the section header to add a row. Its page opens straight away so you can fill it in, and the new row starts switched on.
 
 A row this version of Note Compass cannot read, such as one saved by a newer version, stays in the list with a warning: "This list can't be read by this version of Note Compass. Remove it and build a new one." Its switch is off and disabled and it has no pencil, so it never adds notes to a picker or to "Create note", but its saved setup is kept as it was until you delete it.

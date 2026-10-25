@@ -9,7 +9,7 @@ import { t } from "./i18n";
 import { createObsidianVault } from "./lists/obsidianVault";
 import type { JumpListVault } from "./lists/vault";
 import type NoteCompassPlugin from "./main";
-import { defaultSettings } from "./settings";
+import { defaultSettings, newListId } from "./settings";
 import {
 	CHECKBOX_MODE_KEY,
 	DATE_NOTE_SOURCE_KEY,
@@ -25,7 +25,8 @@ import {
 	formatError,
 	periodName,
 } from "./settings/dateNotesForm";
-import { newForm } from "./forms/form";
+import { newForm, newFormId } from "./forms/form";
+import { duplicateEntry, duplicateName } from "./settings/duplicate";
 import { formPage, formPageId, formRow } from "./settings/formPage";
 import type { FieldEditorState, FormPageContext } from "./settings/formPage";
 import { newList, propertySuggestions } from "./settings/listForm";
@@ -126,7 +127,7 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 				heading: t("jumpToNote"),
 				cls: SORTABLE_LIST_CLASS,
 				emptyState: t("noListsYet"),
-				items: lists.map((list) => listRow(list, context)),
+				items: lists.map((list) => listRow(list, context, () => this.changeLists(() => duplicateEntry(lists, list, newListId(lists))))),
 				...this.editableEntries(lists),
 				addItem: {
 					name: t("addList"),
@@ -143,7 +144,9 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 				heading: t("setProperties"),
 				cls: SORTABLE_LIST_CLASS,
 				emptyState: t("noPropertiesYet"),
-				items: properties.map((entry) => propertyRow(entry, properties, context)),
+				items: properties.map((entry) =>
+					propertyRow(entry, properties, context, () => this.changeLists(() => duplicateEntry(properties, entry, newListId(properties)))),
+				),
 				...this.editableEntries(properties),
 				addItem: {
 					name: t("addProperty"),
@@ -169,7 +172,11 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 				heading: t("forms"),
 				cls: SORTABLE_LIST_CLASS,
 				emptyState: t("noFormsListed"),
-				items: forms.map((form) => formRow(form, formContext)),
+				items: forms.map((form) =>
+					formRow(form, formContext, () =>
+						this.changeLists(() => duplicateEntry(forms, form, newFormId(forms), (copy) => (copy.name = duplicateName(form.name)))),
+					),
+				),
 				...this.editableEntries(forms),
 				addItem: {
 					name: t("addForm"),

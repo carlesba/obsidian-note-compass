@@ -98,6 +98,7 @@ export interface EditableRow {
 	enabledTooltip: string;
 	pageId: string;
 	editTooltip: string;
+	duplicate?: () => void;
 }
 
 export function listPage(list: NoteList, context: ListPageContext): SettingDefinitionPage {
@@ -119,7 +120,7 @@ function sourceWarning(source: ListSource, context: ListPageContext): string | u
 	return inapplicableCondition(source, context.propertyTypes) ? t("conditionDoesNotApply") : undefined;
 }
 
-export function listRow(list: NoteList, context: ListPageContext): SettingDefinition {
+export function listRow(list: NoteList, context: ListPageContext, duplicate?: () => void): SettingDefinition {
 	return editableRow(
 		{
 			name: listName(list),
@@ -134,6 +135,7 @@ export function listRow(list: NoteList, context: ListPageContext): SettingDefini
 			enabledTooltip: t("showListInPicker"),
 			pageId: listPageId(list),
 			editTooltip: t("editList"),
+			duplicate,
 		},
 		context,
 	);
@@ -143,6 +145,7 @@ export function propertyRow(
 	entry: EditableProperty,
 	properties: readonly EditableProperty[],
 	context: ListPageContext,
+	duplicate?: () => void,
 ): SettingDefinition {
 	return editableRow(
 		{
@@ -158,6 +161,7 @@ export function propertyRow(
 			enabledTooltip: t("offerPropertyInPicker"),
 			pageId: propertyPageId(entry),
 			editTooltip: t("editProperty"),
+			duplicate,
 		},
 		context,
 	);
@@ -209,6 +213,10 @@ export function editableRow(row: EditableRow, context: ListPageContext): Setting
 					.onChange((enabled) => context.write(row.enabledKey, enabled)),
 			);
 			if (row.broken) return;
+			const duplicate = row.duplicate;
+			if (duplicate) {
+				setting.addExtraButton((button) => button.setIcon("copy").setTooltip(t("duplicateRow")).onClick(duplicate));
+			}
 			setting.addExtraButton((button) =>
 				button
 					.setIcon("pencil")

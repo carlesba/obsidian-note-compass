@@ -1,6 +1,9 @@
-import { DropdownComponent, ExtraButtonComponent, TextComponent, ToggleComponent, setIcon, setTooltip } from "obsidian";
+import { DropdownComponent, ExtraButtonComponent, Menu, TextComponent, ToggleComponent, moment, setIcon, setTooltip } from "obsidian";
 import type { Setting, SettingDefinition, SettingDefinitionItem, SettingDefinitionList, SettingDefinitionPage, SettingDefinitionRender } from "obsidian";
-import { hasChoices, isDateType, newField } from "../forms/form";
+import { hasChoices, isDateType, newFormId } from "../forms/form";
+import { FIELD_PRESETS, presetField, presetFormat } from "../forms/presets";
+import type { FieldPreset } from "../forms/presets";
+import { duplicateEntry } from "./duplicate";
 import type { Form, FormField } from "../forms/form";
 import { t } from "../i18n";
 import { formFieldKey, formKey } from "./controlKeys";
@@ -56,6 +59,33 @@ interface FieldEditor {
 
 type Redraw = (focus?: string) => void;
 
+const PRESET_ICONS: Record<FieldPreset, string> = {
+	blank: "plus",
+	date: "calendar",
+	time: "clock",
+	timestamp: "calendar-clock",
+	isoTimestamp: "globe",
+};
+
+const PRESET_LABELS: Record<FieldPreset, () => string> = {
+	blank: () => t("fieldPresetBlank"),
+	date: () => t("fieldPresetDate"),
+	time: () => t("fieldPresetTime"),
+	timestamp: () => t("fieldPresetTimestamp"),
+	isoTimestamp: () => t("fieldPresetIsoTimestamp"),
+};
+
+function presetTitle(preset: FieldPreset): DocumentFragment {
+	const title = createFragment();
+	title.createSpan({ text: PRESET_LABELS[preset]() });
+	const format = presetFormat(preset);
+	if (format !== undefined) {
+		const now = moment();
+		title.createSpan({ cls: "note-compass-menu-prefix-count", text: format === "iso" ? now.toISOString() : now.format(format) });
+	}
+	return title;
+}
+
 const NAME_PATTERN_EXAMPLE = "{{date:YYMMDDHHmm}} {{book}}";
 
 const FOCUS_ATTRIBUTE = "data-note-compass-focus";
@@ -64,7 +94,7 @@ export function formPageId(form: Form): string {
 	return `form-${form.id}`;
 }
 
-export function formRow(form: Form, context: FormPageContext): SettingDefinition {
+export function formRow(form: Form, context: FormPageContext, duplicate?: () => void): SettingDefinition {
 	const row = (): EditableRow => ({
 		name: formRowName(form),
 		label: formRowName(form),
@@ -76,6 +106,7 @@ export function formRow(form: Form, context: FormPageContext): SettingDefinition
 		enabledTooltip: t("offerFormAsCommand"),
 		pageId: formPageId(form),
 		editTooltip: t("editForm"),
+		duplicate,
 	});
 	const rowContext: ListPageContext = {
 		...context,
@@ -156,11 +187,19 @@ function fieldList(form: Form, context: FormPageContext): SettingDefinitionList 
 			}),
 		addItem: {
 			name: t("addFormField"),
-			action: () => {
-				const field = newField(form);
-				context.fieldEditor.expanded.set(form.id, field.id);
-				context.fieldEditor.focusesKey = field.id;
-				context.change(() => fields.push(field));
+			action: (buttonEl) => {
+				const add = (preset: FieldPreset) => {
+					const field = presetField(form, preset);
+					context.fieldEditor.expanded.set(form.id, field.id);
+					context.fieldEditor.focusesKey = field.id;
+					context.change(() => fields.push(field));
+				};
+				const menu = new Menu();
+				for (const preset of FIELD_PRESETS) {
+					menu.addItem((item) => item.setTitle(presetTitle(preset)).setIcon(PRESET_ICONS[preset]).onClick(() => add(preset)));
+				}
+				const rect = buttonEl.getBoundingClientRect();
+				menu.showAtPosition({ x: rect.left, y: rect.bottom });
 			},
 		},
 	};
@@ -190,6 +229,15 @@ function fieldRow(
 				toggleExpandedField(context.fieldEditor.expanded, form.id, field.id);
 				context.refresh();
 			};
+			new ExtraButtonComponent(controlEl)
+				.setIcon("copy")
+				.setTooltip(t("duplicateRow"))
+				.onClick(() =>
+					context.change(() => {
+						const copy = duplicateEntry(form.fields, field, newFormId(form.fields));
+						if (copy) context.fieldEditor.expanded.set(form.id, copy.id);
+					}),
+				);
 			const chevronEl = controlEl.createDiv({ cls: "clickable-icon note-compass-field-chevron" });
 			setIcon(chevronEl, expanded ? "chevron-down" : "chevron-right");
 			setTooltip(chevronEl, expanded ? t("collapseField") : t("editField"));
