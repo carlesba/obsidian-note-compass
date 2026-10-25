@@ -50,9 +50,21 @@
 	box-shadow: inset 0 0 0 1px var(--background-modifier-border-focus);
 }
 
+.setting-item.note-compass-prefix-setting {
+	flex-wrap: wrap;
+}
+
+.note-compass-prefix-setting .setting-item-info {
+	flex-basis: 100%;
+	margin-inline-end: 0;
+}
+
 .note-compass-prefix-setting .setting-item-control {
+	flex-basis: 100%;
+	justify-content: flex-start;
 	flex-wrap: wrap;
 	gap: var(--size-4-2);
+	margin-top: var(--size-4-2);
 }
 
 .note-compass-prefix-setting .note-compass-prefix-preview-chip {
@@ -63,7 +75,7 @@
 }
 
 .note-compass-prefix-setting input[type="text"] {
-	width: 10em;
+	flex: 1 1 10em;
 	min-width: 0;
 }
 

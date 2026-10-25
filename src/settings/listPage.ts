@@ -425,7 +425,12 @@ function prefixItems(
 							});
 					});
 				});
-				setting.controlEl.querySelector('input[type="color"]')?.setAttribute("aria-label", t("prefixColour"));
+				const colourInput = setting.controlEl.querySelector<HTMLInputElement>('input[type="color"]');
+				colourInput?.setAttribute("aria-label", t("prefixColour"));
+				colourInput?.addEventListener("input", () => {
+					edit({ color: colourInput.value });
+					showReset();
+				});
 				showReset();
 				return () => {
 					prefixes.release(prefixKey);
