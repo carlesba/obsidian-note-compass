@@ -30,7 +30,7 @@ import {
 import type { ListField, PropertySuggestion } from "./listForm";
 import { filterRules } from "../lists/filters";
 import { renderFilter } from "./filterEditor";
-import { PrefixSuggest, PropertySuggest, warningDescription } from "./suggest";
+import { PropertySuggest, warningDescription } from "./suggest";
 import {
 	addExcludedFolder,
 	addPresetValue,
@@ -47,10 +47,9 @@ import {
 	propertyTypePreset,
 } from "./setPropertiesForm";
 import type { LinkProperty, PropertyField } from "./setPropertiesForm";
-import type { PrefixDraft } from "./prefixChip";
-import { renderPrefixedName } from "./prefixField";
-import { prefixSuggestions } from "./prefixLinks";
-import type { PrefixEdits } from "./prefixLinks";
+import { renderChip, renderPrefixedName } from "./prefixField";
+import { linkedRowsText } from "./prefixLinks";
+import type { PrefixChange, PrefixPages } from "./prefixLinks";
 
 export interface ListPageContext {
 	app: App;
@@ -59,8 +58,9 @@ export interface ListPageContext {
 	write: (key: string, value: unknown) => void;
 	openPage: (pageId: string) => void;
 	change: (change: () => unknown) => void;
-	prefixDrafts: Map<string, PrefixDraft>;
-	prefixes: PrefixEdits;
+	prefixes: PrefixPages;
+	prefixChanged: () => void;
+	prefixTyped: () => void;
 	showPrefixes: boolean;
 }
 
@@ -180,13 +180,24 @@ function editableRow(row: EditableRow, context: ListPageContext): SettingDefinit
 		desc: row.warning,
 		render: (setting) => {
 			setting.settingEl.addClass("note-compass-draggable-row");
-			const stopEditing = context.showPrefixes
-				? renderPrefixedName(
-						setting.nameEl,
-						{ key: row.prefixKey, prefix: row.prefix, prefixColor: row.prefixColor, label: row.label },
-						context,
-					)
-				: undefined;
+			if (context.showPrefixes) {
+				renderPrefixedName(
+					setting.nameEl,
+					{
+						key: row.prefixKey,
+						prefix: row.prefix,
+						prefixColor: row.prefixColor,
+						label: row.label,
+						editPrefix: row.broken
+							? undefined
+							: () => {
+									context.prefixes.startEditing(row.prefixKey);
+									context.openPage(row.pageId);
+								},
+					},
+					context,
+				);
+			}
 			if (row.warning) warningDescription(setting.descEl, row.warning);
 			setting.addToggle((toggle) =>
 				toggle
@@ -195,14 +206,13 @@ function editableRow(row: EditableRow, context: ListPageContext): SettingDefinit
 					.setDisabled(row.broken)
 					.onChange((enabled) => context.write(row.enabledKey, enabled)),
 			);
-			if (row.broken) return stopEditing;
+			if (row.broken) return;
 			setting.addExtraButton((button) =>
 				button
 					.setIcon("pencil")
 					.setTooltip(row.editTooltip)
 					.onClick(() => context.openPage(row.pageId)),
 			);
-			return stopEditing;
 		},
 	};
 	return definition;
@@ -368,24 +378,45 @@ function prefixItems(
 	context: ListPageContext,
 ): SettingDefinitionItem[] {
 	const { prefixes } = context;
-	const linked = prefixes.linked(prefixKey);
+	let previewEl: HTMLElement | undefined;
+	const showPreview = () => {
+		if (previewEl) renderChip(previewEl, target.prefix, target.prefixColor);
+	};
+	const edit = (change: PrefixChange) => {
+		if (!prefixes.edit(prefixKey, change)) return;
+		context.prefixTyped();
+		showPreview();
+	};
+	const linkedLabels = () => prefixes.linkedRows(prefixKey).map((row) => row.label);
 	return [
+		{
+			name: t("prefix"),
+			searchable: false,
+			visible: context.showPrefixes,
+			render: (setting) => {
+				const win = setting.settingEl.win;
+				prefixes.hold(prefixKey);
+				setting.settingEl.addClass("note-compass-prefix-preview");
+				setting.nameEl.empty();
+				previewEl = setting.nameEl.createSpan({ cls: "note-compass-prefix-preview-chip" });
+				showPreview();
+				return () => {
+					prefixes.release(prefixKey);
+					win.setTimeout(() => {
+						if (prefixes.closeUnheld(prefixKey)) context.prefixChanged();
+					}, 0);
+				};
+			},
+		},
 		{
 			name: t("prefix"),
 			desc,
 			visible: context.showPrefixes,
 			render: (setting) => {
 				setting.addText((text) => {
-					text.setValue(target.prefix);
-					text.onChange((typed) => prefixes.type(prefixKey, { prefix: typed }));
-					const suggest = new PrefixSuggest(context.app, text.inputEl, (query) =>
-						prefixSuggestions(prefixes.rows(), prefixKey, query),
-					);
-					suggest.onSelect((suggestion) => {
-						suggest.setValue(suggestion.prefix);
-						prefixes.type(prefixKey, { prefix: suggestion.prefix, color: suggestion.color ?? "" }, "now");
-						suggest.close();
-					});
+					text.setPlaceholder(t("prefixPlaceholder")).setValue(target.prefix);
+					text.onChange((typed) => edit({ prefix: typed }));
+					if (prefixes.takeFocus(prefixKey)) text.inputEl.win.setTimeout(() => text.inputEl.focus(), 0);
 				});
 			},
 		},
@@ -395,36 +426,49 @@ function prefixItems(
 			visible: context.showPrefixes,
 			render: (setting) => {
 				setting.settingEl.addClass("note-compass-prefix-colour");
-				setting.addColorPicker((picker) =>
-					picker
-						.setValue(target.prefixColor ?? NEUTRAL_PREFIX_COLOR)
-						.onChange((color) => prefixes.type(prefixKey, { color })),
-				);
-				if (target.prefixColor === undefined) return;
-				setting.addExtraButton((button) =>
-					button
-						.setIcon("rotate-ccw")
-						.setTooltip(t("removeColour"))
-						.onClick(() => prefixes.type(prefixKey, { color: "" }, "now")),
-				);
+				let resetEl: HTMLElement | undefined;
+				const showColour = () => {
+					setting.setDesc(target.prefixColor === undefined ? t("noPrefixColour") : t("prefixColourDesc"));
+					resetEl?.toggle(target.prefixColor !== undefined);
+				};
+				setting.addColorPicker((picker) => {
+					picker.setValue(target.prefixColor ?? NEUTRAL_PREFIX_COLOR).onChange((color) => {
+						edit({ color });
+						showColour();
+					});
+					setting.addExtraButton((button) => {
+						resetEl = button.extraSettingsEl;
+						button
+							.setIcon("rotate-ccw")
+							.setTooltip(t("removeColour"))
+							.onClick(() => {
+								edit({ color: "" });
+								picker.setValue(NEUTRAL_PREFIX_COLOR);
+								showColour();
+							});
+					});
+				});
+				showColour();
 			},
 		},
 		{
-			name: tCount("linkedPrefixRowsOne", "linkedPrefixRowsOther", linked.length, {
-				prefix: prefixes.linkedPrefix(prefixKey),
-			}),
-			desc: t("linkedPrefixRowsDesc"),
+			name: t("changeOnlyThisRow"),
+			desc: usedByOtherRows(linkedLabels()),
 			searchable: false,
-			visible: context.showPrefixes && linked.length > 0,
+			visible: () => context.showPrefixes && linkedLabels().length > 0,
 			render: (setting) => {
 				setting.addToggle((toggle) =>
 					toggle
-						.setValue(prefixes.updatesLinked(prefixKey))
-						.onChange((updatesLinked) => prefixes.setUpdatesLinked(prefixKey, updatesLinked)),
+						.setValue(prefixes.onlyThisRow(prefixKey))
+						.onChange((onlyThisRow) => prefixes.setOnlyThisRow(prefixKey, onlyThisRow)),
 				);
 			},
 		},
 	];
+}
+
+function usedByOtherRows(labels: readonly string[]): string {
+	return tCount("usedByOtherRowsOne", "usedByOtherRowsOther", labels.length, { rows: linkedRowsText(labels) });
 }
 
 function sourceItems(
