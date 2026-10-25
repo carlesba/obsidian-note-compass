@@ -35,6 +35,7 @@ import { PrefixEdits, applyPrefixChange, updatedPrefixKeys } from "./settings/pr
 import type { PrefixRefresh } from "./settings/prefixLinks";
 import { ResetSettingsModal } from "./settings/resetModal";
 import { checkboxModeOptions, newProperty } from "./settings/setPropertiesForm";
+import { tabPastRows } from "./settings/tabOrder";
 
 const TYPED_FIELDS = [
 	"prefix",
@@ -56,6 +57,9 @@ const DATE_NOTE_FORMATS_PAGE_ID = "date-note-formats";
 
 interface SettingModal {
 	openPagePath?: (tabId: string, path: string[]) => unknown;
+	activeTab?: unknown;
+	tabContentContainer?: unknown;
+	focusSidebar?: () => void;
 }
 
 interface AppWithSettingModal {
@@ -74,6 +78,7 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 	constructor(app: App, plugin: NoteCompassPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
+		this.listenForTab();
 	}
 
 	getSettingDefinitions(): SettingDefinitionItem[] {
@@ -189,8 +194,31 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 		super.hide();
 	}
 
+	private settingModal(): SettingModal | undefined {
+		return (this.app as unknown as AppWithSettingModal).setting;
+	}
+
+	private listenForTab(): void {
+		const modal = this.settingModal();
+		const containerEl = modal?.tabContentContainer;
+		if (!modal || !(containerEl instanceof Node) || !containerEl.instanceOf(HTMLElement)) return;
+		const leaveBefore = () => {
+			if (typeof modal.focusSidebar !== "function") return false;
+			modal.focusSidebar();
+			return true;
+		};
+		this.plugin.registerDomEvent(
+			containerEl,
+			"keydown",
+			(event) => {
+				if (modal.activeTab === this) tabPastRows(event, containerEl, leaveBefore);
+			},
+			{ capture: true },
+		);
+	}
+
 	private openPage(pageId: string): void {
-		const modal = (this.app as unknown as AppWithSettingModal).setting;
+		const modal = this.settingModal();
 		if (typeof modal?.openPagePath !== "function") {
 			new Notice(t("needsNewerObsidian"));
 			return;
