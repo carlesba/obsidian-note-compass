@@ -3,7 +3,16 @@ import { strict as assert } from "node:assert";
 import { newField, newForm } from "../src/forms/form.ts";
 import { defaultSettings } from "../src/settings.ts";
 import { formFieldKey, formKey, readControl, writeControl } from "../src/settings/controlKeys.ts";
-import { addChoice, dateSourceOptions, fieldSummary, fieldWarning, formWarning, moveChoice } from "../src/settings/formsForm.ts";
+import {
+	addChoice,
+	dateSourceOptions,
+	fieldSummary,
+	fieldWarning,
+	formWarning,
+	headerClickToggles,
+	moveChoice,
+	toggleExpandedField,
+} from "../src/settings/formsForm.ts";
 
 function settingsWithForm() {
 	const settings = defaultSettings();
@@ -90,4 +99,23 @@ test("date fields default their format per type and offer other date fields as a
 	writeControl(settings, key("type"), "text");
 	assert.equal(fieldWarning(form, day), "Field started is not a date or time of this form.");
 	assert.equal(formWarning(form), "Some fields need attention. Edit to see why.");
+});
+
+test("toggling a field opens it, closes it again, and keeps one field open per form", () => {
+	const expanded = new Map<string, string>();
+	assert.equal(toggleExpandedField(expanded, "trip", "city"), true);
+	assert.equal(expanded.get("trip"), "city");
+	assert.equal(toggleExpandedField(expanded, "trip", "country"), true);
+	assert.equal(expanded.get("trip"), "country");
+	assert.equal(toggleExpandedField(expanded, "reading", "book"), true);
+	assert.equal(toggleExpandedField(expanded, "trip", "country"), false);
+	assert.equal(expanded.has("trip"), false);
+	assert.equal(expanded.get("reading"), "book");
+});
+
+test("a click on the field header or its chevron toggles, while its buttons and the editor do not", () => {
+	assert.equal(headerClickToggles({ inEditor: false, inControls: false, onChevron: false }), true);
+	assert.equal(headerClickToggles({ inEditor: false, inControls: true, onChevron: true }), true);
+	assert.equal(headerClickToggles({ inEditor: false, inControls: true, onChevron: false }), false);
+	assert.equal(headerClickToggles({ inEditor: true, inControls: false, onChevron: false }), false);
 });

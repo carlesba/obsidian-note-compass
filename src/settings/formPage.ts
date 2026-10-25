@@ -1,4 +1,4 @@
-import { ButtonComponent, DropdownComponent, ExtraButtonComponent, TextComponent, ToggleComponent } from "obsidian";
+import { DropdownComponent, ExtraButtonComponent, TextComponent, ToggleComponent, setIcon, setTooltip } from "obsidian";
 import type { Setting, SettingDefinition, SettingDefinitionItem, SettingDefinitionList, SettingDefinitionPage, SettingDefinitionRender } from "obsidian";
 import { hasChoices, isDateType, newField } from "../forms/form";
 import type { Form, FormField } from "../forms/form";
@@ -17,16 +17,19 @@ import {
 	formRowName,
 	formSummary,
 	formWarning,
+	headerClickToggles,
 	moveChoice,
 	readFieldSetting,
 	saveAsOptions,
 	storeAsOptions,
+	toggleExpandedField,
 } from "./formsForm";
 import type { FieldSetting } from "./formsForm";
 import { editableRow } from "./listPage";
 import type { EditableRow, ListPageContext } from "./listPage";
 import { sortableRows } from "./sortable";
 import { PropertySuggest, warningDescription } from "./suggest";
+import { ROW_CONTROL_CLASS } from "./tabOrder";
 
 export interface FieldEditorState {
 	expanded: Map<string, string>;
@@ -175,24 +178,21 @@ function fieldRow(
 		name: fieldSummary(field),
 		desc: fieldWarning(form, field),
 		render: (setting) => {
-			const { settingEl } = setting;
+			const { settingEl, controlEl } = setting;
 			const expanded = context.fieldEditor.expanded.get(form.id) === field.id;
-			settingEl.addClass("note-compass-draggable-row", "note-compass-field-row");
+			settingEl.addClass("note-compass-draggable-row", "note-compass-field-row", ROW_CONTROL_CLASS);
 			settingEl.toggleClass("is-expanded", expanded);
+			settingEl.setAttr("aria-expanded", String(expanded));
 			const showHeader = () => fieldHeader(setting, form, field);
 			showHeader();
 			headers.set(field.id, showHeader);
 			const toggle = () => {
-				if (expanded) context.fieldEditor.expanded.delete(form.id);
-				else context.fieldEditor.expanded.set(form.id, field.id);
+				toggleExpandedField(context.fieldEditor.expanded, form.id, field.id);
 				context.refresh();
 			};
-			setting.addExtraButton((button) =>
-				button
-					.setIcon(expanded ? "chevron-down" : "chevron-right")
-					.setTooltip(expanded ? t("collapseField") : t("editField"))
-					.onClick(toggle),
-			);
+			const chevronEl = controlEl.createDiv({ cls: "clickable-icon note-compass-field-chevron" });
+			setIcon(chevronEl, expanded ? "chevron-down" : "chevron-right");
+			setTooltip(chevronEl, expanded ? t("collapseField") : t("editField"));
 			const editorEl = expanded ? settingEl.createDiv({ cls: "note-compass-field-editor" }) : undefined;
 			if (editorEl) {
 				const focusesKey = context.fieldEditor.focusesKey === field.id;
@@ -204,9 +204,13 @@ function fieldRow(
 				);
 			}
 			const onClick = (event: MouseEvent) => {
-				if (!(event.target instanceof Node)) return;
-				if (editorEl?.contains(event.target) || setting.controlEl.contains(event.target)) return;
-				toggle();
+				const path = event.composedPath();
+				const click = {
+					inEditor: editorEl !== undefined && path.includes(editorEl),
+					inControls: path.includes(controlEl),
+					onChevron: path.includes(chevronEl),
+				};
+				if (headerClickToggles(click)) toggle();
 			};
 			const onKeydown = (event: KeyboardEvent) => {
 				if (event.target !== settingEl || event.isComposing || (event.key !== "Enter" && event.key !== " ")) return;
@@ -219,6 +223,7 @@ function fieldRow(
 				settingEl.removeEventListener("click", onClick);
 				settingEl.removeEventListener("keydown", onKeydown);
 				settingEl.removeClass("is-expanded");
+				settingEl.removeAttribute("aria-expanded");
 				editorEl?.remove();
 				if (headers.get(field.id) === showHeader) headers.delete(field.id);
 			};
@@ -237,36 +242,75 @@ function fieldHeader(setting: Setting, form: Form, field: FormField): void {
 
 function renderFieldEditor(editorEl: HTMLElement, editor: FieldEditor, focus?: string): void {
 	const draw: Redraw = (target) => {
-		editorEl.empty();
-		fieldEditorRows(editorEl, editor, draw);
-		if (target === undefined) return;
-		const focusEl = editorEl.querySelector<HTMLElement>(`[${FOCUS_ATTRIBUTE}="${target}"]`);
-		window.setTimeout(() => focusEl?.focus(), 0);
+		const releaseLayout = holdLayout(editorEl);
+		const contentEl = createDiv();
+		fieldEditorRows(contentEl, editor, draw);
+		editorEl.setChildrenInPlace(Array.from(contentEl.childNodes));
+		releaseLayout();
+		focusControl(editorEl, target);
 	};
-	draw(focus);
+	fieldEditorRows(editorEl, editor, draw);
+	focusControl(editorEl, focus);
+}
+
+function focusControl(editorEl: HTMLElement, target: string | undefined): void {
+	if (target === undefined) return;
+	const focusEl = editorEl.querySelector<HTMLElement>(`[${FOCUS_ATTRIBUTE}="${target}"]`);
+	if (!focusEl) return;
+	editorEl.win.setTimeout(() => {
+		focusEl.focus({ preventScroll: true });
+		focusEl.scrollIntoView({ block: "nearest" });
+	}, 0);
+}
+
+function scrollerOf(el: HTMLElement): HTMLElement | undefined {
+	for (let parentEl = el.parentElement; parentEl; parentEl = parentEl.parentElement) {
+		const { overflowY } = el.win.getComputedStyle(parentEl);
+		if (overflowY === "auto" || overflowY === "scroll") return parentEl;
+	}
+	return undefined;
+}
+
+function holdLayout(el: HTMLElement): () => void {
+	const scrollerEl = scrollerOf(el);
+	const scrollTop = scrollerEl?.scrollTop;
+	el.setCssStyles({ minHeight: `${el.offsetHeight}px` });
+	const restoreScroll = () => {
+		if (scrollerEl && scrollTop !== undefined) scrollerEl.scrollTop = scrollTop;
+	};
+	return () => {
+		restoreScroll();
+		el.win.requestAnimationFrame(() => {
+			el.setCssStyles({ minHeight: "" });
+			restoreScroll();
+		});
+	};
 }
 
 function fieldEditorRows(editorEl: HTMLElement, editor: FieldEditor, draw: Redraw): void {
 	const { field } = editor;
 	const asks = field.mode === "ask";
-	dropdownRow(editorEl, editor, draw, "saveAs", t("formSaveAs"), t("formSaveAsDesc"), saveAsOptions());
+	const redraws = (setting: FieldSetting) => () => draw(setting);
+	dropdownRow(editorEl, editor, "saveAs", t("formSaveAs"), t("formSaveAsDesc"), saveAsOptions(), redraws("saveAs"));
 	const questionInput = keyRow(editorEl, editor);
-	dropdownRow(editorEl, editor, draw, "mode", t("formMode"), t("formModeDesc"), fieldModeOptions());
-	dropdownRow(editorEl, editor, draw, "type", t("type"), t("formTypeDesc"), fieldTypeOptions(field.mode));
+	dropdownRow(editorEl, editor, "mode", t("formMode"), t("formModeDesc"), fieldModeOptions(), redraws("mode"));
+	dropdownRow(editorEl, editor, "type", t("type"), t("formTypeDesc"), fieldTypeOptions(field.mode), redraws("type"));
 	if (asks) {
 		const question = textRow(editorEl, editor, "question", t("formQuestion"), t("formQuestionDesc"), field.key);
-		questionInput.placeholderOf = question;
+		questionInput.placeholderOf = question.text;
 		toggleRow(editorEl, editor, "optional", t("formOptional"), t("formOptionalDesc"));
 	} else {
-		staticValueRows(editorEl, editor, draw);
+		staticValueRows(editorEl, editor);
 	}
 	if (asks && hasChoices(field.type)) {
-		dropdownRow(editorEl, editor, draw, "storeAs", t("formStoreAs"), t("formStoreAsDesc"), storeAsOptions());
+		dropdownRow(editorEl, editor, "storeAs", t("formStoreAs"), t("formStoreAsDesc"), storeAsOptions());
 		choicesSection(editorEl, editor, draw);
 	}
 	if (isDateType(field.type)) {
-		dropdownRow(editorEl, editor, draw, "dateFormat", t("format"), t("formDateFormatDesc"), dateFormatOptions());
-		if (field.dateFormat === "custom") textRow(editorEl, editor, "customFormat", t("formCustomFormat"), t("formCustomFormatDesc"), "dddd D MMMM YYYY");
+		const showsCustomFormat = () => customFormat.rowEl.toggle(field.dateFormat === "custom");
+		dropdownRow(editorEl, editor, "dateFormat", t("format"), t("formDateFormatDesc"), dateFormatOptions(), showsCustomFormat);
+		const customFormat = textRow(editorEl, editor, "customFormat", t("formCustomFormat"), t("formCustomFormatDesc"), "dddd D MMMM YYYY");
+		showsCustomFormat();
 	}
 }
 
@@ -298,18 +342,18 @@ function write(editor: FieldEditor, setting: FieldSetting, value: unknown, index
 function dropdownRow(
 	parentEl: HTMLElement,
 	editor: FieldEditor,
-	draw: Redraw,
 	setting: FieldSetting,
 	name: string,
 	desc: string,
 	options: Record<string, string>,
+	changed?: () => void,
 ): void {
 	const { controlEl } = editorRow(parentEl, name, desc);
 	const dropdown = new DropdownComponent(controlEl).addOptions(options);
 	dropdown.selectEl.setAttr(FOCUS_ATTRIBUTE, setting);
 	dropdown.setValue(settingText(editor.field, setting)).onChange((value) => {
 		write(editor, setting, value);
-		draw(setting);
+		changed?.();
 	});
 }
 
@@ -320,12 +364,12 @@ function textRow(
 	name: string,
 	desc: string,
 	placeholder: string,
-): TextComponent {
-	const { controlEl } = editorRow(parentEl, name, desc);
+): { text: TextComponent; rowEl: HTMLElement } {
+	const { rowEl, controlEl } = editorRow(parentEl, name, desc);
 	const text = new TextComponent(controlEl).setPlaceholder(placeholder);
 	text.inputEl.setAttr(FOCUS_ATTRIBUTE, setting);
 	text.setValue(settingText(editor.field, setting)).onChange((value) => write(editor, setting, value));
-	return text;
+	return { text, rowEl };
 }
 
 function toggleRow(parentEl: HTMLElement, editor: FieldEditor, setting: FieldSetting, name: string, desc: string): void {
@@ -359,7 +403,7 @@ function keyRow(parentEl: HTMLElement, editor: FieldEditor): { placeholderOf?: T
 	return linked;
 }
 
-function staticValueRows(parentEl: HTMLElement, editor: FieldEditor, draw: Redraw): void {
+function staticValueRows(parentEl: HTMLElement, editor: FieldEditor): void {
 	const { form, field } = editor;
 	switch (field.type) {
 		case "text":
@@ -375,7 +419,7 @@ function staticValueRows(parentEl: HTMLElement, editor: FieldEditor, draw: Redra
 			listItemsInput(editorRow(parentEl, t("formListItems"), t("formListItemsDesc"), true).controlEl, editor);
 			return;
 		default:
-			dropdownRow(parentEl, editor, draw, "from", t("formValue"), t("formDateSourceDesc"), dateSourceOptions(form, field));
+			dropdownRow(parentEl, editor, "from", t("formValue"), t("formDateSourceDesc"), dateSourceOptions(form, field));
 	}
 }
 
@@ -393,42 +437,53 @@ function numberRow(parentEl: HTMLElement, editor: FieldEditor): void {
 
 function choicesSection(parentEl: HTMLElement, editor: FieldEditor, draw: Redraw): void {
 	const { field, context } = editor;
-	const choices = field.choices ?? [];
 	const sectionEl = parentEl.createDiv({ cls: "note-compass-field-choices" });
-	sectionEl.createDiv({ cls: "setting-item-name", text: t("formChoices") });
+	const headerEl = sectionEl.createDiv({ cls: "note-compass-field-choices-header" });
+	headerEl.createDiv({ cls: "setting-item-name", text: t("formChoices") });
+	const addButton = new ExtraButtonComponent(headerEl).setIcon("plus").setTooltip(t("addFormChoice"));
 	const listEl = sectionEl.createDiv({ cls: "note-compass-form-choice-list" });
-	if (choices.length === 0) listEl.createDiv({ cls: "setting-item-description", text: t("noFormChoices") });
-	choices.forEach((choice, index) => {
-		const rowEl = listEl.createDiv({ cls: "note-compass-form-choice" });
-		new ExtraButtonComponent(rowEl).setIcon("grip-vertical").setTooltip(t("dragToReorder")).extraSettingsEl.addClass("note-compass-form-choice-handle");
-		const inputsEl = rowEl.createDiv({ cls: "note-compass-form-choice-inputs" });
-		const value = new TextComponent(inputsEl).setPlaceholder(t("formChoiceValuePlaceholder")).setValue(choice.value);
-		const label = new TextComponent(inputsEl).setPlaceholder(choice.value || t("formChoiceLabelPlaceholder")).setValue(choice.label ?? "");
-		value.inputEl.setAttrs({ [FOCUS_ATTRIBUTE]: `choiceValue/${index}`, "aria-label": t("formChoiceValuePlaceholder") });
-		label.inputEl.setAttr("aria-label", t("formChoiceLabelPlaceholder"));
-		value.onChange((typed) => {
-			write(editor, "choiceValue", typed, index);
-			label.setPlaceholder(choice.value || t("formChoiceLabelPlaceholder"));
-		});
-		label.onChange((typed) => write(editor, "choiceLabel", typed, index));
-		new ExtraButtonComponent(rowEl)
-			.setIcon("x")
-			.setTooltip(t("formRemoveChoice"))
-			.onClick(() => {
-				context.saveQuietly(() => deleteChoice(field, index));
-				editor.changed();
-				draw();
-			});
-	});
+	const emptyEl = listEl.createDiv({ cls: "setting-item-description", text: t("noFormChoices") });
+	const choices = () => field.choices ?? [];
+	emptyEl.toggle(choices().length === 0);
+	choices().forEach((_choice, index) => choiceRow(listEl, editor, index, draw));
 	sortableRows(listEl, ".note-compass-form-choice", ".note-compass-form-choice-handle", (from, to) => {
 		context.saveQuietly(() => moveChoice(field, from, to));
 		draw();
 	});
-	new ButtonComponent(sectionEl).setButtonText(t("addFormChoice")).onClick(() => {
+	addButton.onClick(() => {
 		context.saveQuietly(() => addChoice(field));
 		editor.changed();
-		draw(`choiceValue/${choices.length}`);
+		emptyEl.hide();
+		const index = choices().length - 1;
+		choiceRow(listEl, editor, index, draw);
+		focusControl(listEl, `choiceValue/${index}`);
 	});
+}
+
+function choiceRow(listEl: HTMLElement, editor: FieldEditor, index: number, draw: Redraw): void {
+	const { field, context } = editor;
+	const choice = field.choices?.[index];
+	if (!choice) return;
+	const rowEl = listEl.createDiv({ cls: "note-compass-form-choice" });
+	new ExtraButtonComponent(rowEl).setIcon("grip-vertical").setTooltip(t("dragToReorder")).extraSettingsEl.addClass("note-compass-form-choice-handle");
+	const inputsEl = rowEl.createDiv({ cls: "note-compass-form-choice-inputs" });
+	const value = new TextComponent(inputsEl).setPlaceholder(t("formChoiceValuePlaceholder")).setValue(choice.value);
+	const label = new TextComponent(inputsEl).setPlaceholder(choice.value || t("formChoiceLabelPlaceholder")).setValue(choice.label ?? "");
+	value.inputEl.setAttrs({ [FOCUS_ATTRIBUTE]: `choiceValue/${index}`, "aria-label": t("formChoiceValuePlaceholder") });
+	label.inputEl.setAttr("aria-label", t("formChoiceLabelPlaceholder"));
+	value.onChange((typed) => {
+		write(editor, "choiceValue", typed, index);
+		label.setPlaceholder(choice.value || t("formChoiceLabelPlaceholder"));
+	});
+	label.onChange((typed) => write(editor, "choiceLabel", typed, index));
+	new ExtraButtonComponent(rowEl)
+		.setIcon("x")
+		.setTooltip(t("formRemoveChoice"))
+		.onClick(() => {
+			context.saveQuietly(() => deleteChoice(field, index));
+			editor.changed();
+			draw();
+		});
 }
 
 function listItemsInput(controlEl: HTMLElement, editor: FieldEditor): void {

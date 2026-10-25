@@ -269,6 +269,26 @@ export function fieldValueError(setting: FieldSetting, value: string): string | 
 	return t("presetNumberError");
 }
 
+export function toggleExpandedField(expanded: Map<string, string>, formId: string, fieldId: string): boolean {
+	if (expanded.get(formId) === fieldId) {
+		expanded.delete(formId);
+		return false;
+	}
+	expanded.set(formId, fieldId);
+	return true;
+}
+
+export interface HeaderClick {
+	inEditor: boolean;
+	inControls: boolean;
+	onChevron: boolean;
+}
+
+export function headerClickToggles(click: HeaderClick): boolean {
+	if (click.inEditor) return false;
+	return click.onChevron || !click.inControls;
+}
+
 export function addChoice(field: FormField): void {
 	field.choices = [...(field.choices ?? []), { value: "" }];
 }

@@ -480,6 +480,14 @@
 	gap: var(--size-2-3);
 }
 
+.note-compass-field-choices-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--size-4-2);
+	width: 100%;
+}
+
 .note-compass-form-choice-list {
 	display: flex;
 	flex-direction: column;
