@@ -2,7 +2,7 @@
 
 **English** · [Español](README.es.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 
-Note Compass adds three commands that work from anywhere in Obsidian, with or without an editor open. "Jump to note" opens one picker with the notes related to the note in focus, such as its adjacent date notes and the notes it links to, alongside lists you define with filters on properties, folders, tags, links and dates. "Set properties" edits the properties of the note in focus from a single picker. "Create note" makes a new note that already belongs to one of your link properties, so the other two commands offer it from then on.
+Note Compass adds three commands that work from anywhere in Obsidian, with or without an editor open. "Jump to note" opens one picker with the notes related to the note in focus, such as its adjacent date notes and the notes it links to, alongside lists you define with filters on properties, folders, tags, links and dates. "Set properties" edits the properties of the note in focus from a single picker. "Create note" makes a new note that already belongs to one of your link properties, so the other two commands offer it from then on. "Fill form" asks the questions of a form you define and creates one new note from the answers, with its name, text and properties filled in.
 
 ![The Set properties picker, with Save & close and Cancel at the top, the note's current values marked with a check, and more values to add below](docs/images/set-properties.png)
 
@@ -119,9 +119,57 @@ Then the note joins the property's source, so it shows up in that property's lis
 
 Only sources that can hold a new note qualify: notes in a folder, notes linking to a note, notes modified today, and filters made of a single property condition under "All the following are true" that gives a value to write, such as "is true", "is", "has item", or "is set" on a checkbox. The relation sources, filters with more than one condition or with groups, and conditions such as "greater than" cannot, and the "Allow creating notes" switch explains why when it is disabled. When no property qualifies, the command says "No link property can create notes."
 
+## Forms
+
+A form creates one new note from a few questions, such as a reading log entry that asks for the book and its author, or a meeting note that asks for the topic and the people. You define forms in Settings → Note Compass → Forms. "Fill form" lists your enabled forms and runs the one you choose, and each enabled form is also a command of its own, named after the form, so you can give it a hotkey. Like the other commands, it works with or without a note in focus. When there are no forms, "Fill form" says "No forms yet. Add one in Settings → Note Compass → Forms."
+
+A form asks one question per asked field, variables first and then properties, each in the order of its list. Escape goes back to the previous question, and Escape on the first question closes the form without making a note. The answers you already gave are kept when you go back and show a check.
+
+After the last question, a summary opens. Its first row is `✅ Create "<name>"` with the note's name worked out from your answers, then one row per field with the value it will get, or `skipped`, then `🛑 Cancel`. Choosing an asked field opens its question again and comes back to the summary after you answer it, and Escape on the summary goes back to the last question. ⌘ Enter on macOS or Ctrl Enter elsewhere creates the note from any question once every required question has an answer.
+
+The note goes in the form's "Folder", or where Obsidian puts new notes when that is empty. When a note with that name already exists there, ignoring case, the new one gets a number, as in `Dune 2`. The note's text is written first, then its properties in the order of the list. Then Note Compass says where the note went, as in `Created "Dune" in reading.`, and opens it unless "Open the note after creating it" is off.
+
+### Form pages
+
+A form's page has:
+
+- "Enabled", which offers the form in "Fill form" and as a command.
+- "Name", shown in "Fill form" and as the command name.
+- "Note name", the pattern for the new note's name, such as `{{date:YYMMDDHHmm}} {{book}}`. Spaces repeated by an empty placeholder are collapsed, and a name that ends up empty or with characters Obsidian cannot use in a file name is refused with a message, keeping you on the summary.
+- "Note content", the new note's text, with the same placeholders.
+- "Folder", where new notes go.
+- "Open the note after creating it", on by default.
+- "Variables", values you can use in the name and content that are not written to the note.
+- "Properties", values written to the new note's properties under their name.
+
+Both lists work like the other lists in the settings: drag the handle to reorder, use the pencil to open a field's page, the cross to delete it, and the `+` in the header to add one.
+
+The name and content understand these placeholders:
+
+- `{{date}}` and `{{time}}` are the time the form started, in the formats set in the core Templates plugin. `{{date:FORMAT}}` and `{{time:FORMAT}}` use the format given.
+- `{{key}}` is the value of the variable or property called `key`. Lists are joined with commas, and a skipped field is empty.
+- `{{key:FORMAT}}` formats a date or time field with the format given, such as `{{started:dddd}}`.
+- `{{title}}`, in the content only, is the new note's name.
+
+Any other placeholder is left as it is.
+
+### Field pages
+
+Every variable and property has a name, used as its property name or as `{{name}}`, then "Mode", which is "Fixed" for a value filled in for you or "Ask" for a question, and "Type".
+
+A fixed field can be text, number, checkbox, list, date, time or datetime. A number only keeps numbers, and a checkbox has a switch. A list has a box where each item shows as a chip: type an item and press Enter to add it, and use its × to remove it. Items may be links, so `[[Books]]` and `[[Reading]]` write `categories: ["[[Books]]", "[[Reading]]"]`, which is how a form links its notes to other notes.
+
+An asked field can be text, number, checkbox, select, multiselect, date, time or datetime. "Question" is the prompt, and the field's name when empty. "Optional" puts `⏭️ Skip` first in the question; a skipped property is not written at all, and a skipped variable is empty. A text or number property also offers the values the property already has in the vault, and anything you type.
+
+Select and multiselect have "Choices", each with a value and an optional label. The question shows the label, or the value when there is none, and the note gets the value. A multiselect question lets you pick several choices, marked with a check, and finish with `🏁 Done`. "Store values as" writes the values as text or as numbers, so a choice with the value `4` and the label `4 · Great` can write the number 4.
+
+Date, time and datetime fields have "Format": `YYYY-MM-DD`, `HH:mm`, `YYYY-MM-DDTHH:mm`, ISO 8601, or a custom Moment.js format. A fixed one takes the time the form started, or the value of another date or time field of the form, chosen under "Value" as "From field …". One asked time can then feed several properties, such as a `day` with `YYYY-MM-DD` and a `timestamp` with ISO 8601. When the field it comes from is skipped, it is skipped too. An asked one offers "Now", and a date also offers "Today", "Tomorrow", "Next Monday" and "In a week". You can also type `20240311`, `2024-03-11`, `0930`, `09:30` or `20240311 0930`, as in the date pickers of "Set properties". A time is that time today.
+
+A field without a name, two fields with the same name, a select without choices, or a date taken from a field that is not a date warn on the field's row and on the form. A form this version of Note Compass cannot read stays in the list switched off, with a warning and no pencil, like an unreadable list, and its saved setup is kept until you delete it.
+
 ## Settings
 
-Settings fit a narrow window and work the same on mobile. They are split into four parts: "Display", the "Jump to note" lists, "Date notes" and the "Set properties" list, followed by "Reset all settings".
+Settings fit a narrow window and work the same on mobile. They are split into five parts: "Display", the "Jump to note" lists, "Date notes", the "Set properties" list and "Forms", followed by "Reset all settings".
 
 ![The settings tab, with the Jump to note lists, the Date notes source and the Set properties list, each row with a prefix chip, a switch, a pencil and a delete button](docs/images/settings.png)
 
@@ -202,7 +250,7 @@ Several rows may write the same property, such as the default `related` rows wit
 
 ### Reset all settings
 
-"Reset all settings", at the bottom of the settings, puts every list, property and option back to the defaults. It asks first, and Cancel or Escape leaves everything as it was. The reset cannot be undone.
+"Reset all settings", at the bottom of the settings, puts every list, property, form and option back to the defaults, which have no forms. It asks first, and Cancel or Escape leaves everything as it was. The reset cannot be undone.
 
 ## Languages
 
