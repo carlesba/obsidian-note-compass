@@ -374,7 +374,6 @@ export const en = {
 	formQuestionDesc: "Shown while filling the form. Empty uses the field's name.",
 	formOptional: "Optional",
 	formOptionalDesc: "Offer Skip first. A skipped property is not written, and a skipped variable is empty.",
-	entryTimePlaceholder: "{question} · {value}",
 	keepEntryTime: "Keep",
 	formEntryTime: "Use as the entry time",
 	formEntryTimeDesc: "The answer replaces the time the form started, for {{date}} and {{time}}, fields set at creation and the note name. Enter keeps the time shown.",

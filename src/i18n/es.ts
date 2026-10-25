@@ -375,7 +375,6 @@ export const es: Translation = {
 	formQuestionDesc: "Se muestra al rellenar el formulario. Si está vacía, se usa el nombre del campo.",
 	formOptional: "Opcional",
 	formOptionalDesc: "Ofrece Omitir primero. Una propiedad omitida no se escribe y una variable omitida queda vacía.",
-	entryTimePlaceholder: "{question} · {value}",
 	keepEntryTime: "Mantener",
 	formEntryTime: "Usar como hora de la entrada",
 	formEntryTimeDesc: "La respuesta sustituye la hora en que empezó el formulario para {{date}} y {{time}}, los campos fijados al crear y el nombre de la nota. Intro mantiene la hora mostrada.",

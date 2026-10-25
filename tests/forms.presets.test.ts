@@ -24,14 +24,14 @@ test("a preset whose key is taken gets the next free numbered key", () => {
 	assert.equal(presetField(form, "timestamp").key, "timestamp-3");
 });
 
-test("the entry time preset asks for a datetime kept as a variable that sets the form's time", () => {
+test("the entry time preset asks for a time kept as a variable that sets the form's time", () => {
 	assert.deepEqual(presetField(newForm([]), "entryTime"), {
 		id: "1",
 		key: "entry-time",
 		saveAs: "variable",
 		mode: "ask",
-		type: "datetime",
-		dateFormat: "YYYY-MM-DDTHH:mm",
+		type: "time",
+		dateFormat: "HH:mm",
 		entryTime: true,
 	});
 });

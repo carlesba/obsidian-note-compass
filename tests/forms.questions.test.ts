@@ -84,8 +84,9 @@ test("the confirm view offers creating the named note, each field with its value
 });
 
 test("an entry time question shows the time it keeps as its placeholder and offers Keep first", () => {
-	const entry = question({ type: "datetime", entryTime: true, question: "When?" });
-	assert.equal(questionPlaceholder(entry.field, NOW, moment), `When? · ${moment(NOW).format("YYYYMMDDHHmm")}`);
+	const entry = question({ type: "time", entryTime: true, question: "When?" });
+	assert.equal(questionPlaceholder(entry.field, NOW, moment), moment(NOW).format("HHmm"));
+	assert.equal(questionPlaceholder({ ...entry.field, type: "datetime" }, NOW, moment), moment(NOW).format("YYYYMMDDHHmm"));
 	const [first] = questionChoices(entry, undefined, "");
 	assert.ok(first);
 	assert.equal(first.parts.content, "Keep");

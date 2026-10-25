@@ -376,7 +376,6 @@ export const zhTW: Translation = {
 	formQuestionDesc: "填寫表單時顯示。留空則使用欄位名稱。",
 	formOptional: "選填",
 	formOptionalDesc: "在最前面提供「略過」。略過的屬性不會寫入，略過的變數則為空。",
-	entryTimePlaceholder: "{question} · {value}",
 	keepEntryTime: "保留",
 	formEntryTime: "用作條目時間",
 	formEntryTimeDesc: "答案會取代表單開始的時間，用於 {{date}} 和 {{time}}、建立時設定的欄位以及筆記名稱。按 Enter 保留顯示的時間。",

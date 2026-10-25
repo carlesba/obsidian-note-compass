@@ -376,7 +376,6 @@ export const zh: Translation = {
 	formQuestionDesc: "填写表单时显示。留空则使用字段名称。",
 	formOptional: "可选",
 	formOptionalDesc: "在最前面提供“跳过”。跳过的属性不会写入，跳过的变量为空。",
-	entryTimePlaceholder: "{question} · {value}",
 	keepEntryTime: "保持",
 	formEntryTime: "用作条目时间",
 	formEntryTimeDesc: "答案会替换表单开始的时间，用于 {{date}} 和 {{time}}、创建时设置的字段以及笔记名称。按 Enter 保留显示的时间。",

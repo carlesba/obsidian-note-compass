@@ -376,7 +376,6 @@ export const ko: Translation = {
 	formQuestionDesc: "양식을 작성할 때 표시됩니다. 비워 두면 필드 이름을 씁니다.",
 	formOptional: "선택 사항",
 	formOptionalDesc: "건너뛰기를 맨 앞에 표시합니다. 건너뛴 속성은 기록되지 않고, 건너뛴 변수는 비어 있습니다.",
-	entryTimePlaceholder: "{question} · {value}",
 	keepEntryTime: "유지",
 	formEntryTime: "항목 시간으로 사용",
 	formEntryTimeDesc: "답변이 {{date}}와 {{time}}, 생성 시 설정되는 필드, 노트 이름에 쓰이는 양식 시작 시간을 대신합니다. Enter를 누르면 표시된 시간을 유지합니다.",

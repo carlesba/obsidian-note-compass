@@ -63,9 +63,8 @@ export function formName(form: Form): string {
 }
 
 export function questionPlaceholder(field: FormField, now: number, moment: MomentFactory): string {
-	const text = questionText(field) || t("untitledField");
-	if (!field.entryTime || !isDateType(field.type)) return text;
-	return t("entryTimePlaceholder", { question: text, value: moment(now).format(DIGIT_DATE_FORMATS[field.type]) });
+	if (field.entryTime && isDateType(field.type)) return moment(now).format(DIGIT_DATE_FORMATS[field.type]);
+	return questionText(field) || t("untitledField");
 }
 
 export function questionChoices(question: Question, answer: Answer | undefined, query: string): QuestionChoice[] {
