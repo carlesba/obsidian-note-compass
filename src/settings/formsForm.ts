@@ -128,10 +128,25 @@ export function fieldRowName(field: FormField): string {
 	return field.key.trim() || t("newField");
 }
 
-export function fieldSummary(field: FormField): string {
+export type FieldBadgeKind = "property" | "variable" | "mode" | "type";
+
+export interface FieldBadge {
+	kind: FieldBadgeKind;
+	text: string;
+}
+
+export function fieldBadges(field: FormField): FieldBadge[] {
 	const mode = field.mode === "static" ? t("formSummaryFixed") : field.optional ? t("formSummaryAskOptional") : t("formSummaryAsk");
-	const saveAs = field.saveAs === "property" ? t("formSummaryProperty") : t("formSummaryVariable");
-	return [fieldRowName(field), mode, fieldTypeLabel(field.type), saveAs].join(" · ");
+	return [
+		field.saveAs === "property" ? { kind: "property", text: t("formSummaryProperty") } : { kind: "variable", text: t("formSummaryVariable") },
+		{ kind: "mode", text: mode },
+		{ kind: "type", text: fieldTypeLabel(field.type) },
+	];
+}
+
+export function fieldSummary(field: FormField): string {
+	const [saveAs, mode, type] = fieldBadges(field).map((badge) => badge.text);
+	return [fieldRowName(field), mode, type, saveAs].join(" · ");
 }
 
 export function fieldWarning(form: Form, field: FormField): string | undefined {

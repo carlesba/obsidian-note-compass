@@ -491,3 +491,45 @@
 	color: var(--text-muted);
 	font-size: var(--font-ui-smaller);
 }
+
+.note-compass-field-title {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--size-2-2) var(--size-4-1);
+}
+
+.note-compass-field-name {
+	margin-inline-end: var(--size-2-2);
+	overflow-wrap: anywhere;
+}
+
+.note-compass-field-badge {
+	display: inline-flex;
+	align-items: center;
+	height: calc(1.5em + 2px);
+	padding: 0 var(--size-4-1);
+	font-size: var(--font-ui-smaller);
+	line-height: 1;
+	white-space: nowrap;
+	color: var(--text-muted);
+	background: var(--background-modifier-hover);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+}
+
+.note-compass-field-badge.mod-property {
+	color: var(--text-normal);
+	background: color-mix(in srgb, var(--color-blue) 22%, var(--background-primary));
+	border-color: color-mix(in srgb, var(--color-blue) 45%, var(--background-modifier-border));
+}
+
+.note-compass-field-badge.mod-variable {
+	color: var(--text-normal);
+	background: color-mix(in srgb, var(--color-purple) 22%, var(--background-primary));
+	border-color: color-mix(in srgb, var(--color-purple) 45%, var(--background-modifier-border));
+}
+
+.note-compass-field-badge.mod-type {
+	background: transparent;
+}

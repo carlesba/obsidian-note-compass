@@ -6,6 +6,7 @@ import { formFieldKey, formKey, readControl, writeControl } from "../src/setting
 import {
 	addChoice,
 	dateSourceOptions,
+	fieldBadges,
 	fieldSummary,
 	fieldWarning,
 	formWarning,
@@ -134,4 +135,17 @@ test("a fixed date can be set to a typed date, and switching back clears it", ()
 	assert.equal(fieldWarning(form, field), "Can't read this date. Type it as YYYYMMDDHHmm.");
 	writeControl(settings, key("from"), "");
 	assert.equal(field.at, undefined);
+});
+
+test("a field row shows its name apart from badges for where it is saved, its mode and its type", () => {
+	const { field } = settingsWithForm();
+	field.key = "tags";
+	field.mode = "static";
+	field.type = "list";
+	field.saveAs = "variable";
+	assert.deepEqual(fieldBadges(field), [
+		{ kind: "variable", text: "variable" },
+		{ kind: "mode", text: "fixed" },
+		{ kind: "type", text: "list" },
+	]);
 });

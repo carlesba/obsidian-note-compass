@@ -14,6 +14,8 @@ import {
 	dateSourceOptions,
 	deleteChoice,
 	fieldModeOptions,
+	fieldBadges,
+	fieldRowName,
 	fieldSummary,
 	fieldTypeOptions,
 	fieldValueError,
@@ -290,11 +292,21 @@ function fieldRow(
 }
 
 function fieldHeader(setting: Setting, form: Form, field: FormField): void {
-	setting.setName(fieldSummary(field));
+	setting.setName(fieldTitle(field));
 	setting.setDesc("");
 	setting.descEl.removeClass("note-compass-warning");
 	const warning = fieldWarning(form, field);
 	if (warning) warningDescription(setting.descEl, warning);
+}
+
+function fieldTitle(field: FormField): DocumentFragment {
+	const title = createFragment();
+	const nameEl = title.createSpan({ cls: "note-compass-field-title" });
+	nameEl.createSpan({ cls: "note-compass-field-name", text: fieldRowName(field) });
+	for (const badge of fieldBadges(field)) {
+		nameEl.createSpan({ cls: `note-compass-field-badge mod-${badge.kind}`, text: badge.text });
+	}
+	return title;
 }
 
 function renderFieldEditor(editorEl: HTMLElement, editor: FieldEditor, focus?: string): void {
