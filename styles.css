@@ -139,6 +139,10 @@
 	padding-block: var(--size-2-2);
 }
 
+.is-mobile .note-compass-results > .suggestion-item.note-compass-row {
+	padding-block: var(--size-4-3);
+}
+
 .note-compass-row-mark {
 	grid-column: mark;
 	white-space: nowrap;
