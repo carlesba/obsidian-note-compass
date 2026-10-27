@@ -111,7 +111,6 @@ export function linkedRowsText(labels: readonly string[], shown = 3): string {
 
 interface PrefixPage {
 	linked: string[];
-	onlyThisRow: boolean;
 	edited: boolean;
 	holds: number;
 }
@@ -132,7 +131,7 @@ export class PrefixPages {
 	private page(key: string): PrefixPage {
 		const known = this.pages.get(key);
 		if (known) return known;
-		const page: PrefixPage = { linked: linkedPrefixKeys(this.rows(), key), onlyThisRow: false, edited: false, holds: 0 };
+		const page: PrefixPage = { linked: linkedPrefixKeys(this.rows(), key), edited: false, holds: 0 };
 		this.pages.set(key, page);
 		return page;
 	}
@@ -159,18 +158,9 @@ export class PrefixPages {
 		return rows.filter((row) => linked.includes(row.key));
 	}
 
-	onlyThisRow(key: string): boolean {
-		return this.pages.get(key)?.onlyThisRow ?? false;
-	}
-
-	setOnlyThisRow(key: string, onlyThisRow: boolean): void {
-		this.page(key).onlyThisRow = onlyThisRow;
-	}
-
 	edit(key: string, change: PrefixChange): boolean {
 		const page = this.page(key);
-		const keys = page.onlyThisRow ? [key] : [key, ...page.linked];
-		if (!applyPrefixChange(this.settings(), keys, change)) return false;
+		if (!applyPrefixChange(this.settings(), [key, ...page.linked], change)) return false;
 		page.edited = true;
 		return true;
 	}

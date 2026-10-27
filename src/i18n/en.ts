@@ -125,7 +125,6 @@ export const en = {
 	prefixRowCountOther: "{count} rows",
 	usedByOtherRowsOne: "Used by {count} other row: {rows}",
 	usedByOtherRowsOther: "Used by {count} other rows: {rows}",
-	changeOnlyThisRow: "Change only this row",
 	source: "Source",
 	note: "Note",
 	noteDesc: "Notes that link to this note, in the text or in a property, are listed.",

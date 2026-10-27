@@ -127,7 +127,6 @@ export const es: Translation = {
 	prefixRowCountOther: "{count} filas",
 	usedByOtherRowsOne: "Lo usa {count} fila más: {rows}",
 	usedByOtherRowsOther: "Lo usan {count} filas más: {rows}",
-	changeOnlyThisRow: "Cambiar solo esta fila",
 	source: "Origen",
 	note: "Nota",
 	noteDesc: "Se listan las notas que enlazan a esta nota, en el texto o en una propiedad.",

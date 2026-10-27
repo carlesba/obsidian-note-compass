@@ -127,7 +127,6 @@ export const ko: Translation = {
 	prefixRowCountOther: "{count}개 행",
 	usedByOtherRowsOne: "다른 {count}개 행에서도 사용 중: {rows}",
 	usedByOtherRowsOther: "다른 {count}개 행에서도 사용 중: {rows}",
-	changeOnlyThisRow: "이 행만 변경",
 	source: "소스",
 	note: "노트",
 	noteDesc: "본문이나 속성에서 이 노트로 링크하는 노트를 나열합니다.",

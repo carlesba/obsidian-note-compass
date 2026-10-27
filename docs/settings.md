@@ -67,9 +67,9 @@ An empty prefix shows as a faint `prefix` chip and is never listed.
 
 ### The prefix setting on a row's page
 
-On a list's or property's page, one row under the "Prefix" description holds the chip's preview, its text and its colour. The preview follows the text you type and the colour you pick, and the circular arrow removes the colour.
+On a list's or property's page, the "Prefix" group holds one row with the chip's preview, its text and its colour. The preview follows the text you type and the colour you pick, and the circular arrow removes the colour.
 
-When other rows shared the prefix as the page opened, "Change only this row" names them, as in "Used by 2 other rows: people · links, Outbound links". It is off, so the text you type and the colour you pick change those rows too, and they stay together even while the text is briefly empty. Turn it on to change only this row.
+When other rows shared the prefix as the page opened, the description names them, as in "Used by 2 other rows: people · links, Outbound links". The text you type and the colour you pick change those rows too, and they stay together even while the text is briefly empty. To give one row a prefix of its own, choose another prefix or "No prefix" from that row's chip menu first.
 
 ## List pages
 

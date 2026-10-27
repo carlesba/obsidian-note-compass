@@ -127,7 +127,6 @@ export const zh: Translation = {
 	prefixRowCountOther: "{count} 行",
 	usedByOtherRowsOne: "另有 {count} 行使用：{rows}",
 	usedByOtherRowsOther: "另有 {count} 行使用：{rows}",
-	changeOnlyThisRow: "仅更改此行",
 	source: "来源",
 	note: "笔记",
 	noteDesc: "列出在正文或属性中链接到此笔记的笔记。",

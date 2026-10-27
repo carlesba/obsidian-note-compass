@@ -176,7 +176,6 @@ test("a page's edits change the rows that shared its prefix when it opened, even
 		pages.linkedRows(key).map((linked) => linked.key),
 		[listKey("list-2", "prefix"), propertyKey("status", "prefix")],
 	);
-	assert.equal(pages.onlyThisRow(key), false);
 	for (const typed of ["👤 pe", "", "📅 due", "👥 team"]) pages.edit(key, { prefix: typed });
 	pages.edit(key, { color: "#0000ff" });
 	assert.deepEqual(shown(settings), [
@@ -188,35 +187,18 @@ test("a page's edits change the rows that shared its prefix when it opened, even
 	]);
 });
 
-test("with Change only this row on, a page's edits change only that row", () => {
-	const settings = settingsWith([list("list-1", "👤 peop")], [property("status", "👤 peop")]);
-	const pages = new PrefixPages(() => settings);
-	const key = propertyKey("status", "prefix");
-	pages.hold(key);
-	pages.setOnlyThisRow(key, true);
-	pages.edit(key, { prefix: "👥 team", color: "#0000ff" });
-	assert.deepEqual(shown(settings), [
-		["👤 peop", undefined],
-		["👥 team", "#0000ff"],
-	]);
-	assert.deepEqual(pages.linkedRows(key).map((linked) => linked.label), ["Outbound links"]);
-});
-
-test("a page keeps its linked rows and switch across re-renders and starts over once it closes", () => {
+test("a page keeps its linked rows across re-renders and starts over once it closes", () => {
 	const settings = settingsWith([list("list-1", "👤 peop"), list("list-2", "👤 peop")], []);
 	const pages = new PrefixPages(() => settings);
 	const key = listKey("list-1", "prefix");
 	pages.hold(key);
-	pages.setOnlyThisRow(key, true);
 	pages.edit(key, { prefix: "" });
 	pages.release(key);
 	pages.hold(key);
 	assert.equal(pages.closeUnheld(key), false);
-	assert.equal(pages.onlyThisRow(key), true);
 	assert.equal(pages.linkedRows(key).length, 1);
 	pages.release(key);
 	assert.equal(pages.closeUnheld(key), true);
-	assert.equal(pages.onlyThisRow(key), false);
 	assert.deepEqual(pages.linkedRows(key), []);
 });
 
@@ -235,9 +217,9 @@ test("Edit prefix starts the page afresh and focuses its prefix field once", () 
 	const pages = new PrefixPages(() => settings);
 	const key = listKey("list-1", "prefix");
 	pages.hold(key);
-	pages.setOnlyThisRow(key, true);
+	pages.edit(key, { prefix: "👥 team" });
 	pages.startEditing(key);
-	assert.equal(pages.onlyThisRow(key), false);
+	assert.equal(pages.closeUnheld(key), false);
 	assert.equal(pages.takeFocus(listKey("list-2", "prefix")), false);
 	assert.equal(pages.takeFocus(key), true);
 	assert.equal(pages.takeFocus(key), false);

@@ -2,6 +2,7 @@ import type {
 	App,
 	Setting,
 	SettingDefinition,
+	SettingDefinitionGroup,
 	SettingDefinitionItem,
 	SettingDefinitionList,
 	SettingDefinitionPage,
@@ -235,31 +236,37 @@ export function propertyPage(
 	const chosen = () => entry.property.trim() !== "";
 	const mixed = mixedTypeWarning(entry, properties);
 	const items: SettingDefinitionItem[] = isUnreadable(entry.source) ? [unreadableItem()] : [
-		{
-			name: t("typeDiffers"),
-			desc: mixed,
-			searchable: false,
-			visible: mixed !== undefined,
-			render: (setting) => warningDescription(setting.descEl, mixed ?? ""),
-		},
 		{ name: t("enabled"), desc: t("offerPropertyInPickerDesc"), control: { type: "toggle", key: key("enabled") } },
-		...prefixItems(entry, key("prefix"), t("propertyPrefixDesc"), context),
+		prefixGroup(entry, key("prefix"), t("propertyPrefixDesc"), context),
 		{
-			name: t("property"),
-			desc: t("propertyDesc"),
-			render: propertyInput(context, key("name"), () => entry.property, t("propertyPlaceholder"), context.propertySuggestions, (suggestion) =>
-				context.write(key("type"), propertyTypePreset(suggestion.type)),
-			),
-		},
-		{
-			name: t("type"),
-			desc: chosen() ? t("typeDesc") : t("chooseAPropertyFirst"),
-			control: { type: "dropdown", disabled: () => !chosen(), key: key("type"), options: propertyTypeOptions() },
-		},
-		{
-			name: t("removeWhenEmpty"),
-			desc: t("removeWhenEmptyDesc"),
-			control: { type: "toggle", key: key("removesEmpty") },
+			type: "group",
+			heading: t("property"),
+			items: [
+				{
+					name: t("typeDiffers"),
+					desc: mixed,
+					searchable: false,
+					visible: mixed !== undefined,
+					render: (setting) => warningDescription(setting.descEl, mixed ?? ""),
+				},
+				{
+					name: t("property"),
+					desc: t("propertyDesc"),
+					render: propertyInput(context, key("name"), () => entry.property, t("propertyPlaceholder"), context.propertySuggestions, (suggestion) =>
+						context.write(key("type"), propertyTypePreset(suggestion.type)),
+					),
+				},
+				{
+					name: t("type"),
+					desc: chosen() ? t("typeDesc") : t("chooseAPropertyFirst"),
+					control: { type: "dropdown", disabled: () => !chosen(), key: key("type"), options: propertyTypeOptions() },
+				},
+				{
+					name: t("removeWhenEmpty"),
+					desc: t("removeWhenEmptyDesc"),
+					control: { type: "toggle", key: key("removesEmpty") },
+				},
+			],
 		},
 	];
 	if (hasPresetValues(entry.type)) {
@@ -344,17 +351,17 @@ export function listPageItems(list: NoteList, context: ListPageContext): Setting
 	const key = (field: ListField) => listKey(list.id, field);
 	return [
 		{ name: t("enabled"), desc: t("showListInPickerDesc"), control: { type: "toggle", key: key("enabled") } },
-		...prefixItems(list, key("prefix"), t("listPrefixDesc"), context),
-		...sourceItems(list, context, key),
+		prefixGroup(list, key("prefix"), t("listPrefixDesc"), context),
+		{ type: "group", heading: t("offerNotesFrom"), items: sourceItems(list, context, key) },
 	];
 }
 
-function prefixItems(
+function prefixGroup(
 	target: { prefix: string; prefixColor?: string },
 	prefixKey: string,
 	desc: string,
 	context: ListPageContext,
-): SettingDefinitionItem[] {
+): SettingDefinitionGroup {
 	const { prefixes } = context;
 	let previewEl: HTMLElement | undefined;
 	const showPreview = () => {
@@ -366,70 +373,63 @@ function prefixItems(
 		showPreview();
 	};
 	const linkedLabels = () => prefixes.linkedRows(prefixKey).map((row) => row.label);
-	return [
-		{
-			name: t("prefix"),
-			desc,
-			visible: context.showPrefixes,
-			render: (setting) => {
-				const win = setting.settingEl.win;
-				prefixes.hold(prefixKey);
-				setting.settingEl.addClass("note-compass-prefix-setting");
-				previewEl = setting.controlEl.createSpan({ cls: "note-compass-prefix-preview-chip" });
-				showPreview();
-				let resetEl: HTMLElement | undefined;
-				const showReset = () => resetEl?.toggle(target.prefixColor !== undefined);
-				setting.addText((text) => {
-					text.setPlaceholder(t("prefixPlaceholder")).setValue(target.prefix);
-					text.onChange((typed) => edit({ prefix: typed }));
-					if (prefixes.takeFocus(prefixKey)) text.inputEl.win.setTimeout(() => text.inputEl.focus(), 0);
-				});
-				setting.addColorPicker((picker) => {
-					picker.setValue(target.prefixColor ?? NEUTRAL_PREFIX_COLOR).onChange((color) => {
-						edit({ color });
+	return {
+		type: "group",
+		heading: t("prefix"),
+		visible: context.showPrefixes,
+		items: [
+			{
+				name: t("prefix"),
+				desc,
+				render: (setting) => {
+					const win = setting.settingEl.win;
+					prefixes.hold(prefixKey);
+					const linked = linkedLabels();
+					if (linked.length > 0) setting.setDesc(`${desc} ${usedByOtherRows(linked)}.`);
+					setting.settingEl.addClass("note-compass-prefix-setting");
+					previewEl = setting.controlEl.createSpan({ cls: "note-compass-prefix-preview-chip" });
+					showPreview();
+					let resetEl: HTMLElement | undefined;
+					const showReset = () => resetEl?.toggle(target.prefixColor !== undefined);
+					setting.addText((text) => {
+						text.setPlaceholder(t("prefixPlaceholder")).setValue(target.prefix);
+						text.onChange((typed) => edit({ prefix: typed }));
+						if (prefixes.takeFocus(prefixKey)) text.inputEl.win.setTimeout(() => text.inputEl.focus(), 0);
+					});
+					setting.addColorPicker((picker) => {
+						picker.setValue(target.prefixColor ?? NEUTRAL_PREFIX_COLOR).onChange((color) => {
+							edit({ color });
+							showReset();
+						});
+						setting.addExtraButton((button) => {
+							resetEl = button.extraSettingsEl;
+							button
+								.setIcon("rotate-ccw")
+								.setTooltip(t("removeColour"))
+								.onClick(() => {
+									edit({ color: "" });
+									picker.setValue(NEUTRAL_PREFIX_COLOR);
+									showReset();
+								});
+						});
+					});
+					const colourInput = setting.controlEl.querySelector<HTMLInputElement>('input[type="color"]');
+					colourInput?.setAttribute("aria-label", t("prefixColour"));
+					colourInput?.addEventListener("input", () => {
+						edit({ color: colourInput.value });
 						showReset();
 					});
-					setting.addExtraButton((button) => {
-						resetEl = button.extraSettingsEl;
-						button
-							.setIcon("rotate-ccw")
-							.setTooltip(t("removeColour"))
-							.onClick(() => {
-								edit({ color: "" });
-								picker.setValue(NEUTRAL_PREFIX_COLOR);
-								showReset();
-							});
-					});
-				});
-				const colourInput = setting.controlEl.querySelector<HTMLInputElement>('input[type="color"]');
-				colourInput?.setAttribute("aria-label", t("prefixColour"));
-				colourInput?.addEventListener("input", () => {
-					edit({ color: colourInput.value });
 					showReset();
-				});
-				showReset();
-				return () => {
-					prefixes.release(prefixKey);
-					win.setTimeout(() => {
-						if (prefixes.closeUnheld(prefixKey)) context.prefixChanged();
-					}, 0);
-				};
+					return () => {
+						prefixes.release(prefixKey);
+						win.setTimeout(() => {
+							if (prefixes.closeUnheld(prefixKey)) context.prefixChanged();
+						}, 0);
+					};
+				},
 			},
-		},
-		{
-			name: t("changeOnlyThisRow"),
-			desc: usedByOtherRows(linkedLabels()),
-			searchable: false,
-			visible: () => context.showPrefixes && linkedLabels().length > 0,
-			render: (setting) => {
-				setting.addToggle((toggle) =>
-					toggle
-						.setValue(prefixes.onlyThisRow(prefixKey))
-						.onChange((onlyThisRow) => prefixes.setOnlyThisRow(prefixKey, onlyThisRow)),
-				);
-			},
-		},
-	];
+		],
+	};
 }
 
 function usedByOtherRows(labels: readonly string[]): string {

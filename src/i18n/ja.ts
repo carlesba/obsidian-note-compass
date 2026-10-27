@@ -127,7 +127,6 @@ export const ja: Translation = {
 	prefixRowCountOther: "{count} 行",
 	usedByOtherRowsOne: "ほかの {count} 行でも使用中：{rows}",
 	usedByOtherRowsOther: "ほかの {count} 行でも使用中：{rows}",
-	changeOnlyThisRow: "この行だけを変更",
 	source: "ソース",
 	note: "ノート",
 	noteDesc: "本文またはプロパティでこのノートにリンクしているノートを一覧にします。",
