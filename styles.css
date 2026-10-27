@@ -74,14 +74,6 @@
 	padding: 0 var(--size-4-2);
 }
 
-.note-compass-prefix-preview-chip.mod-clickable {
-	cursor: var(--cursor);
-}
-
-.note-compass-prefix-preview-chip.mod-clickable:focus-visible {
-	box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
-}
-
 .note-compass-prefix-setting input[type="text"] {
 	flex: 1 1 10em;
 	min-width: 0;

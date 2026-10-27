@@ -67,16 +67,15 @@ An empty prefix shows as a faint `prefix` chip and is never listed.
 
 ### The prefix setting on a row's page
 
-On a list's or property's page, "Prefix" shows the chip's preview. Click or tap the preview, or focus it and press Enter, to open its menu.
+On a list's or property's page, "Prefix" shows the settings button, the chip's preview, its text and its colour. What you type and pick changes this row and every row that shared the prefix as the page opened, and the description names those rows, as in "Used by 2 other rows: people · links, Outbound links". They stay together even while the text is briefly empty. The circular arrow removes the colour.
+
+The settings button opens the prefix menu.
 
 | Menu item | Does |
 | --- | --- |
 | A prefix | Gives this row that text and colour. No other row changes. |
-| Edit prefix… | Shows the text and colour fields. What you type and pick changes this row and every row that shared the prefix as the page opened. |
-| New prefix… | Empties this row's prefix and shows the fields, so what you type and pick changes this row only. |
+| New prefix… | Shown when the row has a prefix. Empties it, so what you type and pick next changes this row only. |
 | No prefix | Shown when the row has one. Clears its text and colour. |
-
-While the prefix is empty the fields show straight away. While you edit a shared prefix, the description names the other rows, as in "Used by 2 other rows: people · links, Outbound links", and they stay together even while the text is briefly empty. The circular arrow removes the colour.
 
 ## List pages
 

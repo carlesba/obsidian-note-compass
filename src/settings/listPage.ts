@@ -427,7 +427,7 @@ function prefixGroup(
 	};
 }
 
-type PrefixEditing = "none" | "shared" | "own";
+type PrefixEditing = "shared" | "own";
 
 function prefixItem(
 	target: { prefix: string; prefixColor?: string },
@@ -444,34 +444,36 @@ function prefixItem(
 			const win = setting.settingEl.win;
 			prefixes.hold(prefixKey);
 			setting.settingEl.addClass("note-compass-prefix-setting");
-			const previewEl = setting.controlEl.createSpan({
-				cls: "note-compass-prefix-preview-chip mod-clickable",
-				attr: { role: "button", tabindex: "0", "aria-haspopup": "menu", "aria-label": t("choosePrefix") },
+			const focusesInput = prefixes.takeFocus(prefixKey);
+			setting.addExtraButton((button) => {
+				button
+					.setIcon("settings")
+					.setTooltip(t("choosePrefix"))
+					.onClick(() => {
+						const rect = button.extraSettingsEl.getBoundingClientRect();
+						menu().showAtPosition({ x: rect.left, y: rect.bottom, width: rect.width }, button.extraSettingsEl.doc);
+					});
+				button.extraSettingsEl.setAttribute("aria-haspopup", "menu");
 			});
-			const inputEls: HTMLElement[] = [];
-			let editing: PrefixEditing = prefixes.takeFocus(prefixKey) ? "shared" : "none";
+			const previewEl = setting.controlEl.createSpan({ cls: "note-compass-prefix-preview-chip" });
+			let editing: PrefixEditing = "shared";
 			let resetEl: HTMLElement | undefined;
 			let textInput: TextComponent | undefined;
 			let colourPicker: ColorComponent | undefined;
 			const showPreview = () => renderChip(previewEl, target.prefix, target.prefixColor);
-			const inputsShown = () => editing !== "none" || target.prefix.trim() === "";
-			const showReset = () => resetEl?.toggle(inputsShown() && target.prefixColor !== undefined);
+			const showReset = () => resetEl?.toggle(target.prefixColor !== undefined);
 			const showDesc = () => {
 				const linked = prefixes.linkedRows(prefixKey).map((row) => row.label);
 				setting.setDesc(editing === "shared" && linked.length > 0 ? `${desc} ${usedByOtherRows(linked)}.` : desc);
 			};
-			const showInputs = () => {
-				for (const inputEl of inputEls) inputEl.toggle(inputsShown());
-				showReset();
-				showDesc();
-			};
-			const startEditing = (mode: Exclude<PrefixEditing, "none">) => {
-				editing = mode;
-				if (mode === "own" && prefixes.startNew(prefixKey)) context.prefixTyped();
+			const startNewPrefix = () => {
+				editing = "own";
+				if (prefixes.startNew(prefixKey)) context.prefixTyped();
 				textInput?.setValue(target.prefix);
 				colourPicker?.setValue(target.prefixColor ?? NEUTRAL_PREFIX_COLOR);
 				showPreview();
-				showInputs();
+				showReset();
+				showDesc();
 				textInput?.inputEl.focus();
 			};
 			const edit = (change: PrefixChange) => {
@@ -486,25 +488,16 @@ function prefixItem(
 						prefix: target.prefix,
 						prefixColor: target.prefixColor,
 						label: "",
-						editPrefix: target.prefix.trim() === "" ? undefined : () => startEditing("shared"),
-						newPrefix: target.prefix.trim() === "" ? undefined : () => startEditing("own"),
+						newPrefix: target.prefix.trim() === "" ? undefined : startNewPrefix,
 					},
 					context,
 				);
-			previewEl.addEventListener("click", (event) => menu().showAtMouseEvent(event));
-			previewEl.addEventListener("keydown", (event) => {
-				if (event.key !== "Enter" && event.key !== " ") return;
-				event.preventDefault();
-				const rect = previewEl.getBoundingClientRect();
-				menu().showAtPosition({ x: rect.left, y: rect.bottom, width: rect.width }, previewEl.doc);
-			});
 			showPreview();
 			setting.addText((text) => {
 				textInput = text;
-				inputEls.push(text.inputEl);
 				text.setPlaceholder(t("prefixPlaceholder")).setValue(target.prefix);
 				text.onChange((typed) => edit({ prefix: typed }));
-				if (editing !== "none") text.inputEl.win.setTimeout(() => text.inputEl.focus(), 0);
+				if (focusesInput) text.inputEl.win.setTimeout(() => text.inputEl.focus(), 0);
 			});
 			setting.addColorPicker((picker) => {
 				colourPicker = picker;
@@ -525,13 +518,13 @@ function prefixItem(
 				});
 			});
 			const colourInput = setting.controlEl.querySelector<HTMLInputElement>('input[type="color"]');
-			if (colourInput) inputEls.push(colourInput);
 			colourInput?.setAttribute("aria-label", t("prefixColour"));
 			colourInput?.addEventListener("input", () => {
 				edit({ color: colourInput.value });
 				showReset();
 			});
-			showInputs();
+			showReset();
+			showDesc();
 			return () => {
 				prefixes.release(prefixKey);
 				win.setTimeout(() => {
