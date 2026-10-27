@@ -49,7 +49,7 @@ After you choose a value the picker reopens with the filter cleared. `🏁 Save 
 
 - Links are saved as a list such as `["[[Alice]]", "[[Bob]]"]`.
 - Links the property already holds that its source does not offer are kept.
-- Link properties never offer the note in focus, notes in the property's excluded folders, or notes with `archived: true`.
+- Link properties never offer the note in focus or notes in the property's excluded folders. To hide notes such as archived ones, use a filter source with a "None of the following are true" group holding `archived is true`.
 - The picker only links notes that already exist. To link a new note, make it first with a [form](forms.md).
 
 </details>

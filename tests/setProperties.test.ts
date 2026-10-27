@@ -33,7 +33,6 @@ function vaultNotes(): FakeNote[] {
 		{ path: "people/Ann.md", mtime: HOURS_AGO(30), links: ["types/Person.md"], frontmatter: { status: "done" } },
 		{ path: "people/Bob.md", mtime: HOURS_AGO(2), links: ["types/Person.md"], frontmatter: { status: "Done", rating: 3 } },
 		{ path: "people/Cy.md", mtime: HOURS_AGO(5), links: ["types/Person.md"], frontmatter: { rating: 3, status: "done" } },
-		{ path: "people/Old.md", mtime: HOURS_AGO(3), links: ["types/Person.md"], frontmatter: { archived: true } },
 		{ path: "templates/Person.md", links: ["types/Person.md"], content: "# Person\n" },
 		{ path: "Today too.md", links: ["types/Person.md", "Today.md"], frontmatter: { rating: 4.5 } },
 	];
@@ -418,4 +417,9 @@ test("a property set to keep empty values is left empty instead of removed", () 
 	const initial = new Map<string, unknown>(Object.entries(frontmatter));
 	writeProperties(frontmatter, initial, new Map([["people", []], ["status", undefined], ["topic", undefined]]), kept);
 	assert.deepEqual(frontmatter, { people: [], status: null });
+});
+
+test("a link entry offers notes marked archived like any other note its source holds", () => {
+	const fakes = [...vaultNotes(), { path: "people/Old.md", mtime: HOURS_AGO(3), links: ["types/Person.md"], frontmatter: { archived: true } }];
+	assert.ok(labels(setup([entry("people", "links", { prefix: "👤" })], fakes).choicesFor()).includes("👤 Old"));
 });

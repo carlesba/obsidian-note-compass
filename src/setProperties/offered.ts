@@ -66,8 +66,7 @@ function pickableNotes(
 		.filter(
 			(file) =>
 				file.path !== target.path &&
-				!excludedFolders.some((folder) => file.path.startsWith(`${folder}/`)) &&
-				vault.frontmatter(file.path)?.archived !== true,
+				!excludedFolders.some((folder) => file.path.startsWith(`${folder}/`)),
 		)
 		.map((file) => ({ name: file.basename, path: file.path, mtime: vault.mtime(file.path) }))
 		.sort((a, b) => b.mtime - a.mtime);

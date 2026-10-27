@@ -99,7 +99,7 @@ El selector propio de una propiedad marca su valor actual con `✓` y termina co
 
 ![El selector de valores de una propiedad de fecha, con Hoy, Mañana, El próximo lunes, En una semana y Borrar](docs/images/set-properties-date.png)
 
-Las propiedades de enlace nunca ofrecen la nota activa, las notas de las carpetas excluidas de la propiedad ni las notas con `archived: true`. El selector solo enlaza notas que ya existen, así que para enlazar una nota nueva, créala primero con un formulario.
+Las propiedades de enlace nunca ofrecen la nota activa ni las notas de las carpetas excluidas de la propiedad. Para ocultar notas como las archivadas, usa un origen de filtro con un grupo "Ninguno de los siguientes son verdaderos" que contenga `archived es verdadero`. El selector solo enlaza notas que ya existen, así que para enlazar una nota nueva, créala primero con un formulario.
 
 ## Formularios
 
