@@ -2,7 +2,6 @@ import type {
 	App,
 	Setting,
 	SettingDefinition,
-	SettingDefinitionGroup,
 	SettingDefinitionItem,
 	SettingDefinitionList,
 	SettingDefinitionPage,
@@ -12,7 +11,6 @@ import type {
 import { t, tCount } from "../i18n";
 import type { TranslationKey } from "../i18n";
 import type { Period } from "../lists/dateNotes";
-import { noteCreationBlocker } from "../createNote/newNotes";
 import { hasPresetValues, isLinkType, isUnreadable } from "../settings";
 import type { EditableProperty, ListSource, NoteList } from "../settings";
 import { excludedFolderKey, listKey, mainMenuPresetKey, presetValueKey, propertyKey, propertySourceKey } from "./controlKeys";
@@ -280,7 +278,6 @@ export function propertyPage(
 				items: sourceItems(entry, context, (field) => propertySourceKey(entry.id, field)),
 			},
 			excludedFoldersList(entry, context),
-			createNotesGroup(entry, context),
 		);
 	}
 	const page: IdentifiedPage = {
@@ -340,35 +337,6 @@ function excludedFoldersList(entry: LinkProperty, context: ListPageContext): Set
 		})),
 		onDelete: (index) => context.change(() => deleteExcludedFolder(entry, index)),
 		addItem: { name: t("addExcludedFolder"), action: () => context.change(() => addExcludedFolder(entry)) },
-	};
-}
-
-function createNotesGroup(entry: LinkProperty, context: ListPageContext): SettingDefinitionGroup {
-	const key = (field: PropertyField) => propertyKey(entry.id, field);
-	const blocker = noteCreationBlocker(entry.source, context.propertyTypes);
-	const creating = () => entry.createsNotes === true && blocker === undefined;
-	return {
-		type: "group",
-		heading: t("createNotes"),
-		items: [
-			{
-				name: t("allowCreatingNotes"),
-				desc: blocker ? t("sourceCannotCreate", { reason: blocker }) : t("allowCreatingNotesDesc"),
-				control: { type: "toggle", disabled: blocker !== undefined, key: key("createsNotes") },
-			},
-			{
-				name: t("folder"),
-				desc: t("newNoteFolderDesc"),
-				visible: () => creating() && entry.source.kind !== "inFolder",
-				control: { type: "folder", key: key("newNoteFolder") },
-			},
-			{
-				name: t("template"),
-				desc: t("templateDesc"),
-				visible: creating,
-				control: { type: "file", key: key("newNoteTemplate"), filter: (file) => file.extension === "md" },
-			},
-		],
 	};
 }
 

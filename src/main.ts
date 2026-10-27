@@ -1,5 +1,4 @@
 import { MarkdownView, Notice, Plugin, getLanguage } from "obsidian";
-import { createNoteFromEntries } from "./createNote/modal";
 import { fillForm, isRunnable, pickForm } from "./forms/modal";
 import { formName } from "./forms/questions";
 import { DEFAULT_LANGUAGE, setLanguage, t } from "./i18n";
@@ -41,14 +40,6 @@ export default class NoteCompassPlugin extends Plugin {
 				if (!checking) setProperties(this.app, createObsidianVault(this.app), this.settings, target);
 				return true;
 			},
-		});
-
-		this.addCommand({
-			id: "create-note",
-			name: t("createNote"),
-			icon: "file-plus",
-			callback: () =>
-				createNoteFromEntries(this.app, createObsidianVault(this.app), this.settings, this.currentNote()?.path),
 		});
 
 		this.addCommand({

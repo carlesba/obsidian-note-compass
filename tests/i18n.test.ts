@@ -80,8 +80,8 @@ test("a key missing from a locale falls back to its English string", () => {
 });
 
 test("placeholders are filled by name, and plurals pick the one or other key by count", () => {
-	assert.equal(t("nameExistsAt", { name: "Ana", path: "People/Ana.md" }), '"Ana" already exists at People/Ana.md.');
-	assert.equal(t("templateDesc").includes("{{title}}"), true);
+	assert.equal(t("noteCreated", { name: "Ana", folder: "People" }), 'Created "Ana" in People.');
+	assert.equal(t("formEntryTimeDesc").includes("{{date}}"), true);
 	assert.equal(tCount("allOfOne", "allOfOther", 1), "All of 1 condition");
 	assert.equal(tCount("allOfOne", "allOfOther", 3), "All of 3 conditions");
 });

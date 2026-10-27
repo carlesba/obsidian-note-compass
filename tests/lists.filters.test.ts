@@ -1,13 +1,11 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
-import { creatableEntries } from "../src/createNote/choices.ts";
-import { noteCreationBlocker } from "../src/createNote/newNotes.ts";
 import type { Condition } from "../src/lists/conditions.ts";
 import type { FilterGroup, FilterNode, FilterRule } from "../src/lists/filters.ts";
 import { buildJumpList } from "../src/lists/jumpList.ts";
 import { offeredEntries } from "../src/setProperties/offered.ts";
 import { defaultSettings, mergeSettings, storedSettings } from "../src/settings.ts";
-import type { EditableProperty, ListSource, NoteList } from "../src/settings.ts";
+import type { ListSource, NoteList } from "../src/settings.ts";
 import { inapplicableCondition, sourceSummary } from "../src/settings/listForm.ts";
 import { HOURS_AGO, NOW, fakeVault } from "./fakeVault.ts";
 import type { FakeNote } from "./fakeVault.ts";
@@ -137,8 +135,8 @@ test("broken lists and properties never contribute notes", () => {
 		lists: [{ id: "list-1", enabled: true, prefix: "?", source: unreadableFilter }],
 		setProperties: {
 			properties: [
-				{ id: "p-1", enabled: true, prefix: "", property: "related", type: "links", source: unreadableFilter, createsNotes: true },
-				{ id: "p-2", enabled: true, prefix: "", property: "seen", type: "links", source: { kind: "inFolder", folder: "projects" }, createsNotes: true },
+				{ id: "p-1", enabled: true, prefix: "", property: "related", type: "links", source: unreadableFilter },
+				{ id: "p-2", enabled: true, prefix: "", property: "seen", type: "links", source: { kind: "inFolder", folder: "projects" } },
 			],
 		},
 	});
@@ -146,9 +144,6 @@ test("broken lists and properties never contribute notes", () => {
 	assert.deepEqual(buildJumpList(settings.lists, vault), []);
 	const offered = offeredEntries(settings, vault, vault.note("Delta.md"));
 	assert.deepEqual(offered.map((entry) => entry.entry.property), ["seen"]);
-	assert.deepEqual(creatableEntries(settings.setProperties, vault).map((creatable) => creatable.entry.property), ["seen"]);
-	const brokenProperty: EditableProperty = settings.setProperties.properties[0];
-	assert.ok(noteCreationBlocker(brokenProperty.source!, {}));
 });
 
 test("a filter's summary describes its single condition or counts its conditions", () => {
@@ -174,21 +169,6 @@ test("a filter warns about a property condition that does not apply anywhere in 
 	assert.equal(inapplicableCondition(filter(all(property("rating", { operator: ">", value: 3 }))), types), undefined);
 });
 
-test("a filter can create notes only when it is a single property condition the old property list could satisfy", () => {
-	const types = { done: "checkbox", rating: "number" };
-	const blocker = (group: FilterGroup) => noteCreationBlocker(filter(group), types);
-	assert.equal(blocker(all(isTrue("active"))), undefined);
-	assert.equal(blocker(all(property("done", { operator: "is set" }))), undefined);
-	assert.equal(blocker(all(property("rating", { operator: ">", value: 3 }))), '">" gives no value to write into a new note');
-	assert.equal(blocker(all(property("", { operator: "is true" }))), "choose a property first");
-	const reason = "a filter with more than one condition, or with groups, can't decide what a new note needs";
-	assert.equal(blocker(all(isTrue("a"), isTrue("b"))), reason);
-	assert.equal(blocker(all(all(isTrue("a")))), reason);
-	assert.equal(blocker(all()), "add a condition first");
-	assert.ok(blocker(any(isTrue("a"))));
-	assert.ok(blocker(all({ kind: "folder", folder: "people" })));
-});
-
 test("folder, tag and links conditions can be negated, and the negation is stored and described", () => {
 	assert.deepEqual(listed(filter(all({ kind: "folder", folder: "projects", negated: true }))), ["Delta", "Gamma", "Person"]);
 	assert.deepEqual(listed(filter(all({ kind: "tag", tag: "work", negated: true }))), ["Delta", "Gamma", "Person"]);
@@ -202,8 +182,4 @@ test("folder, tag and links conditions can be negated, and the negation is store
 	assert.equal(sourceSummary(source), "Not in projects");
 	assert.equal(sourceSummary(filter(all({ kind: "tag", tag: "work", negated: true }))), "Not tagged work");
 	assert.equal(sourceSummary(filter(all({ kind: "linksTo", note: "people/Person.md", negated: true }))), "Does not link to Person");
-});
-
-test("a negated condition cannot decide what a new note needs", () => {
-	assert.notEqual(noteCreationBlocker(filter(all(property("status", { operator: "is not", value: "doing" }))), {}), undefined);
 });

@@ -74,9 +74,6 @@ export interface EditableProperty {
 	type: EditablePropertyType;
 	source?: ListSource;
 	excludedFolders?: string[];
-	createsNotes?: boolean;
-	newNoteFolder?: string;
-	newNoteTemplate?: string;
 	presetValues?: string[];
 	mainMenuPresets?: string[];
 	keepsEmpty?: true;
@@ -226,7 +223,6 @@ function migrateLegacySetProperties(legacy: LegacySetPropertiesSettings): Editab
 		type: list.mode === "single" ? "link" : "links",
 		source: list.source,
 		excludedFolders: folderList(legacy.templatesFolder),
-		createsNotes: false,
 	}));
 	const checkboxes: EditableProperty[] = [];
 	for (const flag of legacy.flags) {
@@ -268,12 +264,6 @@ function readProperties(stored: unknown[]): EditableProperty[] {
 		if (source) {
 			property.source = source;
 			property.excludedFolders = readExcludedFolders(entry);
-			if (typeof entry.newNoteFolder === "string") property.newNoteFolder = entry.newNoteFolder;
-			if (typeof entry.newNoteTemplate === "string") property.newNoteTemplate = entry.newNoteTemplate;
-			property.createsNotes =
-				typeof entry.createsNotes === "boolean"
-					? entry.createsNotes
-					: [property.newNoteFolder, property.newNoteTemplate].some((field) => (field ?? "").trim() !== "");
 		}
 		properties.push(property);
 	}

@@ -4,7 +4,7 @@
 
 Este manual es una traducción automática; la referencia es el README en inglés.
 
-Note Compass añade cuatro comandos que funcionan desde cualquier parte de Obsidian, con o sin un editor abierto. "Ir a una nota" abre un único selector con las notas relacionadas con la nota activa, como sus notas de fecha adyacentes y las notas a las que enlaza, junto con listas que defines tú mismo con filtros sobre propiedades, carpetas, etiquetas, enlaces y fechas. "Establecer propiedades" edita las propiedades de la nota activa desde un único selector. "Crear nota" crea una nota nueva que ya pertenece a una de tus propiedades de enlace, de modo que "Ir a una nota" y "Establecer propiedades" la ofrecen a partir de ese momento. "Rellenar formulario" hace las preguntas de un formulario que defines y crea una nota nueva a partir de las respuestas, con su nombre, su texto y sus propiedades ya rellenos.
+Note Compass añade tres comandos que funcionan desde cualquier parte de Obsidian, con o sin un editor abierto. "Ir a una nota" abre un único selector con las notas relacionadas con la nota activa, como sus notas de fecha adyacentes y las notas a las que enlaza, junto con listas que defines tú mismo con filtros sobre propiedades, carpetas, etiquetas, enlaces y fechas. "Establecer propiedades" edita las propiedades de la nota activa desde un único selector. "Rellenar formulario" hace las preguntas de un formulario que defines y crea una nota nueva a partir de las respuestas, con su nombre, su texto y sus propiedades ya rellenos.
 
 ![El selector Establecer propiedades, con Guardar y cerrar y Cancelar arriba, los valores actuales de la nota marcados con una marca de verificación y más valores para añadir debajo](docs/images/set-properties.png)
 
@@ -22,9 +22,9 @@ Note Compass necesita Obsidian 1.13.0 o posterior y funciona tanto en escritorio
 
 ## Primeros pasos
 
-Los comandos están pensados para usarse con el teclado, así que lo primero es asignar un atajo a cada uno. Abre Ajustes → Atajos de teclado, busca "Note Compass" y asigna teclas a "Ir a una nota", "Establecer propiedades" y "Crear nota". También puedes ejecutarlos desde la paleta de comandos.
+Los comandos están pensados para usarse con el teclado, así que lo primero es asignar un atajo a cada uno. Abre Ajustes → Atajos de teclado, busca "Note Compass" y asigna teclas a "Ir a una nota", "Establecer propiedades" y "Rellenar formulario". También puedes ejecutarlos desde la paleta de comandos.
 
-Un uso típico sería este. Abres la nota diaria de hoy y pulsas el atajo de "Ir a una nota" para pasar a la nota de ayer o a una nota que enlazaste desde ella. En una nota en la que estás trabajando, pulsas el atajo de "Establecer propiedades", escribes unas letras del nombre de una persona, la eliges y pulsas "Guardar y cerrar". Si esa persona todavía no existe, pulsas el atajo de "Crear nota", eliges la propiedad de personas, escribes el nombre y la nota nueva ya está lista para enlazarla.
+Un uso típico sería este. Abres la nota diaria de hoy y pulsas el atajo de "Ir a una nota" para pasar a la nota de ayer o a una nota que enlazaste desde ella. En una nota en la que estás trabajando, pulsas el atajo de "Establecer propiedades", escribes unas letras del nombre de una persona, la eliges y pulsas "Guardar y cerrar". Para las notas que creas a menudo, como las personas, añade un formulario en Ajustes → Note Compass → Formularios.
 
 La configuración predeterminada incluye las cuatro listas de relación en "Ir a una nota" y un conjunto de propiedades habituales de casilla de verificación y de enlace en "Establecer propiedades". Abre Ajustes → Note Compass para desactivar lo que no uses y para apuntar las propiedades de enlace a tus propias carpetas y notas.
 
@@ -97,29 +97,7 @@ El selector propio de una propiedad marca su valor actual con `✓` y termina co
 
 ![El selector de valores de una propiedad de fecha, con Hoy, Mañana, El próximo lunes, En una semana y Borrar](docs/images/set-properties-date.png)
 
-Las propiedades de enlace nunca ofrecen la nota activa, las notas de las carpetas excluidas de la propiedad ni las notas con `archived: true`. El selector solo enlaza notas que ya existen, así que para enlazar una nota nueva, créala primero con "Crear nota".
-
-## Crear nota
-
-"Crear nota" crea una nota nueva que pertenece a una de tus propiedades de enlace, de modo que esa propiedad la ofrece a partir de ese momento. Funciona con o sin una nota activa, y abre la nota nueva en cuanto se crea, en lugar de la nota activa, sin enlazarla desde esa nota.
-
-Funciona en dos pasos. El primer selector, "Crear una nota para…", tiene una fila por cada propiedad de enlace o de enlaces activada que tenga activado "Permitir crear notas", con la carpeta en la que irá la nota al lado, o `raíz de la bóveda`.
-
-![El primer paso de Crear nota, con las propiedades people, collections y category y la carpeta en la que cada una crea notas](docs/images/create-note-choose.png)
-
-Al elegir una fila se abre el segundo paso, donde escribes el nombre de la nota nueva. Un nombre válido muestra una sola fila, `➕ Crear "<nombre>" en <carpeta>`, y al elegirla se crea la nota y se indica dónde, como en `Se creó "Ada Lovelace" en samples/people.` Escape vuelve al primer paso.
-
-![El segundo paso de Crear nota, que ofrece crear "Ada Lovelace" en samples/people](docs/images/create-note-name.png)
-
-Un nombre con caracteres que Obsidian no puede usar en un nombre de archivo se rechaza con un mensaje que lo explica. También se rechaza un nombre que ya tenga cualquier nota de la bóveda, en cualquier carpeta y sin distinguir mayúsculas, como en `"Ann" ya existe en people/Ann.md.`, porque una segunda nota con ese nombre haría ambiguos los enlaces `[[Ann]]`. Al elegir una de estas filas, el paso sigue abierto con lo que escribiste.
-
-La nota nueva va a la carpeta del origen cuando la propiedad ofrece notas de una carpeta. Si no, va a la "Carpeta" de la propiedad dentro de "Crear notas" y, si está vacía, adonde Obsidian coloca las notas nuevas.
-
-Cuando la propiedad tiene una "Plantilla", la nota parte de ella. Si el complemento Templater está activado, Templater crea la nota, así que se ejecutan sus comandos `<% %>`; si Templater falla, no se hace nada más. Sin Templater, se copia el contenido de la plantilla, `{{title}}` se convierte en el nombre de la nota, y `{{date}}` y `{{time}}` en la fecha y la hora actuales con los formatos configurados en el complemento principal Plantillas, `YYYY-MM-DD` y `HH:mm` de forma predeterminada. `{{date:FORMAT}}` y `{{time:FORMAT}}` usan el formato indicado.
-
-Después, la nota se incorpora al origen de la propiedad, así que aparece en la lista de esa propiedad al instante. Con un origen "Enlaza a una nota", se añade un enlace a esa nota al final del cuerpo, salvo que el contenido ya enlace a ella. Con un filtro de una sola condición de propiedad, la nota recibe la propiedad que pide la condición, como `true` para "es verdadero", el valor para "es" o una lista con el valor para "tiene el elemento". Por último, la nota nueva se abre en la pestaña actual. Si ya existe una nota con ese nombre, no se crea nada y no se abre nada.
-
-Solo sirven los orígenes que pueden contener una nota nueva: notas de una carpeta, notas que enlazan a una nota, notas modificadas hoy y filtros formados por una sola condición de propiedad bajo "Todos los siguientes son verdaderos" que dé un valor que escribir, como "es verdadero", "es", "tiene el elemento" o "tiene valor" en una casilla. Los orígenes de relación, los filtros con más de una condición o con grupos, y condiciones como mayor que no sirven, y el interruptor "Permitir crear notas" explica el motivo cuando está deshabilitado. Si ninguna propiedad cumple los requisitos, el comando muestra "Ninguna propiedad de enlace puede crear notas."
+Las propiedades de enlace nunca ofrecen la nota activa, las notas de las carpetas excluidas de la propiedad ni las notas con `archived: true`. El selector solo enlaza notas que ya existen, así que para enlazar una nota nueva, créala primero con un formulario.
 
 ## Formularios
 
@@ -190,7 +168,7 @@ Los ajustes caben en una ventana estrecha y funcionan igual en móvil. Se divide
 - Usa el icono de copiar para duplicar una fila. La copia aparece justo debajo con la misma configuración, y la copia de un formulario se llama `<nombre> copia`.
 - Usa el `+` de la cabecera de la sección para añadir una fila. Su página se abre al momento para que la completes, y la fila nueva empieza activada.
 
-Una fila que esta versión de Note Compass no puede leer, por ejemplo una guardada por una versión más reciente, se queda en la lista con un aviso: "Esta versión de Note Compass no puede leer esta lista. Elimínala y crea una nueva." Su interruptor está desactivado y deshabilitado y no tiene lápiz, así que nunca añade notas a un selector ni a "Crear nota", pero su configuración guardada se conserva tal cual hasta que la elimines.
+Una fila que esta versión de Note Compass no puede leer, por ejemplo una guardada por una versión más reciente, se queda en la lista con un aviso: "Esta versión de Note Compass no puede leer esta lista. Elimínala y crea una nueva." Su interruptor está desactivado y deshabilitado y no tiene lápiz, así que nunca añade notas a un selector, pero su configuración guardada se conserva tal cual hasta que la elimines.
 
 Haz clic en un chip de prefijo, tócalo, o ponle el foco y pulsa Intro para abrir su menú, que en un teléfono aparece como una hoja desde abajo. El menú muestra cada prefijo en uso en "Ir a una nota" y "Establecer propiedades", cada uno como su chip seguido de cuántas filas lo usan, como un chip `📅 due` con `· 3 filas`, primero los más usados. El prefijo propio de la fila aparece marcado. Elige uno para dar a esta fila su texto y su color, sin cambiar ninguna otra fila. "Editar prefijo…" abre la página de la fila con el cursor en "Prefijo", y "Sin prefijo", que aparece cuando la fila tiene uno, borra su texto y su color. Un prefijo vacío se muestra como un chip `prefijo` atenuado y nunca aparece en el menú.
 
@@ -230,17 +208,16 @@ Una condición de propiedad pide la propiedad, sugiriendo las propiedades de la 
 
 La página de una propiedad tiene "Activado" y "Prefijo", como la página de una lista, y después "Propiedad" y "Tipo". "Propiedad" sugiere las propiedades de la bóveda con sus tipos, y al elegir una el tipo se ajusta a ella: casilla de verificación, número, fecha y fecha y hora conservan el suyo, las listas y las etiquetas pasan a enlaces, y cualquier otra cosa pasa a texto. "Tipo" puede ser casilla de verificación, texto, número, fecha, fecha y hora, "enlace, una nota" o "enlaces, varias notas", y permanece deshabilitado hasta que se elige una propiedad.
 
-![La página de la propiedad de enlaces people, que ofrece las notas que enlazan a Person, excluye la carpeta de plantillas y crea notas nuevas en samples/people a partir de una plantilla](docs/images/settings-property.png)
+![La página de la propiedad de enlaces people, que ofrece las notas que enlazan a Person, y excluye la carpeta de plantillas](docs/images/settings-property.png)
 
 Todas las propiedades tienen "Quitar cuando esté vacía", que está activado de forma predeterminada y quita la propiedad de la nota en cuanto borras su valor o quitas su último enlace. Si lo desactivas, la propiedad se queda en la nota con un valor vacío.
 
 Una propiedad de texto o de número tiene además "Valores predefinidos", una lista de valores que su propio selector ofrece primero, como `todo`, `doing` y `done` para una propiedad `status`. El `+` de su cabecera añade una fila con un campo de texto para el valor y un interruptor, las filas se pueden arrastrar al orden en que las muestra el selector, y cada fila se puede eliminar. Una propiedad de número solo guarda los valores escritos como números. Los valores predefinidos son una ayuda, no un límite: después de ellos el selector sigue ofreciendo los demás valores que la propiedad ya tiene en la bóveda, primero los más usados, y cualquier cosa que escribas. El interruptor junto a un valor predefinido también lo muestra en el menú principal de Establecer propiedades, así que puedes tener muchos valores predefinidos y dejar solo los pocos que más usas a una sola elección. Todos los valores predefinidos se ofrecen siempre en el selector propio de la propiedad.
 
-Una propiedad de enlace o de enlaces tiene tres secciones más:
+Una propiedad de enlace o de enlaces tiene dos secciones más:
 
 - "Ofrecer notas de" elige las notas que ofrece el selector, con los mismos orígenes que una lista de "Ir a una nota".
 - "Carpetas excluidas" enumera las carpetas cuyas notas nunca se ofrecen. El `+` de su cabecera añade una carpeta, cada fila se puede eliminar y una fila vacía no excluye nada.
-- "Crear notas" decide si la propiedad aparece en "Crear nota". "Permitir crear notas" lo activa, "Carpeta" indica adónde van las notas nuevas y "Plantilla" indica la nota de la que parten las notas nuevas.
 
 Varias filas pueden escribir la misma propiedad, como las filas `related` predeterminadas con orígenes distintos. Comparten un mismo valor, y la primera fila activada decide su tipo. Una fila te avisa cuando dos filas de una misma propiedad no coinciden en el tipo.
 
@@ -264,7 +241,7 @@ Las traducciones están en `src/i18n/`, y este manual también está disponible 
 - Usa prefijos cortos, como un emoji y una abreviatura de tres o cuatro letras, por ejemplo `👤 peop` o `📅 due`. Todos los chips comparten el ancho del más ancho, así que un solo prefijo largo empuja todos los nombres hacia la derecha.
 - Usa colores para agrupar listas relacionadas, como un color para todas tus listas de personas y empresas y otro para las de proyectos, y así distinguirlas de un vistazo.
 - Escribe la abreviatura de un prefijo para reducir un selector a una lista, como `peop` para las filas de personas en "Establecer propiedades".
-- Usa un origen "Enlaza a una nota" como una etiqueta ligera. Crea una nota como `Person` y apunta la propiedad de personas a "Enlaza a una nota: Person". Cada nota creada con "Crear nota" para esa propiedad recibe un enlace a `Person`, así que aparece en la lista sin que tengas que etiquetarla a mano.
+- Usa un origen "Enlaza a una nota" como una etiqueta ligera. Crea una nota como `Person` y apunta la propiedad de personas a "Enlaza a una nota: Person". Pon `[[Person]]` en el contenido del formulario que crea las notas de personas, así cada persona nueva aparece en la lista sin que tengas que etiquetarla a mano.
 - Añade tu carpeta de plantillas a "Carpetas excluidas" en todas las propiedades de enlace, para que las notas de plantilla nunca se ofrezcan como valores.
 - Desactiva "Mostrar prefijos" para un aspecto minimalista cuando ya conozcas tus listas. Las filas de enlace muestran entonces el nombre de su propiedad.
 - En "Establecer propiedades", Escape en un selector de valores solo vuelve al selector principal. Los cambios que ya hiciste se conservan hasta que eliges "Guardar y cerrar" o "Cancelar".
@@ -274,7 +251,6 @@ Las traducciones están en `src/i18n/`, y este manual también está disponible 
 - Un formato de día que contiene `/`, como `YYYY/MM/DD`, nunca coincide, porque el nombre de una nota se compara sin sus carpetas.
 - Con los formatos predeterminados, las notas con el nombre de un año en la carpeta de notas de fecha, como `on/2024`, cuentan como notas anuales. Desactiva el periodo de año en los formatos personalizados si guardas otras notas con ese tipo de nombre en esa carpeta.
 - Si una propiedad cambia de tipo, una condición de filtro sobre ella conserva su condición anterior y no coincide con nada hasta que elijas una nueva. La condición, la fila de su lista y su página indican que la condición ya no se aplica.
-- "Crear nota" nunca modifica una nota existente. Si ya hay una nota en la ruta que crearía, la deja como está y el comando lo indica.
 
 ## Desarrollo
 

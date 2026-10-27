@@ -11,14 +11,8 @@ export interface FakeNote {
 	content?: string;
 }
 
-export interface FakeTemplater {
-	result?: "created" | "undefined" | "throws";
-	calls: { templatePath: string; folder: string; name: string }[];
-}
-
 export interface FakeVaultOptions {
 	propertyTypes?: Record<string, string>;
-	templater?: FakeTemplater;
 	coreTemplatesOptions?: unknown;
 	defaultNoteFolder?: (sourcePath: string | undefined) => string;
 }
@@ -36,7 +30,6 @@ export function fakeVault(fakes: FakeNote[], options: FakeVaultOptions = {}): Fa
 		if (byPath(path)) throw new Error(`${path} exists`);
 		fakes.push({ path, content, mtime: NOW });
 	};
-	const templater = options.templater;
 	return {
 		notes: () => fakes.map(toNote),
 		frontmatter: (path) => byPath(path)?.frontmatter,
@@ -66,23 +59,7 @@ export function fakeVault(fakes: FakeNote[], options: FakeVaultOptions = {}): Fa
 			return counts;
 		},
 		defaultNoteFolder: options.defaultNoteFolder ?? (() => "inbox"),
-		readNote: async (path) => byPath(path)?.content ?? "",
 		createNote: async (path, content) => create(path, content),
-		processNote: async (path, update) => {
-			const fake = byPath(path)!;
-			fake.content = update(fake.content ?? "");
-		},
-		templater: () =>
-			templater && {
-				createFromTemplate: async (templatePath, folder, name) => {
-					templater.calls.push({ templatePath, folder, name });
-					if (templater.result === "throws") throw new Error("Templater failed");
-					if (templater.result === "undefined") return undefined;
-					const path = folder === "" ? `${name}.md` : `${folder}/${name}.md`;
-					create(path, `ran ${byPath(templatePath)?.content ?? ""}`);
-					return path;
-				},
-			},
 		coreTemplatesOptions: () => options.coreTemplatesOptions,
 		now: () => NOW,
 		moment,

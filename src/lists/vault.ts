@@ -53,16 +53,9 @@ export interface JumpListVault {
 	moment: MomentFactory;
 }
 
-export interface NoteTemplater {
-	createFromTemplate(templatePath: string, folder: string, name: string): Promise<string | undefined>;
-}
-
 export interface NewNoteVault {
 	defaultNoteFolder(sourcePath: string | undefined): string;
-	readNote(path: string): Promise<string>;
 	createNote(path: string, content: string): Promise<void>;
-	processNote(path: string, update: (content: string) => string): Promise<void>;
-	templater(): NoteTemplater | undefined;
 	coreTemplatesOptions(): unknown;
 }
 

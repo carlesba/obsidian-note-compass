@@ -1,7 +1,7 @@
 import { Notice } from "obsidian";
 import type { App } from "obsidian";
 import { ChoiceModal } from "../choiceModal";
-import { createdNotice } from "../createNote/newNotes";
+import { createdNotice } from "./newNotes";
 import { t } from "../i18n";
 import type { JumpListVault, NewNoteVault } from "../lists/vault";
 import { createFormNote } from "./create";
@@ -47,7 +47,7 @@ export function fillForm(app: App, vault: JumpListVault & NewNoteVault, form: Fo
 		}
 		try {
 			const note = await createFormNote(vault, form, resolved, sourcePath);
-			new Notice(createdNotice(note.name, { outcome: "created", path: note.path, folder: note.folder }));
+			new Notice(createdNotice(note.name, note.folder));
 			if (!form.opensNote) return;
 			const file = app.vault.getFileByPath(note.path);
 			if (file) await app.workspace.getLeaf(false).openFile(file);

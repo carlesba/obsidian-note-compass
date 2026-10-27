@@ -36,8 +36,7 @@ const linked = (
 	property: string,
 	type: EditablePropertyType = "links",
 	excludedFolders = ["templates"],
-	createsNotes = false,
-): EditableProperty => ({ id, enabled: true, prefix, property, type, source, excludedFolders, createsNotes });
+): EditableProperty => ({ id, enabled: true, prefix, property, type, source, excludedFolders });
 
 const setPropertiesDefaults = (): SetPropertiesSettings => ({
 	properties: [
@@ -148,7 +147,7 @@ test("mergeSettings keeps properties already in the new shape untouched", () => 
 		{ id: "p-4", enabled: true, prefix: "⏰", property: "start", type: "datetime" },
 		checkbox("p-5", "done", ""),
 		linked("p-6", "👤", linksTo("Person"), "owner", "link", []),
-		linked("p-7", "🔗", { kind: "linksOut" }, "related", "links", ["archive", "templates"], true),
+		linked("p-7", "🔗", { kind: "linksOut" }, "related", "links", ["archive", "templates"]),
 	];
 	const merged = mergeSettings({ setProperties: { properties, flags: ["ignored"] } });
 	assert.deepEqual(merged.setProperties, { properties, checkboxMode: "picker" });
@@ -177,10 +176,9 @@ test("mergeSettings drops unknown properties, keeps unreadable link sources as b
 			type: "links",
 			source: { kind: "unreadable", stored: { kind: "nowhere" } },
 			excludedFolders: [],
-			createsNotes: false,
 		},
 		{ id: "p-4", enabled: false, prefix: "", property: "d", type: "text" },
-		{ id: "list-1", enabled: true, prefix: "e", property: "e", type: "link", source: { kind: "linksIn" }, excludedFolders: [], createsNotes: false },
+		{ id: "list-1", enabled: true, prefix: "e", property: "e", type: "link", source: { kind: "linksIn" }, excludedFolders: [] },
 	]);
 });
 

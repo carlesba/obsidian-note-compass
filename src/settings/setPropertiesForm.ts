@@ -30,7 +30,7 @@ export function checkboxModeOptions(): Record<CheckboxMode, string> {
 	return translatedLabels(CHECKBOX_MODE_KEYS);
 }
 
-type LinkPropertyField = "excludedFolders" | "createsNotes" | "newNoteFolder" | "newNoteTemplate";
+type LinkPropertyField = "excludedFolders";
 
 export type LinkProperty = EditableProperty & NoteList;
 
@@ -107,12 +107,10 @@ export function writePropertyField(entry: EditableProperty, field: PropertyField
 	if (field === "mainMenuPreset") return writeMainMenuPreset(entry, Number(index), value === true);
 	if (field === "removesEmpty") writeFlag(entry, "keepsEmpty", value !== true);
 	else if (field === "enabled") entry.enabled = value === true;
-	else if (field === "createsNotes") entry.createsNotes = value === true;
 	else if (field === "prefix") entry.prefix = text;
 	else if (field === "prefixColor") writePrefixColor(entry, value);
 	else if (field === "name") entry.property = text.trim();
 	else if (field === "type") writeType(entry, EDITABLE_PROPERTY_TYPES.find((type) => type === value) ?? entry.type);
-	else entry[field] = text.trim();
 	return true;
 }
 
@@ -201,14 +199,10 @@ function writeType(entry: EditableProperty, type: EditablePropertyType): void {
 	if (isLinkType(type)) {
 		entry.source = entry.source ?? defaultLinkSource();
 		entry.excludedFolders = entry.excludedFolders ?? [];
-		entry.createsNotes = entry.createsNotes ?? false;
 		return;
 	}
 	delete entry.source;
 	delete entry.excludedFolders;
-	delete entry.createsNotes;
-	delete entry.newNoteFolder;
-	delete entry.newNoteTemplate;
 }
 
 function defaultLinkSource(): ListSource {

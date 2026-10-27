@@ -1,4 +1,4 @@
-import { coreDatePlaceholder, isCreatableName } from "../createNote/newNotes.ts";
+import { coreDatePlaceholder, isCreatableName } from "./newNotes.ts";
 import type { MomentDate, MomentFactory } from "../lists/vault.ts";
 import { parseNumber } from "../setProperties/values.ts";
 import { typedTime } from "./dateInput.ts";

@@ -42,7 +42,6 @@ const TYPED_FIELDS = [
 	"prefix",
 	"prefixColor",
 	"folder",
-	"newNoteFolder",
 	"format",
 	"note",
 	"name",

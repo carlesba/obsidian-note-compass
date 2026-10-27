@@ -39,7 +39,7 @@ Turning it off removes the prefix from every row in all three pickers and leaves
 
 <details><summary>Rows that cannot be read</summary>
 
-A row this version of Note Compass cannot read, such as one saved by a newer version, stays in the list with a warning: "This list can't be read by this version of Note Compass. Remove it and build a new one." Its switch is off and disabled and it has no pencil, so it never adds notes to a picker or to "Create note". Its saved setup is kept as it was until you delete it.
+A row this version of Note Compass cannot read, such as one saved by a newer version, stays in the list with a warning: "This list can't be read by this version of Note Compass. Remove it and build a new one." Its switch is off and disabled and it has no pencil, so it never adds notes to a picker. Its saved setup is kept as it was until you delete it.
 
 </details>
 
@@ -132,7 +132,7 @@ A property condition asks for the property, suggesting the vault's properties wi
 
 A property's page sets what one "Set properties" row writes and offers.
 
-![The page of the people links property, offering notes that link to Person, excluding the templates folder, and creating new notes in samples/people from a template](images/settings-property.png)
+![The page of the people links property, offering notes that link to Person and excluding the templates folder](images/settings-property.png)
 
 | Setting | What it is |
 | --- | --- |
@@ -156,13 +156,12 @@ A text or number property has "Preset values", a list of values its own picker o
 
 ### Link properties
 
-A link or links property has three more sections.
+A link or links property has two more sections.
 
 | Section | What it is |
 | --- | --- |
 | Offer notes from | The notes the picker offers, with the same sources as a jump list. |
 | Excluded folders | Folders whose notes are never offered. The `+` in its header adds a folder, each row can be deleted, and an empty row excludes nothing. |
-| Create notes | Whether the property appears in [Create note](create-note.md). "Allow creating notes" switches it on, "Folder" sets where new notes go, and "Template" sets the note new notes start from. |
 
 ### Several rows for one property
 

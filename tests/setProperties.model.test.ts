@@ -101,7 +101,6 @@ test("the defaults are the old defaults in the new shape", () => {
 	]);
 	const linked = properties.filter((entry) => entry.source);
 	assert.deepEqual(linked.map((entry) => entry.excludedFolders), linked.map(() => ["templates"]));
-	assert.ok(linked.every((entry) => entry.createsNotes === false));
 });
 
 test("the first enabled entry for a property decides its type", () => {

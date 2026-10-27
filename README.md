@@ -2,13 +2,13 @@
 
 **English** · [Español](README.es.md) · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md) · [日本語](README.ja.md) · [한국어](README.ko.md)
 
-Move between related notes, set properties, create linked notes and fill in forms, all from keyboard pickers that work anywhere in Obsidian.
+Move between related notes, set properties and fill in forms, all from keyboard pickers that work anywhere in Obsidian.
 
 ![The Jump to note picker on a daily note, listing the previous day, the projects and people it links to, and notes from the same day, each row with a coloured prefix chip](docs/images/hero.png)
 
 ## What it does
 
-Note Compass adds four commands. Each opens a picker: type a few letters, press Enter, and you are done.
+Note Compass adds three commands. Each opens a picker: type a few letters, press Enter, and you are done.
 
 ### Jump to note
 
@@ -33,17 +33,6 @@ Edit the properties of the note in focus from one picker, and save every change 
 - Nothing is written until you choose "Save & close".
 
 [Read more about Set properties](docs/set-properties.md)
-
-### Create note
-
-Make a new note that already belongs to one of your link properties.
-
-![The first step of Create note, listing the people, collections and category properties with the folder each one creates notes in](docs/images/create-note-choose.png)
-
-- Choose the property, type the name, and the note is made in the right folder from the right template.
-- The new note joins the property's list, so "Set properties" offers it straight away.
-
-[Read more about Create note](docs/create-note.md)
 
 ### Fill form
 
@@ -72,11 +61,10 @@ Note Compass needs Obsidian 1.13.0 or later and runs on both desktop and mobile.
 
 ## Quick start
 
-1. Open Settings → Hotkeys, search for "Note Compass", and assign keys to "Jump to note", "Set properties", "Create note" and "Fill form". You can also run them from the command palette.
+1. Open Settings → Hotkeys, search for "Note Compass", and assign keys to "Jump to note", "Set properties" and "Fill form". You can also run them from the command palette.
 2. Open today's daily note and press the "Jump to note" hotkey to move to yesterday's note or to a note you linked from it.
 3. On a note you are working on, press the "Set properties" hotkey, type a few letters of a person's name, pick them, and choose "Save & close".
-4. When the person does not exist yet, press the "Create note" hotkey, choose the people property and type the name.
-5. Open Settings → Note Compass to switch off what you do not use, point the link properties at your own folders and notes, and add a form.
+4. Open Settings → Note Compass to switch off what you do not use, point the link properties at your own folders and notes, and add a form for the notes you create often, such as people.
 
 The defaults give you the four relation lists in "Jump to note" and a set of common checkbox and link properties in "Set properties".
 
@@ -84,7 +72,6 @@ The defaults give you the four relation lists in "Jump to note" and a set of com
 
 - [Jump to note](docs/jump-to-note.md): lists, relation lists, date notes and filtering.
 - [Set properties](docs/set-properties.md): picker rows, value pickers, presets and checkboxes.
-- [Create note](docs/create-note.md): folders, templates and which properties can create notes.
 - [Forms](docs/forms.md): running a form, form settings, fields and placeholders.
 - [Settings](docs/settings.md): display, rows, prefixes, list filters and property pages.
 - [Tips and known behaviour](docs/tips.md)

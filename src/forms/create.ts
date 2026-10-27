@@ -1,4 +1,4 @@
-import { trimSlashes } from "../createNote/newNotes.ts";
+import { trimSlashes } from "./newNotes.ts";
 import type { JumpListVault, NewNoteVault, VaultNote } from "../lists/vault.ts";
 import type { Form } from "./form.ts";
 import type { ResolvedForm } from "./resolve.ts";
