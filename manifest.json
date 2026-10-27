@@ -1,7 +1,7 @@
 {
 	"id": "note-compass",
 	"name": "Note Compass",
-	"version": "0.10.0",
+	"version": "0.11.0",
 	"minAppVersion": "1.13.0",
 	"description": "Jump to notes related to the note in focus or in lists you define, set its properties from one picker, and create notes from forms you define.",
 	"author": "Carles Ballester",
