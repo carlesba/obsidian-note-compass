@@ -67,9 +67,16 @@ An empty prefix shows as a faint `prefix` chip and is never listed.
 
 ### The prefix setting on a row's page
 
-On a list's or property's page, the "Prefix" group holds one row with the chip's preview, its text and its colour. The preview follows the text you type and the colour you pick, and the circular arrow removes the colour.
+On a list's or property's page, "Prefix" shows the chip's preview. Click or tap the preview, or focus it and press Enter, to open its menu.
 
-When other rows shared the prefix as the page opened, the description names them, as in "Used by 2 other rows: people · links, Outbound links". The text you type and the colour you pick change those rows too, and they stay together even while the text is briefly empty. To give one row a prefix of its own, choose another prefix or "No prefix" from that row's chip menu first.
+| Menu item | Does |
+| --- | --- |
+| A prefix | Gives this row that text and colour. No other row changes. |
+| Edit prefix… | Shows the text and colour fields. What you type and pick changes this row and every row that shared the prefix as the page opened. |
+| New prefix… | Empties this row's prefix and shows the fields, so what you type and pick changes this row only. |
+| No prefix | Shown when the row has one. Clears its text and colour. |
+
+While the prefix is empty the fields show straight away. While you edit a shared prefix, the description names the other rows, as in "Used by 2 other rows: people · links, Outbound links", and they stay together even while the text is briefly empty. The circular arrow removes the colour.
 
 ## List pages
 
@@ -137,7 +144,8 @@ A property's page sets what one "Set properties" row writes and offers.
 | Setting | What it is |
 | --- | --- |
 | Enabled | Shows the property in the picker. |
-| Prefix | The chip, described under [Prefixes](#prefixes). |
+| Label | The prefix chip, described under [Prefixes](#prefixes), and in multiple properties mode the row's name. |
+| Mode | "Single property", the default, or "Multiple properties", described [below](#multiple-properties). |
 | Property | The property written. It suggests the vault's properties with their types. |
 | Type | Checkbox, text, number, date, datetime, link for one note, or links for several. Disabled until a property is chosen. |
 | Remove when empty | On by default. Removes the property from the note once you clear its value or remove its last link. Switched off, the property stays in the note with an empty value. |
@@ -163,9 +171,28 @@ A link or links property has two more sections.
 | Offer notes from | The notes the picker offers, with the same sources as a jump list. |
 | Excluded folders | Folders whose notes are never offered. The `+` in its header adds a folder, each row can be deleted, and an empty row excludes nothing. |
 
+### Multiple properties
+
+A row in "Multiple properties" mode writes several properties at once, with values fixed on its page. The [Set properties picker](set-properties.md#multiple-properties) offers it as one choice. Switching the mode back to "Single property" restores the single property setup, and the fixed values stay saved for the next switch.
+
+| Setting | What it is |
+| --- | --- |
+| Name | What the picker shows for the row. Empty shows a summary of its values, also used as the field's placeholder. |
+| Values to set | One block per property. The `+` in its header adds one, and blocks can be dragged, duplicated and deleted. |
+
+Each block shows its property and value, such as `status done`, `archived ✓` or `active cleared`. Click it to open its editor.
+
+| Field | What it is |
+| --- | --- |
+| Property | The property written. Focusing it lists the vault's properties, and picking one sets the type to match. A new name works too. |
+| Type | Checkbox, text, number, date, datetime, link, links, or "Clear (remove property)". |
+| Value | A switch for a checkbox, a text, a number, Today or a fixed date, Now or a fixed date and time, or a note for link and links. Clear has no value. |
+
+A link value replaces the note the property holds, and a links value adds its note to the list. A block with no property or no value is skipped.
+
 ### Several rows for one property
 
-Several rows may write the same property, such as the default `related` rows with different sources. They share one value, and the first enabled row decides its type. A row warns you when two rows for one property disagree on type.
+Several rows may write the same property, such as the default `related` rows with different sources. They share one value, and the first enabled single property row decides its type. A row warns you when two rows for one property disagree on type.
 
 ## Checkbox behaviour
 

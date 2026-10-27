@@ -166,11 +166,25 @@ export class PrefixPages {
 	}
 
 	assign(key: string, value: PrefixValue): boolean {
-		return assignPrefix(this.settings(), key, value);
+		return this.unlinked(key, assignPrefix(this.settings(), key, value));
 	}
 
 	clearPrefix(key: string): boolean {
-		return clearPrefix(this.settings(), key);
+		return this.unlinked(key, clearPrefix(this.settings(), key));
+	}
+
+	startNew(key: string): boolean {
+		const cleared = clearPrefix(this.settings(), key);
+		const page = this.page(key);
+		page.linked = [];
+		page.edited = page.edited || cleared;
+		return cleared;
+	}
+
+	private unlinked(key: string, changed: boolean): boolean {
+		const page = this.pages.get(key);
+		if (changed && page) page.linked = linkedPrefixKeys(this.rows(), key);
+		return changed;
 	}
 
 	startEditing(key: string): void {

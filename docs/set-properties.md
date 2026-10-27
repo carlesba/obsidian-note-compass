@@ -54,6 +54,17 @@ After you choose a value the picker reopens with the filter cleared. `🏁 Save 
 
 </details>
 
+## Multiple properties
+
+A row in "Multiple properties" mode sets several properties with one choice, such as `status: done`, `archived: true` and no `active`. Its values are fixed in its [property page](settings.md#multiple-properties), so the picker never asks for them.
+
+- The row is one choice in the picker, named by its "Name", or by a summary of its values such as `status done, archived ✓, active cleared` when the name is empty.
+- While the note does not hold every value, the row is offered among the values to add. Choosing it applies them all at once and reopens the picker with the filter cleared.
+- Once the note holds every value, the row shows among the set values marked `✓`, and `•` when it did not hold as the picker opened. Choosing it changes nothing.
+- A links value adds its note and keeps the other links, a link value replaces the note, and a cleared value removes the property.
+- Today and Now are worked out when the picker opens.
+- The row is all or nothing: it holds only when every value holds, and nothing is written until you save.
+
 ## Value pickers
 
 A property's own picker lets you choose or type one value for it. It marks the current value `✓` and ends with `🗑️ Clear`, which removes the property, or leaves it empty when "Remove when empty" is off.

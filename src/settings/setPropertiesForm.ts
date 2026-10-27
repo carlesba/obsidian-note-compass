@@ -2,8 +2,9 @@ import { t, translatedLabels } from "../i18n/index.ts";
 import type { TranslationKey } from "../i18n/index.ts";
 import { typeLabel } from "../i18n/labels.ts";
 import type { PropertyType } from "../lists/conditions.ts";
-import { EDITABLE_PROPERTY_TYPES, isLinkType, newListId, writePrefixColor } from "../settings.ts";
+import { EDITABLE_PROPERTY_TYPES, isLinkType, isMultiRow, newListId, writePrefixColor } from "../settings.ts";
 import type { CheckboxMode, EditableProperty, EditablePropertyType, ListSource, NoteList } from "../settings.ts";
+import { fixedValuesSummary, multiRowName } from "../setProperties/multiValues.ts";
 import { mixedTypeProperties } from "../setProperties/propertyTypes.ts";
 import { parseNumber } from "../setProperties/values.ts";
 import { readListField, writeListField } from "./listForm.ts";
@@ -18,7 +19,20 @@ export type PropertyField =
 	| "presetValues"
 	| "mainMenuPreset"
 	| "removesEmpty"
+	| "mode"
+	| "rowName"
 	| LinkPropertyField;
+
+export type PropertyMode = "single" | "multiple";
+
+const MODE_KEYS: Record<PropertyMode, TranslationKey> = {
+	single: "singleProperty",
+	multiple: "multipleProperties",
+};
+
+export function propertyModeOptions(): Record<PropertyMode, string> {
+	return translatedLabels(MODE_KEYS);
+}
 
 const CHECKBOX_MODE_KEYS: Record<CheckboxMode, TranslationKey> = {
 	picker: "checkboxModePicker",
@@ -65,11 +79,12 @@ export function propertyTypePreset(vaultType: PropertyType): EditablePropertyTyp
 }
 
 export function propertyRowName(entry: EditableProperty): string {
-	if (entry.property.trim() === "") return t("newProperty");
+	if (!isMultiRow(entry) && entry.property.trim() === "") return t("newProperty");
 	return `${entry.prefix} ${propertyLabel(entry)}`.trim();
 }
 
 export function propertyLabel(entry: EditableProperty): string {
+	if (isMultiRow(entry)) return multiRowName(entry) || t("newProperty");
 	if (entry.property.trim() === "") return t("newProperty");
 	return `${entry.property} · ${typeLabel(entry.type)}`;
 }
@@ -78,8 +93,12 @@ export function newProperty(properties: readonly EditableProperty[]): EditablePr
 	return { id: newListId(properties), enabled: true, prefix: "", property: "", type: "checkbox" };
 }
 
+export function rowNamePlaceholder(entry: EditableProperty): string {
+	return fixedValuesSummary(entry) || t("rowNamePlaceholder");
+}
+
 export function mixedTypeWarning(entry: EditableProperty, properties: readonly EditableProperty[]): string | undefined {
-	if (entry.property.trim() === "" || !mixedTypeProperties(properties).includes(entry.property)) return undefined;
+	if (isMultiRow(entry) || entry.property.trim() === "" || !mixedTypeProperties(properties).includes(entry.property)) return undefined;
 	return t("mixedTypeWarning", { property: entry.property });
 }
 
@@ -97,6 +116,8 @@ export function readPropertyField(entry: EditableProperty, field: PropertyField,
 	if (field === "prefixColor") return entry.prefixColor ?? "";
 	if (field === "name") return entry.property;
 	if (field === "type") return entry.type;
+	if (field === "mode") return isMultiRow(entry) ? "multiple" : "single";
+	if (field === "rowName") return entry.name ?? "";
 	return entry[field];
 }
 
@@ -111,6 +132,8 @@ export function writePropertyField(entry: EditableProperty, field: PropertyField
 	else if (field === "prefixColor") writePrefixColor(entry, value);
 	else if (field === "name") entry.property = text.trim();
 	else if (field === "type") writeType(entry, EDITABLE_PROPERTY_TYPES.find((type) => type === value) ?? entry.type);
+	else if (field === "mode") writeMode(entry, value === "multiple" ? "multiple" : "single");
+	else if (field === "rowName") writeRowName(entry, text);
 	return true;
 }
 
@@ -192,6 +215,20 @@ export function writePropertySourceField(entry: EditableProperty, field: ListFie
 	if (!hasSource(entry)) return false;
 	writeListField(entry, field, value);
 	return true;
+}
+
+function writeMode(entry: EditableProperty, mode: PropertyMode): void {
+	if (mode === "single") {
+		delete entry.mode;
+		return;
+	}
+	entry.mode = "multiple";
+	entry.fixedValues = entry.fixedValues ?? [];
+}
+
+function writeRowName(entry: EditableProperty, name: string): void {
+	if (name.trim() === "") delete entry.name;
+	else entry.name = name;
 }
 
 function writeType(entry: EditableProperty, type: EditablePropertyType): void {

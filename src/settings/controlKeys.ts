@@ -3,6 +3,8 @@ import { CHECKBOX_MODES } from "../settings.ts";
 import type { JumpSettings } from "../settings.ts";
 import { isPeriod, readPeriodField, writeDateNoteSource, writePeriodField } from "./dateNotesForm.ts";
 import type { PeriodField } from "./dateNotesForm.ts";
+import { findFixedValue, readFixedValueSetting, writeFixedValueSetting } from "./fixedValuesForm.ts";
+import type { FixedValueSetting } from "./fixedValuesForm.ts";
 import { findField, readFieldSetting, readFormSetting, writeFieldSetting, writeFormSetting } from "./formsForm.ts";
 import type { FieldSetting, FormSetting } from "./formsForm.ts";
 import { readListField, writeListField } from "./listForm.ts";
@@ -49,6 +51,10 @@ export function propertySourceKey(id: string, field: ListField): string {
 	return `propertySource/${id}/${field}`;
 }
 
+export function fixedValueKey(id: string, valueId: string, setting: FixedValueSetting): string {
+	return `fixedValue/${id}.${valueId}/${setting}`;
+}
+
 export function formKey(id: string, setting: FormSetting): string {
 	return `form/${id}/${setting}`;
 }
@@ -73,6 +79,10 @@ export function readControl(settings: JumpSettings, key: string): unknown {
 		return list ? readListField(list, field as ListField) : undefined;
 	}
 	if (scope === "dateNotes" && isPeriod(name)) return readPeriodField(settings.dateNotes, name, field as PeriodField);
+	if (scope === "fixedValue") {
+		const fixed = fixedValueTarget(settings, name);
+		return fixed ? readFixedValueSetting(fixed, field as FixedValueSetting) : undefined;
+	}
 	const entry = settings.setProperties.properties.find((candidate) => candidate.id === name);
 	if (!entry) return undefined;
 	if (scope === "property") return readPropertyField(entry, field as PropertyField, index);
@@ -106,11 +116,21 @@ export function writeControl(settings: JumpSettings, key: string, value: unknown
 		writePeriodField(settings.dateNotes, name, field as PeriodField, value);
 		return true;
 	}
+	if (scope === "fixedValue") {
+		const fixed = fixedValueTarget(settings, name);
+		return fixed ? writeFixedValueSetting(fixed, field as FixedValueSetting, value) : false;
+	}
 	const entry = settings.setProperties.properties.find((candidate) => candidate.id === name);
 	if (!entry) return false;
 	if (scope === "propertySource") return writePropertySourceField(entry, field as ListField, value);
 	if (scope !== "property") return false;
 	return writePropertyField(entry, field as PropertyField, value, index);
+}
+
+function fixedValueTarget(settings: JumpSettings, name: string) {
+	const [entryId, valueId] = name.split(".");
+	const entry = settings.setProperties.properties.find((candidate) => candidate.id === entryId);
+	return entry ? findFixedValue(entry, valueId ?? "") : undefined;
 }
 
 function formTarget(settings: JumpSettings, scope: string, name: string) {

@@ -1,5 +1,6 @@
 import type {
 	App,
+	ColorComponent,
 	Setting,
 	SettingDefinition,
 	SettingDefinitionGroup,
@@ -8,11 +9,12 @@ import type {
 	SettingDefinitionPage,
 	SettingDefinitionRender,
 	SettingGroupItem,
+	TextComponent,
 } from "obsidian";
 import { t, tCount } from "../i18n";
 import type { TranslationKey } from "../i18n";
 import type { Period } from "../lists/dateNotes";
-import { hasPresetValues, isLinkType, isUnreadable } from "../settings";
+import { hasPresetValues, isLinkType, isMultiRow, isUnreadable } from "../settings";
 import type { EditableProperty, ListSource, NoteList } from "../settings";
 import { excludedFolderKey, listKey, mainMenuPresetKey, presetValueKey, propertyKey, propertySourceKey } from "./controlKeys";
 import { PERIODS } from "../lists/dateNotes";
@@ -29,7 +31,10 @@ import {
 import type { ListField, PropertySuggestion } from "./listForm";
 import { filterRules } from "../lists/filters";
 import { renderFilter } from "./filterEditor";
-import { PropertySuggest, warningDescription } from "./suggest";
+import { warningDescription } from "./suggest";
+import { suggestProperties } from "./fieldEditor";
+import type { ExpandingPageContext } from "./fieldEditor";
+import { fixedValuesList } from "./fixedValuesPage";
 import {
 	addExcludedFolder,
 	addPresetValue,
@@ -41,12 +46,14 @@ import {
 	hasSource,
 	mixedTypeWarning,
 	propertyLabel,
+	propertyModeOptions,
 	propertyRowName,
 	propertyTypeOptions,
 	propertyTypePreset,
+	rowNamePlaceholder,
 } from "./setPropertiesForm";
 import type { LinkProperty, PropertyField } from "./setPropertiesForm";
-import { renderChip, renderPrefixedName } from "./prefixField";
+import { prefixMenuFor, renderChip, renderPrefixedName } from "./prefixField";
 import { linkedRowsText } from "./prefixLinks";
 import type { PrefixChange, PrefixPages } from "./prefixLinks";
 
@@ -146,24 +153,32 @@ export function propertyRow(
 	context: ListPageContext,
 	duplicate?: () => void,
 ): SettingDefinition {
-	return editableRow(
-		{
-			name: propertyRowName(entry),
-			label: propertyLabel(entry),
-			prefix: entry.prefix,
-			prefixColor: entry.prefixColor,
-			prefixKey: propertyKey(entry.id, "prefix"),
-			warning: propertyWarning(entry, properties, context),
-			broken: isUnreadable(entry.source),
-			enabled: entry.enabled,
-			enabledKey: propertyKey(entry.id, "enabled"),
-			enabledTooltip: t("offerPropertyInPicker"),
-			pageId: propertyPageId(entry),
-			editTooltip: t("editProperty"),
-			duplicate,
+	const row = (): EditableRow => ({
+		name: propertyRowName(entry),
+		label: propertyLabel(entry),
+		prefix: entry.prefix,
+		prefixColor: entry.prefixColor,
+		prefixKey: propertyKey(entry.id, "prefix"),
+		warning: propertyWarning(entry, properties, context),
+		broken: isUnreadable(entry.source),
+		enabled: entry.enabled,
+		enabledKey: propertyKey(entry.id, "enabled"),
+		enabledTooltip: t("offerPropertyInPicker"),
+		pageId: propertyPageId(entry),
+		editTooltip: t("editProperty"),
+		duplicate,
+	});
+	const definition = editableRow(row(), context);
+	return {
+		...definition,
+		render: (setting, group) => {
+			const current = row();
+			setting.setName(current.label);
+			setting.setDesc(current.warning ?? "");
+			setting.descEl.removeClass("note-compass-warning");
+			return editableRow(current, context).render(setting, group);
 		},
-		context,
-	);
+	};
 }
 
 function propertyWarning(
@@ -172,6 +187,7 @@ function propertyWarning(
 	context: ListPageContext,
 ): string | undefined {
 	if (isUnreadable(entry.source)) return unreadableListWarning();
+	if (isMultiRow(entry)) return undefined;
 	if (mixedTypeWarning(entry, properties)) return t("typeDiffersWarning");
 	return hasSource(entry) ? sourceWarning(entry.source, context) : undefined;
 }
@@ -230,18 +246,67 @@ export function editableRow(row: EditableRow, context: ListPageContext): Setting
 export function propertyPage(
 	entry: EditableProperty,
 	properties: readonly EditableProperty[],
-	context: ListPageContext,
+	context: ExpandingPageContext,
 ): SettingDefinitionPage {
+	const key = (field: PropertyField) => propertyKey(entry.id, field);
+	const multiple = isMultiRow(entry);
+	const items: SettingDefinitionItem[] = isUnreadable(entry.source)
+		? [unreadableItem()]
+		: [
+				{ name: t("enabled"), desc: t("offerPropertyInPickerDesc"), control: { type: "toggle", key: key("enabled") } },
+				{
+					type: "group",
+					heading: t("label"),
+					visible: context.showPrefixes || multiple,
+					items: [
+						prefixItem(entry, key("prefix"), t("propertyPrefixDesc"), context),
+						{
+							name: t("rowName"),
+							desc: t("rowNameDesc"),
+							visible: multiple,
+							control: { type: "text", key: key("rowName"), placeholder: rowNamePlaceholder(entry) },
+						},
+					],
+				},
+				...(multiple ? multiplePropertiesItems(entry, context) : singlePropertyItems(entry, properties, context)),
+			];
+	const page: IdentifiedPage = {
+		type: "page",
+		id: propertyPageId(entry),
+		name: propertyRowName(entry),
+		displayValue: entry.enabled && !isUnreadable(entry.source) ? "" : t("off"),
+		status: propertyWarning(entry, properties, context) ? "warning" : null,
+		items,
+	};
+	return page;
+}
+
+function modeItem(entry: EditableProperty): SettingGroupItem {
+	return {
+		name: t("propertyMode"),
+		desc: t("propertyModeDesc"),
+		control: { type: "dropdown", key: propertyKey(entry.id, "mode"), options: propertyModeOptions() },
+	};
+}
+
+function multiplePropertiesItems(entry: EditableProperty, context: ExpandingPageContext): SettingDefinitionItem[] {
+	return [{ type: "group", heading: t("properties"), items: [modeItem(entry)] }, fixedValuesList(entry, context)];
+}
+
+function singlePropertyItems(
+	entry: EditableProperty,
+	properties: readonly EditableProperty[],
+	context: ListPageContext,
+): SettingDefinitionItem[] {
 	const key = (field: PropertyField) => propertyKey(entry.id, field);
 	const chosen = () => entry.property.trim() !== "";
 	const mixed = mixedTypeWarning(entry, properties);
-	const items: SettingDefinitionItem[] = isUnreadable(entry.source) ? [unreadableItem()] : [
-		{ name: t("enabled"), desc: t("offerPropertyInPickerDesc"), control: { type: "toggle", key: key("enabled") } },
-		prefixGroup(entry, key("prefix"), t("propertyPrefixDesc"), context),
+	const items: SettingDefinitionItem[] = [
 		{
 			type: "group",
 			heading: t("property"),
 			items: [
+				modeItem(entry),
 				{
 					name: t("typeDiffers"),
 					desc: mixed,
@@ -287,15 +352,7 @@ export function propertyPage(
 			excludedFoldersList(entry, context),
 		);
 	}
-	const page: IdentifiedPage = {
-		type: "page",
-		id: propertyPageId(entry),
-		name: propertyRowName(entry),
-		displayValue: entry.enabled && !isUnreadable(entry.source) ? "" : t("off"),
-		status: propertyWarning(entry, properties, context) ? "warning" : null,
-		items,
-	};
-	return page;
+	return items;
 }
 
 function presetValuesList(entry: EditableProperty, context: ListPageContext): SettingDefinitionList {
@@ -362,73 +419,126 @@ function prefixGroup(
 	desc: string,
 	context: ListPageContext,
 ): SettingDefinitionGroup {
-	const { prefixes } = context;
-	let previewEl: HTMLElement | undefined;
-	const showPreview = () => {
-		if (previewEl) renderChip(previewEl, target.prefix, target.prefixColor);
-	};
-	const edit = (change: PrefixChange) => {
-		if (!prefixes.edit(prefixKey, change)) return;
-		context.prefixTyped();
-		showPreview();
-	};
-	const linkedLabels = () => prefixes.linkedRows(prefixKey).map((row) => row.label);
 	return {
 		type: "group",
 		heading: t("prefix"),
 		visible: context.showPrefixes,
-		items: [
-			{
-				name: t("prefix"),
-				desc,
-				render: (setting) => {
-					const win = setting.settingEl.win;
-					prefixes.hold(prefixKey);
-					const linked = linkedLabels();
-					if (linked.length > 0) setting.setDesc(`${desc} ${usedByOtherRows(linked)}.`);
-					setting.settingEl.addClass("note-compass-prefix-setting");
-					previewEl = setting.controlEl.createSpan({ cls: "note-compass-prefix-preview-chip" });
-					showPreview();
-					let resetEl: HTMLElement | undefined;
-					const showReset = () => resetEl?.toggle(target.prefixColor !== undefined);
-					setting.addText((text) => {
-						text.setPlaceholder(t("prefixPlaceholder")).setValue(target.prefix);
-						text.onChange((typed) => edit({ prefix: typed }));
-						if (prefixes.takeFocus(prefixKey)) text.inputEl.win.setTimeout(() => text.inputEl.focus(), 0);
-					});
-					setting.addColorPicker((picker) => {
-						picker.setValue(target.prefixColor ?? NEUTRAL_PREFIX_COLOR).onChange((color) => {
-							edit({ color });
+		items: [prefixItem(target, prefixKey, desc, context)],
+	};
+}
+
+type PrefixEditing = "none" | "shared" | "own";
+
+function prefixItem(
+	target: { prefix: string; prefixColor?: string },
+	prefixKey: string,
+	desc: string,
+	context: ListPageContext,
+): SettingGroupItem {
+	const { prefixes } = context;
+	return {
+		name: t("prefix"),
+		desc,
+		visible: context.showPrefixes,
+		render: (setting) => {
+			const win = setting.settingEl.win;
+			prefixes.hold(prefixKey);
+			setting.settingEl.addClass("note-compass-prefix-setting");
+			const previewEl = setting.controlEl.createSpan({
+				cls: "note-compass-prefix-preview-chip mod-clickable",
+				attr: { role: "button", tabindex: "0", "aria-haspopup": "menu", "aria-label": t("choosePrefix") },
+			});
+			const inputEls: HTMLElement[] = [];
+			let editing: PrefixEditing = prefixes.takeFocus(prefixKey) ? "shared" : "none";
+			let resetEl: HTMLElement | undefined;
+			let textInput: TextComponent | undefined;
+			let colourPicker: ColorComponent | undefined;
+			const showPreview = () => renderChip(previewEl, target.prefix, target.prefixColor);
+			const inputsShown = () => editing !== "none" || target.prefix.trim() === "";
+			const showReset = () => resetEl?.toggle(inputsShown() && target.prefixColor !== undefined);
+			const showDesc = () => {
+				const linked = prefixes.linkedRows(prefixKey).map((row) => row.label);
+				setting.setDesc(editing === "shared" && linked.length > 0 ? `${desc} ${usedByOtherRows(linked)}.` : desc);
+			};
+			const showInputs = () => {
+				for (const inputEl of inputEls) inputEl.toggle(inputsShown());
+				showReset();
+				showDesc();
+			};
+			const startEditing = (mode: Exclude<PrefixEditing, "none">) => {
+				editing = mode;
+				if (mode === "own" && prefixes.startNew(prefixKey)) context.prefixTyped();
+				textInput?.setValue(target.prefix);
+				colourPicker?.setValue(target.prefixColor ?? NEUTRAL_PREFIX_COLOR);
+				showPreview();
+				showInputs();
+				textInput?.inputEl.focus();
+			};
+			const edit = (change: PrefixChange) => {
+				if (!prefixes.edit(prefixKey, change)) return;
+				context.prefixTyped();
+				showPreview();
+			};
+			const menu = () =>
+				prefixMenuFor(
+					{
+						key: prefixKey,
+						prefix: target.prefix,
+						prefixColor: target.prefixColor,
+						label: "",
+						editPrefix: target.prefix.trim() === "" ? undefined : () => startEditing("shared"),
+						newPrefix: target.prefix.trim() === "" ? undefined : () => startEditing("own"),
+					},
+					context,
+				);
+			previewEl.addEventListener("click", (event) => menu().showAtMouseEvent(event));
+			previewEl.addEventListener("keydown", (event) => {
+				if (event.key !== "Enter" && event.key !== " ") return;
+				event.preventDefault();
+				const rect = previewEl.getBoundingClientRect();
+				menu().showAtPosition({ x: rect.left, y: rect.bottom, width: rect.width }, previewEl.doc);
+			});
+			showPreview();
+			setting.addText((text) => {
+				textInput = text;
+				inputEls.push(text.inputEl);
+				text.setPlaceholder(t("prefixPlaceholder")).setValue(target.prefix);
+				text.onChange((typed) => edit({ prefix: typed }));
+				if (editing !== "none") text.inputEl.win.setTimeout(() => text.inputEl.focus(), 0);
+			});
+			setting.addColorPicker((picker) => {
+				colourPicker = picker;
+				picker.setValue(target.prefixColor ?? NEUTRAL_PREFIX_COLOR).onChange((color) => {
+					edit({ color });
+					showReset();
+				});
+				setting.addExtraButton((button) => {
+					resetEl = button.extraSettingsEl;
+					button
+						.setIcon("rotate-ccw")
+						.setTooltip(t("removeColour"))
+						.onClick(() => {
+							edit({ color: "" });
+							picker.setValue(NEUTRAL_PREFIX_COLOR);
 							showReset();
 						});
-						setting.addExtraButton((button) => {
-							resetEl = button.extraSettingsEl;
-							button
-								.setIcon("rotate-ccw")
-								.setTooltip(t("removeColour"))
-								.onClick(() => {
-									edit({ color: "" });
-									picker.setValue(NEUTRAL_PREFIX_COLOR);
-									showReset();
-								});
-						});
-					});
-					const colourInput = setting.controlEl.querySelector<HTMLInputElement>('input[type="color"]');
-					colourInput?.setAttribute("aria-label", t("prefixColour"));
-					colourInput?.addEventListener("input", () => {
-						edit({ color: colourInput.value });
-						showReset();
-					});
-					showReset();
-					return () => {
-						prefixes.release(prefixKey);
-						win.setTimeout(() => {
-							if (prefixes.closeUnheld(prefixKey)) context.prefixChanged();
-						}, 0);
-					};
-				},
-			},
-		],
+				});
+			});
+			const colourInput = setting.controlEl.querySelector<HTMLInputElement>('input[type="color"]');
+			if (colourInput) inputEls.push(colourInput);
+			colourInput?.setAttribute("aria-label", t("prefixColour"));
+			colourInput?.addEventListener("input", () => {
+				edit({ color: colourInput.value });
+				showReset();
+			});
+			showInputs();
+			return () => {
+				prefixes.release(prefixKey);
+				win.setTimeout(() => {
+					if (prefixes.closeUnheld(prefixKey)) context.prefixChanged();
+				}, 0);
+			};
+		},
 	};
 }
 
@@ -494,13 +604,12 @@ export function propertyInput(
 	return (setting) => {
 		setting.addText((text) => {
 			text.setPlaceholder(placeholder).setValue(value());
-			text.onChange((typed) => context.write(key, typed));
-			const suggest = new PropertySuggest(context.app, text.inputEl, suggestions);
-			suggest.onSelect((suggestion) => {
-				suggest.setValue(suggestion.name);
+			text.onChange((typed) => {
+				if (typed.trim() !== value()) context.write(key, typed);
+			});
+			suggestProperties(context.app, text.inputEl, suggestions, (suggestion) => {
 				context.write(key, suggestion.name);
 				picked?.(suggestion);
-				suggest.close();
 			});
 		});
 	};

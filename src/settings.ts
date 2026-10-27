@@ -6,6 +6,8 @@ import { DEFAULT_CUSTOM_DATE_NOTES, PERIODS, defaultDateNoteSettings } from "./l
 import type { DateNoteSettings, Period, PeriodFormat } from "./lists/dateNotes.ts";
 import { readForms, storedForms } from "./forms/form.ts";
 import type { Form } from "./forms/form.ts";
+import { readFixedValues } from "./setProperties/fixedValues.ts";
+import type { FixedValue } from "./setProperties/fixedValues.ts";
 
 export type RelationSourceKind = "adjacentDates" | "linksOut" | "linksIn" | "sameDay";
 
@@ -77,6 +79,13 @@ export interface EditableProperty {
 	presetValues?: string[];
 	mainMenuPresets?: string[];
 	keepsEmpty?: true;
+	mode?: "multiple";
+	name?: string;
+	fixedValues?: FixedValue[];
+}
+
+export function isMultiRow(entry: EditableProperty): boolean {
+	return entry.mode === "multiple";
 }
 
 export interface SetPropertiesSettings {
@@ -261,6 +270,10 @@ function readProperties(stored: unknown[]): EditableProperty[] {
 		const mainMenuPresets = readMainMenuPresets(entry, presetValues);
 		if (mainMenuPresets.length > 0) property.mainMenuPresets = mainMenuPresets;
 		if (entry.keepsEmpty === true) property.keepsEmpty = true;
+		if (entry.mode === "multiple") property.mode = "multiple";
+		if (typeof entry.name === "string" && entry.name.trim() !== "") property.name = entry.name;
+		const fixedValues = readFixedValues(entry.fixedValues);
+		if (fixedValues.length > 0) property.fixedValues = fixedValues;
 		if (source) {
 			property.source = source;
 			property.excludedFolders = readExcludedFolders(entry);

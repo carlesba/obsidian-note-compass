@@ -30,6 +30,7 @@ Edit the properties of the note in focus from one picker, and save every change 
 
 - Pick links to people, projects or any notes you choose, and set checkboxes, text, numbers and dates.
 - Offer preset values and the values your vault already uses.
+- Set several properties with one choice, such as marking a note done and archived.
 - Nothing is written until you choose "Save & close".
 
 [Read more about Set properties](docs/set-properties.md)

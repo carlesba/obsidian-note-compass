@@ -224,3 +224,48 @@ test("Edit prefix starts the page afresh and focuses its prefix field once", () 
 	assert.equal(pages.takeFocus(key), true);
 	assert.equal(pages.takeFocus(key), false);
 });
+
+test("New prefix on a page empties the row's prefix and later edits change only that row", () => {
+	const settings = settingsWith([list("list-1", "👤 peop", "#ff0000"), list("list-2", "👤 peop", "#ff0000")], []);
+	const pages = new PrefixPages(() => settings);
+	const key = listKey("list-1", "prefix");
+	pages.hold(key);
+	assert.equal(pages.startNew(key), true);
+	assert.deepEqual(pages.linkedRows(key), []);
+	pages.edit(key, { prefix: "📅 due" });
+	pages.edit(key, { color: "#0000ff" });
+	assert.deepEqual(shown(settings), [
+		["📅 due", "#0000ff"],
+		["👤 peop", "#ff0000"],
+	]);
+	pages.release(key);
+	assert.equal(pages.closeUnheld(key), true);
+});
+
+test("Edit prefix on a page changes every row that shared the prefix when the page opened", () => {
+	const settings = settingsWith([list("list-1", "👤 peop"), list("list-2", "👤 peop")], [property("status", "👤 peop")]);
+	const pages = new PrefixPages(() => settings);
+	const key = listKey("list-1", "prefix");
+	pages.hold(key);
+	pages.edit(key, { prefix: "👥 team" });
+	assert.deepEqual(shown(settings), [
+		["👥 team", undefined],
+		["👥 team", undefined],
+		["👥 team", undefined],
+	]);
+});
+
+test("picking another prefix on a page relinks the row to the rows using that prefix", () => {
+	const settings = settingsWith([list("list-1", "👤 peop"), list("list-2", "👤 peop"), list("list-3", "📅 due")], []);
+	const pages = new PrefixPages(() => settings);
+	const key = listKey("list-1", "prefix");
+	pages.hold(key);
+	assert.equal(pages.assign(key, { prefix: "📅 due" }), true);
+	assert.deepEqual(pages.linkedRows(key).map((row) => row.key), [listKey("list-3", "prefix")]);
+	pages.edit(key, { prefix: "📆 date" });
+	assert.deepEqual(shown(settings), [
+		["📆 date", undefined],
+		["👤 peop", undefined],
+		["📆 date", undefined],
+	]);
+});

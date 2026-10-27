@@ -5,6 +5,8 @@ import type { RowParts } from "../render";
 import { isLinkType } from "../settings.ts";
 import type { CheckboxMode, EditableProperty, SetPropertiesSettings } from "../settings";
 import { isPicked, linksTo, wikiLink } from "./links.ts";
+import { multiRowName, multiRowProperties, rowHolds, withRowApplied } from "./multiValues.ts";
+import type { MultiRow } from "./multiValues";
 import { offeredProperties, propertyType } from "./offered.ts";
 import type { OfferedEntry } from "./offered";
 import { asList, formatPendingValue, isUnset, linkTitle, sameValue } from "./values.ts";
@@ -49,6 +51,7 @@ export function initialPropertyState(settings: SetPropertiesSettings, frontmatte
 	const saved = frontmatter ?? {};
 	const state = new Map<string, unknown>();
 	for (const entry of offeredProperties(settings)) state.set(entry.property, ownValue(saved, entry.property));
+	for (const property of multiRowProperties(settings)) state.set(property, ownValue(saved, property));
 	return state;
 }
 
@@ -67,11 +70,16 @@ export function pickerChoices(
 	query: string,
 	showPrefixes: boolean,
 	checkboxMode: CheckboxMode = "picker",
+	rows: readonly MultiRow[] = [],
 ): PickerChoice[] {
+	const held = rows.filter((row) => rowHolds(row, state.values));
+	const unheld = rows.filter((row) => !rowHolds(row, state.values));
 	const choices = [
 		choice({ mark: SAVE_MARK, content: t("saveAndClose") }, { action: "save" }),
 		choice({ mark: CANCEL_MARK, content: t("cancel") }, { action: "cancel" }),
 		...selectedChoices(entries, initial, state, showPrefixes, checkboxMode),
+		...held.map((row) => heldRowChoice(row, initial, state, showPrefixes)),
+		...unheld.map((row) => unheldRowChoice(row, state, showPrefixes)),
 		...entryChoices(entries, state, query, showPrefixes, checkboxMode),
 	];
 	if (!query) return choices;
@@ -143,6 +151,16 @@ function selectedChoices(
 		}
 	}
 	return choices;
+}
+
+function heldRowChoice(row: MultiRow, initial: PropertyState, state: PickerState, showPrefixes: boolean): PickerChoice {
+	const parts = { mark: selectedMark(!rowHolds(row, initial)), ...prefixPart(row.entry, showPrefixes), content: multiRowName(row.entry) };
+	return choice(parts, set(state));
+}
+
+function unheldRowChoice(row: MultiRow, state: PickerState, showPrefixes: boolean): PickerChoice {
+	const parts = { ...prefixPart(row.entry, showPrefixes), content: multiRowName(row.entry) };
+	return choice(parts, set({ ...state, values: withRowApplied(row, state.values) }));
 }
 
 function linkOwner(entries: readonly OfferedEntry[], property: string, link: unknown): EditableProperty | undefined {

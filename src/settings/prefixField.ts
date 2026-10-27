@@ -11,6 +11,7 @@ export interface PrefixField {
 	prefixColor?: string;
 	label: string;
 	editPrefix?: () => void;
+	newPrefix?: () => void;
 }
 
 export interface PrefixMenuContext {
@@ -58,7 +59,7 @@ export function renderPrefixedName(nameEl: HTMLElement, field: PrefixField, cont
 	alignChips(nameEl);
 }
 
-function prefixMenuFor(field: PrefixField, context: PrefixMenuContext): Menu {
+export function prefixMenuFor(field: PrefixField, context: PrefixMenuContext): Menu {
 	const { prefixes } = context;
 	const { choices, clears } = prefixMenu(prefixes.rows(), field.key);
 	const changed = (applied: boolean) => {
@@ -76,6 +77,8 @@ function prefixMenuFor(field: PrefixField, context: PrefixMenuContext): Menu {
 	if (choices.length > 0) menu.addSeparator();
 	const { editPrefix } = field;
 	if (editPrefix) menu.addItem((item) => item.setTitle(t("editPrefix")).setIcon("pencil").onClick(editPrefix));
+	const { newPrefix } = field;
+	if (newPrefix) menu.addItem((item) => item.setTitle(t("newPrefix")).setIcon("plus").onClick(newPrefix));
 	if (clears) {
 		menu.addItem((item) =>
 			item

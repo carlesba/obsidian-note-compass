@@ -79,7 +79,7 @@ export function linkTitle(value: unknown): unknown {
 	return link ? link[2] ?? link[1] : value.replace(/[[\]"']/g, "").trim();
 }
 
-function truncated(text: string): string {
+export function truncated(text: string): string {
 	const characters = Array.from(text);
 	if (characters.length <= PENDING_VALUE_LENGTH) return text;
 	return `${characters.slice(0, PENDING_VALUE_LENGTH - 1).join("").trimEnd()}…`;

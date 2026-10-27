@@ -85,7 +85,7 @@ function typeChoices(picker: ValuePicker, pending: unknown, query: string): Valu
 				clear,
 			];
 		case "datetime": {
-			const now = `${localDate(picker.now)}T${localTime(picker.now)}`;
+			const now = currentDateTime(picker.now);
 			return [...useChoice(parseDateTime(query), pending), offer(t("now"), now, now), clear];
 		}
 	}
@@ -118,6 +118,14 @@ export function datePresets(now: number): [string, string][] {
 		[t("nextMonday"), localDate(now, untilMonday)],
 		[t("inAWeek"), localDate(now, 7)],
 	];
+}
+
+export function currentDate(now: number): string {
+	return localDate(now);
+}
+
+export function currentDateTime(now: number): string {
+	return `${localDate(now)}T${localTime(now)}`;
 }
 
 function localDate(time: number, days = 0): string {

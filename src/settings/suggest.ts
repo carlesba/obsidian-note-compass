@@ -101,6 +101,32 @@ export class LinkSuggest extends AbstractInputSuggest<TFile> {
 	}
 }
 
+export class NoteSuggest extends AbstractInputSuggest<TFile> {
+	private readonly inputEl: HTMLInputElement;
+
+	constructor(app: App, inputEl: HTMLInputElement) {
+		super(app, inputEl);
+		this.inputEl = inputEl;
+		this.limit = LINK_SUGGESTION_LIMIT;
+	}
+
+	protected getSuggestions(query: string): TFile[] {
+		return matchingLinkCandidates(this.app.vault.getMarkdownFiles(), query.replace(/[[\]]/g, ""));
+	}
+
+	renderSuggestion(file: TFile, el: HTMLElement): void {
+		el.createDiv({ text: file.basename });
+		const folder = file.parent?.path ?? "/";
+		if (folder !== "/") el.createDiv({ text: folder, cls: "setting-item-description" });
+	}
+
+	selectSuggestion(file: TFile): void {
+		this.inputEl.value = this.app.metadataCache.fileToLinktext(file, "", true);
+		this.inputEl.dispatchEvent(new Event("input", { bubbles: true }));
+		this.close();
+	}
+}
+
 export function warningDescription(descEl: HTMLElement, warning: string): void {
 	descEl.empty();
 	descEl.addClass("note-compass-warning");

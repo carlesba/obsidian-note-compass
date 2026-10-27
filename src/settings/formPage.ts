@@ -1,5 +1,5 @@
-import { DropdownComponent, ExtraButtonComponent, Menu, TextComponent, ToggleComponent, moment, setIcon, setTooltip } from "obsidian";
-import type { Setting, SettingDefinition, SettingDefinitionItem, SettingDefinitionList, SettingDefinitionPage, SettingDefinitionRender } from "obsidian";
+import { ExtraButtonComponent, Menu, TextComponent, moment } from "obsidian";
+import type { Setting, SettingDefinition, SettingDefinitionItem, SettingDefinitionList, SettingDefinitionPage } from "obsidian";
 import { hasChoices, isDateType, newFormId } from "../forms/form";
 import { SET_DATE_PLACEHOLDERS, typedTime } from "../forms/dateInput";
 import { FIELD_PRESETS, presetField, presetFormat } from "../forms/presets";
@@ -23,44 +23,42 @@ import {
 	formRowName,
 	formSummary,
 	formWarning,
-	headerClickToggles,
 	moveChoice,
 	readFieldSetting,
 	saveAsOptions,
 	storeAsOptions,
-	toggleExpandedField,
 } from "./formsForm";
 import type { FieldSetting } from "./formsForm";
 import { editableRow } from "./listPage";
 import type { EditableRow, ListPageContext } from "./listPage";
 import { sortableRows } from "./sortable";
 import { LinkSuggest, PropertySuggest, warningDescription } from "./suggest";
-import { ROW_CONTROL_CLASS } from "./tabOrder";
+import {
+	FOCUS_ATTRIBUTE,
+	checkedTextRow,
+	dropdownRow,
+	editorRow,
+	expandableRow,
+	focusControl,
+	renderEditor,
+	textRow,
+	toggleRow,
+} from "./fieldEditor";
+import type { EditorBinding, ExpandingPageContext, Redraw } from "./fieldEditor";
 
-export interface FieldEditorState {
-	expanded: Map<string, string>;
-	focusesKey?: string;
-}
-
-export interface FormPageContext extends ListPageContext {
-	fieldEditor: FieldEditorState;
-	refresh: () => void;
-	saveQuietly: (change: () => unknown) => void;
-}
+export type FormPageContext = ExpandingPageContext;
 
 type IdentifiedPage = SettingDefinitionPage & { id: string };
 
 type FieldKey = (setting: FieldSetting, index?: number) => string;
 
-interface FieldEditor {
+interface FieldEditor extends EditorBinding<FieldSetting> {
 	form: Form;
 	field: FormField;
 	key: FieldKey;
 	context: FormPageContext;
 	changed: () => void;
 }
-
-type Redraw = (focus?: string) => void;
 
 const PRESET_ICONS: Record<FieldPreset, string> = {
 	blank: "plus",
@@ -100,8 +98,6 @@ const SET_DATE_PREVIEWS: Record<DateFieldType, string> = {
 };
 
 const NAME_PATTERN_EXAMPLE = "{{date:YYMMDDHHmm}} {{book}}";
-
-const FOCUS_ATTRIBUTE = "data-note-compass-focus";
 
 export function formPageId(form: Form): string {
 	return `form-${form.id}`;
@@ -225,72 +221,34 @@ function fieldRow(
 	headers: Map<string, () => void>,
 	changed: () => void,
 ): SettingDefinition {
-	const definition: SettingDefinitionRender & { id: string } = {
+	const key: FieldKey = (name, index) => formFieldKey(form.id, field.id, name, index);
+	const editor: FieldEditor = {
+		form,
+		field,
+		key,
+		context,
+		changed,
+		read: (setting) => readFieldSetting(field, setting),
+		write: (setting, value) => write(editor, setting, value),
+	};
+	return expandableRow({
 		id: `field-${field.id}-row`,
 		name: fieldSummary(field),
 		desc: fieldWarning(form, field),
-		render: (setting) => {
-			const { settingEl, controlEl } = setting;
-			const expanded = context.fieldEditor.expanded.get(form.id) === field.id;
-			settingEl.addClass("note-compass-draggable-row", "note-compass-field-row", ROW_CONTROL_CLASS);
-			settingEl.toggleClass("is-expanded", expanded);
-			settingEl.setAttr("aria-expanded", String(expanded));
-			const showHeader = () => fieldHeader(setting, form, field);
-			showHeader();
-			headers.set(field.id, showHeader);
-			const toggle = () => {
-				toggleExpandedField(context.fieldEditor.expanded, form.id, field.id);
-				context.refresh();
-			};
-			new ExtraButtonComponent(controlEl)
-				.setIcon("copy")
-				.setTooltip(t("duplicateRow"))
-				.onClick(() =>
-					context.change(() => {
-						const copy = duplicateEntry(form.fields, field, newFormId(form.fields));
-						if (copy) context.fieldEditor.expanded.set(form.id, copy.id);
-					}),
-				);
-			const chevronEl = controlEl.createDiv({ cls: "clickable-icon note-compass-field-chevron" });
-			setIcon(chevronEl, expanded ? "chevron-down" : "chevron-right");
-			setTooltip(chevronEl, expanded ? t("collapseField") : t("editField"));
-			const editorEl = expanded ? settingEl.createDiv({ cls: "note-compass-field-editor" }) : undefined;
-			if (editorEl) {
-				const focusesKey = context.fieldEditor.focusesKey === field.id;
-				if (focusesKey) context.fieldEditor.focusesKey = undefined;
-				renderFieldEditor(
-					editorEl,
-					{ form, field, key: (name, index) => formFieldKey(form.id, field.id, name, index), context, changed },
-					focusesKey ? "key" : undefined,
-				);
-			}
-			const onClick = (event: MouseEvent) => {
-				const path = event.composedPath();
-				const click = {
-					inEditor: editorEl !== undefined && path.includes(editorEl),
-					inControls: path.includes(controlEl),
-					onChevron: path.includes(chevronEl),
-				};
-				if (headerClickToggles(click)) toggle();
-			};
-			const onKeydown = (event: KeyboardEvent) => {
-				if (event.target !== settingEl || event.isComposing || (event.key !== "Enter" && event.key !== " ")) return;
-				event.preventDefault();
-				toggle();
-			};
-			settingEl.addEventListener("click", onClick);
-			settingEl.addEventListener("keydown", onKeydown);
-			return () => {
-				settingEl.removeEventListener("click", onClick);
-				settingEl.removeEventListener("keydown", onKeydown);
-				settingEl.removeClass("is-expanded");
-				settingEl.removeAttribute("aria-expanded");
-				editorEl?.remove();
-				if (headers.get(field.id) === showHeader) headers.delete(field.id);
-			};
-		},
-	};
-	return definition;
+		listId: form.id,
+		itemId: field.id,
+		context,
+		headers,
+		showHeader: (setting) => fieldHeader(setting, form, field),
+		duplicate: () =>
+			context.change(() => {
+				const copy = duplicateEntry(form.fields, field, newFormId(form.fields));
+				if (copy) context.fieldEditor.expanded.set(form.id, copy.id);
+			}),
+		expandTooltip: t("editField"),
+		collapseTooltip: t("collapseField"),
+		renderEditor: (editorEl, takesFocus) => renderEditor(editorEl, (parentEl, draw) => fieldEditorRows(parentEl, editor, draw), takesFocus ? "key" : undefined),
+	});
 }
 
 function fieldHeader(setting: Setting, form: Form, field: FormField): void {
@@ -309,53 +267,6 @@ function fieldTitle(field: FormField): DocumentFragment {
 		nameEl.createSpan({ cls: `note-compass-field-badge mod-${badge.kind}`, text: badge.text });
 	}
 	return title;
-}
-
-function renderFieldEditor(editorEl: HTMLElement, editor: FieldEditor, focus?: string): void {
-	const draw: Redraw = (target) => {
-		const releaseLayout = holdLayout(editorEl);
-		const contentEl = createDiv();
-		fieldEditorRows(contentEl, editor, draw);
-		editorEl.setChildrenInPlace(Array.from(contentEl.childNodes));
-		releaseLayout();
-		focusControl(editorEl, target);
-	};
-	fieldEditorRows(editorEl, editor, draw);
-	focusControl(editorEl, focus);
-}
-
-function focusControl(editorEl: HTMLElement, target: string | undefined): void {
-	if (target === undefined) return;
-	const focusEl = editorEl.querySelector<HTMLElement>(`[${FOCUS_ATTRIBUTE}="${target}"]`);
-	if (!focusEl) return;
-	editorEl.win.setTimeout(() => {
-		focusEl.focus({ preventScroll: true });
-		focusEl.scrollIntoView({ block: "nearest" });
-	}, 0);
-}
-
-function scrollerOf(el: HTMLElement): HTMLElement | undefined {
-	for (let parentEl = el.parentElement; parentEl; parentEl = parentEl.parentElement) {
-		const { overflowY } = el.win.getComputedStyle(parentEl);
-		if (overflowY === "auto" || overflowY === "scroll") return parentEl;
-	}
-	return undefined;
-}
-
-function holdLayout(el: HTMLElement): () => void {
-	const scrollerEl = scrollerOf(el);
-	const scrollTop = scrollerEl?.scrollTop;
-	el.setCssStyles({ minHeight: `${el.offsetHeight}px` });
-	const restoreScroll = () => {
-		if (scrollerEl && scrollTop !== undefined) scrollerEl.scrollTop = scrollTop;
-	};
-	return () => {
-		restoreScroll();
-		el.win.requestAnimationFrame(() => {
-			el.setCssStyles({ minHeight: "" });
-			restoreScroll();
-		});
-	};
 }
 
 function fieldEditorRows(editorEl: HTMLElement, editor: FieldEditor, draw: Redraw): void {
@@ -386,69 +297,9 @@ function fieldEditorRows(editorEl: HTMLElement, editor: FieldEditor, draw: Redra
 	}
 }
 
-interface EditorRow {
-	rowEl: HTMLElement;
-	descEl: HTMLElement;
-	controlEl: HTMLElement;
-}
-
-function editorRow(parentEl: HTMLElement, name: string, desc: string, wide = false): EditorRow {
-	const rowEl = parentEl.createDiv({ cls: wide ? "note-compass-field-setting mod-wide" : "note-compass-field-setting" });
-	const infoEl = rowEl.createDiv({ cls: "note-compass-field-setting-info" });
-	infoEl.createDiv({ cls: "setting-item-name", text: name });
-	const descEl = infoEl.createDiv({ cls: "setting-item-description", text: desc });
-	const controlEl = rowEl.createDiv({ cls: "note-compass-field-setting-control" });
-	return { rowEl, descEl, controlEl };
-}
-
-function settingText(field: FormField, setting: FieldSetting): string {
-	const value = readFieldSetting(field, setting);
-	return typeof value === "string" ? value : "";
-}
-
 function write(editor: FieldEditor, setting: FieldSetting, value: unknown, index?: number): void {
 	editor.context.write(editor.key(setting, index), value);
 	editor.changed();
-}
-
-function dropdownRow(
-	parentEl: HTMLElement,
-	editor: FieldEditor,
-	setting: FieldSetting,
-	name: string,
-	desc: string,
-	options: Record<string, string>,
-	changed?: () => void,
-): void {
-	const { controlEl } = editorRow(parentEl, name, desc);
-	const dropdown = new DropdownComponent(controlEl).addOptions(options);
-	dropdown.selectEl.setAttr(FOCUS_ATTRIBUTE, setting);
-	dropdown.setValue(settingText(editor.field, setting)).onChange((value) => {
-		write(editor, setting, value);
-		changed?.();
-	});
-}
-
-function textRow(
-	parentEl: HTMLElement,
-	editor: FieldEditor,
-	setting: FieldSetting,
-	name: string,
-	desc: string,
-	placeholder: string,
-): { text: TextComponent; rowEl: HTMLElement } {
-	const { rowEl, controlEl } = editorRow(parentEl, name, desc);
-	const text = new TextComponent(controlEl).setPlaceholder(placeholder);
-	text.inputEl.setAttr(FOCUS_ATTRIBUTE, setting);
-	text.setValue(settingText(editor.field, setting)).onChange((value) => write(editor, setting, value));
-	return { text, rowEl };
-}
-
-function toggleRow(parentEl: HTMLElement, editor: FieldEditor, setting: FieldSetting, name: string, desc: string): void {
-	const { controlEl } = editorRow(parentEl, name, desc);
-	new ToggleComponent(controlEl)
-		.setValue(readFieldSetting(editor.field, setting) === true)
-		.onChange((value) => write(editor, setting, value));
 }
 
 function keyRow(parentEl: HTMLElement, editor: FieldEditor): { placeholderOf?: TextComponent } {
@@ -531,15 +382,7 @@ function linkSuggestions(inputEl: HTMLInputElement, editor: FieldEditor, picked?
 }
 
 function numberRow(parentEl: HTMLElement, editor: FieldEditor): void {
-	const { rowEl, descEl, controlEl } = editorRow(parentEl, t("formValue"), t("formStaticValueDesc"));
-	const text = new TextComponent(controlEl).setPlaceholder("3");
-	text.inputEl.setAttr(FOCUS_ATTRIBUTE, "number");
-	text.setValue(settingText(editor.field, "number")).onChange((value) => {
-		const error = fieldValueError("number", value);
-		descEl.setText(error ?? t("formStaticValueDesc"));
-		rowEl.toggleClass("has-error", error !== undefined);
-		if (error === undefined) write(editor, "number", value);
-	});
+	checkedTextRow(parentEl, editor, "number", t("formValue"), t("formStaticValueDesc"), "3", (typed) => fieldValueError("number", typed));
 }
 
 function choicesSection(parentEl: HTMLElement, editor: FieldEditor, draw: Redraw): void {

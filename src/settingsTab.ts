@@ -28,7 +28,8 @@ import {
 import { newForm, newFormId } from "./forms/form";
 import { duplicateEntry, duplicateName } from "./settings/duplicate";
 import { formPage, formPageId, formRow } from "./settings/formPage";
-import type { FieldEditorState, FormPageContext } from "./settings/formPage";
+import type { FormPageContext } from "./settings/formPage";
+import type { FieldEditorState } from "./settings/fieldEditor";
 import { newList, propertySuggestions } from "./settings/listForm";
 import type { PropertySuggestion } from "./settings/listForm";
 import { listPage, listPageId, listRow, propertyPage, propertyPageId, propertyRow } from "./settings/listPage";
@@ -47,9 +48,10 @@ const TYPED_FIELDS = [
 	"name",
 	"excludedFolders",
 	"presetValues",
+	"rowName",
 ];
 
-const QUIETLY_SAVED_SCOPES = ["form", "formField"];
+const QUIETLY_SAVED_SCOPES = ["form", "formField", "fixedValue"];
 
 const TYPING_PAUSE_MS = 800;
 
@@ -191,7 +193,7 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 				visible: false,
 				items: [
 					...lists.map((list) => listPage(list, context)),
-					...properties.map((entry) => propertyPage(entry, properties, context)),
+					...properties.map((entry) => propertyPage(entry, properties, formContext)),
 					...forms.map((form) => formPage(form, formContext)),
 					this.dateNoteFormatsPage(vault),
 				],

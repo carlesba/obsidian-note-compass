@@ -4,6 +4,7 @@ import { ChoiceModal } from "../choiceModal";
 import { t } from "../i18n";
 import type { JumpListVault, VaultNote } from "../lists/vault";
 import type { EditableProperty, JumpSettings } from "../settings";
+import { multiRows } from "./multiValues";
 import { offeredEntries, propertyType } from "./offered";
 import { initialPropertyState, keptEmptyValues, pickerChoices, pickerState, withValue, writeProperties } from "./picker";
 import type { PickerChoice, PickerState } from "./picker";
@@ -20,6 +21,7 @@ export function setProperties(
 	const entries = offeredEntries(settings, vault, target);
 	const initial = initialPropertyState(settings.setProperties, vault.frontmatter(target.path));
 	const keptEmpty = keptEmptyValues(settings.setProperties);
+	const rows = multiRows(settings.setProperties, vault.now());
 	const cancel = () => {
 		new Notice(t("propertyChangesCancelled"));
 		back?.();
@@ -33,7 +35,7 @@ export function setProperties(
 		}
 	};
 	const openMain = (state: PickerState, query: string): void => {
-		new ChoiceModal<PickerChoice>(app, t("setPropertiesPlaceholder"), (typed) => pickerChoices(entries, initial, state, typed, settings.showPrefixes, settings.setProperties.checkboxMode), {
+		new ChoiceModal<PickerChoice>(app, t("setPropertiesPlaceholder"), (typed) => pickerChoices(entries, initial, state, typed, settings.showPrefixes, settings.setProperties.checkboxMode, rows), {
 			choose: ({ action }, typed) => {
 				if (action.action === "set") openMain(action.state, "");
 				else if (action.action === "expand") openMain(state, action.query);
