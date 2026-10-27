@@ -5,7 +5,7 @@ import { defaultSettings, mergeSettings, storedSettings } from "../src/settings.
 import type { EditableProperty, SetPropertiesSettings } from "../src/settings.ts";
 import { readFixedValues } from "../src/setProperties/fixedValues.ts";
 import type { FixedValue } from "../src/setProperties/fixedValues.ts";
-import { fixedValuesSummary, multiRowName, multiRows, rowHolds, withRowApplied } from "../src/setProperties/multiValues.ts";
+import { fixedValuesSummary, multiRowName, multiRowSegments, multiRows, rowHolds, withRowApplied } from "../src/setProperties/multiValues.ts";
 import { decidedPropertyType, mixedTypeProperties } from "../src/setProperties/propertyTypes.ts";
 import { offeredProperties } from "../src/setProperties/offered.ts";
 import { initialPropertyState, keptEmptyValues, pickerChoices, pickerState, writeProperties } from "../src/setProperties/picker.ts";
@@ -172,6 +172,20 @@ test("a multiple properties row is named by its name, or by a short summary of i
 	const long = multiRow("list-3", [fixed("v", "status", "text", { value: "a very long status value that goes on and on" })]);
 	assert.equal(Array.from(fixedValuesSummary(long)).length, 40);
 	assert.ok(fixedValuesSummary(long).endsWith("…"));
+});
+
+test("an unnamed row shows each property plainly and its value muted, and a named row shows only its name", () => {
+	assert.deepEqual(multiRowSegments(DONE_ROW), [
+		{ text: "status" },
+		{ text: " done", muted: true },
+		{ text: ", " },
+		{ text: "archived" },
+		{ text: " ✓", muted: true },
+		{ text: ", " },
+		{ text: "active" },
+		{ text: " cleared", muted: true },
+	]);
+	assert.equal(multiRowSegments({ ...DONE_ROW, name: "Finish" }), undefined);
 });
 
 test("single property code paths ignore the property and type of multiple properties rows", () => {

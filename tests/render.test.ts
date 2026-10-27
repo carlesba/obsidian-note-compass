@@ -130,3 +130,8 @@ test("an entry's prefix colour joins its parts but never its label, and hides wi
 	assert.deepEqual(entryParts(entry, false), { content: "Project" });
 	assert.equal(rowLabel({ prefix: "🔗", prefixColor: "#fff", content: "Ann" }), "🔗 Ann");
 });
+
+test("a row draws content segments with the muted ones apart", () => {
+	const row = drawRow({ content: "status done", contentSegments: [{ text: "status" }, { text: " done", muted: true }] });
+	assert.deepEqual(texts(row), ["note-compass-row-segment: status", "note-compass-row-muted:  done"]);
+});

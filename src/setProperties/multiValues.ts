@@ -1,4 +1,5 @@
 import { t } from "../i18n/index.ts";
+import type { ContentSegment } from "../render";
 import { isMultiRow, isUnreadable } from "../settings.ts";
 import type { EditableProperty, SetPropertiesSettings } from "../settings";
 import { isUsableFixedValue } from "./fixedValues.ts";
@@ -54,10 +55,21 @@ export function multiRowName(entry: EditableProperty): string {
 }
 
 export function fixedValuesSummary(entry: EditableProperty): string {
-	const parts = (entry.fixedValues ?? [])
-		.filter((fixed) => fixed.property.trim() !== "")
-		.map((fixed) => `${fixed.property} ${fixedValueText(fixed)}`);
+	const parts = namedFixedValues(entry).map((fixed) => `${fixed.property} ${fixedValueText(fixed)}`);
 	return truncated(parts.join(", "));
+}
+
+export function multiRowSegments(entry: EditableProperty): ContentSegment[] | undefined {
+	if (entry.name?.trim()) return undefined;
+	return namedFixedValues(entry).flatMap((fixed, index) => [
+		...(index > 0 ? [{ text: ", " }] : []),
+		{ text: fixed.property },
+		{ text: ` ${fixedValueText(fixed)}`, muted: true },
+	]);
+}
+
+function namedFixedValues(entry: EditableProperty): FixedValue[] {
+	return (entry.fixedValues ?? []).filter((fixed) => fixed.property.trim() !== "");
 }
 
 export function fixedValueText(fixed: FixedValue): string {

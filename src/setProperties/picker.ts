@@ -5,7 +5,7 @@ import type { RowParts } from "../render";
 import { isLinkType } from "../settings.ts";
 import type { CheckboxMode, EditableProperty, SetPropertiesSettings } from "../settings";
 import { isPicked, linksTo, wikiLink } from "./links.ts";
-import { multiRowName, multiRowProperties, rowHolds, withRowApplied } from "./multiValues.ts";
+import { multiRowName, multiRowProperties, multiRowSegments, rowHolds, withRowApplied } from "./multiValues.ts";
 import type { MultiRow } from "./multiValues";
 import { offeredProperties, propertyType } from "./offered.ts";
 import type { OfferedEntry } from "./offered";
@@ -154,13 +154,19 @@ function selectedChoices(
 }
 
 function heldRowChoice(row: MultiRow, initial: PropertyState, state: PickerState, showPrefixes: boolean): PickerChoice {
-	const parts = { mark: selectedMark(!rowHolds(row, initial)), ...prefixPart(row.entry, showPrefixes), content: multiRowName(row.entry) };
+	const parts = { mark: selectedMark(!rowHolds(row, initial)), ...multiRowParts(row, showPrefixes) };
 	return choice(parts, set(state));
 }
 
 function unheldRowChoice(row: MultiRow, state: PickerState, showPrefixes: boolean): PickerChoice {
-	const parts = { ...prefixPart(row.entry, showPrefixes), content: multiRowName(row.entry) };
-	return choice(parts, set({ ...state, values: withRowApplied(row, state.values) }));
+	return choice(multiRowParts(row, showPrefixes), set({ ...state, values: withRowApplied(row, state.values) }));
+}
+
+function multiRowParts(row: MultiRow, showPrefixes: boolean): RowParts {
+	const segments = multiRowSegments(row.entry);
+	const parts: RowParts = { ...prefixPart(row.entry, showPrefixes), content: multiRowName(row.entry) };
+	if (segments) parts.contentSegments = segments;
+	return parts;
 }
 
 function linkOwner(entries: readonly OfferedEntry[], property: string, link: unknown): EditableProperty | undefined {

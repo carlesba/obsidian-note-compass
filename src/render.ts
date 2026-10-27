@@ -5,7 +5,13 @@ export interface RowParts {
 	prefix?: string;
 	prefixColor?: string;
 	content: string;
+	contentSegments?: ContentSegment[];
 	value?: string;
+}
+
+export interface ContentSegment {
+	text: string;
+	muted?: boolean;
 }
 
 const LABEL_PARTS = ["mark", "prefix", "content", "value"] as const;
@@ -42,8 +48,15 @@ export function renderRow(el: HTMLElement, parts: RowParts, reservesMarkColumn =
 		paintChip(chipEl, parts.prefixColor);
 	}
 	const bodyEl = el.createSpan({ cls: "note-compass-row-body" });
-	bodyEl.createSpan({ cls: "note-compass-row-content", text: parts.content });
+	if (parts.contentSegments === undefined) bodyEl.createSpan({ cls: "note-compass-row-content", text: parts.content });
+	else renderSegments(bodyEl.createSpan({ cls: "note-compass-row-content" }), parts.contentSegments);
 	if (parts.value !== undefined) bodyEl.createSpan({ cls: "note-compass-row-value", text: parts.value });
+}
+
+function renderSegments(contentEl: HTMLElement, segments: readonly ContentSegment[]): void {
+	for (const segment of segments) {
+		contentEl.createSpan({ cls: segment.muted ? "note-compass-row-muted" : "note-compass-row-segment", text: segment.text });
+	}
 }
 
 export function entryParts(entry: JumpListEntry, showPrefixes: boolean): RowParts {

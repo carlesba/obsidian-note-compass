@@ -217,6 +217,10 @@
 	text-overflow: ellipsis;
 }
 
+.note-compass-row-muted {
+	color: var(--text-muted);
+}
+
 .note-compass-row-value {
 	flex: 0 1 auto;
 	max-width: 50%;
