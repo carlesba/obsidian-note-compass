@@ -140,7 +140,7 @@
 }
 
 .is-mobile .note-compass-results > .suggestion-item.note-compass-row {
-	padding-block: var(--size-4-3);
+	padding-block: var(--size-4-2);
 }
 
 .note-compass-row-mark {
