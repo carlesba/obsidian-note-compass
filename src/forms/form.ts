@@ -85,10 +85,6 @@ export function questionText(field: FormField): string {
 	return field.question?.trim() || field.key;
 }
 
-export function entryTimeField(form: Form): FormField | undefined {
-	return form.fields.find((field) => field.entryTime === true && field.mode === "ask" && isDateType(field.type));
-}
-
 export function newFormId(forms: readonly { id: string }[]): string {
 	return String(Math.max(0, ...forms.map((form) => Number(form.id.match(/^\d+$/)?.[0] ?? 0))) + 1);
 }

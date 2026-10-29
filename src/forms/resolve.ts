@@ -1,8 +1,8 @@
 import { coreDatePlaceholder, isCreatableName } from "./newNotes.ts";
 import type { MomentDate, MomentFactory } from "../lists/vault.ts";
 import { parseNumber } from "../setProperties/values.ts";
-import { typedTime } from "./dateInput.ts";
-import { DEFAULT_DATE_FORMATS, askedFields, entryTimeField, isDateType } from "./form.ts";
+import { confirmedTime, typedTime } from "./dateInput.ts";
+import { DEFAULT_DATE_FORMATS, askedFields, isDateType } from "./form.ts";
 import type { DateFieldType, Form, FormField } from "./form.ts";
 
 export type Answer = { skipped: true } | { skipped: false; value: unknown };
@@ -55,10 +55,13 @@ export function isEmptyAnswer(value: unknown): boolean {
 }
 
 export function entryClock(form: Form, answers: Answers, clock: FormClock): FormClock {
-	const field = entryTimeField(form);
-	const answer = field ? answers.get(field.id) : undefined;
-	if (!answer || answer.skipped || typeof answer.value !== "number") return clock;
-	return { ...clock, now: answer.value };
+	let now = clock.now;
+	for (const field of askedFields(form)) {
+		if (!field.entryTime || !isDateType(field.type)) continue;
+		const answer = answers.get(field.id);
+		if (answer && !answer.skipped && typeof answer.value === "number") now = confirmedTime(field.type, answer.value, now, clock.moment);
+	}
+	return { ...clock, now };
 }
 
 export function resolveForm(form: Form, answers: Answers, formClock: FormClock): ResolvedForm {
@@ -115,7 +118,7 @@ function resolveValue(
 	const { value } = answer;
 	if (isDateType(field.type)) {
 		if (typeof value !== "number") return SKIPPED;
-		return dated(field, field.type, clock.moment(value));
+		return dated(field, field.type, clock.moment(field.entryTime ? confirmedTime(field.type, value, clock.now, clock.moment) : value));
 	}
 	if (field.type === "select") return valued(storedChoice(field, String(value)));
 	if (field.type === "multiselect") {

@@ -235,3 +235,13 @@ test("an answered entry time moves every creation time of the form to it", () =>
 	const untouched = resolveForm(shape, new Map(), clock);
 	assert.equal(untouched.name, `${moment(NOW).format("YYMMDDHHmm")} entry`);
 });
+
+
+test("saved entryTime markers and date types round-trip without migration", () => {
+	for (const type of ["date", "time", "datetime"] as const) {
+		const shape = form({ fields: [variable("1", "when", { type, entryTime: true, dateFormat: "custom", customFormat: "YYYY/MM/DD HH:mm" })] });
+		const settings = mergeSettings({ forms: [shape] });
+		const reloaded = mergeSettings(JSON.parse(JSON.stringify(storedSettings(settings))));
+		assert.deepEqual(reloaded.forms[0].fields, shape.fields);
+	}
+});

@@ -98,7 +98,7 @@ Click the row or its chevron to edit the field right below it, and click again t
 
 The `+` in the "Fields" header offers a blank field and ready-made presets.
 
-![The menu of the Fields + button, with Blank field, Date, Time, Timestamp, ISO timestamp and Entry time, each showing what it would write right now](images/form-fields-add-menu.png)
+![The menu of the Fields + button, with Blank field, Date, Time, Timestamp, ISO timestamp and entry confirmation presets, each showing what it would write right now](images/form-fields-add-menu.png)
 
 | Menu item | Adds |
 | --- | --- |
@@ -107,7 +107,7 @@ The `+` in the "Fields" header offers a blank field and ready-made presets.
 | Time | A fixed field set at creation, keyed `time`, formatted `HH:mm`. |
 | Timestamp | A fixed field set at creation, keyed `timestamp`, formatted `YYYY-MM-DDTHH:mm`. |
 | ISO timestamp | A fixed field set at creation, keyed `iso-timestamp`, formatted as ISO 8601. |
-| Entry time (confirm or change) | An asked time variable called `entry-time` with "Use as the entry time" switched on, so the note keeps today's date and you confirm or change the time. See [Entry time](#entry-time). |
+| Confirm entry date / Confirm entry time | Asked variables `entry-date` / `entry-time` that change only the date / time. Both can be used in one form. See [Entry time](#entry-time). |
 
 Each item shows what it would write right now. A key already in use gets a number, as in `timestamp-2`.
 
@@ -189,15 +189,13 @@ An asked one offers "Now", and a date also offers "Today", "Tomorrow", "Next Mon
 
 ### Entry time
 
-The entry time lets you confirm or change when the note is for, such as a meeting you log an hour later. Switch on "Use as the entry time" on an asked date, time or datetime field, or add the "Entry time (confirm or change)" preset.
+Add "Confirm entry date" and/or "Confirm entry time" to confirm when the note is for. Existing fields with "Use as the entry date/time" remain supported, including datetime fields that replace the full timestamp.
 
-![The entry-time question of the Reading log form, with the time the form started shown as digits in the input and Keep as the first row](images/form-entry-time.png)
+![The entry-time question with a compact text input and Keep as the first row](images/form-entry-time.png)
 
-1. The question's placeholder is the time the form started, in digits, such as `0930` for a time field or `202810300900` for a datetime.
-2. Its first row is "Keep", so Enter accepts that time.
-3. To change it, type another one in the same digits. A datetime field also takes a bare `0930` as today at 09:30.
-
-The answer then replaces the form's time everywhere it is used: `{{date}}` and `{{time}}` in the name and content, and every fixed field set "At creation". Only one field of a form can be the entry time, and a second one shows a warning.
+- Type `YYYYMMDD` for a date or `HHmm` for a time. Options underneath preview the full `YYYY-MM-DD HH:mm`; Enter keeps the shown value.
+- Changing the date preserves the time; changing the time preserves the date, including a previously confirmed date. Both fields can be edited again from the final review.
+- The combined timestamp fills `{{date}}`, `{{time}}`, the note name and fields set "At creation". Fields that change the same component show a warning.
 
 ### Details
 
@@ -233,6 +231,6 @@ A "Reading log" form could have these fields:
 | `rating` | property | ask | select | Choices `1` to `5` with labels such as `5 · Great`, stored as numbers. |
 | `started` | property | fixed | date | At creation. |
 | `categories` | property | fixed | list | `[[Books]]`, `[[Reading]]`. |
-| `entry-time` | variable | ask | time | Use as the entry time. |
+| `entry-time` | variable | ask | time | Use as the entry date/time. |
 
 With the note name `{{date:YYMMDDHHmm}} {{book}}`, each run asks for the book, the rating and the time, and creates a note such as `2810300930 Dune` linked to `[[Books]]` and `[[Reading]]`.

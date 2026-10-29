@@ -23,6 +23,8 @@ import type { CompletionDate, CopyAction, Destination, PeriodRelation, TaskActio
 export type TaskCommandSetting = "enabled" | "name" | "statuses" | "skippedStatuses" | "selectAll" | "batch" | "primary";
 
 export type TaskActionSetting =
+	| "prefix"
+	| "suffix"
 	| "label"
 	| "kind"
 	| "status"
@@ -153,6 +155,8 @@ export function readTaskActionSetting(command: TaskCommand, action: TaskAction, 
 			const destination = destinationAt(action, index);
 			return destination?.kind === "note" ? destination.path : undefined;
 		}
+		case "prefix":
+		case "suffix":
 		case "mentionDestination":
 		case "mentionSource":
 			return action.kind === "copy" ? action[setting] : undefined;
@@ -199,6 +203,11 @@ export function writeTaskActionSetting(
 			destination.path = value.trim();
 			return true;
 		}
+		case "prefix":
+		case "suffix":
+			if (action.kind !== "copy" || typeof value !== "string") return false;
+			action[setting] = value;
+			return true;
 		case "mentionDestination":
 		case "mentionSource":
 			if (action.kind !== "copy") return false;
@@ -234,12 +243,12 @@ function changeKind(action: TaskAction, kind: TaskActionKind): void {
 	if (action.kind === kind) return;
 	const fields = action as unknown as Record<string, unknown>;
 	if (kind === "status") {
-		for (const key of ["destinations", "mentionDestination", "mentionSource"]) delete fields[key];
+		for (const key of ["destinations", "mentionDestination", "mentionSource", "prefix", "suffix"]) delete fields[key];
 		Object.assign(fields, { kind, completionDate: "off" });
 		return;
 	}
 	delete fields.completionDate;
-	Object.assign(fields, { kind, destinations: [], mentionDestination: true, mentionSource: false });
+	Object.assign(fields, { kind, destinations: [], mentionDestination: true, mentionSource: false, prefix: "", suffix: "" });
 }
 
 export function addTaskAction(command: TaskCommand): TaskAction {

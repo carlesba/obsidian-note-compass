@@ -54,7 +54,8 @@ Appends an open task `[ ]` to the end of another note and sets "Status" on the o
 
 | Setting | What it does |
 | --- | --- |
-| Destinations | An ordered list; add with `+`, drag to reorder and use × to remove. |
+| Destinations | Opens a separate page; add with `+`, drag to reorder and use × to remove. The back arrow returns to the command. |
+| Copied task prefix / suffix | Literal text around the copied body only, before its block ID and source link. Include any spaces; empty by default. Works immediately and in batches. |
 | Link the destination | Adds ` → [[destination]]` to the original task. |
 | Link the source | Adds ` ← [[source]]` to the copy. |
 
@@ -91,7 +92,7 @@ A new command starts with a Bullet Journal setup named "Process open tasks": ena
 | Complete | `[x]` | Completion date Off. |
 | Cancel | `[-]` | Completion date Off. |
 | Migrate | `[>]` | Tomorrow, This week, Next week; links the destination only. |
-| Schedule | `[<]` | Next month, Next quarter, Next year; links both destination and source. |
+| Schedule | `[<]` | This month, Next month, This quarter, Next quarter, This year, Next year; links both destination and source. |
 
 ## Known behaviour
 
@@ -99,3 +100,5 @@ A new command starts with a Bullet Journal setup named "Process open tasks": ena
 - Copying keeps inline text, including existing suffixes and block IDs, so a copied block ID is duplicated rather than regenerated.
 
 See [Settings](settings.md) and [Tips and known behaviour](tips.md).
+
+These defaults apply only to new commands; saved destinations are unchanged.

@@ -63,7 +63,7 @@ export async function applyCopyAction(
 	if (unchanged.length === 0) return { applied: 0, skipped: changed };
 	if (destination.missing) await vault.createPeriodNote(destination.path, destination.missing.period, destination.missing.date, context.dateNotes.from);
 	const sourceLink = action.mentionSource ? vault.linkText(source.path, destination.path) : undefined;
-	await vault.processNote(destination.path, (content) => appendLines(content, unchanged.map((task) => copiedLine(task, sourceLink))));
+	await vault.processNote(destination.path, (content) => appendLines(content, unchanged.map((task) => copiedLine(task, sourceLink, action.prefix, action.suffix))));
 	const suffix = action.mentionDestination ? destinationMention(vault.linkText(destination.path, source.path)) : "";
 	const result = await editSource(context, unchanged.map((task) => statusEdit(task, action.status, suffix)));
 	return { applied: result.applied, skipped: result.skipped + changed };
@@ -115,7 +115,7 @@ export function prepareChanges(context: ApplyContext, action: StatusAction | Cop
 	if (!destination) return [];
 	const suffix = action.mentionDestination ? destinationMention(context.vault.linkText(destination.path, context.source.path)) : "";
 	const sourceLink = action.mentionSource ? context.vault.linkText(context.source.path, destination.path) : undefined;
-	return tasks.map((task) => ({ edit: statusEdit(task, action.status, suffix), copy: { destination, text: copiedLine(task, sourceLink) } }));
+	return tasks.map((task) => ({ edit: statusEdit(task, action.status, suffix), copy: { destination, text: copiedLine(task, sourceLink, action.prefix, action.suffix) } }));
 }
 
 export interface FileChanges {

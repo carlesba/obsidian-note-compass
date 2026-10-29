@@ -9,7 +9,7 @@ import { askedFields } from "./form";
 import type { Form, FormField } from "./form";
 import { confirmChoices, formChoices, questionChoices, questionPlaceholder, toggledChoice } from "./questions";
 import type { ConfirmChoice, FormChoice, Question, QuestionChoice } from "./questions";
-import { hasCreatableName, resolveForm, unansweredQuestions } from "./resolve";
+import { entryClock, hasCreatableName, resolveForm, unansweredQuestions } from "./resolve";
 import type { Answer, Answers, FormClock } from "./resolve";
 
 export function pickForm(app: App, vault: JumpListVault & NewNoteVault, forms: readonly Form[], sourcePath: string | undefined): void {
@@ -31,10 +31,10 @@ export function isRunnable(form: Form): boolean {
 export function fillForm(app: App, vault: JumpListVault & NewNoteVault, form: Form, sourcePath: string | undefined): void {
 	const questions = askedFields(form);
 	const clock: FormClock = { now: vault.now(), moment: vault.moment, coreTemplatesOptions: vault.coreTemplatesOptions() };
-	const question = (field: FormField): Question => ({
+	const question = (field: FormField, answers: Answers): Question => ({
 		field,
 		vaultValues: field.saveAs === "property" && (field.type === "text" || field.type === "number") && field.key !== "" ? vault.propertyValueCounts(field.key) : [],
-		now: clock.now,
+		now: entryClock(form, answers, clock).now,
 		moment: clock.moment,
 	});
 
@@ -69,7 +69,7 @@ export function fillForm(app: App, vault: JumpListVault & NewNoteVault, form: Fo
 			if (editing) openConfirm(answers);
 			else if (index > 0) openQuestion(index - 1, answers, false);
 		};
-		new ChoiceModal<QuestionChoice>(app, questionPlaceholder(field, clock.now, clock.moment), (typed) => questionChoices(question(field), answerOf(), typed), {
+		new ChoiceModal<QuestionChoice>(app, questionPlaceholder(field, entryClock(form, answers, clock).now, clock.moment), (typed) => questionChoices(question(field, answers), answerOf(), typed), {
 			choose: ({ action }) => {
 				if (action.action === "answer") return after(index, withAnswer(action.answer), editing);
 				if (action.action === "toggle") return openQuestion(index, withAnswer(toggledChoice(answerOf(), action.value, field)), editing);

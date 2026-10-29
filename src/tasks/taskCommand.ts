@@ -43,6 +43,8 @@ export interface CopyAction {
 	destinations: Destination[];
 	mentionDestination: boolean;
 	mentionSource: boolean;
+	prefix: string;
+	suffix: string;
 }
 
 export type TaskAction = StatusAction | CopyAction;
@@ -87,6 +89,8 @@ export function newCopyAction(
 		destinations,
 		mentionDestination: true,
 		mentionSource,
+		prefix: "",
+		suffix: "",
 	};
 }
 
@@ -108,8 +112,11 @@ export function newTaskCommand(commands: readonly TaskCommand[]): TaskCommand {
 			t("taskActionSchedule"),
 			"<",
 			[
+				periodicDestination("month", "this"),
 				periodicDestination("month", "next"),
+				periodicDestination("quarter", "this"),
 				periodicDestination("quarter", "next"),
+				periodicDestination("year", "this"),
 				periodicDestination("year", "next"),
 			],
 			true,
@@ -226,6 +233,8 @@ function readAction(entry: unknown, known: readonly TaskAction[]): TaskAction | 
 		destinations: Array.isArray(entry.destinations) ? readDestinations(entry.destinations) : readLegacyPeriodic(entry.periodic),
 		mentionDestination: entry.mentionDestination === true,
 		mentionSource: entry.mentionSource === true,
+		prefix: typeof entry.prefix === "string" ? entry.prefix : "",
+		suffix: typeof entry.suffix === "string" ? entry.suffix : "",
 	};
 }
 

@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
+import { presetField } from "../src/forms/presets.ts";
 import { newField, newForm } from "../src/forms/form.ts";
 import { defaultSettings } from "../src/settings.ts";
 import { formFieldKey, formKey, readControl, writeControl } from "../src/settings/controlKeys.ts";
@@ -148,4 +149,15 @@ test("a field row shows its name apart from badges for where it is saved, its mo
 		{ kind: "mode", text: "fixed" },
 		{ kind: "type", text: "list" },
 	]);
+});
+
+
+test("a date and a time confirmation coexist without warnings, while overlapping confirmations warn", () => {
+	const form = newForm([]);
+	form.fields.push(presetField(form, "entryDate"));
+	form.fields.push(presetField(form, "entryTime"));
+	assert.deepEqual(form.fields.map((field) => fieldWarning(form, field)), [undefined, undefined]);
+	form.fields.push(presetField(form, "entryDate"));
+	assert.equal(fieldWarning(form, form.fields[0]), "Another field changes the same part of the entry date/time.");
+	assert.equal(fieldWarning(form, form.fields[1]), undefined);
 });

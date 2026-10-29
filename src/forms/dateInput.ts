@@ -40,3 +40,10 @@ function fromText(text: string | undefined, format: string, moment: MomentFactor
 	const date = moment(text, format, true);
 	return date.isValid() ? date.valueOf() : undefined;
 }
+
+export function confirmedTime(type: DateFieldType, value: number, now: number, moment: MomentFactory): number {
+	if (type === "datetime") return value;
+	const date = moment(type === "date" ? value : now).format("YYYY-MM-DD");
+	const time = moment(type === "time" ? value : now).format("HH:mm:ss.SSS");
+	return moment(`${date}T${time}`, "YYYY-MM-DDTHH:mm:ss.SSS", true).valueOf();
+}

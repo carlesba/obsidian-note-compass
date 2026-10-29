@@ -4,7 +4,7 @@ import { matchesInOrder, rowLabel } from "../render.ts";
 import type { RowParts } from "../render.ts";
 import { datePresets } from "../setProperties/valuePicker.ts";
 import { parseNumber, sameValue } from "../setProperties/values.ts";
-import { DIGIT_DATE_FORMATS, typedTime } from "./dateInput.ts";
+import { confirmedTime, DIGIT_DATE_FORMATS, typedTime } from "./dateInput.ts";
 
 export { typedTime };
 import { isDateType, questionText } from "./form.ts";
@@ -134,18 +134,20 @@ function knownValueRows(
 
 function dateRows(question: Question, type: DateFieldType, pending: unknown, query: string): QuestionChoice[] {
 	const { moment, now } = question;
-	const shown = (time: number) => moment(time).format(SHOWN_DATE_FORMATS[type]);
+	const compose = (time: number) => question.field.entryTime ? confirmedTime(type, time, now, moment) : time;
+	if (typeof pending === "number") pending = compose(pending);
+	const shown = (time: number) => moment(compose(time)).format(question.field.entryTime ? SHOWN_DATE_FORMATS.datetime : SHOWN_DATE_FORMATS[type]);
 	const offer = (content: string, time: number) =>
-		row({ mark: markOf(time === pending), content, value: shown(time) }, answerWith(time));
+		row({ mark: markOf(compose(time) === pending), content, value: shown(time) }, answerWith(compose(time)));
 	const rows: QuestionChoice[] = [];
 	const typed = typedTime(type, query, now, moment);
-	if (typed !== undefined) rows.push({ ...row({ mark: markOf(typed === pending, USE_MARK), content: t("useValue", { value: shown(typed) }) }, answerWith(typed)), typed: true });
+	if (typed !== undefined) rows.push({ ...row({ mark: markOf(compose(typed) === pending, USE_MARK), content: t("useValue", { value: shown(typed) }) }, answerWith(compose(typed))), typed: true });
 	const presets: [string, number][] = [[question.field.entryTime ? t("keepEntryTime") : t("now"), now]];
 	if (type === "date") {
 		for (const [name, date] of datePresets(now)) presets.push([name, moment(date, "YYYY-MM-DD", true).valueOf()]);
 	}
-	if (typeof pending === "number" && typed !== pending && !presets.some(([, time]) => time === pending)) {
-		rows.push(row({ mark: SELECTED_MARK, content: shown(pending) }, answerWith(pending)));
+	if (typeof pending === "number" && (typed === undefined || compose(typed) !== pending) && !presets.some(([, time]) => compose(time) === pending)) {
+		rows.push(row({ mark: SELECTED_MARK, content: shown(pending) }, answerWith(compose(pending))));
 	}
 	return [...rows, ...presets.map(([name, time]) => offer(name, time))];
 }
@@ -162,7 +164,7 @@ export function confirmChoices(resolved: ResolvedForm, query: string): ConfirmCh
 	const cancel = keptRow<ConfirmAction>(CANCEL_MARK, t("cancel"), { action: "cancel" });
 	const fields = resolved.fields.map((resolvedField) =>
 		row<ConfirmAction>(
-			{ content: resolvedField.field.key || t("untitledField"), value: resolvedField.skipped ? t("skipped") : resolvedField.text },
+			{ content: resolvedField.field.key || t("untitledField"), value: resolvedField.skipped ? t("skipped") : resolvedField.field.entryTime && resolvedField.date ? resolvedField.date.format(SHOWN_DATE_FORMATS.datetime) : resolvedField.text },
 			resolvedField.field.mode === "ask" ? { action: "edit", field: resolvedField.field } : { action: "stay" },
 		),
 	);

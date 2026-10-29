@@ -54,8 +54,11 @@ test("a new task command processes open tasks in batch with the Bullet Journal a
 	]);
 	assert.deepEqual([schedule.label, schedule.status, schedule.mentionSource], ["Schedule", "<", true]);
 	assert.deepEqual(schedule.destinations, [
+		{ kind: "periodic", period: "month", relation: "this" },
 		{ kind: "periodic", period: "month", relation: "next" },
+		{ kind: "periodic", period: "quarter", relation: "this" },
 		{ kind: "periodic", period: "quarter", relation: "next" },
+		{ kind: "periodic", period: "year", relation: "this" },
 		{ kind: "periodic", period: "year", relation: "next" },
 	]);
 	assert.equal(taskCommandWarning(command), undefined);
@@ -163,7 +166,7 @@ test("copy actions saved with periods become periodic destinations in picker ord
 	}).taskCommands;
 	const [legacy, broken] = command.actions as [CopyAction, CopyAction];
 	assert.deepEqual(legacy.destinations, [periodicDestination("day", "this"), periodicDestination("year", "next")]);
-	assert.deepEqual(Object.keys(legacy).sort(), ["destinations", "id", "kind", "label", "mentionDestination", "mentionSource", "status"]);
+	assert.deepEqual(Object.keys(legacy).sort(), ["destinations", "id", "kind", "label", "mentionDestination", "mentionSource", "prefix", "status", "suffix"]);
 	assert.deepEqual(broken.destinations, []);
 	const stored = JSON.parse(JSON.stringify(storedSettings({ ...defaultSettings(), taskCommands: [command] }))) as { taskCommands: Record<string, unknown>[] };
 	assert.deepEqual(mergeSettings(stored).taskCommands, [command]);
@@ -295,4 +298,20 @@ test("status pills add only valid distinct characters and remove one chosen stat
 	assert.deepEqual(availableStatuses(" x-"), [[">", "Migrated [>]"], ["<", "Scheduled [<]"], ["/", "In progress [/]"]]);
 	assert.equal(statusLabel("x"), "Completed [x]");
 	assert.equal(statusLabel("d"), "[d]");
+});
+
+
+test("old saved destinations stay unchanged and absent copy affixes default to empty", () => {
+	const saved = { id: "1", actions: [{ id: "1", kind: "copy", status: "<", destinations: [periodicDestination("month", "next")] }] };
+	const settings = mergeSettings({ taskCommands: [saved] });
+	const action = settings.taskCommands[0].actions[0] as CopyAction;
+	assert.deepEqual(action.destinations, [periodicDestination("month", "next")]);
+	assert.equal(action.prefix, "");
+	assert.equal(action.suffix, "");
+	assert.equal(writeControl(settings, taskActionKey("1", "1", "prefix"), "before "), true);
+	assert.equal(writeControl(settings, taskActionKey("1", "1", "suffix"), " after"), true);
+	const reloaded = mergeSettings(JSON.parse(JSON.stringify(storedSettings(settings))));
+	assert.equal(readControl(reloaded, taskActionKey("1", "1", "prefix")), "before ");
+	assert.equal(readControl(reloaded, taskActionKey("1", "1", "suffix")), " after");
+	assert.deepEqual((reloaded.taskCommands[0].actions[0] as CopyAction).destinations, saved.actions[0].destinations);
 });

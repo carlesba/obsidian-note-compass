@@ -369,3 +369,18 @@ test("actions menu lists every action in list order", () => {
 	assert.deepEqual(choices.map((choice) => choice.action), configured.actions);
 	assert.ok(choices.every((choice) => choice.parts.value === undefined));
 });
+
+
+test("literal affixes change only copied bodies in immediate and batch execution", async () => {
+	for (const batch of [false, true]) {
+		const context = applyContext([{ path: "a.md", content: "> - [ ] Alpha ^a1" }, { path: "b.md", content: "" }], "a.md");
+		const action = copyAction([], { prefix: "pre ", suffix: " post", mentionSource: true, mentionDestination: false });
+		const tasks = [task("> - [ ] Alpha ^a1")];
+		const destination = { path: "b.md", label: "B" };
+		if (batch) await applyStagedChanges(context, prepareChanges(context, action, tasks, destination));
+		else await applyCopyAction(context, action, tasks, destination);
+		assert.equal(context.vault.content("a.md"), "> - [>] Alpha ^a1");
+		assert.equal(context.vault.content("b.md"), "- [ ] pre Alpha post ← [[a]] ^a1\n");
+	}
+	assert.equal(copiedLine(task("- [ ] Alpha"), undefined, "(", ")"), "- [ ] (Alpha)");
+});

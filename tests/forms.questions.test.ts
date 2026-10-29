@@ -1,9 +1,11 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
+import { newForm, readForms, storedForms } from "../src/forms/form.ts";
+import { presetField } from "../src/forms/presets.ts";
 import type { FormField } from "../src/forms/form.ts";
 import { confirmChoices, formChoices, questionChoices, questionPlaceholder, toggledChoice } from "../src/forms/questions.ts";
 import type { Question } from "../src/forms/questions.ts";
-import { answered, resolveForm, skippedAnswer } from "../src/forms/resolve.ts";
+import { answered, entryClock, resolveForm, skippedAnswer } from "../src/forms/resolve.ts";
 import { NOW } from "./fakeVault.ts";
 import { moment } from "./moment.ts";
 
@@ -98,4 +100,46 @@ test("a datetime question reads a bare time as that time today", () => {
 	const [first] = questionChoices(question({ type: "datetime" }), undefined, "0930");
 	const expected = moment(`${moment(NOW).format("YYYY-MM-DD")}T09:30`, "YYYY-MM-DDTHH:mm", true).valueOf();
 	assert.deepEqual(first?.action, { action: "answer", answer: answered(expected) });
+});
+
+
+test("date and time confirmations compose, survive saving, and can be edited from review in either order", () => {
+	for (const order of [["entryDate", "entryTime"], ["entryTime", "entryDate"]] as const) {
+		const original = newForm([]);
+		original.namePattern = "{{date:YYYY-MM-DD}} {{time:HH:mm}}";
+		for (const preset of order) original.fields.push(presetField(original, preset));
+		original.fields.push(presetField(original, "timestamp"));
+		original.contentPattern = "{{date:YYYY-MM-DD}} {{time:HH:mm}}";
+		const [form] = readForms(JSON.parse(JSON.stringify(storedForms([original]))));
+		assert.deepEqual(form.fields, original.fields);
+		const clock = { now: moment("2028-10-30T09:15", "YYYY-MM-DDTHH:mm", true).valueOf(), moment, coreTemplatesOptions: undefined };
+		const answers = new Map();
+		const choose = (type: string, query: string, preview: string) => {
+			const field = form.fields.find((field) => field.type === type)!;
+			const current = entryClock(form, answers, clock);
+			assert.equal(questionPlaceholder(field, current.now, moment), moment(current.now).format(type === "date" ? "YYYYMMDD" : "HHmm"));
+			const [choice] = questionChoices({ field, now: current.now, moment, vaultValues: [] }, answers.get(field.id), query);
+			assert.equal(choice.parts.content, `Use "${preview}"`);
+			assert.equal(choice.action.action, "answer");
+			if (choice.action.action === "answer") answers.set(field.id, choice.action.answer);
+		};
+		if (order[0] === "entryDate") {
+			choose("date", "20281102", "2028-11-02 09:15");
+			choose("time", "1730", "2028-11-02 17:30");
+		} else {
+			choose("time", "1730", "2028-10-30 17:30");
+			choose("date", "20281102", "2028-11-02 17:30");
+		}
+		assert.equal(resolveForm(form, answers, clock).name, "2028-11-02 17:30");
+		choose("date", "20281103", "2028-11-03 17:30");
+		choose("time", "0810", "2028-11-03 08:10");
+		const resolved = resolveForm(form, answers, clock);
+		assert.equal(resolved.name, "2028-11-03 08:10");
+		assert.equal(resolved.content, "2028-11-03 08:10");
+		assert.deepEqual(resolved.frontmatter, [["timestamp", "2028-11-03T08:10"]]);
+		assert.deepEqual(confirmChoices(resolved, "").filter((choice) => choice.action.action === "edit").map((choice) => choice.parts.value), ["2028-11-03 08:10", "2028-11-03 08:10"]);
+		const date = form.fields.find((field) => field.type === "date")!;
+		const current = entryClock(form, answers, clock);
+		assert.equal(questionChoices({ field: date, now: current.now, moment, vaultValues: [] }, undefined, "")[0].parts.value, "2028-11-03 08:10");
+	}
 });

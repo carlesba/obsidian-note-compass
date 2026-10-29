@@ -38,7 +38,7 @@ import { PrefixPages } from "./settings/prefixLinks";
 import { ResetSettingsModal } from "./settings/resetModal";
 import { checkboxModeOptions, newProperty } from "./settings/setPropertiesForm";
 import { tabPastRows } from "./settings/tabOrder";
-import { taskCommandPage, taskCommandPageId, taskCommandRow } from "./settings/taskCommandPage";
+import { taskCommandPage, taskCommandPageId, taskCommandRow, taskDestinationsPages } from "./settings/taskCommandPage";
 import { newNumericId, newTaskCommand } from "./tasks/taskCommand";
 
 const TYPED_FIELDS = [
@@ -219,7 +219,7 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 					...lists.map((list) => listPage(list, context)),
 					...properties.map((entry) => propertyPage(entry, properties, formContext)),
 					...forms.map((form) => formPage(form, formContext)),
-					...taskCommands.map((command) => taskCommandPage(command, formContext)),
+					...taskCommands.flatMap((command) => [taskCommandPage(command, formContext), ...taskDestinationsPages(command, formContext)]),
 					this.dateNoteFormatsPage(vault),
 				],
 			},

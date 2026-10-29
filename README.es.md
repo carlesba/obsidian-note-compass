@@ -125,9 +125,9 @@ La página de un formulario tiene:
 - "Abrir la nota después de crearla", activado de forma predeterminada.
 - "Campos", los valores que el formulario rellena o pregunta. Su orden es el orden de las preguntas.
 
-La lista de campos funciona como las demás listas de los ajustes: arrastra el asa para reordenar, el icono de copiar duplica un campo justo debajo, la cruz elimina un campo y el `+` de la cabecera añade uno. El `+` abre un menú: "Campo vacío" añade un campo de texto preguntado vacío, mientras que "Fecha", "Hora", "Marca de tiempo" y "Marca de tiempo ISO" añaden un campo fijo que toma su valor al crear la nota, con la clave `date`, `time`, `timestamp` o `iso-timestamp` y el formato `YYYY-MM-DD`, `HH:mm`, `YYYY-MM-DDTHH:mm` o ISO 8601. Cada elemento muestra lo que escribiría en este momento, y una clave que ya está en uso recibe un número, como en `timestamp-2`. "Hora de la entrada (confirmar o cambiar)" añade una variable preguntada de fecha y hora llamada `entry-time` con "Usar como hora de la entrada" activado.
+La lista de campos funciona como las demás listas de los ajustes: arrastra el asa para reordenar, el icono de copiar duplica un campo justo debajo, la cruz elimina un campo y el `+` de la cabecera añade uno. El `+` abre un menú: "Campo vacío" añade un campo de texto preguntado vacío, mientras que "Fecha", "Hora", "Marca de tiempo" y "Marca de tiempo ISO" añaden un campo fijo que toma su valor al crear la nota, con la clave `date`, `time`, `timestamp` o `iso-timestamp` y el formato `YYYY-MM-DD`, `HH:mm`, `YYYY-MM-DDTHH:mm` o ISO 8601. Cada elemento muestra lo que escribiría en este momento, y una clave que ya está en uso recibe un número, como en `timestamp-2`. "Confirmar fecha de la entrada" y "Confirmar hora de la entrada" añaden variables preguntadas `entry-date` y `entry-time`; puedes usar ambas.
 
-Un campo preguntado de fecha, hora o fecha y hora con "Usar como hora de la entrada" funciona como una confirmación. Su pregunta muestra la hora en que empezó el formulario como marcador de posición, como `¿Cuándo? · 202810300900`, y su primera fila es "Mantener", así que Intro acepta esa hora. Escribe otra, como `202810300900` o `0930` para hoy a las 09:30, para cambiarla. La respuesta sustituye entonces la hora del formulario en todos los sitios donde se usa: `{{date}}` y `{{time}}` en el nombre y el contenido, y todos los campos fijos con "Al crear". Solo un campo de un formulario puede ser la hora de la entrada, y un segundo muestra un aviso. Cada fila muestra la clave del campo, seguida de pequeñas insignias que indican dónde se guarda, su modo y su tipo, como en `book` `variable` `preguntar` `texto`. Las insignias de propiedad son azules y las de variable son moradas. Haz clic en la fila o en su flecha para editar el campo justo debajo, y vuelve a hacer clic para cerrarlo. Solo hay un campo abierto a la vez, y un campo nuevo se abre directamente.
+Las confirmaciones usan texto compacto: `YYYYMMDD` para la fecha y `HHmm` para la hora. Las opciones de debajo muestran `YYYY-MM-DD HH:mm` completo; Intro conserva el valor mostrado. Cambiar la fecha conserva la hora y cambiar la hora conserva la fecha, también tras editar ambas en la revisión final. La fecha y hora combinadas se usan en `{{date}}`, `{{time}}`, el nombre y los campos fijos «Al crear». Los campos guardados con esta opción siguen funcionando; los de fecha y hora cambian el instante completo. Solo se avisa si dos campos cambian la misma parte. Cada fila muestra la clave del campo, seguida de pequeñas insignias que indican dónde se guarda, su modo y su tipo, como en `book` `variable` `preguntar` `texto`. Las insignias de propiedad son azules y las de variable son moradas. Haz clic en la fila o en su flecha para editar el campo justo debajo, y vuelve a hacer clic para cerrarlo. Solo hay un campo abierto a la vez, y un campo nuevo se abre directamente.
 
 El nombre y el contenido entienden estos marcadores:
 
@@ -198,7 +198,8 @@ Los ejemplos usan el formato diario de "Notas de fecha"; la fecha es hoy, no la 
 
 Añade una tarea abierta `[ ]` al final de otra nota y cambia "Estado" en la original. Solo copia la línea de la tarea, no las subtareas ni las líneas de continuación; no copia la sangría ni los prefijos de cita.
 
-- "Destinos" es una lista ordenada: añade con `+`, arrastra para reordenar y elimina con ×. Opciones: Hoy, Mañana, Esta semana, La semana que viene, Este mes, El mes que viene, Este trimestre, El trimestre que viene, Este año, El año que viene, Nota concreta.
+- "Destinos" abre una página independiente: añade con `+`, arrastra para reordenar y elimina con ×. La flecha de vuelta abre el comando.
+- El prefijo y sufijo de la tarea copiada se aplican literalmente solo al cuerpo de la copia, antes del identificador de bloque y del enlace al origen. Incluye los espacios; están vacíos por defecto y funcionan tanto al instante como por lotes.
 - "Enlazar el destino" añade ` → [[destino]]` a la original; "Enlazar el origen" añade ` ← [[origen]]` a la copia.
 - Los periodos se cuentan desde hoy, no desde la fecha de la nota, y usan los periodos activados, carpetas y formatos de "Notas de fecha". Un destino disponible se ejecuta directamente; varios abren "¿A qué nota copiar?" en el orden configurado. Nunca se ofrece la nota original ni destinos duplicados.
 - Las notas concretas inexistentes se omiten con un aviso. Si no queda ningún destino, no cambia nada.
@@ -221,7 +222,9 @@ Cada comando nuevo empieza con una configuración Bullet Journal llamada "Proces
 | Completar | `[x]` | Fecha de finalización Desactivada. |
 | Cancelar | `[-]` | Fecha de finalización Desactivada. |
 | Migrar | `[>]` | Mañana, Esta semana, La semana que viene; Solo enlaza el destino. |
-| Programar | `[<]` | El mes que viene, El trimestre que viene, El año que viene; Enlaza destino y origen. |
+| Programar | `[<]` | Este mes, El mes que viene, Este trimestre, El trimestre que viene, Este año, El año que viene; Enlaza destino y origen. |
+
+Estos destinos predeterminados solo se aplican a comandos nuevos; los guardados no cambian.
 
 ### Comportamiento conocido
 - Las escrituras en varias notas no son atómicas: un fallo puede dejar algunas actualizadas y otras sin cambiar.

@@ -86,8 +86,8 @@ export function sourceMention(linkText: string): string {
 	return ` ${SOURCE_SYMBOL} ${wikiLink(linkText)}`;
 }
 
-export function copiedLine(task: TaskLine, sourceLinkText?: string): string {
-	const line = `${task.marker} [ ] ${task.body}`;
+export function copiedLine(task: TaskLine, sourceLinkText?: string, prefix = "", suffix = ""): string {
+	const line = withSuffix(`${task.marker} [ ] ${prefix}${task.body}`, suffix);
 	return sourceLinkText === undefined ? line : withSuffix(line, sourceMention(sourceLinkText));
 }
 

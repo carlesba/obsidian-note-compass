@@ -6,7 +6,6 @@ import {
 	FIELD_MODES,
 	SAVE_AS,
 	STORED_CHOICE_TYPES,
-	entryTimeField,
 	hasChoices,
 	isDateType,
 	typesFor,
@@ -154,7 +153,7 @@ export function fieldWarning(form: Form, field: FormField): string | undefined {
 	if (field.mode === "static" && field.at !== undefined && isDateType(field.type) && !readsAsDate(field.type, field.at)) {
 		return t("formSetDateUnreadable", { format: SET_DATE_PLACEHOLDERS[field.type] });
 	}
-	if (field.entryTime && entryTimeField(form) !== field) return t("formSecondEntryTime");
+	if (field.entryTime && form.fields.some((other) => other !== field && other.entryTime && other.mode === "ask" && (other.type === field.type || other.type === "datetime" || field.type === "datetime"))) return t("formSecondEntryTime");
 	if (hasChoices(field.type) && field.mode === "ask" && !(field.choices ?? []).some((choice) => choice.value.trim() !== "")) return t("formNeedsChoices");
 	return undefined;
 }

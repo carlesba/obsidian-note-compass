@@ -65,6 +65,7 @@ const PRESET_ICONS: Record<FieldPreset, string> = {
 	time: "clock",
 	timestamp: "calendar-clock",
 	isoTimestamp: "globe",
+	entryDate: "calendar",
 	entryTime: "history",
 };
 
@@ -74,6 +75,7 @@ const PRESET_LABELS: Record<FieldPreset, () => string> = {
 	time: () => t("fieldPresetTime"),
 	timestamp: () => t("fieldPresetTimestamp"),
 	isoTimestamp: () => t("fieldPresetIsoTimestamp"),
+	entryDate: () => t("fieldPresetEntryDate"),
 	entryTime: () => t("fieldPresetEntryTime"),
 };
 

@@ -356,7 +356,10 @@ function actionEditorRows(parentEl: HTMLElement, editor: ActionEditor, draw: Red
 		dropdownRow(parentEl, editor, "completionDate", t("completionDate"), t("completionDateDesc"), completionDateOptions());
 		return;
 	}
-	destinationsSection(parentEl, editor, draw);
+	const { controlEl } = editorRow(parentEl, t("taskDestinations"), t("taskDestinationsDesc"));
+	new ExtraButtonComponent(controlEl).setIcon("arrow-right").setTooltip(t("taskDestinations")).onClick(() => editor.context.openPage(taskDestinationsPageId(editor.command, action)));
+	textRow(parentEl, editor, "prefix", t("taskCopyPrefix"), t("taskCopyAffixesDesc"), "");
+	textRow(parentEl, editor, "suffix", t("taskCopySuffix"), t("taskCopyAffixesDesc"), "");
 	toggleRow(parentEl, editor, "mentionDestination", t("mentionDestination"), t("mentionDestinationDesc"));
 	toggleRow(parentEl, editor, "mentionSource", t("mentionSource"), t("mentionSourceDesc"));
 }
@@ -417,7 +420,7 @@ function destinationRow(listEl: HTMLElement, editor: ActionEditor, index: number
 	dropdown.onChange((chosen) => {
 		context.write(key("destination"), chosen);
 		editor.changed();
-		draw(chosen === NOTE_DESTINATION_OPTION ? `destinationNote/${index}` : `destination/${index}`);
+		if ((option === NOTE_DESTINATION_OPTION) !== (chosen === NOTE_DESTINATION_OPTION)) draw();
 	});
 	const warningEl = entryEl.createDiv({ cls: "setting-item-description" });
 	if (destination.kind === "note") {
@@ -445,4 +448,37 @@ function destinationRow(listEl: HTMLElement, editor: ActionEditor, index: number
 			editor.changed();
 			draw();
 		});
+}
+
+function taskDestinationsPageId(command: TaskCommand, action: TaskAction): string {
+	return `task-destinations-${command.id}-${action.id}`;
+}
+
+export function taskDestinationsPages(command: TaskCommand, context: ExpandingPageContext): SettingDefinitionPage[] {
+	return command.actions.filter((action) => action.kind === "copy").map((action): IdentifiedPage => ({
+		type: "page",
+		id: taskDestinationsPageId(command, action),
+		name: `${actionName(action)} · ${t("taskDestinations")}`,
+		items: [
+			{
+				name: taskCommandName(command),
+				render: (setting) => {
+					setting.addExtraButton((button) => button.setIcon("arrow-left").setTooltip(taskCommandName(command)).onClick(() => context.openPage(taskCommandPageId(command))));
+				},
+			},
+			{
+				name: t("taskDestinations"),
+				render: (setting) => {
+					const editor: ActionEditor = {
+						command, action, context, changed: () => undefined,
+						read: (key) => readTaskActionSetting(command, action, key),
+						write: (key, value) => context.write(taskActionKey(command.id, action.id, key), value),
+					};
+					setting.infoEl.empty();
+					setting.controlEl.remove();
+					renderEditor(setting.infoEl, (parentEl, draw) => destinationsSection(parentEl, editor, draw));
+				},
+			},
+		],
+	}));
 }
