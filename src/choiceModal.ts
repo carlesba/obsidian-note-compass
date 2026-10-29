@@ -1,17 +1,28 @@
-import { App, SuggestModal } from "obsidian";
+import { App, Platform, SuggestModal } from "obsidian";
+import type { Instruction } from "obsidian";
 import { MARK_COLUMN_CLASS, RESULTS_CLASS, renderRow } from "./render";
 import type { RowParts } from "./render";
+import { ROW_ACTION_ICON, renderRowAction, selectedRow } from "./rowAction";
+
+export interface SecondaryChoice<Choice> {
+	label: string;
+	offers(choice: Choice): boolean;
+	open(choice: Choice, query: string): void;
+}
 
 export interface ChoiceHandlers<Choice> {
 	choose(choice: Choice, query: string): void;
 	dismiss(): void;
 	save?: () => void;
+	secondary?: SecondaryChoice<Choice>;
+	instructions?: Instruction[];
 }
 
 export class ChoiceModal<Choice extends { parts: RowParts }> extends SuggestModal<Choice> {
 	private readonly suggestions: (query: string) => Choice[];
 	private readonly handlers: ChoiceHandlers<Choice>;
 	private chosen = false;
+	private readonly rowChoices = new WeakMap<HTMLElement, Choice>();
 
 	constructor(app: App, placeholder: string, suggestions: (query: string) => Choice[], handlers: ChoiceHandlers<Choice>) {
 		super(app);
@@ -30,6 +41,18 @@ export class ChoiceModal<Choice extends { parts: RowParts }> extends SuggestModa
 				return false;
 			});
 		}
+		const { secondary } = handlers;
+		if (secondary) {
+			this.scope.register(["Alt"], "Enter", (evt) => {
+				if (evt.isComposing) return;
+				evt.preventDefault();
+				const selected = selectedRow(this.resultContainerEl);
+				const choice = selected ? this.rowChoices.get(selected) : undefined;
+				if (choice && secondary.offers(choice)) this.openSecondary(secondary, choice);
+				return false;
+			});
+		}
+		if (handlers.instructions && !Platform.isMobile) this.setInstructions(handlers.instructions);
 	}
 
 	openWithQuery(query: string): void {
@@ -45,6 +68,9 @@ export class ChoiceModal<Choice extends { parts: RowParts }> extends SuggestModa
 
 	renderSuggestion(choice: Choice, el: HTMLElement): void {
 		renderRow(el, choice.parts, true);
+		this.rowChoices.set(el, choice);
+		const { secondary } = this.handlers;
+		if (secondary?.offers(choice)) renderRowAction(el, ROW_ACTION_ICON, secondary.label, () => this.openSecondary(secondary, choice));
 	}
 
 	selectSuggestion(choice: Choice, evt: MouseEvent | KeyboardEvent): void {
@@ -60,5 +86,12 @@ export class ChoiceModal<Choice extends { parts: RowParts }> extends SuggestModa
 
 	onClose(): void {
 		if (!this.chosen) this.handlers.dismiss();
+	}
+
+	private openSecondary(secondary: SecondaryChoice<Choice>, choice: Choice): void {
+		const query = this.inputEl.value;
+		this.chosen = true;
+		this.close();
+		secondary.open(choice, query);
 	}
 }

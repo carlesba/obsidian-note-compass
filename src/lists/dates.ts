@@ -116,6 +116,6 @@ function parentFolder(path: string): string {
 	return slash === -1 ? "" : path.slice(0, slash);
 }
 
-function notePath(folder: string, basename: string): string {
+export function notePath(folder: string, basename: string): string {
 	return folder === "" ? `${basename}.md` : `${folder}/${basename}.md`;
 }

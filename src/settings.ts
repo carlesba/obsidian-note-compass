@@ -8,6 +8,8 @@ import { readForms, storedForms } from "./forms/form.ts";
 import type { Form } from "./forms/form.ts";
 import { readFixedValues } from "./setProperties/fixedValues.ts";
 import type { FixedValue } from "./setProperties/fixedValues.ts";
+import { readTaskCommands, storedTaskCommands } from "./tasks/taskCommand.ts";
+import type { TaskCommand } from "./tasks/taskCommand.ts";
 
 export type RelationSourceKind = "adjacentDates" | "linksOut" | "linksIn" | "sameDay";
 
@@ -99,6 +101,7 @@ export interface JumpSettings {
 	dateNotes: DateNoteSettings;
 	setProperties: SetPropertiesSettings;
 	forms: Form[];
+	taskCommands: TaskCommand[];
 }
 
 const DEFAULT_PREFIXES: Record<RelationSourceKind, string> = {
@@ -172,6 +175,7 @@ export function storedSettings(settings: JumpSettings): unknown {
 		lists: settings.lists.map(withStoredSource),
 		setProperties: { ...settings.setProperties, properties: settings.setProperties.properties.map(withStoredSource) },
 		forms: storedForms(settings.forms),
+		taskCommands: storedTaskCommands(settings.taskCommands),
 	};
 }
 
@@ -203,6 +207,7 @@ export function mergeSettings(stored: unknown): JumpSettings {
 		dateNotes: readDateNotes(data.dateNotes),
 		setProperties: readSetProperties(data.setProperties),
 		forms: readForms(data.forms),
+		taskCommands: readTaskCommands(data.taskCommands),
 	};
 }
 

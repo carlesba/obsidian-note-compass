@@ -59,6 +59,14 @@ export interface NewNoteVault {
 	coreTemplatesOptions(): unknown;
 }
 
+export interface NoteBodyVault {
+	readNote(path: string): Promise<string>;
+	processNote(path: string, edit: (content: string) => string): Promise<void>;
+	taskLineNumbers(path: string): number[];
+	linkText(path: string, sourcePath: string): string;
+	createPeriodNote(path: string, period: Period, date: MomentDate, from: DateNoteSource): Promise<void>;
+}
+
 export interface JumpListEntry {
 	file: VaultNote;
 	prefix: string;

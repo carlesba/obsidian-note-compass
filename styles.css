@@ -546,3 +546,50 @@
 .note-compass-field-badge.mod-type {
 	background: transparent;
 }
+
+.note-compass-destination {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-2-1);
+}
+
+.note-compass-destination.is-dragging {
+	opacity: 0.6;
+}
+
+.note-compass-field-setting-control input.note-compass-status-input {
+	width: 3em;
+	text-align: center;
+	font-family: var(--font-monospace);
+}
+
+.note-compass-status-pills {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--size-4-1);
+}
+
+.note-compass-field-badge.note-compass-status-pill {
+	gap: var(--size-2-1);
+	padding-inline-end: var(--size-2-1);
+	color: var(--text-normal);
+}
+
+.note-compass-status-pill .note-compass-status-remove {
+	padding: 0;
+	color: var(--text-muted);
+}
+
+.note-compass-status-pill .note-compass-status-remove svg {
+	width: var(--icon-xs);
+	height: var(--icon-xs);
+}
+
+.note-compass-status-empty {
+	color: var(--text-muted);
+}
+
+.note-compass-status-pills input.note-compass-status-input {
+	width: 4em;
+}

@@ -103,10 +103,12 @@ export class LinkSuggest extends AbstractInputSuggest<TFile> {
 
 export class NoteSuggest extends AbstractInputSuggest<TFile> {
 	private readonly inputEl: HTMLInputElement;
+	private readonly valueOf: (file: TFile) => string;
 
-	constructor(app: App, inputEl: HTMLInputElement) {
+	constructor(app: App, inputEl: HTMLInputElement, valueOf: (file: TFile) => string = (file) => app.metadataCache.fileToLinktext(file, "", true)) {
 		super(app, inputEl);
 		this.inputEl = inputEl;
+		this.valueOf = valueOf;
 		this.limit = LINK_SUGGESTION_LIMIT;
 	}
 
@@ -121,7 +123,7 @@ export class NoteSuggest extends AbstractInputSuggest<TFile> {
 	}
 
 	selectSuggestion(file: TFile): void {
-		this.inputEl.value = this.app.metadataCache.fileToLinktext(file, "", true);
+		this.inputEl.value = this.valueOf(file);
 		this.inputEl.dispatchEvent(new Event("input", { bubbles: true }));
 		this.close();
 	}

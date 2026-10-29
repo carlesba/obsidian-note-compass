@@ -21,7 +21,6 @@ import {
 	fieldValueError,
 	fieldWarning,
 	formRowName,
-	formSummary,
 	formWarning,
 	moveChoice,
 	readFieldSetting,
@@ -108,7 +107,6 @@ export function formRow(form: Form, context: FormPageContext, duplicate?: () => 
 		name: formRowName(form),
 		label: formRowName(form),
 		warning: formWarning(form),
-		desc: formSummary(form),
 		broken: form.unreadable !== undefined,
 		enabled: form.enabled,
 		enabledKey: formKey(form.id, "enabled"),
@@ -131,7 +129,7 @@ export function formRow(form: Form, context: FormPageContext, duplicate?: () => 
 		render: (setting, group) => {
 			const current = row();
 			setting.setName(current.label);
-			setting.setDesc(current.warning ?? current.desc ?? "");
+			setting.setDesc(current.warning ?? "");
 			return editableRow(current, rowContext).render(setting, group);
 		},
 	};

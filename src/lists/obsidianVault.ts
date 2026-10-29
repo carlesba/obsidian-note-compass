@@ -1,17 +1,30 @@
 import { getAllTags, moment } from "obsidian";
-import type { App } from "obsidian";
-import type { JumpListVault, MomentFactory, NewNoteVault, PropertyValueCount } from "./vault";
+import type { App, TFile } from "obsidian";
+import { fallbackLinkText } from "../tasks/destinations";
+import type { Period } from "./dateNotes";
+import type { JumpListVault, MomentDate, MomentFactory, NewNoteVault, NoteBodyVault, PropertyValueCount } from "./vault";
 
 interface PluginRegistries {
 	metadataTypeManager?: { getAllProperties(): Record<string, { widget?: unknown } | undefined> };
-	plugins?: { getPlugin(id: string): { settings?: unknown } | null | undefined };
+	plugins?: { getPlugin(id: string): { settings?: unknown; createPeriodicNote?: unknown } | null | undefined };
 	internalPlugins?: {
 		getPluginById(id: string): { enabled?: boolean; instance?: { options?: unknown } } | null | undefined;
 	};
 }
 
-export function createObsidianVault(app: App): JumpListVault & NewNoteVault {
+type PeriodicNoteCreator = (period: Period, date: MomentDate) => Promise<unknown>;
+
+export function createObsidianVault(app: App): JumpListVault & NewNoteVault & NoteBodyVault {
 	const registries = app as App & PluginRegistries;
+	const markdownFile = (path: string): TFile => {
+		const file = app.vault.getFileByPath(path);
+		if (!file) throw new Error(`No note at ${path}`);
+		return file;
+	};
+	const createNote = async (path: string, content: string) => {
+		await ensureFolder(app, path.split("/").slice(0, -1).join("/"));
+		await app.vault.create(path, content);
+	};
 	return {
 		notes: () =>
 			app.vault.getMarkdownFiles().map((file) => ({ path: file.path, basename: file.basename, ctime: file.stat.ctime })),
@@ -47,13 +60,38 @@ export function createObsidianVault(app: App): JumpListVault & NewNoteVault {
 				app.vault.getMarkdownFiles().map((file): unknown => app.metadataCache.getFileCache(file)?.frontmatter?.[property]),
 			),
 		defaultNoteFolder: (sourcePath) => app.fileManager.getNewFileParent(sourcePath ?? "").path,
-		createNote: async (path, content) => {
-			await ensureFolder(app, path.split("/").slice(0, -1).join("/"));
-			await app.vault.create(path, content);
+		createNote,
+		readNote: (path) => app.vault.read(markdownFile(path)),
+		processNote: async (path, edit) => {
+			await app.vault.process(markdownFile(path), edit);
+		},
+		taskLineNumbers: (path) => {
+			const file = app.vault.getFileByPath(path);
+			const items = file ? app.metadataCache.getFileCache(file)?.listItems ?? [] : [];
+			return items.filter((item) => item.task !== undefined).map((item) => item.position.start.line);
+		},
+		linkText: (path, sourcePath) => {
+			const file = app.vault.getFileByPath(path);
+			if (file) return app.metadataCache.fileToLinktext(file, sourcePath, true);
+			return fallbackLinkText(path, app.vault.getMarkdownFiles().map((note) => note.path));
+		},
+		createPeriodNote: async (path, period, date, from) => {
+			const creator = from === "periodicNotes" ? periodicNoteCreator(registries) : undefined;
+			if (creator) await creator(period, date).catch(() => undefined);
+			if (!app.vault.getFileByPath(path)) await createNote(path, "");
 		},
 		coreTemplatesOptions: () => readSafely(() => registries.internalPlugins?.getPluginById("templates")?.instance?.options),
 		now: () => Date.now(),
 		moment: asMomentFactory(moment),
+	};
+}
+
+function periodicNoteCreator(registries: PluginRegistries): PeriodicNoteCreator | undefined {
+	const plugin = readSafely(() => registries.plugins?.getPlugin("periodic-notes"));
+	const create = plugin?.createPeriodicNote;
+	if (typeof create !== "function") return undefined;
+	return async (period, date) => {
+		await create.call(plugin, period, date);
 	};
 }
 

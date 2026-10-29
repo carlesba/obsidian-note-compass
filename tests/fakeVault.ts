@@ -1,4 +1,6 @@
-import type { Frontmatter, JumpListVault, NewNoteVault, PropertyValueCount, VaultNote } from "../src/lists/vault.ts";
+import type { Frontmatter, JumpListVault, NewNoteVault, NoteBodyVault, PropertyValueCount, VaultNote } from "../src/lists/vault.ts";
+import { fallbackLinkText } from "../src/tasks/destinations.ts";
+import { contentLines, parseTaskLine } from "../src/tasks/taskLines.ts";
 import { moment } from "./moment.ts";
 
 export interface FakeNote {
@@ -9,6 +11,7 @@ export interface FakeNote {
 	tags?: string[];
 	links?: string[];
 	content?: string;
+	taskLines?: number[];
 }
 
 export interface FakeVaultOptions {
@@ -18,7 +21,13 @@ export interface FakeVaultOptions {
 }
 
 export type FakeVault = JumpListVault &
-	NewNoteVault & { note(path: string): VaultNote; content(path: string): string | undefined; paths(): string[] };
+	NewNoteVault &
+	NoteBodyVault & {
+		note(path: string): VaultNote;
+		content(path: string): string | undefined;
+		paths(): string[];
+		createdPeriodNotes: string[];
+	};
 
 export const NOW = new Date(2024, 2, 9, 15).getTime();
 export const HOURS_AGO = (hours: number) => NOW - hours * 3600 * 1000;
@@ -30,6 +39,12 @@ export function fakeVault(fakes: FakeNote[], options: FakeVaultOptions = {}): Fa
 		if (byPath(path)) throw new Error(`${path} exists`);
 		fakes.push({ path, content, mtime: NOW });
 	};
+	const existing = (path: string) => {
+		const fake = byPath(path);
+		if (!fake) throw new Error(`No note at ${path}`);
+		return fake;
+	};
+	const createdPeriodNotes: string[] = [];
 	return {
 		notes: () => fakes.map(toNote),
 		frontmatter: (path) => byPath(path)?.frontmatter,
@@ -60,6 +75,22 @@ export function fakeVault(fakes: FakeNote[], options: FakeVaultOptions = {}): Fa
 		},
 		defaultNoteFolder: options.defaultNoteFolder ?? (() => "inbox"),
 		createNote: async (path, content) => create(path, content),
+		readNote: async (path) => existing(path).content ?? "",
+		processNote: async (path, edit) => {
+			const fake = existing(path);
+			fake.content = edit(fake.content ?? "");
+		},
+		taskLineNumbers: (path) => {
+			const fake = byPath(path);
+			if (fake?.taskLines) return fake.taskLines;
+			return contentLines(fake?.content ?? "").flatMap((text, line) => (parseTaskLine(text, line) ? [line] : []));
+		},
+		linkText: (path) => fallbackLinkText(path, fakes.map((fake) => fake.path)),
+		createPeriodNote: async (path) => {
+			createdPeriodNotes.push(path);
+			if (!byPath(path)) create(path, "");
+		},
+		createdPeriodNotes,
 		coreTemplatesOptions: () => options.coreTemplatesOptions,
 		now: () => NOW,
 		moment,

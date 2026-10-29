@@ -120,12 +120,6 @@ export function formRowName(form: Form): string {
 	return form.name.trim() || t("newForm");
 }
 
-export function formSummary(form: Form): string | undefined {
-	if (form.unreadable) return undefined;
-	const pattern = form.namePattern.trim();
-	return pattern === "" ? t("formNoNamePattern") : pattern;
-}
-
 export function fieldRowName(field: FormField): string {
 	return field.key.trim() || t("newField");
 }

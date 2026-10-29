@@ -38,6 +38,8 @@ import { PrefixPages } from "./settings/prefixLinks";
 import { ResetSettingsModal } from "./settings/resetModal";
 import { checkboxModeOptions, newProperty } from "./settings/setPropertiesForm";
 import { tabPastRows } from "./settings/tabOrder";
+import { taskCommandPage, taskCommandPageId, taskCommandRow } from "./settings/taskCommandPage";
+import { newNumericId, newTaskCommand } from "./tasks/taskCommand";
 
 const TYPED_FIELDS = [
 	"prefix",
@@ -51,7 +53,7 @@ const TYPED_FIELDS = [
 	"rowName",
 ];
 
-const QUIETLY_SAVED_SCOPES = ["form", "formField", "fixedValue"];
+const QUIETLY_SAVED_SCOPES = ["form", "formField", "fixedValue", "taskCommand", "taskAction"];
 
 const TYPING_PAUSE_MS = 800;
 
@@ -85,7 +87,7 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 
 	getSettingDefinitions(): SettingDefinitionItem[] {
 		this.definitionsAreStale = false;
-		const { forms, lists, setProperties, showPrefixes } = this.plugin.settings;
+		const { forms, lists, setProperties, showPrefixes, taskCommands } = this.plugin.settings;
 		const { properties } = setProperties;
 		const vault = createObsidianVault(this.app);
 		let suggestions: PropertySuggestion[] | undefined;
@@ -189,12 +191,35 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 				},
 			},
 			{
+				type: "list",
+				heading: t("taskCommands"),
+				cls: SORTABLE_LIST_CLASS,
+				emptyState: t("noTaskCommandsYet"),
+				items: taskCommands.map((command) =>
+					taskCommandRow(command, formContext, () =>
+						this.changeLists(() =>
+							duplicateEntry(taskCommands, command, newNumericId(taskCommands), (copy) => (copy.name = duplicateName(command.name))),
+						),
+					),
+				),
+				...this.editableEntries(taskCommands),
+				addItem: {
+					name: t("addTaskCommand"),
+					action: () => {
+						const command = newTaskCommand(taskCommands);
+						this.changeLists(() => taskCommands.push(command));
+						this.openPage(taskCommandPageId(command));
+					},
+				},
+			},
+			{
 				type: "group",
 				visible: false,
 				items: [
 					...lists.map((list) => listPage(list, context)),
 					...properties.map((entry) => propertyPage(entry, properties, formContext)),
 					...forms.map((form) => formPage(form, formContext)),
+					...taskCommands.map((command) => taskCommandPage(command, formContext)),
 					this.dateNoteFormatsPage(vault),
 				],
 			},

@@ -16,6 +16,15 @@ import {
 	writePropertySourceField,
 } from "./setPropertiesForm.ts";
 import type { PropertyField } from "./setPropertiesForm.ts";
+import {
+	findTaskAction,
+	findTaskCommand,
+	readTaskActionSetting,
+	readTaskCommandSetting,
+	writeTaskActionSetting,
+	writeTaskCommandSetting,
+} from "./taskCommandsForm.ts";
+import type { TaskActionSetting, TaskCommandSetting } from "./taskCommandsForm.ts";
 
 export const DATE_NOTE_SOURCE_KEY = "dateNotes/from";
 
@@ -64,6 +73,15 @@ export function formFieldKey(formId: string, fieldId: string, setting: FieldSett
 	return index === undefined ? key : `${key}/${index}`;
 }
 
+export function taskCommandKey(id: string, setting: TaskCommandSetting): string {
+	return `taskCommand/${id}/${setting}`;
+}
+
+export function taskActionKey(commandId: string, actionId: string, setting: TaskActionSetting, index?: string): string {
+	const key = `taskAction/${commandId}.${actionId}/${setting}`;
+	return index === undefined ? key : `${key}/${index}`;
+}
+
 export function periodKey(period: Period, field: PeriodField): string {
 	return `dateNotes/${period}/${field}`;
 }
@@ -74,6 +92,7 @@ export function readControl(settings: JumpSettings, key: string): unknown {
 	if (key === CHECKBOX_MODE_KEY) return settings.setProperties.checkboxMode;
 	const [scope, name, field, index] = key.split("/");
 	if (scope === "form" || scope === "formField") return readFormControl(settings, scope, name, field, index);
+	if (scope === "taskCommand" || scope === "taskAction") return readTaskControl(settings, scope, name, field, index);
 	if (scope === "list") {
 		const list = settings.lists.find((candidate) => candidate.id === name);
 		return list ? readListField(list, field as ListField) : undefined;
@@ -107,6 +126,7 @@ export function writeControl(settings: JumpSettings, key: string, value: unknown
 	}
 	const [scope, name, field, index] = key.split("/");
 	if (scope === "form" || scope === "formField") return writeFormControl(settings, scope, name, field, index, value);
+	if (scope === "taskCommand" || scope === "taskAction") return writeTaskControl(settings, scope, name, field, index, value);
 	if (scope === "list") {
 		const list = settings.lists.find((candidate) => candidate.id === name);
 		if (list) writeListField(list, field as ListField, value);
@@ -161,4 +181,34 @@ function writeFormControl(
 	if (!target) return false;
 	if (!target.field) return writeFormSetting(target.form, setting as FormSetting, value);
 	return writeFieldSetting(target.field, setting as FieldSetting, value, index === undefined ? undefined : Number(index));
+}
+
+function taskTarget(settings: JumpSettings, scope: string, name: string) {
+	const [commandId, actionId] = name.split(".");
+	const command = findTaskCommand(settings.taskCommands, commandId ?? "");
+	if (!command) return undefined;
+	if (scope === "taskCommand") return { command, action: undefined };
+	const action = findTaskAction(command, actionId ?? "");
+	return action ? { command, action } : undefined;
+}
+
+function readTaskControl(settings: JumpSettings, scope: string, name: string, setting: string, index: string | undefined): unknown {
+	const target = taskTarget(settings, scope, name);
+	if (!target) return undefined;
+	if (!target.action) return readTaskCommandSetting(target.command, setting as TaskCommandSetting);
+	return readTaskActionSetting(target.command, target.action, setting as TaskActionSetting, index);
+}
+
+function writeTaskControl(
+	settings: JumpSettings,
+	scope: string,
+	name: string,
+	setting: string,
+	index: string | undefined,
+	value: unknown,
+): boolean {
+	const target = taskTarget(settings, scope, name);
+	if (!target) return false;
+	if (!target.action) return writeTaskCommandSetting(target.command, setting as TaskCommandSetting, value);
+	return writeTaskActionSetting(target.command, target.action, setting as TaskActionSetting, value, index);
 }

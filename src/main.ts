@@ -9,10 +9,13 @@ import { JumpModal, SET_PROPERTIES_ICON } from "./modal";
 import { setProperties } from "./setProperties/modal";
 import { JumpSettings, defaultSettings, mergeSettings, storedSettings } from "./settings";
 import { NoteCompassSettingTab } from "./settingsTab";
+import { runTaskCommand } from "./tasks/modal";
+import { isRunnableTaskCommand, taskCommandName } from "./tasks/taskCommand";
 
 export default class NoteCompassPlugin extends Plugin {
 	settings: JumpSettings = defaultSettings();
 	private formCommandIds: string[] = [];
+	private taskCommandIds: string[] = [];
 
 	async onload(): Promise<void> {
 		try {
@@ -50,11 +53,33 @@ export default class NoteCompassPlugin extends Plugin {
 		});
 
 		this.registerFormCommands();
+		this.registerTaskCommands();
 	}
 
 	async saveSettings(): Promise<void> {
 		await this.saveData(storedSettings(this.settings));
 		this.registerFormCommands();
+		this.registerTaskCommands();
+	}
+
+	private registerTaskCommands(): void {
+		for (const id of this.taskCommandIds) this.removeCommand(id);
+		this.taskCommandIds = [];
+		for (const command of this.settings.taskCommands.filter(isRunnableTaskCommand)) {
+			const id = `task-command-${command.id}`;
+			this.addCommand({
+				id,
+				name: taskCommandName(command),
+				icon: "list-checks",
+				checkCallback: (checking) => {
+					const target = this.currentNote();
+					if (!target) return false;
+					if (!checking) runTaskCommand(this.app, createObsidianVault(this.app), this.settings, command, target);
+					return true;
+				},
+			});
+			this.taskCommandIds.push(id);
+		}
 	}
 
 	private registerFormCommands(): void {

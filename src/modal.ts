@@ -1,8 +1,9 @@
-import { App, Notice, Platform, SuggestModal, setIcon } from "obsidian";
+import { App, Notice, Platform, SuggestModal } from "obsidian";
 import { t } from "./i18n";
 import { createDateNote } from "./lists/openDateNote";
 import type { JumpListEntry, VaultNote } from "./lists/vault";
 import { RESULTS_CLASS, entryLabel, entryParts, matchesInOrder, renderRow } from "./render";
+import { renderRowAction, selectedRow } from "./rowAction";
 
 export const SET_PROPERTIES_ICON = "sliders-horizontal";
 
@@ -28,7 +29,7 @@ export class JumpModal extends SuggestModal<JumpListEntry> {
 		this.scope.register(["Alt"], "Enter", (evt) => {
 			if (evt.isComposing) return;
 			evt.preventDefault();
-			const selected = this.resultContainerEl.querySelector<HTMLElement>(".suggestion-item.is-selected");
+			const selected = selectedRow(this.resultContainerEl);
 			const entry = selected ? this.rowEntries.get(selected) : undefined;
 			if (entry && !entry.missing) this.editPropertiesOf(entry);
 			return false;
@@ -58,23 +59,7 @@ export class JumpModal extends SuggestModal<JumpListEntry> {
 		renderRow(el, entryParts(entry, this.showPrefixes));
 		this.rowEntries.set(el, entry);
 		if (entry.missing) return;
-		const bodyEl = el.querySelector<HTMLElement>(".note-compass-row-body") ?? el;
-		const actionEl = bodyEl.createSpan({
-			cls: ["clickable-icon", "note-compass-row-action"],
-			attr: { role: "button", "aria-label": t("setProperties") },
-		});
-		setIcon(actionEl, SET_PROPERTIES_ICON);
-		for (const type of ["pointerdown", "mousedown"]) {
-			actionEl.addEventListener(type, (event) => {
-				event.preventDefault();
-				event.stopPropagation();
-			});
-		}
-		actionEl.addEventListener("click", (event) => {
-			event.preventDefault();
-			event.stopPropagation();
-			this.editPropertiesOf(entry);
-		});
+		renderRowAction(el, SET_PROPERTIES_ICON, t("setProperties"), () => this.editPropertiesOf(entry));
 	}
 
 	selectSuggestion(entry: JumpListEntry, evt: MouseEvent | KeyboardEvent): void {
