@@ -104,6 +104,7 @@ export function newTaskCommand(commands: readonly TaskCommand[]): TaskCommand {
 			periodicDestination("day", "next"),
 			periodicDestination("week", "this"),
 			periodicDestination("week", "next"),
+			periodicDestination("month", "this"),
 		]),
 	);
 	add(
@@ -112,11 +113,8 @@ export function newTaskCommand(commands: readonly TaskCommand[]): TaskCommand {
 			t("taskActionSchedule"),
 			"<",
 			[
-				periodicDestination("month", "this"),
 				periodicDestination("month", "next"),
-				periodicDestination("quarter", "this"),
 				periodicDestination("quarter", "next"),
-				periodicDestination("year", "this"),
 				periodicDestination("year", "next"),
 			],
 			true,

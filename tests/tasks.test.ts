@@ -213,7 +213,7 @@ test("copy actions run directly with one destination and ask with several", () =
 	assert.deepEqual(planAction(copyAction([]), two), { plan: "pick", destinations: two });
 	assert.deepEqual(destinationChoices([{ path: "x.md", label: "Tomorrow · x", missing: { period: "day", date: TODAY } }], "").map((choice) => choice.label), ["Tomorrow · x new note"]);
 	const defaults = newTaskCommand([]);
-	assert.deepEqual(actionChoices(secondaryActions(defaults), "mi").map((choice) => choice.label), ["Migrate"]);
+	assert.deepEqual(actionChoices(secondaryActions(defaults), "mi").map((choice) => choice.label), ["➡️ Migrate"]);
 });
 
 function applyContext(notes: FakeNote[], sourcePath: string): ApplyContext & { vault: ReturnType<typeof fakeVault> } {

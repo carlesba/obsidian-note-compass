@@ -43,22 +43,20 @@ test("a new task command processes open tasks in batch with the Bullet Journal a
 	assert.deepEqual([command.statuses, command.skippedStatuses, command.selectAll, command.batch, command.enabled], [" ", "", false, true, true]);
 	assert.equal(isRunnableTaskCommand(command), true);
 	const primary = primaryAction(command);
-	assert.deepEqual(primary, { id: "1", label: "Complete", kind: "status", status: "x", completionDate: "off" });
+	assert.deepEqual(primary, { id: "1", label: "✅ Complete", kind: "status", status: "x", completionDate: "off" });
 	const [cancel, migrate, schedule] = secondaryActions(command) as [unknown, CopyAction, CopyAction];
-	assert.deepEqual(cancel, { id: "2", label: "Cancel", kind: "status", status: "-", completionDate: "off" });
-	assert.deepEqual([migrate.label, migrate.status, migrate.mentionSource], ["Migrate", ">", false]);
+	assert.deepEqual(cancel, { id: "2", label: "🚫 Cancel", kind: "status", status: "-", completionDate: "off" });
+	assert.deepEqual([migrate.label, migrate.status, migrate.mentionSource], ["➡️ Migrate", ">", false]);
 	assert.deepEqual(migrate.destinations, [
 		{ kind: "periodic", period: "day", relation: "next" },
 		{ kind: "periodic", period: "week", relation: "this" },
 		{ kind: "periodic", period: "week", relation: "next" },
-	]);
-	assert.deepEqual([schedule.label, schedule.status, schedule.mentionSource], ["Schedule", "<", true]);
-	assert.deepEqual(schedule.destinations, [
 		{ kind: "periodic", period: "month", relation: "this" },
+	]);
+	assert.deepEqual([schedule.label, schedule.status, schedule.mentionSource], ["📅 Schedule", "<", true]);
+	assert.deepEqual(schedule.destinations, [
 		{ kind: "periodic", period: "month", relation: "next" },
-		{ kind: "periodic", period: "quarter", relation: "this" },
 		{ kind: "periodic", period: "quarter", relation: "next" },
-		{ kind: "periodic", period: "year", relation: "this" },
 		{ kind: "periodic", period: "year", relation: "next" },
 	]);
 	assert.equal(taskCommandWarning(command), undefined);
@@ -183,10 +181,10 @@ test("task command settings are read and written through their control keys", ()
 	const [complete, cancel] = command.actions;
 	assert.deepEqual(primaryActionOptions(command), [
 		["menu", "Show the actions menu"],
-		["1", "Complete"],
-		["2", "Cancel"],
-		["3", "Migrate"],
-		["4", "Schedule"],
+		["1", "✅ Complete"],
+		["2", "🚫 Cancel"],
+		["3", "➡️ Migrate"],
+		["4", "📅 Schedule"],
 	]);
 	assert.equal(readControl(settings, taskCommandKey(command.id, "primary")), complete.id);
 	assert.equal(writeControl(settings, taskCommandKey(command.id, "primary"), cancel.id), true);
@@ -202,7 +200,7 @@ test("task command settings are read and written through their control keys", ()
 test("a primary action that is gone falls back to the first action", () => {
 	const { command } = settingsWithCommand();
 	command.primary = "99";
-	assert.equal(primaryAction(command)?.label, "Complete");
+	assert.equal(primaryAction(command)?.label, "✅ Complete");
 	assert.equal(secondaryActions(command).length, 3);
 	const [reloaded] = mergeSettings({ taskCommands: [{ ...command, primary: 7 }] }).taskCommands;
 	assert.equal(reloaded.primary, "1");
@@ -265,7 +263,7 @@ test("destination options list each period's this and next, then a specific note
 test("deleting the primary action makes the next one primary, and the first added action is primary", () => {
 	const { command } = settingsWithCommand();
 	deleteTaskAction(command, 0);
-	assert.equal(primaryAction(command)?.label, "Cancel");
+	assert.equal(primaryAction(command)?.label, "🚫 Cancel");
 	while (command.actions.length > 0) deleteTaskAction(command, 0);
 	assert.equal(command.primary, "");
 	assert.equal(taskCommandWarning(command), "Add an action so the command can run.");

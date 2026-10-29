@@ -215,14 +215,14 @@ Añade una tarea abierta `[ ]` al final de otra nota y cambia "Estado" en la ori
 
 ### Valores de un comando nuevo
 
-Cada comando nuevo empieza con una configuración Bullet Journal llamada "Procesar tareas abiertas": activado, solo tareas Pendiente `[ ]`, sin exclusiones, "Seleccionar todas" desactivado y "Modo por lotes" activado. Intro ejecuta "Completar".
+Cada comando nuevo empieza con una configuración Bullet Journal llamada "Procesar tareas abiertas": activado, solo tareas Pendiente `[ ]`, sin exclusiones, "Seleccionar todas" desactivado y "Modo por lotes" activado. Intro ejecuta "✅ Completar".
 
 | Acción | Estado original | Otros ajustes |
-| --- | --- |
-| Completar | `[x]` | Fecha de finalización Desactivada. |
-| Cancelar | `[-]` | Fecha de finalización Desactivada. |
-| Migrar | `[>]` | Mañana, Esta semana, La semana que viene; Solo enlaza el destino. |
-| Programar | `[<]` | Este mes, El mes que viene, Este trimestre, El trimestre que viene, Este año, El año que viene; Enlaza destino y origen. |
+| --- | --- | --- |
+| ✅ Completar | `[x]` | Fecha de finalización Desactivada. |
+| 🚫 Cancelar | `[-]` | Fecha de finalización Desactivada. |
+| ➡️ Migrar | `[>]` | Mañana, Esta semana, La semana que viene, Este mes; Solo enlaza el destino. |
+| 📅 Programar | `[<]` | El mes que viene, El trimestre que viene, El año que viene; Enlaza destino y origen. |
 
 Estos destinos predeterminados solo se aplican a comandos nuevos; los guardados no cambian.
 

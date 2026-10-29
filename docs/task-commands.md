@@ -85,14 +85,14 @@ With "Batch mode" off, one choice writes immediately and closes the picker. Esca
 
 ## New-command defaults
 
-A new command starts with a Bullet Journal setup named "Process open tasks": enabled, listing only Open `[ ]`, skipping none, "Select all" off and "Batch mode" on. Enter runs "Complete".
+A new command starts with a Bullet Journal setup named "Process open tasks": enabled, listing only Open `[ ]`, skipping none, "Select all" off and "Batch mode" on. Enter runs "✅ Complete".
 
 | Action | Source status | Other settings |
 | --- | --- | --- |
-| Complete | `[x]` | Completion date Off. |
-| Cancel | `[-]` | Completion date Off. |
-| Migrate | `[>]` | Tomorrow, This week, Next week; links the destination only. |
-| Schedule | `[<]` | This month, Next month, This quarter, Next quarter, This year, Next year; links both destination and source. |
+| ✅ Complete | `[x]` | Completion date Off. |
+| 🚫 Cancel | `[-]` | Completion date Off. |
+| ➡️ Migrate | `[>]` | Tomorrow, This week, Next week, This month; links the destination only. |
+| 📅 Schedule | `[<]` | Next month, Next quarter, Next year; links both destination and source. |
 
 ## Known behaviour
 
