@@ -405,3 +405,25 @@ test("current date notes lists the chosen periods' notes for today in period ord
 	]);
 	assert.deepEqual(buildJumpList(chosen, vault, vault.note("on/2024-03.md")), []);
 });
+
+test("adjacent dates list only the switched-on directions, in their order", () => {
+	const vault = fakeVault([{ path: "on/2024-03-05.md" }, { path: "on/2024-03-04.md" }, { path: "on/2024-03-06.md" }]);
+	const current = vault.note("on/2024-03-05.md");
+	assert.deepEqual(describe(buildJumpList(sourceList({ kind: "adjacentDates", order: ["next", "previous"] }), vault, current)), [
+		"src 2024-03-06 | next day - Wednesday",
+		"src 2024-03-04 | prev day - Monday",
+	]);
+	assert.deepEqual(describe(buildJumpList(sourceList({ kind: "adjacentDates", directions: ["previous"] }), vault, current)), [
+		"src 2024-03-04 | prev day - Monday",
+	]);
+});
+
+test("current date notes follow the order the periods were dragged into", () => {
+	const vault = fakeVault([{ path: "on/2024-03-09.md" }, { path: "on/2024-W10.md" }, { path: "on/2024.md" }]);
+	const list = sourceList({ kind: "currentPeriods", periods: ["day", "week", "year"], order: ["year", "day", "week", "month", "quarter"] });
+	assert.deepEqual(describe(buildJumpList(list, vault)), [
+		"src 2024 | this year - year",
+		"src 2024-03-09 | today - Saturday",
+		"src 2024-W10 | this week - week 10",
+	]);
+});

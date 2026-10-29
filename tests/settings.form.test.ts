@@ -25,10 +25,12 @@ import {
 	listDisplayValue,
 	listName,
 	matchingSuggestions,
+	moveSourceChoice,
 	newList,
 	operatorOptions,
 	propertySuggestions,
 	readListField,
+	sourceChoiceOrder,
 	sourceSummary,
 	valueShape,
 	writeListField,
@@ -329,4 +331,25 @@ test("a current date notes list toggles each period and names the chosen ones", 
 	assert.deepEqual(list.source, { kind: "currentPeriods", periods: ["day", "week", "month", "year"] });
 	for (const field of ["currentDay", "currentWeek", "currentMonth", "currentYear"] as const) writeListField(list, field, false);
 	assert.equal(sourceSummary(list.source), "No date notes chosen");
+});
+
+test("a current date notes list keeps the dragged order and names its periods in that order", () => {
+	const list: NoteList = { id: "list-1", enabled: true, prefix: "🗓️", source: { kind: "currentPeriods", periods: ["day", "week", "month", "quarter", "year"] } };
+	moveSourceChoice(list.source, 2, 0);
+	assert.deepEqual(sourceChoiceOrder(list.source), ["month", "day", "week", "quarter", "year"]);
+	writeListField(list, "currentWeek", false);
+	assert.equal(sourceSummary(list.source), "This month, today, this quarter, this year");
+	assert.deepEqual(sourceChoiceOrder(list.source), ["month", "day", "week", "quarter", "year"]);
+});
+
+test("an adjacent dates list shows both directions by default and switches each one off", () => {
+	const list: NoteList = { id: "list-1", enabled: true, prefix: "📅", source: { kind: "adjacentDates" } };
+	assert.deepEqual(sourceChoiceOrder(list.source), ["previous", "next"]);
+	assert.equal(readListField(list, "adjacentPrevious"), true);
+	writeListField(list, "adjacentPrevious", false);
+	assert.deepEqual(list.source, { kind: "adjacentDates", directions: ["next"] });
+	writeListField(list, "adjacentPrevious", true);
+	assert.deepEqual(list.source, { kind: "adjacentDates" });
+	moveSourceChoice(list.source, 1, 0);
+	assert.deepEqual(list.source, { kind: "adjacentDates", order: ["next", "previous"] });
 });

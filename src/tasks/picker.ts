@@ -28,9 +28,11 @@ export interface DestinationChoice {
 
 export type ActionPlan = { plan: "run"; destination?: ResolvedDestination } | { plan: "pick"; destinations: ResolvedDestination[] } | { plan: "none" };
 
-const ALL_MARK = "☑️";
+const ALL_MARK = "⚡";
 
 const FINISH_MARK = "🏁";
+
+const CANCEL_MARK = "🛑";
 
 export function taskText(task: TaskLine): string {
 	return task.body.trim() || t("emptyTask");
@@ -45,7 +47,7 @@ export function taskChoices(command: TaskCommand, tasks: readonly TaskLine[], qu
 	for (const task of matching) choices.push(choice(taskParts(task), { action: "task", task }));
 	if (command.batch) {
 		choices.push(choice({ mark: FINISH_MARK, content: t("finishProcessing"), value: tCount("stagedChangeOne", "stagedChangeOther", stagedCount) }, { action: "finish" }));
-		choices.push(choice({ content: t("cancelTaskProcessing") }, { action: "cancel" }));
+		choices.push(choice({ mark: CANCEL_MARK, content: t("cancelTaskProcessing") }, { action: "cancel" }));
 	}
 	return choices;
 }

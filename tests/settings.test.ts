@@ -421,3 +421,21 @@ test("mergeSettings reads a current date notes list and keeps only known periods
 		],
 	);
 });
+
+test("mergeSettings reads the order and directions of date lists and repairs a broken order", () => {
+	const merged = mergeSettings({
+		lists: [
+			{ id: "list-1", enabled: true, prefix: "🗓️", source: { kind: "currentPeriods", periods: ["year", "day"], order: ["year", "decade", "year", "week"] } },
+			{ id: "list-2", enabled: true, prefix: "📅", source: { kind: "adjacentDates", directions: ["next", "sideways"], order: ["next"] } },
+			{ id: "list-3", enabled: true, prefix: "📅", source: { kind: "adjacentDates" } },
+		],
+	});
+	assert.deepEqual(
+		merged.lists.map((list) => list.source),
+		[
+			{ kind: "currentPeriods", periods: ["day", "year"], order: ["year", "week", "day", "month", "quarter"] },
+			{ kind: "adjacentDates", directions: ["next"], order: ["next", "previous"] },
+			{ kind: "adjacentDates" },
+		],
+	);
+});

@@ -7,8 +7,8 @@ import { PERIODS } from "../lists/dateNotes.ts";
 import type { Period } from "../lists/dateNotes.ts";
 import { emptyFilter } from "../lists/filters.ts";
 import type { JumpListVault } from "../lists/vault.ts";
-import { RELATION_SOURCE_KINDS, newListId, writePrefixColor } from "../settings.ts";
-import type { ListSource, NoteList } from "../settings.ts";
+import { ADJACENT_DIRECTIONS, RELATION_SOURCE_KINDS, currentPeriodsInOrder, newListId, orderedChoices, writePrefixColor } from "../settings.ts";
+import type { AdjacentDatesSource, AdjacentDirection, CurrentPeriodsSource, ListSource, NoteList } from "../settings.ts";
 import { filterSummary, inapplicableFilter } from "./filterForm.ts";
 
 export type SourceChoice = Exclude<ListSource["kind"], "unreadable">;
@@ -55,6 +55,22 @@ export const CURRENT_PERIOD_FIELDS: Record<Period, CurrentPeriodField> = {
 	year: "currentYear",
 };
 
+export type AdjacentDirectionField = "adjacentPrevious" | "adjacentNext";
+
+export const ADJACENT_DIRECTION_FIELDS: Record<AdjacentDirection, AdjacentDirectionField> = {
+	previous: "adjacentPrevious",
+	next: "adjacentNext",
+};
+
+const ADJACENT_DIRECTION_KEYS: Record<AdjacentDirection, TranslationKey> = {
+	previous: "adjacentPrevious",
+	next: "adjacentNext",
+};
+
+export function adjacentDirectionName(direction: AdjacentDirection): string {
+	return t(ADJACENT_DIRECTION_KEYS[direction]);
+}
+
 export function dateModeOptions(): Record<"fixed" | "relative", string> {
 	return { fixed: t("fixedDate"), relative: t("relativeToToday") };
 }
@@ -70,7 +86,8 @@ export type ListField =
 	| "source"
 	| "note"
 	| "folder"
-	| CurrentPeriodField;
+	| CurrentPeriodField
+	| AdjacentDirectionField;
 
 export type ValueShape = "none" | "text" | "number" | "date";
 
@@ -78,8 +95,6 @@ export interface PropertySuggestion {
 	name: string;
 	type: PropertyType;
 }
-
-type CurrentPeriodsSource = Extract<ListSource, { kind: "currentPeriods" }>;
 
 const FIXED_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -99,7 +114,7 @@ export function sourceSummary(source: ListSource): string {
 	if (source.kind === "inFolder") return source.folder === "" ? t("folderNotChosen") : t("inFolder", { folder: source.folder });
 	if (source.kind === "currentPeriods") {
 		if (source.periods.length === 0) return t("noDateNotesChosen");
-		return source.periods
+		return currentPeriodsInOrder(source)
 			.map((period, index) => (index === 0 ? currentPeriodName(period) : currentPeriodName(period).toLowerCase()))
 			.join(t("listSeparator"));
 	}
@@ -164,6 +179,10 @@ export function readListField(list: NoteList, field: ListField): unknown {
 		const period = currentPeriodOf(field);
 		return period === undefined ? undefined : source.periods.includes(period);
 	}
+	if (source.kind === "adjacentDates") {
+		const direction = directionOf(field);
+		return direction === undefined ? undefined : (source.directions ?? ADJACENT_DIRECTIONS).includes(direction);
+	}
 	return undefined;
 }
 
@@ -175,6 +194,37 @@ export function writeListField(list: NoteList, field: ListField, value: unknown)
 	else if (field === "note" && list.source.kind === "linksToNote") list.source.note = typeof value === "string" ? value.trim() : "";
 	else if (field === "folder" && list.source.kind === "inFolder") list.source.folder = typeof value === "string" ? value.trim() : "";
 	else if (list.source.kind === "currentPeriods") writeCurrentPeriod(list.source, field, value);
+	else if (list.source.kind === "adjacentDates") writeAdjacentDirection(list.source, field, value);
+}
+
+export function sourceChoiceOrder(source: ListSource): string[] {
+	if (source.kind === "currentPeriods") return orderedChoices(source.order, PERIODS);
+	if (source.kind === "adjacentDates") return orderedChoices(source.order, ADJACENT_DIRECTIONS);
+	return [];
+}
+
+export function moveSourceChoice(source: ListSource, from: number, to: number): void {
+	if (source.kind === "currentPeriods") source.order = moved(orderedChoices(source.order, PERIODS), from, to);
+	else if (source.kind === "adjacentDates") source.order = moved(orderedChoices(source.order, ADJACENT_DIRECTIONS), from, to);
+}
+
+function moved<T>(items: T[], from: number, to: number): T[] {
+	const copy = [...items];
+	copy.splice(to, 0, ...copy.splice(from, 1));
+	return copy;
+}
+
+function directionOf(field: ListField): AdjacentDirection | undefined {
+	return ADJACENT_DIRECTIONS.find((direction) => ADJACENT_DIRECTION_FIELDS[direction] === field);
+}
+
+function writeAdjacentDirection(source: AdjacentDatesSource, field: ListField, value: unknown): void {
+	const changed = directionOf(field);
+	if (changed === undefined) return;
+	const enabled = source.directions ?? ADJACENT_DIRECTIONS;
+	const directions = ADJACENT_DIRECTIONS.filter((direction) => (direction === changed ? value === true : enabled.includes(direction)));
+	if (directions.length === ADJACENT_DIRECTIONS.length) delete source.directions;
+	else source.directions = directions;
 }
 
 function currentPeriodOf(field: ListField): Period | undefined {
@@ -199,8 +249,9 @@ function sourceFor(kind: unknown, current: ListSource): ListSource {
 	if (kind === "inFolder") return { kind, folder: "" };
 	if (kind === "modifiedToday") return { kind };
 	if (kind === "currentPeriods") return { kind, periods: [...PERIODS] };
+	if (kind === "adjacentDates") return { kind };
 	const relation = RELATION_SOURCE_KINDS.find((choice) => choice === kind);
-	return relation ? { kind: relation } : current;
+	return relation && relation !== "adjacentDates" ? { kind: relation } : current;
 }
 
 function includes<T extends string>(values: readonly T[], value: string): value is T {

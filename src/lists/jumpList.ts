@@ -1,3 +1,4 @@
+import { adjacentDirections, currentPeriodsInOrder } from "../settings.ts";
 import type { ListSource, NoteList } from "../settings";
 import { defaultDateNoteSettings, resolveDateNotes } from "./dateNotes.ts";
 import type { DateNoteSettings, ResolvedDateNotes } from "./dateNotes.ts";
@@ -51,7 +52,7 @@ export function buildJumpList(
 			prefix: list.prefix,
 			prefixColor: list.prefixColor,
 			notes: sourceNotes(list.source, context),
-			keepsOrder: list.source.kind === "currentPeriods",
+			keepsOrder: list.source.kind === "currentPeriods" || list.source.kind === "adjacentDates",
 		}));
 
 	const entries: JumpListEntry[] = [];
@@ -73,11 +74,11 @@ function sourceNotes(source: ListSource, context: ListContext): ListedNote[] {
 	if (source.kind === "linksToNote") return notesLinkingTo(vault, source.note);
 	if (source.kind === "inFolder") return notesInFolder(vault, source.folder);
 	if (source.kind === "modifiedToday") return notesModifiedSince(vault, context.today.valueOf());
-	if (source.kind === "currentPeriods") return currentPeriodNotes(vault, source.periods, dateNotes, context.today);
+	if (source.kind === "currentPeriods") return currentPeriodNotes(vault, currentPeriodsInOrder(source), dateNotes, context.today);
 	if (!current) return [];
 	switch (source.kind) {
 		case "adjacentDates":
-			return adjacentDateNotes(vault, current, dateNotes);
+			return adjacentDateNotes(vault, current, dateNotes, adjacentDirections(source));
 		case "linksOut":
 			return outboundNotes(vault, current);
 		case "linksIn":

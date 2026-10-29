@@ -15,13 +15,30 @@ export type RelationSourceKind = "adjacentDates" | "linksOut" | "linksIn" | "sam
 
 export const RELATION_SOURCE_KINDS: readonly RelationSourceKind[] = ["adjacentDates", "linksOut", "linksIn", "sameDay"];
 
+export type AdjacentDirection = "previous" | "next";
+
+export const ADJACENT_DIRECTIONS: readonly AdjacentDirection[] = ["previous", "next"];
+
+export interface AdjacentDatesSource {
+	kind: "adjacentDates";
+	directions?: AdjacentDirection[];
+	order?: AdjacentDirection[];
+}
+
+export interface CurrentPeriodsSource {
+	kind: "currentPeriods";
+	periods: Period[];
+	order?: Period[];
+}
+
 export type ListSource =
-	| { kind: RelationSourceKind }
+	| { kind: Exclude<RelationSourceKind, "adjacentDates"> }
+	| AdjacentDatesSource
 	| { kind: "filter"; filter: FilterGroup }
 	| { kind: "linksToNote"; note: string }
 	| { kind: "inFolder"; folder: string }
 	| { kind: "modifiedToday" }
-	| { kind: "currentPeriods"; periods: Period[] }
+	| CurrentPeriodsSource
 	| UnreadableSource;
 
 export interface UnreadableSource {
@@ -377,12 +394,16 @@ function readSourceOrKeep(stored: unknown): ListSource {
 
 function readSource(stored: unknown): ListSource | undefined {
 	if (!isRecord(stored) || typeof stored.kind !== "string") return undefined;
+	if (stored.kind === "adjacentDates") return readAdjacentDates(stored);
 	const kind = RELATION_SOURCE_KINDS.find((relation) => relation === stored.kind);
-	if (kind) return { kind };
+	if (kind && kind !== "adjacentDates") return { kind };
 	if (stored.kind === "modifiedToday") return { kind: "modifiedToday" };
 	if (stored.kind === "currentPeriods") {
 		const periods = Array.isArray(stored.periods) ? stored.periods : [];
-		return { kind: "currentPeriods", periods: PERIODS.filter((period) => periods.includes(period)) };
+		const source: CurrentPeriodsSource = { kind: "currentPeriods", periods: PERIODS.filter((period) => periods.includes(period)) };
+		const order = readOrder(stored.order, PERIODS);
+		if (order) source.order = order;
+		return source;
 	}
 	if (stored.kind === "linksToNote") return typeof stored.note === "string" ? { kind: "linksToNote", note: stored.note } : undefined;
 	if (stored.kind === "inFolder") return typeof stored.folder === "string" ? { kind: "inFolder", folder: stored.folder } : undefined;
@@ -393,6 +414,36 @@ function readSource(stored: unknown): ListSource | undefined {
 	if (stored.kind !== "frontmatter" || typeof stored.property !== "string") return undefined;
 	const condition = readCondition(stored.condition);
 	return condition ? propertyFilter(stored.property, condition) : undefined;
+}
+
+function readAdjacentDates(stored: Record<string, unknown>): AdjacentDatesSource {
+	const source: AdjacentDatesSource = { kind: "adjacentDates" };
+	if (Array.isArray(stored.directions)) {
+		const directions = stored.directions;
+		source.directions = ADJACENT_DIRECTIONS.filter((direction) => directions.includes(direction));
+	}
+	const order = readOrder(stored.order, ADJACENT_DIRECTIONS);
+	if (order) source.order = order;
+	return source;
+}
+
+function readOrder<T extends string>(stored: unknown, all: readonly T[]): T[] | undefined {
+	if (!Array.isArray(stored)) return undefined;
+	const known = stored.filter((item, index): item is T => all.includes(item as T) && stored.indexOf(item) === index);
+	return [...known, ...all.filter((item) => !known.includes(item))];
+}
+
+export function orderedChoices<T extends string>(order: readonly T[] | undefined, all: readonly T[]): T[] {
+	return [...(order ?? all)];
+}
+
+export function adjacentDirections(source: AdjacentDatesSource): AdjacentDirection[] {
+	const enabled = source.directions ?? ADJACENT_DIRECTIONS;
+	return orderedChoices(source.order, ADJACENT_DIRECTIONS).filter((direction) => enabled.includes(direction));
+}
+
+export function currentPeriodsInOrder(source: CurrentPeriodsSource): Period[] {
+	return orderedChoices(source.order, PERIODS).filter((period) => source.periods.includes(period));
 }
 
 function migrateLegacyLists(data: Record<string, unknown>): NoteList[] {

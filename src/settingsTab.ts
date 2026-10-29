@@ -4,6 +4,7 @@ import type {
 	SettingDefinitionItem,
 	SettingDefinitionList,
 	SettingDefinitionPage,
+	SettingDefinitionRender,
 } from "obsidian";
 import { t } from "./i18n";
 import { createObsidianVault } from "./lists/obsidianVault";
@@ -61,6 +62,43 @@ const SORTABLE_LIST_CLASS = "note-compass-sortable-list";
 
 const DATE_NOTE_FORMATS_PAGE_ID = "date-note-formats";
 
+const JUMP_TO_NOTE_PAGE_ID = "jump-to-note";
+
+const PROPERTIES_PAGE_ID = "properties";
+
+const FORMS_PAGE_ID = "forms";
+
+const TASKS_PAGE_ID = "tasks";
+
+function sectionPage(id: string, name: string, desc: string, items: SettingDefinitionItem[]): SettingDefinitionPage {
+	const page: SettingDefinitionPage & { id: string } = { type: "page", id, name, desc, items };
+	return page;
+}
+
+function hiddenPages(pages: SettingDefinitionPage[]): SettingDefinitionGroup {
+	return { type: "group", visible: false, items: pages };
+}
+
+function pageIdOf(page: SettingDefinitionPage): string {
+	const { id } = page as SettingDefinitionPage & { id?: string };
+	return id ?? page.name;
+}
+
+export function pagePath(items: readonly SettingDefinitionItem[], pageId: string): string[] | undefined {
+	for (const item of items) {
+		if (!("type" in item)) continue;
+		if (item.type === "page") {
+			if (pageIdOf(item) === pageId) return [pageId];
+			const inner = item.items ? pagePath(item.items, pageId) : undefined;
+			if (inner) return [pageIdOf(item), ...inner];
+			continue;
+		}
+		const inGroup = item.items ? pagePath(item.items, pageId) : undefined;
+		if (inGroup) return inGroup;
+	}
+	return undefined;
+}
+
 interface SettingModal {
 	openPagePath?: (tabId: string, path: string[]) => unknown;
 	activeTab?: unknown;
@@ -113,116 +151,119 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 				void this.plugin.saveSettings();
 			},
 		};
+		const jumpToNoteList: SettingDefinitionList = {
+			type: "list",
+			cls: SORTABLE_LIST_CLASS,
+			emptyState: t("noListsYet"),
+			items: lists.map((list) => listRow(list, context, () => this.changeLists(() => duplicateEntry(lists, list, newListId(lists))))),
+			...this.editableEntries(lists),
+			addItem: {
+				name: t("addList"),
+				action: () => {
+					const list = newList(lists);
+					this.changeLists(() => lists.push(list));
+					this.openPage(listPageId(list));
+				},
+			},
+		};
+		const propertiesList: SettingDefinitionList = {
+			type: "list",
+			cls: SORTABLE_LIST_CLASS,
+			emptyState: t("noPropertiesYet"),
+			items: properties.map((entry) =>
+				propertyRow(entry, properties, context, () => this.changeLists(() => duplicateEntry(properties, entry, newListId(properties)))),
+			),
+			...this.editableEntries(properties),
+			addItem: {
+				name: t("addProperty"),
+				action: () => {
+					const entry = newProperty(properties);
+					this.changeLists(() => properties.push(entry));
+					this.openPage(propertyPageId(entry));
+				},
+			},
+		};
+		const formsList: SettingDefinitionList = {
+			type: "list",
+			cls: SORTABLE_LIST_CLASS,
+			emptyState: t("noFormsListed"),
+			items: forms.map((form) =>
+				formRow(form, formContext, () =>
+					this.changeLists(() => duplicateEntry(forms, form, newFormId(forms), (copy) => (copy.name = duplicateName(form.name)))),
+				),
+			),
+			...this.editableEntries(forms),
+			addItem: {
+				name: t("addForm"),
+				action: () => {
+					const form = newForm(forms);
+					this.changeLists(() => forms.push(form));
+					this.openPage(formPageId(form));
+				},
+			},
+		};
+		const taskCommandsList: SettingDefinitionList = {
+			type: "list",
+			cls: SORTABLE_LIST_CLASS,
+			emptyState: t("noTaskCommandsYet"),
+			items: taskCommands.map((command) =>
+				taskCommandRow(command, formContext, () =>
+					this.changeLists(() =>
+						duplicateEntry(taskCommands, command, newNumericId(taskCommands), (copy) => (copy.name = duplicateName(command.name))),
+					),
+				),
+			),
+			...this.editableEntries(taskCommands),
+			addItem: {
+				name: t("addTaskCommand"),
+				action: () => {
+					const command = newTaskCommand(taskCommands);
+					this.changeLists(() => taskCommands.push(command));
+					this.openPage(taskCommandPageId(command));
+				},
+			},
+		};
 		return [
 			{
 				type: "group",
-				heading: t("display"),
 				items: [
 					{
 						name: t("showPrefixes"),
 						desc: t("showPrefixesDesc"),
 						control: { type: "toggle", key: SHOW_PREFIXES_KEY },
 					},
+					this.dateNotesSource(vault, context),
 				],
-			},
-			{
-				type: "list",
-				heading: t("jumpToNote"),
-				cls: SORTABLE_LIST_CLASS,
-				emptyState: t("noListsYet"),
-				items: lists.map((list) => listRow(list, context, () => this.changeLists(() => duplicateEntry(lists, list, newListId(lists))))),
-				...this.editableEntries(lists),
-				addItem: {
-					name: t("addList"),
-					action: () => {
-						const list = newList(lists);
-						this.changeLists(() => lists.push(list));
-						this.openPage(listPageId(list));
-					},
-				},
-			},
-			this.dateNotesSection(vault, context),
-			{
-				type: "list",
-				heading: t("setProperties"),
-				cls: SORTABLE_LIST_CLASS,
-				emptyState: t("noPropertiesYet"),
-				items: properties.map((entry) =>
-					propertyRow(entry, properties, context, () => this.changeLists(() => duplicateEntry(properties, entry, newListId(properties)))),
-				),
-				...this.editableEntries(properties),
-				addItem: {
-					name: t("addProperty"),
-					action: () => {
-						const entry = newProperty(properties);
-						this.changeLists(() => properties.push(entry));
-						this.openPage(propertyPageId(entry));
-					},
-				},
 			},
 			{
 				type: "group",
 				items: [
-					{
-						name: t("checkboxBehaviour"),
-						desc: t("checkboxBehaviourDesc"),
-						control: { type: "dropdown", key: CHECKBOX_MODE_KEY, options: checkboxModeOptions() },
-					},
+					sectionPage(JUMP_TO_NOTE_PAGE_ID, t("jumpToNote"), t("jumpToNoteSectionDesc"), [
+						jumpToNoteList,
+						hiddenPages(lists.map((list) => listPage(list, context))),
+					]),
+					sectionPage(PROPERTIES_PAGE_ID, t("propertiesSection"), t("propertiesSectionDesc"), [
+						propertiesList,
+						{
+							type: "group",
+							items: [
+								{
+									name: t("checkboxBehaviour"),
+									desc: t("checkboxBehaviourDesc"),
+									control: { type: "dropdown", key: CHECKBOX_MODE_KEY, options: checkboxModeOptions() },
+								},
+							],
+						},
+						hiddenPages(properties.map((entry) => propertyPage(entry, properties, formContext))),
+					]),
+					sectionPage(FORMS_PAGE_ID, t("forms"), t("formsSectionDesc"), [formsList, hiddenPages(forms.map((form) => formPage(form, formContext)))]),
+					sectionPage(TASKS_PAGE_ID, t("tasksSection"), t("tasksSectionDesc"), [
+						taskCommandsList,
+						hiddenPages(taskCommands.flatMap((command) => [taskCommandPage(command, formContext), ...taskDestinationsPages(command, formContext)])),
+					]),
 				],
 			},
-			{
-				type: "list",
-				heading: t("forms"),
-				cls: SORTABLE_LIST_CLASS,
-				emptyState: t("noFormsListed"),
-				items: forms.map((form) =>
-					formRow(form, formContext, () =>
-						this.changeLists(() => duplicateEntry(forms, form, newFormId(forms), (copy) => (copy.name = duplicateName(form.name)))),
-					),
-				),
-				...this.editableEntries(forms),
-				addItem: {
-					name: t("addForm"),
-					action: () => {
-						const form = newForm(forms);
-						this.changeLists(() => forms.push(form));
-						this.openPage(formPageId(form));
-					},
-				},
-			},
-			{
-				type: "list",
-				heading: t("taskCommands"),
-				cls: SORTABLE_LIST_CLASS,
-				emptyState: t("noTaskCommandsYet"),
-				items: taskCommands.map((command) =>
-					taskCommandRow(command, formContext, () =>
-						this.changeLists(() =>
-							duplicateEntry(taskCommands, command, newNumericId(taskCommands), (copy) => (copy.name = duplicateName(command.name))),
-						),
-					),
-				),
-				...this.editableEntries(taskCommands),
-				addItem: {
-					name: t("addTaskCommand"),
-					action: () => {
-						const command = newTaskCommand(taskCommands);
-						this.changeLists(() => taskCommands.push(command));
-						this.openPage(taskCommandPageId(command));
-					},
-				},
-			},
-			{
-				type: "group",
-				visible: false,
-				items: [
-					...lists.map((list) => listPage(list, context)),
-					...properties.map((entry) => propertyPage(entry, properties, formContext)),
-					...forms.map((form) => formPage(form, formContext)),
-					...taskCommands.flatMap((command) => [taskCommandPage(command, formContext), ...taskDestinationsPages(command, formContext)]),
-					this.dateNoteFormatsPage(vault),
-				],
-			},
+			hiddenPages([this.dateNoteFormatsPage(vault)]),
 			{
 				type: "group",
 				items: [
@@ -279,7 +320,7 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 			return;
 		}
 		if (this.definitionsAreStale) this.update();
-		modal.openPagePath(this.plugin.manifest.id, [pageId]);
+		modal.openPagePath(this.plugin.manifest.id, pagePath(this.settingItems, pageId) ?? [pageId]);
 	}
 
 	private editableEntries(entries: unknown[]): Pick<SettingDefinitionList, "onReorder" | "onDelete"> {
@@ -330,32 +371,26 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 		this.update();
 	}
 
-	private dateNotesSection(vault: JumpListVault, context: ListPageContext): SettingDefinitionGroup {
+	private dateNotesSource(vault: JumpListVault, context: ListPageContext): SettingDefinitionRender {
 		const { dateNotes } = this.plugin.settings;
 		return {
-			type: "group",
-			heading: t("dateNotes"),
-			items: [
-				{
-					name: t("readFrom"),
-					desc: dateNoteSourceDescription(dateNotes, vault),
-					render: (setting) => {
-						setting.addDropdown((dropdown) =>
-							dropdown
-								.addOptions(dateNoteSourceOptions())
-								.setValue(dateNotes.from)
-								.onChange((from) => context.write(DATE_NOTE_SOURCE_KEY, from)),
-						);
-						if (customPeriods(dateNotes, vault).length === 0) return;
-						setting.addExtraButton((button) =>
-							button
-								.setIcon("pencil")
-								.setTooltip(t("editFormats"))
-								.onClick(() => context.openPage(DATE_NOTE_FORMATS_PAGE_ID)),
-						);
-					},
-				},
-			],
+			name: t("dateNotesSource"),
+			desc: dateNoteSourceDescription(dateNotes, vault),
+			render: (setting) => {
+				setting.addDropdown((dropdown) =>
+					dropdown
+						.addOptions(dateNoteSourceOptions())
+						.setValue(dateNotes.from)
+						.onChange((from) => context.write(DATE_NOTE_SOURCE_KEY, from)),
+				);
+				if (customPeriods(dateNotes, vault).length === 0) return;
+				setting.addExtraButton((button) =>
+					button
+						.setIcon("pencil")
+						.setTooltip(t("editFormats"))
+						.onClick(() => context.openPage(DATE_NOTE_FORMATS_PAGE_ID)),
+				);
+			},
 		};
 	}
 

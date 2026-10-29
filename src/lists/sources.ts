@@ -3,6 +3,7 @@ import type { TranslationKey } from "../i18n/index.ts";
 import type { Period, ResolvedDateNotes } from "./dateNotes.ts";
 import { adjacentDatePaths, currentDatePath, isSameLocalDay, parseDateNote } from "./dates.ts";
 import type { JumpListVault, MomentDate, VaultNote } from "./vault";
+import type { AdjacentDirection } from "../settings";
 
 export interface ListedNote {
 	file: VaultNote;
@@ -10,17 +11,22 @@ export interface ListedNote {
 	missing?: Period;
 }
 
-export function adjacentDateNotes(vault: JumpListVault, current: VaultNote, dateNotes: ResolvedDateNotes): ListedNote[] {
+export function adjacentDateNotes(
+	vault: JumpListVault,
+	current: VaultNote,
+	dateNotes: ResolvedDateNotes,
+	directions: readonly AdjacentDirection[] = ["previous", "next"],
+): ListedNote[] {
 	const dateNote = parseDateNote(current, dateNotes, vault.moment);
 	if (!dateNote) return [];
 	const adjacent = adjacentDatePaths(dateNote);
 	const notes = vault.notes();
 	const atPath = (path: string) => notes.find((note) => note.path === path);
 	const listed: ListedNote[] = [];
-	const next = atPath(adjacent.next);
-	if (next) listed.push({ file: next, direction: adjacent.nextLabel });
-	const previous = atPath(adjacent.previous);
-	if (previous) listed.push({ file: previous, direction: adjacent.previousLabel });
+	for (const direction of directions) {
+		const file = atPath(adjacent[direction]);
+		if (file) listed.push({ file, direction: direction === "next" ? adjacent.nextLabel : adjacent.previousLabel });
+	}
 	return listed;
 }
 
