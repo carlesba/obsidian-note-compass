@@ -4,7 +4,7 @@
 
 Este manual es una traducción automática; la referencia es el README en inglés.
 
-Note Compass añade tres comandos que funcionan desde cualquier parte de Obsidian, con o sin un editor abierto. "Ir a una nota" abre un único selector con las notas relacionadas con la nota activa, como sus notas de fecha adyacentes y las notas a las que enlaza, junto con listas que defines tú mismo con filtros sobre propiedades, carpetas, etiquetas, enlaces y fechas. "Establecer propiedades" edita las propiedades de la nota activa desde un único selector. "Rellenar formulario" hace las preguntas de un formulario que defines y crea una nota nueva a partir de las respuestas, con su nombre, su texto y sus propiedades ya rellenos.
+Note Compass ofrece selectores para navegar, editar propiedades, rellenar formularios y ejecutar tus propios comandos de tareas.
 
 ![El selector Establecer propiedades, con Guardar y cerrar y Cancelar arriba, los valores actuales de la nota marcados con una marca de verificación y más valores para añadir debajo](docs/images/set-properties.png)
 
@@ -27,6 +27,8 @@ Los comandos están pensados para usarse con el teclado, así que lo primero es 
 Un uso típico sería este. Abres la nota diaria de hoy y pulsas el atajo de "Ir a una nota" para pasar a la nota de ayer o a una nota que enlazaste desde ella. En una nota en la que estás trabajando, pulsas el atajo de "Establecer propiedades", escribes unas letras del nombre de una persona, la eliges y pulsas "Guardar y cerrar". Para las notas que creas a menudo, como las personas, añade un formulario en Ajustes → Note Compass → Formularios.
 
 La configuración predeterminada incluye las cuatro listas de relación en "Ir a una nota" y un conjunto de propiedades habituales de casilla de verificación y de enlace en "Establecer propiedades". Abre Ajustes → Note Compass para desactivar lo que no uses y para apuntar las propiedades de enlace a tus propias carpetas y notas.
+
+Añade un comando en Ajustes → Note Compass → Comandos de tareas, abre una nota con tareas pendientes y ejecuta "Procesar tareas abiertas". Intro prepara la finalización y "Terminar" guarda.
 
 ## Ir a una nota
 
@@ -150,11 +152,92 @@ Los campos de fecha, hora y fecha y hora tienen "Formato": `YYYY-MM-DD`, `HH:mm`
 
 Un campo sin clave, dos campos con la misma clave, una selección sin opciones o una fecha tomada de un campo que no es una fecha muestran un aviso en la fila del campo y en el formulario. Un formulario que esta versión de Note Compass no puede leer se queda en la lista desactivado, con un aviso y sin lápiz, como una lista ilegible, y su configuración guardada se conserva hasta que lo eliminas.
 
+## Comandos de tareas
+
+Procesa las tareas de la nota Markdown activa con comandos de la paleta que defines tú.
+
+### Primeros pasos
+
+Añade un comando con `+` en Ajustes → Note Compass → Comandos de tareas y dale un nombre. Abre una nota Markdown y ejecuta ese nombre desde la paleta de comandos; también puedes asignarle un atajo. Solo se ofrecen comandos activados con al menos una acción. Si ninguna tarea coincide, aparece un aviso en vez de un selector vacío.
+
+### Página del comando
+
+| Ajuste | Qué hace |
+| --- | --- |
+| Activado | Ofrecer este comando de tareas como su propio comando. |
+| Nombre | Se muestra como nombre del comando en la paleta de comandos. |
+| Tareas que listar | Déjalo vacío para listar todas las tareas. |
+| Tareas que omitir | Se omiten aunque estén listadas. Déjalo vacío para no omitir ninguna. |
+| Seleccionar todas | Añade una primera fila que aplica una acción a todas las tareas listadas. |
+| Modo por lotes | Prepara las acciones sin guardar hasta que termines o no queden tareas. Cancelar o Escape descarta todos los cambios pendientes. |
+| Intro ejecuta | Elige qué hace Intro en una tarea. Abre el menú de acciones con el botón de ajustes o Alt+Intro. Una acción o "Mostrar el menú de acciones". |
+
+"Añadir estado" ofrece Pendiente `[ ]`, Completada `[x]`, Cancelada `[-]`, Migrada `[>]`, Programada `[<]`, En curso `[/]` y "Personalizado…". Para uno personalizado, escribe un carácter y pulsa Intro. La × de una píldora lo elimina. Se distinguen mayúsculas y minúsculas; las exclusiones tienen prioridad.
+
+Las filas de Formularios y Comandos de tareas muestran solo el nombre; la segunda línea aparece únicamente para avisos, no para un resumen de la configuración.
+Un comando ilegible se conserva desactivado con un aviso hasta que lo eliminas.
+
+### Acciones
+
+Cada acción tiene "Etiqueta", un tipo de "Acción" y un "Estado" de un carácter. Usa `+` para añadirla, arrastra para reordenar, copia para duplicar y × para eliminar; haz clic en una fila para editarla debajo.
+
+#### Cambiar estado
+
+Cambia el carácter de la casilla original. "Fecha de finalización" puede añadir un sufijo:
+
+| Fecha de finalización | Texto añadido |
+| --- | --- |
+| Desactivada | Nada. |
+| Fecha | ` ✅ 2028-10-30` |
+| Fecha como enlace | ` ✅ [[2028-10-30]]` |
+| Fecha y hora | ` ✅ 2028-10-30 09:00` |
+
+Los ejemplos usan el formato diario de "Notas de fecha"; la fecha es hoy, no la de la nota original. La fecha y hora añade el formato de hora del complemento principal Plantillas. Un enlace de fecha no crea su nota.
+
+#### Copiar a una nota
+
+Añade una tarea abierta `[ ]` al final de otra nota y cambia "Estado" en la original. Solo copia la línea de la tarea, no las subtareas ni las líneas de continuación; no copia la sangría ni los prefijos de cita.
+
+- "Destinos" es una lista ordenada: añade con `+`, arrastra para reordenar y elimina con ×. Opciones: Hoy, Mañana, Esta semana, La semana que viene, Este mes, El mes que viene, Este trimestre, El trimestre que viene, Este año, El año que viene, Nota concreta.
+- "Enlazar el destino" añade ` → [[destino]]` a la original; "Enlazar el origen" añade ` ← [[origen]]` a la copia.
+- Los periodos se cuentan desde hoy, no desde la fecha de la nota, y usan los periodos activados, carpetas y formatos de "Notas de fecha". Un destino disponible se ejecuta directamente; varios abren "¿A qué nota copiar?" en el orden configurado. Nunca se ofrece la nota original ni destinos duplicados.
+- Las notas concretas inexistentes se omiten con un aviso. Si no queda ningún destino, no cambia nada.
+- Las notas periódicas que faltan se crean al guardar. Si "Notas de fecha" usa Periodic Notes, primero se pide a ese complemento que cree la nota con su plantilla. Si su API no está disponible, falla o no crea la ruta esperada, se crea una nota vacía. Los demás orígenes, incluidas Notas diarias y Personalizado, empiezan vacíos antes de añadir la tarea.
+
+### Selector y modo por lotes
+
+- Escribe para filtrar el texto de las tareas, sin distinguir mayúsculas y con coincidencia en orden. Intro ejecuta "Intro ejecuta", o abre el menú; ⚙ o Alt+Intro abre todas las acciones, incluida la de Intro.
+- "Seleccionar todas" añade "Aplicar a las N tareas" cuando coinciden más de una con la búsqueda. Solo aplica a esas tareas, no a toda la nota.
+- Con "Modo por lotes" activado, cada elección queda pendiente y el selector vuelve a abrirse con las tareas restantes y la búsqueda vacía. "Terminar · N cambios" guarda todo. "Cancelar" o Escape en el selector de tareas descarta todo. Escape en el selector de acciones o destinos solo vuelve atrás y conserva los cambios pendientes.
+- Procesar la última tarea termina automáticamente. Elegir "Aplicar a las N tareas" también termina de inmediato, aunque la búsqueda oculte otras tareas.
+- Sin "Modo por lotes", una elección se guarda de inmediato y cierra el selector; Escape no la deshace. En ambos modos, las líneas originales modificadas desde que se abrió el selector se omiten con un aviso.
+
+### Valores de un comando nuevo
+
+Cada comando nuevo empieza con una configuración Bullet Journal llamada "Procesar tareas abiertas": activado, solo tareas Pendiente `[ ]`, sin exclusiones, "Seleccionar todas" desactivado y "Modo por lotes" activado. Intro ejecuta "Completar".
+
+| Acción | Estado original | Otros ajustes |
+| --- | --- |
+| Completar | `[x]` | Fecha de finalización Desactivada. |
+| Cancelar | `[-]` | Fecha de finalización Desactivada. |
+| Migrar | `[>]` | Mañana, Esta semana, La semana que viene; Solo enlaza el destino. |
+| Programar | `[<]` | El mes que viene, El trimestre que viene, El año que viene; Enlaza destino y origen. |
+
+### Comportamiento conocido
+- Las escrituras en varias notas no son atómicas: un fallo puede dejar algunas actualizadas y otras sin cambiar.
+- La copia conserva el texto de la línea, incluidos sufijos existentes e identificadores de bloque; estos se duplican, no se regeneran.
+
 ## Ajustes
 
-Los ajustes caben en una ventana estrecha y funcionan igual en móvil. Se dividen en cinco partes: "Visualización", las listas de "Ir a una nota", "Notas de fecha", la lista de "Establecer propiedades" y "Formularios", seguidas de "Restablecer todos los ajustes".
+Los ajustes caben en una ventana estrecha y funcionan igual en móvil. Se dividen en seis partes: "Visualización", las listas de "Ir a una nota", "Notas de fecha", la lista de "Establecer propiedades", "Formularios" y "Comandos de tareas", seguidas de "Restablecer todos los ajustes".
 
 ![La pestaña de ajustes, con las listas de Ir a una nota, el origen de las notas de fecha y la lista de Establecer propiedades, cada fila con un chip de prefijo, un interruptor, un lápiz y un botón de eliminar](docs/images/settings.png)
+
+### Comandos de tareas
+
+Usa los mismos controles para añadir, reordenar, activar, editar, duplicar y eliminar. La página de un comando contiene Comando, Tareas que listar, Tareas que omitir, Opciones y Acciones. No hay comandos de tareas hasta que añades uno; los nuevos empiezan con acciones Bullet Journal.
+
+Las filas de Formularios y Comandos de tareas muestran solo el nombre; la segunda línea aparece únicamente para avisos, no para un resumen de la configuración.
 
 ### Visualización
 
@@ -241,6 +324,8 @@ Varias filas pueden escribir la misma propiedad, como las filas `related` predet
 
 "Restablecer todos los ajustes", al final de los ajustes, devuelve cada lista, propiedad, formulario y opción a los valores predeterminados, que no incluyen ningún formulario. Primero pide confirmación, y Cancelar o Escape lo deja todo como estaba. El restablecimiento no se puede deshacer.
 
+El restablecimiento también elimina los comandos de tareas; los valores predeterminados no incluyen ninguno.
+
 ## Idiomas
 
 Note Compass sigue el idioma que elijas para Obsidian. Está disponible en inglés, español, chino simplificado, chino tradicional, japonés y coreano, y cualquier otro idioma se muestra en inglés. Tus ajustes, los nombres de las propiedades y los valores que se escriben en tus notas se quedan tal como los escribiste, sea cual sea el idioma.
@@ -257,12 +342,15 @@ Las traducciones están en `src/i18n/`, y este manual también está disponible 
 - Añade tu carpeta de plantillas a "Carpetas excluidas" en todas las propiedades de enlace, para que las notas de plantilla nunca se ofrezcan como valores.
 - Desactiva "Mostrar prefijos" para un aspecto minimalista cuando ya conozcas tus listas. Las filas de enlace muestran entonces el nombre de su propiedad.
 - En "Establecer propiedades", Escape en un selector de valores solo vuelve al selector principal. Los cambios que ya hiciste se conservan hasta que eliges "Guardar y cerrar" o "Cancelar".
+- En un comando de tareas, usa Alt+Intro o ⚙ para ver todas las acciones sin cambiar lo que hace Intro.
 
 ## Comportamiento conocido
 
 - Un formato de día que contiene `/`, como `YYYY/MM/DD`, nunca coincide, porque el nombre de una nota se compara sin sus carpetas.
 - Con los formatos predeterminados, las notas con el nombre de un año en la carpeta de notas de fecha, como `on/2024`, cuentan como notas anuales. Desactiva el periodo de año en los formatos personalizados si guardas otras notas con ese tipo de nombre en esa carpeta.
 - Si una propiedad cambia de tipo, una condición de filtro sobre ella conserva su condición anterior y no coincide con nada hasta que elijas una nueva. La condición, la fila de su lista y su página indican que la condición ya no se aplica.
+- Las escrituras en varias notas no son atómicas: un fallo puede dejar algunas actualizadas y otras sin cambiar.
+- La copia conserva el texto de la línea, incluidos sufijos existentes e identificadores de bloque; estos se duplican, no se regeneran.
 
 ## Desarrollo
 

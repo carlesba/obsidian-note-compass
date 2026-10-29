@@ -17,6 +17,7 @@ These tips keep the pickers fast and easy to read.
 - Turn "Show prefixes" off for a minimal look once you know your lists. Link rows then name their property instead.
 - In "Set properties", Escape in a value picker only steps back to the main picker. The changes you already made are kept until you choose "Save & close" or "Cancel".
 - Give the forms you use most a hotkey of their own, since each enabled form is a command named after it.
+- In a task command, use Alt+Enter or ⚙ for all actions without changing what Enter does.
 
 ## Known behaviour
 
@@ -25,3 +26,4 @@ These cases follow from how Note Compass reads your notes.
 - A day format containing `/`, such as `YYYY/MM/DD`, never matches, because a note's name is compared without its folders.
 - With the default formats, notes named after a year in the date notes folder, such as `on/2024`, count as year notes. Switch the year period off in the Custom formats if you keep other notes named that way in that folder.
 - If a property changes type, a filter condition on it keeps its old condition and matches nothing until you pick a new one. The condition, its list's row and its page say that the condition no longer applies.
+- Task-command writes across notes are not atomic: a failure can leave only some notes updated. Copied task lines keep existing block IDs, so those IDs are duplicated. See [Task commands](task-commands.md).

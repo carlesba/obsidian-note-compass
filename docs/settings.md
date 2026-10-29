@@ -1,12 +1,12 @@
 # Settings
 
-Settings → Note Compass decides what each picker offers, how its rows look, and which forms exist.
+Settings → Note Compass decides what each picker offers, how its rows look, and which forms and task commands exist.
 
 [← Back to the README](../README.md)
 
 ## Overview
 
-The settings are split into five parts, followed by "Reset all settings". They fit a narrow window and work the same on mobile.
+The settings are split into six parts, followed by "Reset all settings". They fit a narrow window and work the same on mobile.
 
 ![The settings tab, with the Jump to note lists, the Date notes source and the Set properties list, each row with a prefix chip, a switch, a pencil and a delete button](images/settings.png)
 
@@ -17,6 +17,15 @@ The settings are split into five parts, followed by "Reset all settings". They f
 | Date notes | Where date note formats come from, described in [Date notes](jump-to-note.md#date-notes). |
 | Set properties | The properties of the [Set properties](set-properties.md) picker, and "Checkbox behaviour". |
 | Forms | Your [forms](forms.md). |
+| Task commands | Your [task commands](task-commands.md), each offered under its name in the command palette. |
+
+## Forms and Task commands
+
+These lists use the same add, reorder, switch, edit, copy and delete controls as the other settings lists. Each row shows only its name; a second line appears only for warnings, not a configuration summary.
+
+- A form’s page defines its note and questions: see [Forms](forms.md#form-page).
+- A task command’s page sets Command, Tasks to list, Tasks to skip, Options and Actions: see [Task commands](task-commands.md#command-page).
+- New task commands start with Bullet Journal actions; no task commands exist until you add one.
 
 ## Display
 
@@ -199,7 +208,7 @@ Several rows may write the same property, such as the default `related` rows wit
 
 ## Reset all settings
 
-"Reset all settings", at the bottom of the settings, puts every list, property, form and option back to the defaults, which have no forms.
+"Reset all settings", at the bottom of the settings, puts every list, property, form, task command and option back to the defaults, which have no forms or task commands.
 
 1. Choose "Reset all settings".
 2. Confirm. Cancel or Escape leaves everything as it was.
