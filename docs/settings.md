@@ -6,22 +6,26 @@ Settings → Note Compass decides what each picker offers, how its rows look, an
 
 ## Overview
 
-The settings are split into six parts, followed by "Reset all settings". They fit a narrow window and work the same on mobile.
+The main page holds two options and opens four pages, followed by "Reset all settings". It fits a narrow window and works the same on mobile.
 
-![The settings tab, with the Jump to note lists, the Date notes source and the Set properties list, each row with a prefix chip, a switch, a pencil and a delete button](images/settings.png)
+![The main settings page, with Show prefixes and Date notes source at the top, then the Jump to note, Properties, Forms and Tasks pages, and Reset all settings at the bottom](images/settings.png)
 
-| Part | What it holds |
+| Item | What it holds |
 | --- | --- |
-| Display | "Show prefixes". |
+| Show prefixes | Whether rows carry their prefix chip, described under [Display](#display). |
+| Date notes source | Where date note formats come from, described in [Date notes](jump-to-note.md#date-notes). The pencil edits the custom formats. |
 | Jump to note | The lists of the [Jump to note](jump-to-note.md) picker. |
-| Date notes | Where date note formats come from, described in [Date notes](jump-to-note.md#date-notes). |
-| Set properties | The properties of the [Set properties](set-properties.md) picker, and "Checkbox behaviour". |
+| Properties | The properties of the [Set properties](set-properties.md) picker, and "Checkbox behaviour". |
 | Forms | Your [forms](forms.md). |
-| Task commands | Your [task commands](task-commands.md), each offered under its name in the command palette. |
+| Tasks | Your [task commands](task-commands.md), each offered under its name in the command palette. |
 
-## Forms and Task commands
+Click anywhere on one of the four rows to open its page, and use the back arrow at the top to return. A row's own page opens inside its section, so going back from a list's page lands on the Jump to note page.
 
-These lists use the same add, reorder, switch, edit, copy and delete controls as the other settings lists. Each row shows only its name; a second line appears only for warnings, not a configuration summary.
+![The Jump to note page, listing each list as a row with its prefix chip, a switch, a copy icon, a pencil and a delete button](images/settings-jump-to-note.png)
+
+## Forms and Tasks
+
+These pages use the same add, reorder, switch, edit, copy and delete controls as the other settings lists. Each row shows only its name; a second line appears only for warnings, not a configuration summary.
 
 - A form’s page defines its note and questions: see [Forms](forms.md#form-page).
 - A task command’s page sets Command, Tasks to list, Tasks to skip, Options and Actions: see [Task commands](task-commands.md#command-page).
@@ -29,13 +33,13 @@ These lists use the same add, reorder, switch, edit, copy and delete controls as
 
 ## Display
 
-"Show prefixes" decides whether rows carry their prefix chip. It is on by default.
+"Show prefixes", at the top of the main page, decides whether rows carry their prefix chip. It is on by default.
 
 Turning it off removes the prefix from every row in all three pickers and leaves it out of what typing matches. Link rows in "Set properties" then show the property they write instead, as in `✓ Marta Vidal · people`. The settings hide the prefix chips and the prefix fields too, but your prefixes and colours stay saved, so turning the setting back on restores them.
 
 ## Lists and property rows
 
-"Jump to note" and "Set properties" are both lists of rows, and their rows work the same way. Each row shows its prefix chip and what it lists or writes, such as `status is active` or `people · links`.
+The Jump to note and Properties pages are both lists of rows, and their rows work the same way. Each row shows its prefix chip and what it lists or writes, such as `status is active` or `people · links`.
 
 | Control | Does |
 | --- | --- |
@@ -44,7 +48,7 @@ Turning it off removes the prefix from every row in all three pickers and leaves
 | Pencil | Opens the row's page. |
 | Copy icon | Duplicates the row. The copy lands right below it with the same setup, and a form's copy is named `<name> copy`. |
 | Cross | Deletes the row. |
-| `+` in the section header | Adds a row. Its page opens straight away so you can fill it in, and the new row starts switched on. |
+| `+` above the list | Adds a row. Its page opens straight away so you can fill it in, and the new row starts switched on. |
 
 <details><summary>Rows that cannot be read</summary>
 
@@ -63,7 +67,7 @@ The prefix menu reuses a prefix you already have on another row.
 ![The prefix menu of a row, listing each prefix in use as its chip with how many rows use it, the row's own prefix ticked, then Edit prefix… and No prefix](images/prefix-menu.png)
 
 1. Click a prefix chip, tap it, or focus it and press Enter. A phone shows the menu as a sheet from the bottom.
-2. The menu lists every prefix in use across "Jump to note" and "Set properties", each as its chip followed by how many rows use it, such as a `📅 due` chip with `· 3 rows`, most used first. The row's own prefix is ticked.
+2. The menu lists every prefix in use across the Jump to note and Properties pages, each as its chip followed by how many rows use it, such as a `📅 due` chip with `· 3 rows`, most used first. The row's own prefix is ticked.
 3. Pick one to give this row its text and its colour. No other row changes.
 
 | Menu item | Does |
@@ -96,7 +100,9 @@ A list's page sets what one "Jump to note" list holds.
 | Prefix | The chip, described under [Prefixes](#prefixes). |
 | Source | What the list holds: adjacent dates, outbound links, inbound links, same day, a filter, notes linking to a note, notes in a folder, notes modified today, or current date notes. |
 
-Current date notes has one switch per period, from "Today" to "This year". Each source is described in [Jump to note](jump-to-note.md#lists).
+Adjacent dates and Current date notes add a "Notes to list" section with one row per entry, all switched on by default: "Previous" and "Next" for adjacent dates, "Today" to "This year" for current date notes. Drag a row's handle to change the order the picker shows them in, and switch a row off to leave it out. Each source is described in [Jump to note](jump-to-note.md#lists).
+
+![The page of a Current date notes list, with its Notes to list section showing Today, This week, This month, This quarter and This year, each with a switch and a drag handle](images/list-current-date-notes.png)
 
 A list's row shows the filter's only condition, such as `status is active` or `Tagged project`, or counts its conditions, as in `All of 3 conditions`.
 
@@ -147,7 +153,7 @@ A property condition asks for the property, suggesting the vault's properties wi
 
 A property's page sets what one "Set properties" row writes and offers.
 
-![The page of the people links property, offering notes that link to Person and excluding the templates folder](images/settings-property.png)
+![The page of the people links property, with its prefix chip shared with one other row, the people property of type links, and notes offered from those linking to Person](images/settings-property.png)
 
 | Setting | What it is |
 | --- | --- |
@@ -204,11 +210,11 @@ Several rows may write the same property, such as the default `related` rows wit
 
 ## Checkbox behaviour
 
-"Checkbox behaviour", below the Set properties list, decides what choosing a checkbox in the main Set properties menu does, for every checkbox property. The options are described in [Set properties](set-properties.md#checkbox-behaviour).
+"Checkbox behaviour", below the list on the Properties page, decides what choosing a checkbox in the main Set properties menu does, for every checkbox property. The options are described in [Set properties](set-properties.md#checkbox-behaviour).
 
 ## Reset all settings
 
-"Reset all settings", at the bottom of the settings, puts every list, property, form, task command and option back to the defaults, which have no forms or task commands.
+"Reset all settings", at the bottom of the main page, puts every list, property, form, task command and option back to the defaults, which have no forms or task commands.
 
 1. Choose "Reset all settings".
 2. Confirm. Cancel or Escape leaves everything as it was.

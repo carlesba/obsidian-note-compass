@@ -8,7 +8,7 @@
 
 The picker lets you choose a note to move to. Picking a row opens the note in the active tab, or in a new tab when none is open.
 
-![The Jump to note picker on a daily note, with rows for the previous day, an inbound link and notes from the same day](images/jump-to-note.png)
+![The Jump to note picker on a daily note, with the previous and next day, its outbound links, a note from the same day, this week, month and year, the active projects and the people](images/jump-to-note.png)
 
 The picker shows the lists you set up under "Jump to note" in settings, in the order you set. To change them, see [Settings](settings.md#list-pages).
 
@@ -27,7 +27,7 @@ These four lists depend on the markdown note in focus. They are left out when an
 
 | List | What it holds |
 | --- | --- |
-| Adjacent dates | The previous and next note of the same period when the note in focus is a date note, as in `📅 day 2024-03-06 (next day - Wednesday)` or `📅 day 2024-W09 (prev week - week 9)`. |
+| Adjacent dates | The previous and next note of the same period when the note in focus is a date note, as in `📅 day 2024-03-06 (next day - Wednesday)` or `📅 day 2024-W09 (prev week - week 9)`. Previous comes first unless you reorder them, and either can be switched off. |
 | Outbound links | The notes the note in focus links to, links in properties included. |
 | Inbound links | The notes that link to the note in focus. |
 | Same day | The notes created on the same day as the note in focus. For a day note it uses the date in its name rather than when the file was created. |
@@ -42,11 +42,11 @@ These lists do not depend on the note in focus.
 | Links to note | The notes that link to a chosen note, in their text or in a property. |
 | In folder | The notes in a folder and its subfolders. |
 | Modified today | The notes changed since midnight. |
-| Current date notes | The date notes for today, this week, this month, this quarter and this year, each one you switch on. |
+| Current date notes | The date notes for today, this week, this month, this quarter and this year, each one you switch on, in the order you set. |
 
 <details><summary>Details on current date notes</summary>
 
-- The rows keep the order today, week, month, quarter, year instead of being sorted by name.
+- The rows keep the order set on the list's page, today to this year by default, instead of being sorted by name.
 - Each row says which period it is, such as `this week - week 10`.
 - A note that does not exist yet shows as `create this week`. Choosing it creates and opens it the way your date notes plugin does, with the same template: Periodic Notes, or core Daily notes for days.
 - Periods that come from the Custom formats start as an empty note.

@@ -28,17 +28,17 @@ Un uso típico sería este. Abres la nota diaria de hoy y pulsas el atajo de "Ir
 
 La configuración predeterminada incluye las cuatro listas de relación en "Ir a una nota" y un conjunto de propiedades habituales de casilla de verificación y de enlace en "Establecer propiedades". Abre Ajustes → Note Compass para desactivar lo que no uses y para apuntar las propiedades de enlace a tus propias carpetas y notas.
 
-Añade un comando en Ajustes → Note Compass → Comandos de tareas, abre una nota con tareas pendientes y ejecuta "Procesar tareas abiertas". Intro prepara la finalización y "Terminar" guarda.
+Añade un comando en Ajustes → Note Compass → Tareas, abre una nota con tareas pendientes y ejecuta "Procesar tareas abiertas". Intro prepara la finalización y `🏁 Terminar` guarda.
 
 ## Ir a una nota
 
 "Ir a una nota" abre un selector con notas a las que moverte. Al elegir una fila, la nota se abre en la pestaña activa, o en una pestaña nueva si no hay ninguna abierta.
 
-![El selector Ir a una nota sobre una nota diaria, con filas para el día anterior, un enlace entrante y notas del mismo día](docs/images/jump-to-note.png)
+![El selector Ir a una nota sobre una nota diaria, con el día anterior y el siguiente, sus enlaces salientes, una nota del mismo día, esta semana, este mes y este año, los proyectos activos y las personas](docs/images/jump-to-note.png)
 
 El selector muestra las listas que configures en "Ir a una nota" dentro de los ajustes, en el orden que elijas. Cuatro de las listas disponibles dependen de la nota Markdown activa, y se omiten cuando el foco está en otra cosa o no hay ninguna pestaña abierta:
 
-- Fechas adyacentes muestra la nota anterior y la siguiente del mismo periodo cuando la nota activa es una nota de fecha, como en `📅 day 2024-03-06 (día siguiente - miércoles)` o `📅 day 2024-W09 (semana anterior - semana 9)`.
+- Fechas adyacentes muestra la nota anterior y la siguiente del mismo periodo cuando la nota activa es una nota de fecha, como en `📅 day 2024-03-06 (día siguiente - miércoles)` o `📅 day 2024-W09 (semana anterior - semana 9)`. La anterior va primero salvo que cambies el orden, y puedes desactivar cualquiera de las dos.
 - Enlaces salientes muestra las notas a las que enlaza la nota activa, incluidos los enlaces en propiedades.
 - Enlaces entrantes muestra las notas que enlazan a la nota activa.
 - Mismo día muestra las notas creadas el mismo día que la nota activa. Para una nota diaria usa la fecha de su nombre en lugar de la fecha en que se creó el archivo.
@@ -49,7 +49,7 @@ Las demás listas no dependen de la nota activa:
 - Enlaza a una nota muestra las notas que enlazan a una nota elegida, en su texto o en una propiedad.
 - En una carpeta muestra las notas de una carpeta y sus subcarpetas.
 - Modificadas hoy muestra las notas cambiadas desde medianoche.
-- Notas de fecha actuales muestra las notas de fecha de hoy, esta semana, este mes, este trimestre y este año, cada una de las que actives. Mantienen ese orden en lugar de ordenarse por nombre, y cada fila indica de qué periodo se trata, como `esta semana - semana 10`. Una nota que todavía no existe aparece como `crear la nota de esta semana`, y al elegirla se crea y se abre como lo haría tu complemento de notas de fecha, con la misma plantilla: Periodic Notes, o el complemento principal Notas diarias para los días. Los periodos que vienen de los formatos personalizados empiezan como una nota vacía. Una propiedad de enlace con este origen solo ofrece las notas que existen.
+- Notas de fecha actuales muestra las notas de fecha de hoy, esta semana, este mes, este trimestre y este año, cada una de las que actives. Siguen el orden de la página de la lista, de hoy a este año si no lo cambias, en lugar de ordenarse por nombre, y cada fila indica de qué periodo se trata, como `esta semana - semana 10`. Una nota que todavía no existe aparece como `crear la nota de esta semana`, y al elegirla se crea y se abre como lo haría tu complemento de notas de fecha, con la misma plantilla: Periodic Notes, o el complemento principal Notas diarias para los días. Los periodos que vienen de los formatos personalizados empiezan como una nota vacía. Una propiedad de enlace con este origen solo ofrece las notas que existen.
 
 Una nota aparece en cada lista que la contiene, en el orden de tus listas, y la nota activa se omite. Dentro de cada lista, las notas se ordenan por nombre. Si ninguna lista tiene notas, el comando muestra "No hay notas a las que ir." en lugar de abrir un selector vacío.
 
@@ -63,7 +63,7 @@ Al escribir, las filas se filtran por coincidencia en orden. Una fila se mantien
 
 Una nota es una nota de fecha cuando está directamente en la carpeta configurada para su periodo y su nombre coincide exactamente con el formato de ese periodo. Hay cinco periodos, día, semana, mes, trimestre y año, y cada uno tiene su propia carpeta, su formato y su interruptor.
 
-El ajuste "Leer de", dentro de "Notas de fecha", elige de dónde salen esos formatos. "Automático" usa el complemento Periodic Notes cuando está activado, después el complemento principal Notas diarias y, por último, los formatos personalizados del propio complemento. Notas diarias solo cubre los días, así que los demás periodos vienen de Personalizado. Siempre que un periodo viene de Personalizado, un lápiz junto a "Leer de" abre sus formatos, donde configuras la carpeta de cada periodo y su formato como formato de Moment:
+El ajuste "Origen de las notas de fecha", en la página principal de los ajustes, elige de dónde salen esos formatos. "Automático" usa el complemento Periodic Notes cuando está activado, después el complemento principal Notas diarias y, por último, los formatos personalizados del propio complemento. Notas diarias solo cubre los días, así que los demás periodos vienen de Personalizado. Siempre que un periodo viene de Personalizado, un lápiz junto a "Origen de las notas de fecha" abre sus formatos, donde configuras la carpeta de cada periodo y su formato como formato de Moment:
 
 https://momentjs.com/docs/#/displaying/format/
 
@@ -158,7 +158,9 @@ Procesa las tareas de la nota Markdown activa con comandos de la paleta que defi
 
 ### Primeros pasos
 
-Añade un comando con `+` en Ajustes → Note Compass → Comandos de tareas y dale un nombre. Abre una nota Markdown y ejecuta ese nombre desde la paleta de comandos; también puedes asignarle un atajo. Solo se ofrecen comandos activados con al menos una acción. Si ninguna tarea coincide, aparece un aviso en vez de un selector vacío.
+Añade un comando con `+` en Ajustes → Note Compass → Tareas y dale un nombre. Abre una nota Markdown y ejecuta ese nombre desde la paleta de comandos; también puedes asignarle un atajo. Solo se ofrecen comandos activados con al menos una acción. Si ninguna tarea coincide, aparece un aviso en vez de un selector vacío.
+
+![El selector de tareas sobre una nota diaria, con ⚡ Aplicar a las 5 tareas en primer lugar, las tareas pendientes debajo, y después 🏁 Terminar con su recuento de cambios y 🛑 Cancelar al final](docs/images/task-picker.png)
 
 ### Página del comando
 
@@ -174,7 +176,7 @@ Añade un comando con `+` en Ajustes → Note Compass → Comandos de tareas y d
 
 "Añadir estado" ofrece Pendiente `[ ]`, Completada `[x]`, Cancelada `[-]`, Migrada `[>]`, Programada `[<]`, En curso `[/]` y "Personalizado…". Para uno personalizado, escribe un carácter y pulsa Intro. La × de una píldora lo elimina. Se distinguen mayúsculas y minúsculas; las exclusiones tienen prioridad.
 
-Las filas de Formularios y Comandos de tareas muestran solo el nombre; la segunda línea aparece únicamente para avisos, no para un resumen de la configuración.
+Las filas de Formularios y Tareas muestran solo el nombre; la segunda línea aparece únicamente para avisos, no para un resumen de la configuración.
 Un comando ilegible se conserva desactivado con un aviso hasta que lo eliminas.
 
 ### Acciones
@@ -205,12 +207,16 @@ Añade una tarea abierta `[ ]` al final de otra nota y cambia "Estado" en la ori
 - Las notas concretas inexistentes se omiten con un aviso. Si no queda ningún destino, no cambia nada.
 - Las notas periódicas que faltan se crean al guardar. Si "Notas de fecha" usa Periodic Notes, primero se pide a ese complemento que cree la nota con su plantilla. Si su API no está disponible, falla o no crea la ruta esperada, se crea una nota vacía. Los demás orígenes, incluidas Notas diarias y Personalizado, empiezan vacíos antes de añadir la tarea.
 
+![¿A qué nota copiar? para Migrar, que ofrece Mañana, Esta semana, La semana que viene marcada como nota nueva y Este mes, cada una con el nombre de su nota](docs/images/task-destinations.png)
+
 ### Selector y modo por lotes
 
+![El menú de acciones, ¿Qué acción aplicar?, con ✅ Completar, 🚫 Cancelar, ➡️ Migrar y 📅 Programar](docs/images/task-actions.png)
+
 - Escribe para filtrar el texto de las tareas, sin distinguir mayúsculas y con coincidencia en orden. Intro ejecuta "Intro ejecuta", o abre el menú; ⚙ o Alt+Intro abre todas las acciones, incluida la de Intro.
-- "Seleccionar todas" añade "Aplicar a las N tareas" cuando coinciden más de una con la búsqueda. Solo aplica a esas tareas, no a toda la nota.
-- Con "Modo por lotes" activado, cada elección queda pendiente y el selector vuelve a abrirse con las tareas restantes y la búsqueda vacía. "Terminar · N cambios" guarda todo. "Cancelar" o Escape en el selector de tareas descarta todo. Escape en el selector de acciones o destinos solo vuelve atrás y conserva los cambios pendientes.
-- Procesar la última tarea termina automáticamente. Elegir "Aplicar a las N tareas" también termina de inmediato, aunque la búsqueda oculte otras tareas.
+- "Seleccionar todas" añade `⚡ Aplicar a las N tareas` cuando coinciden más de una con la búsqueda. Solo aplica a esas tareas, no a toda la nota.
+- Con "Modo por lotes" activado, cada elección queda pendiente y el selector vuelve a abrirse con las tareas restantes y la búsqueda vacía. `🏁 Terminar` · N cambios guarda todo. `🛑 Cancelar` o Escape en el selector de tareas descarta todo. Escape en el selector de acciones o destinos solo vuelve atrás y conserva los cambios pendientes.
+- Procesar la última tarea termina automáticamente. Elegir `⚡ Aplicar a las N tareas` también termina de inmediato, aunque la búsqueda oculte otras tareas.
 - Sin "Modo por lotes", una elección se guarda de inmediato y cierra el selector; Escape no la deshace. En ambos modos, las líneas originales modificadas desde que se abrió el selector se omiten con un aviso.
 
 ### Valores de un comando nuevo
@@ -232,39 +238,45 @@ Estos destinos predeterminados solo se aplican a comandos nuevos; los guardados 
 
 ## Ajustes
 
-Los ajustes caben en una ventana estrecha y funcionan igual en móvil. Se dividen en seis partes: "Visualización", las listas de "Ir a una nota", "Notas de fecha", la lista de "Establecer propiedades", "Formularios" y "Comandos de tareas", seguidas de "Restablecer todos los ajustes".
+Los ajustes caben en una ventana estrecha y funcionan igual en móvil. La página principal tiene dos opciones, "Mostrar prefijos" y "Origen de las notas de fecha", y abre cuatro páginas, "Ir a una nota", "Propiedades", "Formularios" y "Tareas", seguidas de "Restablecer todos los ajustes".
 
-![La pestaña de ajustes, con las listas de Ir a una nota, el origen de las notas de fecha y la lista de Establecer propiedades, cada fila con un chip de prefijo, un interruptor, un lápiz y un botón de eliminar](docs/images/settings.png)
+![La página principal de los ajustes, con Mostrar prefijos y Origen de las notas de fecha arriba, después las páginas Ir a una nota, Propiedades, Formularios y Tareas, y Restablecer todos los ajustes al final](docs/images/settings.png)
 
-### Comandos de tareas
+Haz clic en cualquier punto de una de las cuatro filas para abrir su página, y usa la flecha de vuelta de arriba para regresar. La página propia de una fila se abre dentro de su sección, así que al volver desde la página de una lista aterrizas en la página Ir a una nota.
+
+![La página Ir a una nota, con cada lista como una fila con su chip de prefijo, un interruptor, un icono de copiar, un lápiz y un botón de eliminar](docs/images/settings-jump-to-note.png)
+
+### Formularios y Tareas
 
 Usa los mismos controles para añadir, reordenar, activar, editar, duplicar y eliminar. La página de un comando contiene Comando, Tareas que listar, Tareas que omitir, Opciones y Acciones. No hay comandos de tareas hasta que añades uno; los nuevos empiezan con acciones Bullet Journal.
 
-Las filas de Formularios y Comandos de tareas muestran solo el nombre; la segunda línea aparece únicamente para avisos, no para un resumen de la configuración.
+Las filas de Formularios y Tareas muestran solo el nombre; la segunda línea aparece únicamente para avisos, no para un resumen de la configuración.
 
 ### Visualización
 
-"Mostrar prefijos" está activado de forma predeterminada. Al desactivarlo se quita el prefijo de todas las filas de los tres selectores y deja de contar para la coincidencia al escribir. Las filas de enlace de "Establecer propiedades" muestran entonces la propiedad que escriben, como en `✓ Marta Vidal · people`. Los ajustes también ocultan los chips y los campos de prefijo, pero tus prefijos y colores siguen guardados, así que al volver a activar el ajuste se recuperan.
+"Mostrar prefijos", en la parte superior de la página principal, está activado de forma predeterminada. Al desactivarlo se quita el prefijo de todas las filas de los tres selectores y deja de contar para la coincidencia al escribir. Las filas de enlace de "Establecer propiedades" muestran entonces la propiedad que escriben, como en `✓ Marta Vidal · people`. Los ajustes también ocultan los chips y los campos de prefijo, pero tus prefijos y colores siguen guardados, así que al volver a activar el ajuste se recuperan.
 
 ### Listas y propiedades
 
-"Ir a una nota" y "Establecer propiedades" son listas de filas, y sus filas funcionan igual. Cada fila muestra su chip de prefijo y lo que muestra o escribe, como `status es active` o `people · enlaces`.
+Las páginas Ir a una nota y Propiedades son listas de filas, y sus filas funcionan igual. Cada fila muestra su chip de prefijo y lo que muestra o escribe, como `status es active` o `people · enlaces`.
 
 - Arrastra el asa de la izquierda para reordenar las filas. El orden es el del selector.
 - Usa el interruptor para mostrar u ocultar una fila en el selector sin perder su configuración.
 - Usa el lápiz para abrir la página de la fila y la cruz para eliminarla.
 - Usa el icono de copiar para duplicar una fila. La copia aparece justo debajo con la misma configuración, y la copia de un formulario se llama `<nombre> copia`.
-- Usa el `+` de la cabecera de la sección para añadir una fila. Su página se abre al momento para que la completes, y la fila nueva empieza activada.
+- Usa el `+` de encima de la lista para añadir una fila. Su página se abre al momento para que la completes, y la fila nueva empieza activada.
 
 Una fila que esta versión de Note Compass no puede leer, por ejemplo una guardada por una versión más reciente, se queda en la lista con un aviso: "Esta versión de Note Compass no puede leer esta lista. Elimínala y crea una nueva." Su interruptor está desactivado y deshabilitado y no tiene lápiz, así que nunca añade notas a un selector, pero su configuración guardada se conserva tal cual hasta que la elimines.
 
-Haz clic en un chip de prefijo, tócalo, o ponle el foco y pulsa Intro para abrir su menú, que en un teléfono aparece como una hoja desde abajo. El menú muestra cada prefijo en uso en "Ir a una nota" y "Establecer propiedades", cada uno como su chip seguido de cuántas filas lo usan, como un chip `📅 due` con `· 3 filas`, primero los más usados. El prefijo propio de la fila aparece marcado. Elige uno para dar a esta fila su texto y su color, sin cambiar ninguna otra fila. "Editar prefijo…" abre la página de la fila con el cursor en "Prefijo", y "Sin prefijo", que aparece cuando la fila tiene uno, borra su texto y su color. Un prefijo vacío se muestra como un chip `prefijo` atenuado y nunca aparece en el menú.
+Haz clic en un chip de prefijo, tócalo, o ponle el foco y pulsa Intro para abrir su menú, que en un teléfono aparece como una hoja desde abajo. El menú muestra cada prefijo en uso en las páginas Ir a una nota y Propiedades, cada uno como su chip seguido de cuántas filas lo usan, como un chip `📅 due` con `· 3 filas`, primero los más usados. El prefijo propio de la fila aparece marcado. Elige uno para dar a esta fila su texto y su color, sin cambiar ninguna otra fila. "Editar prefijo…" abre la página de la fila con el cursor en "Prefijo", y "Sin prefijo", que aparece cuando la fila tiene uno, borra su texto y su color. Un prefijo vacío se muestra como un chip `prefijo` atenuado y nunca aparece en el menú.
 
 Dos filas comparten un prefijo cuando su texto y su color son iguales, así que `👤 peop` en rojo y `👤 peop` sin color son dos prefijos distintos.
 
 ### Páginas de lista
 
-La página de una lista tiene "Activado" y "Prefijo", y después "Origen", que elige qué contiene la lista: fechas adyacentes, enlaces salientes, enlaces entrantes, mismo día, un filtro, notas que enlazan a una nota, notas de una carpeta, notas modificadas hoy o notas de fecha actuales. Notas de fecha actuales tiene un interruptor por periodo, de "Hoy" a "Este año".
+La página de una lista tiene "Activado" y "Prefijo", y después "Origen", que elige qué contiene la lista: fechas adyacentes, enlaces salientes, enlaces entrantes, mismo día, un filtro, notas que enlazan a una nota, notas de una carpeta, notas modificadas hoy o notas de fecha actuales. Fechas adyacentes y Notas de fecha actuales añaden la sección "Notas que mostrar", con una fila por entrada, todas activadas de forma predeterminada: "Anterior" y "Siguiente" para las fechas adyacentes, y de "Hoy" a "Este año" para las notas de fecha actuales. Arrastra el asa de una fila para cambiar el orden en que las muestra el selector, y desactiva una fila para dejarla fuera.
+
+![La página de una lista de Notas de fecha actuales, con la sección Notas que mostrar y las filas Hoy, Esta semana, Este mes, Este trimestre y Este año, cada una con un interruptor y un asa para arrastrar](docs/images/list-current-date-notes.png)
 
 En la página de una lista o de una propiedad, "Prefijo" muestra el botón de ajustes, la vista previa del chip, su texto y su color. Lo que escribes y eliges cambia esta fila y todas las que compartían el prefijo al abrir la página, y la descripción nombra esas filas, como en "Lo usan 2 filas más: people · enlaces, Enlaces salientes". Siguen juntas aunque el texto quede vacío un momento. La flecha circular quita el color.
 
@@ -298,7 +310,7 @@ Una condición de propiedad pide la propiedad, sugiriendo las propiedades de la 
 
 La página de una propiedad tiene "Activado" y el grupo "Etiqueta", con "Prefijo" como en la página de una lista y, en el modo "Varias propiedades", el "Nombre" de la fila. Después viene "Modo", que es "Una propiedad", el predeterminado, o "Varias propiedades". En el modo "Una propiedad" siguen "Propiedad" y "Tipo". "Propiedad" sugiere las propiedades de la bóveda con sus tipos, y al elegir una el tipo se ajusta a ella: casilla de verificación, número, fecha y fecha y hora conservan el suyo, las listas y las etiquetas pasan a enlaces, y cualquier otra cosa pasa a texto. "Tipo" puede ser casilla de verificación, texto, número, fecha, fecha y hora, "enlace, una nota" o "enlaces, varias notas", y permanece deshabilitado hasta que se elige una propiedad.
 
-![La página de la propiedad de enlaces people, que ofrece las notas que enlazan a Person, y excluye la carpeta de plantillas](docs/images/settings-property.png)
+![La página de la propiedad de enlaces people, con su chip de prefijo compartido con otra fila, la propiedad people de tipo enlaces, y las notas ofrecidas de entre las que enlazan a Person](docs/images/settings-property.png)
 
 Todas las propiedades tienen "Quitar cuando esté vacía", que está activado de forma predeterminada y quita la propiedad de la nota en cuanto borras su valor o quitas su último enlace. Si lo desactivas, la propiedad se queda en la nota con un valor vacío.
 
@@ -321,11 +333,11 @@ Varias filas pueden escribir la misma propiedad, como las filas `related` predet
 
 ### Comportamiento de las casillas
 
-"Comportamiento de las casillas", debajo de la lista de Establecer propiedades, decide qué ocurre al elegir una propiedad de casilla de verificación en el menú principal de Establecer propiedades, para todas las propiedades de casilla: abrir su propio selector con true, false y Borrar, que es la opción predeterminada, alternar entre true y sin valor, o recorrer true, false y sin valor. Un modo elegido para una sola propiedad en las versiones 0.6.1 o 0.6.2 pasa a ser este ajuste.
+"Comportamiento de las casillas", debajo de la lista de la página Propiedades, decide qué ocurre al elegir una propiedad de casilla de verificación en el menú principal de Establecer propiedades, para todas las propiedades de casilla: abrir su propio selector con true, false y Borrar, que es la opción predeterminada, alternar entre true y sin valor, o recorrer true, false y sin valor. Un modo elegido para una sola propiedad en las versiones 0.6.1 o 0.6.2 pasa a ser este ajuste.
 
 ### Restablecer todos los ajustes
 
-"Restablecer todos los ajustes", al final de los ajustes, devuelve cada lista, propiedad, formulario y opción a los valores predeterminados, que no incluyen ningún formulario. Primero pide confirmación, y Cancelar o Escape lo deja todo como estaba. El restablecimiento no se puede deshacer.
+"Restablecer todos los ajustes", al final de la página principal, devuelve cada lista, propiedad, formulario y opción a los valores predeterminados, que no incluyen ningún formulario. Primero pide confirmación, y Cancelar o Escape lo deja todo como estaba. El restablecimiento no se puede deshacer.
 
 El restablecimiento también elimina los comandos de tareas; los valores predeterminados no incluyen ninguno.
 

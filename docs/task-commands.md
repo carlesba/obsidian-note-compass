@@ -6,23 +6,25 @@ Process the tasks in the active Markdown note with your own command-palette comm
 
 ## Quick start
 
-1. Open Settings → Note Compass → Task commands and choose `+` to add a command.
+1. Open Settings → Note Compass → Tasks and choose `+` to add a command.
 2. Give it a name, then open a Markdown note with tasks and run that name from the command palette. You can also assign it a hotkey.
 3. Type to find a task. Enter runs the action chosen in "Enter runs"; ⚙ or Alt+Enter opens all actions.
-4. With "Batch mode" on, choose "Finish processing" to save, or "Cancel" to discard the staged changes.
+4. With "Batch mode" on, choose `🏁 Finish processing` to save, or `🛑 Cancel` to discard the staged changes.
+
+![The task picker on a daily note, with ⚡ Apply to all 5 tasks first, the open tasks below it, then 🏁 Finish processing with its count of changes and 🛑 Cancel last](images/task-picker.png)
 
 Only enabled commands with at least one action are offered. If no tasks match, a notice appears instead of an empty picker.
 
 ## Command page
 
-Each command has its own page under Settings → Note Compass → Task commands.
+Each command has its own page under Settings → Note Compass → Tasks.
 
 | Section | Setting | What it does |
 | --- | --- | --- |
 | Command | Enabled, Name | Offers the command under this name in the command palette. |
 | Tasks to list | Status pills | Lists tasks with these checkbox characters. Empty means every task. |
 | Tasks to skip | Status pills | Excludes these statuses even when listed above. Empty means none. |
-| Options | Select all | Adds "Apply to all N tasks" when more than one task matches the typed search. |
+| Options | Select all | Adds `⚡ Apply to all N tasks` when more than one task matches the typed search. |
 | Options | Batch mode | Stages changes until you finish instead of writing immediately. |
 | Actions | Enter runs | An action, or "Show the actions menu". |
 | Actions | Action list | Add, drag to reorder, duplicate or delete actions; click a row to edit it inline. |
@@ -59,10 +61,12 @@ Appends an open task `[ ]` to the end of another note and sets "Status" on the o
 | Link the destination | Adds ` → [[destination]]` to the original task. |
 | Link the source | Adds ` ← [[source]]` to the copy. |
 
+![Copy to which note? for Migrate, offering Tomorrow, This week, Next week marked new note, and This month, each with its note's name](images/task-destinations.png)
+
 Destinations can be Today, Tomorrow, This week, Next week, This month, Next month, This quarter, Next quarter, This year, Next year or a Specific note.
 
 - Periods are relative to today, not the source note's date, and use the enabled periods, folders and formats in "Date notes".
-- One available destination runs directly; several open "Copy to which note?" in the configured order. The source note and duplicate destinations are never offered.
+- One available destination runs directly; several open "Copy to which note?" in the configured order, marking any note still to be created as `new note`. The source note and duplicate destinations are never offered.
 - Missing specific notes are skipped with a notice. If no destination remains, nothing changes.
 - Missing periodic notes are created when changes are saved. When "Date notes" uses Periodic Notes, Note Compass first asks that plugin to create the note with its template. If that API is unavailable, fails or leaves the expected path missing, an empty note is created instead. Other sources, including core Daily notes and Custom, start empty before the task is appended.
 
@@ -70,16 +74,18 @@ Destinations can be Today, Tomorrow, This week, Next week, This month, Next mont
 
 Type to filter task text; matching is case-insensitive and in order, like the other pickers.
 
+![The actions menu, Apply which action?, with ✅ Complete, 🚫 Cancel, ➡️ Migrate and 📅 Schedule](images/task-actions.png)
+
 | Key or row | Does |
 | --- | --- |
 | Enter on a task | Runs "Enter runs", or opens the actions menu. |
 | ⚙ or Alt+Enter | Opens the menu of all actions, including the Enter action. |
-| Apply to all N tasks | Uses the chosen action on every task matching the search, not every task in the note. |
-| Finish processing · N changes | Writes all staged changes and closes. |
-| Cancel or Escape in the task picker | Discards all staged changes. |
+| `⚡ Apply to all N tasks` | Uses the chosen action on every task matching the search, not every task in the note. |
+| `🏁 Finish processing` · N changes | Writes all staged changes and closes. |
+| `🛑 Cancel` or Escape in the task picker | Discards all staged changes. |
 | Escape in the action or destination picker | Goes back without discarding earlier staged changes. |
 
-With "Batch mode" on, each choice is staged and the task picker reopens with the remaining tasks and an empty search. Processing the last task finishes automatically. Choosing "Apply to all N tasks" also finishes immediately, even if the search left other tasks hidden.
+With "Batch mode" on, each choice is staged and the task picker reopens with the remaining tasks and an empty search. Processing the last task finishes automatically. Choosing `⚡ Apply to all N tasks` also finishes immediately, even if the search left other tasks hidden.
 
 With "Batch mode" off, one choice writes immediately and closes the picker. Escape cannot undo a change already written. In either mode, source lines changed since the picker opened are skipped with a notice.
 

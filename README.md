@@ -4,7 +4,7 @@
 
 Move between related notes, set properties, fill in forms and process tasks, all from keyboard pickers that work anywhere in Obsidian.
 
-![The Jump to note picker on a daily note, listing the previous day, the projects and people it links to, and notes from the same day, each row with a coloured prefix chip](docs/images/hero.png)
+![The Jump to note picker on a daily note, listing the previous and next day, the projects and people it links to, the notes linking back, notes from the same day and this week, month and year, each row with a coloured prefix chip](docs/images/hero.png)
 
 ## What it does
 
@@ -14,7 +14,7 @@ Note Compass adds keyboard pickers for navigation, properties, forms and your ow
 
 Move to the notes related to the note in focus, or to any list you define.
 
-![The Jump to note picker on a daily note, with rows for the previous day, an inbound link and notes from the same day](docs/images/jump-to-note.png)
+![The Jump to note picker on a daily note, with the previous and next day, its outbound links, a note from the same day, this week, month and year, the active projects and the people](docs/images/jump-to-note.png)
 
 - See the adjacent date notes, outbound links, inbound links and notes from the same day in one list.
 - Add your own lists with filters on properties, folders, tags, links and dates.
@@ -51,6 +51,8 @@ Answer a few questions and get one new note with its name, text and properties f
 
 Complete, cancel, migrate or schedule tasks in the active note from a command you define.
 
+![The task picker on a daily note, with ⚡ Apply to all 5 tasks first, the open tasks below it, then 🏁 Finish processing and 🛑 Cancel](docs/images/task-picker.png)
+
 - Choose which task statuses to list or skip.
 - Change status, add a completion date, or copy tasks to periodic or specific notes.
 - Stage a batch and finish when ready, or cancel without writing.
@@ -76,7 +78,7 @@ Note Compass needs Obsidian 1.13.0 or later and runs on both desktop and mobile.
 2. Open today's daily note and press the "Jump to note" hotkey to move to yesterday's note or to a note you linked from it.
 3. On a note you are working on, press the "Set properties" hotkey, type a few letters of a person's name, pick them, and choose "Save & close".
 4. Open Settings → Note Compass to switch off what you do not use, point the link properties at your own folders and notes, and add a form for the notes you create often, such as people.
-5. Add a command in Settings → Note Compass → Task commands, open a note with unchecked tasks, and run "Process open tasks". Enter stages completion; "Finish processing" saves.
+5. Add a command in Settings → Note Compass → Tasks, open a note with unchecked tasks, and run "Process open tasks". Enter stages completion; `🏁 Finish processing` saves.
 
 The defaults give you the four relation lists in "Jump to note" and a set of common checkbox and link properties in "Set properties".
 
@@ -86,7 +88,7 @@ The defaults give you the four relation lists in "Jump to note" and a set of com
 - [Set properties](docs/set-properties.md): picker rows, value pickers, presets and checkboxes.
 - [Forms](docs/forms.md): running a form, form settings, fields and placeholders.
 - [Task commands](docs/task-commands.md): status filters, actions, destinations and batch processing.
-- [Settings](docs/settings.md): display, rows, prefixes, list filters and property pages.
+- [Settings](docs/settings.md): the main page and its Jump to note, Properties, Forms and Tasks pages, rows, prefixes, list filters and property pages.
 - [Tips and known behaviour](docs/tips.md)
 - [Development](docs/development.md)
 
