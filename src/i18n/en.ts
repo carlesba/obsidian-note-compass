@@ -416,7 +416,7 @@ export const en = {
 	formFormatCustom: "Custom",
 	formCustomFormat: "Custom format",
 	formCustomFormatDesc: "A Moment.js format, such as YYYY-MM-DD.",
-	formBlock: "Block",
+	formBlock: "Conditional block",
 	formBlockWhen: "When",
 	editBlock: "Edit block",
 	collapseBlock: "Close block",

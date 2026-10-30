@@ -418,7 +418,7 @@ export const zhTW: Translation = {
 	formFormatCustom: "自訂",
 	formCustomFormat: "自訂格式",
 	formCustomFormatDesc: "Moment.js 格式，例如 YYYY-MM-DD。",
-	formBlock: "區塊",
+	formBlock: "條件區塊",
 	formBlockWhen: "當",
 	editBlock: "編輯區塊",
 	collapseBlock: "收合區塊",

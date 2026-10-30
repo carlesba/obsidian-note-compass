@@ -418,7 +418,7 @@ export const ko: Translation = {
 	formFormatCustom: "사용자 지정",
 	formCustomFormat: "사용자 지정 형식",
 	formCustomFormatDesc: "YYYY-MM-DD 같은 Moment.js 형식입니다.",
-	formBlock: "블록",
+	formBlock: "조건부 블록",
 	formBlockWhen: "조건",
 	editBlock: "블록 편집",
 	collapseBlock: "블록 닫기",

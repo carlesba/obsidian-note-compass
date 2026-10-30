@@ -107,7 +107,7 @@ The `+` in the "Fields" header offers a blank field and ready-made presets.
 | Time | A fixed field set at creation, keyed `time`, formatted `HH:mm`. |
 | Timestamp | A fixed field set at creation, keyed `timestamp`, formatted `YYYY-MM-DDTHH:mm`. |
 | ISO timestamp | A fixed field set at creation, keyed `iso-timestamp`, formatted as ISO 8601. |
-| Block | A [block](#blocks) of fields that are only used when its conditions hold. |
+| Conditional block | A [block](#conditional-blocks) of fields that are only used when its conditions hold. |
 | Confirm entry date / Confirm entry time | Asked variables `entry-date` / `entry-time` that change only the date / time. Both can be used in one form. See [Entry time](#entry-time). |
 
 Each item shows what it would write right now. A key already in use gets a number, as in `timestamp-2`.
@@ -209,9 +209,9 @@ Add "Confirm entry date" and/or "Confirm entry time" to confirm when the note is
 
 </details>
 
-## Blocks
+## Conditional blocks
 
-A block holds fields that the form only uses when an earlier answer matches, such as asking for the pages only when the note is about a book.
+A conditional block holds fields that the form only uses when an earlier answer matches, such as asking for the pages only when the note is about a book.
 
 ```
 ⋮⋮ kind          property  ask    select
@@ -226,7 +226,7 @@ A block holds fields that the form only uses when an earlier answer matches, suc
 
 ### Adding and arranging blocks
 
-- "Block" in the `+` menu of the "Fields" header adds an empty block at the end of the list.
+- "Conditional block" in the `+` menu of the "Fields" header adds an empty block at the end of the list.
 - The `+` at the bottom of a block adds a field inside it, with the same menu.
 - Drag a field between a block's heading and its bottom row to move it in, and drag it out to move it back to the list.
 - Dragging a block's heading moves the whole block. A block cannot go inside another block.
@@ -243,9 +243,9 @@ Click a block's heading to edit its conditions. Each condition picks a field, a 
 | Multiselect, list | has item, does not have item, is set, is not set |
 | Number | =, ≠, <, >, is set, is not set |
 | Checkbox | is true, is false |
-| Date, time, datetime | is set, is not set |
+| Date, time, datetime | on, not on, before, after, is set, is not set |
 
-A select or multiselect offers its choices as the value, and the other types take a typed value.
+A select or multiselect offers its choices as the value, and the other types take a typed value. A date, time or datetime is typed like a [set date](#dates-and-times), as `YYYYMMDD`, `HHmm` or `YYYYMMDDHHmm`, and a datetime compared with a date alone is compared by day.
 
 A condition can only look at fields above its block, outside any block or in an earlier block that runs. Changing an answer from the summary checks the blocks again, and a required question that a block now asks comes next.
 

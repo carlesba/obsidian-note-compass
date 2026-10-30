@@ -327,6 +327,9 @@ export function blockWarning(form: Pick<Form, "fields">, block: FormBlock): stri
 			return t("formBlockOperatorDoesNotApply", { operator: operatorLabel(condition.operator), type: fieldTypeLabel(field.type) });
 		}
 		if (takesValue(condition.operator) && (condition.value ?? "").trim() === "") return t("formBlockConditionNeedsValue");
+		if (isDateType(field.type) && takesValue(condition.operator) && !readsAsDate(field.type, condition.value ?? "")) {
+			return t("formSetDateUnreadable", { format: SET_DATE_PLACEHOLDERS[field.type] });
+		}
 	}
 	if (block.fields.length === 0) return t("formBlockNeedsFields");
 	return undefined;

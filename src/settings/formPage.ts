@@ -441,9 +441,10 @@ function conditionValueControl(
 		dropdown.onChange((value) => writeCondition("value", value));
 		return;
 	}
-	const text = new TextComponent(parentEl).setPlaceholder(t("formValue")).setValue(condition.value ?? "");
+	const type = conditionField(form, block, condition.key)?.type;
+	const text = new TextComponent(parentEl).setPlaceholder(type && isDateType(type) ? SET_DATE_PLACEHOLDERS[type] : t("formValue")).setValue(condition.value ?? "");
 	text.inputEl.setAttrs(focus);
-	if (conditionField(form, block, condition.key)?.type === "number") text.inputEl.setAttr("inputmode", "decimal");
+	if (type === "number" || (type && isDateType(type))) text.inputEl.setAttr("inputmode", type === "number" ? "decimal" : "numeric");
 	text.onChange((value) => writeCondition("value", value));
 }
 

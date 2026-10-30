@@ -418,7 +418,7 @@ export const ja: Translation = {
 	formFormatCustom: "カスタム",
 	formCustomFormat: "カスタム書式",
 	formCustomFormatDesc: "YYYY-MM-DD のような Moment.js の書式です。",
-	formBlock: "ブロック",
+	formBlock: "条件付きブロック",
 	formBlockWhen: "条件",
 	editBlock: "ブロックを編集",
 	collapseBlock: "ブロックを閉じる",

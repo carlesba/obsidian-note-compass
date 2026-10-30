@@ -53,7 +53,7 @@ export interface FormField {
 	entryTime?: true;
 }
 
-export const BLOCK_OPERATORS = ["is", "is not", "has item", "does not have item", "=", "≠", "<", ">", "is true", "is false", "is set", "is not set"] as const;
+export const BLOCK_OPERATORS = ["is", "is not", "has item", "does not have item", "=", "≠", "<", ">", "on", "not on", "before", "after", "is true", "is false", "is set", "is not set"] as const;
 
 export type BlockOperator = (typeof BLOCK_OPERATORS)[number];
 
@@ -123,7 +123,7 @@ export function operatorsFor(type: FieldType): readonly BlockOperator[] {
 	if (type === "multiselect" || type === "list") return ["has item", "does not have item", "is set", "is not set"];
 	if (type === "number") return ["=", "≠", "<", ">", "is set", "is not set"];
 	if (type === "checkbox") return ["is true", "is false"];
-	return ["is set", "is not set"];
+	return ["on", "not on", "before", "after", "is set", "is not set"];
 }
 
 export function takesValue(operator: BlockOperator): boolean {

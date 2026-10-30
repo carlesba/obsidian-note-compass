@@ -418,7 +418,7 @@ export const zh: Translation = {
 	formFormatCustom: "自定义",
 	formCustomFormat: "自定义格式",
 	formCustomFormatDesc: "Moment.js 格式，例如 YYYY-MM-DD。",
-	formBlock: "区块",
+	formBlock: "条件区块",
 	formBlockWhen: "当",
 	editBlock: "编辑区块",
 	collapseBlock: "收起区块",

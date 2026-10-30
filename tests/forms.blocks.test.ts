@@ -127,3 +127,22 @@ test("ids stay unique across blocks and their fields, and a new block gets a fre
 	assert.equal(new Set(ids).size, ids.length);
 	assert.equal(newBlock(readingLog()).id, "9");
 });
+
+test("date, time and datetime conditions compare the answer with a typed moment, before, after or on it", () => {
+	const at = (text: string) => new Date(text).getTime();
+	const run = (operator: BlockCondition["operator"], value: string, answer: number | undefined, type: FormField["type"]) => {
+		const form: Form = { ...readingLog(), fields: [field("1", "x", { type, dateFormat: "YYYY-MM-DD" }), block("2", [{ key: "x", operator, value }], [field("3", "y")])] };
+		return keys(activeQuestions(form, answers(answer === undefined ? {} : { "1": answered(answer) }), clock)).includes("y");
+	};
+	assert.equal(run("on", "20240311", at("2024-03-11T18:00"), "date"), true);
+	assert.equal(run("before", "2024-03-12", at("2024-03-11T18:00"), "date"), true);
+	assert.equal(run("after", "20240311", at("2024-03-11T18:00"), "date"), false);
+	assert.equal(run("not on", "20240311", at("2024-03-12T09:00"), "date"), true);
+	assert.equal(run("before", "1200", at("2024-03-11T09:30"), "time"), true);
+	assert.equal(run("after", "12:00", at("2024-03-11T09:30"), "time"), false);
+	assert.equal(run("on", "202403110930", at("2024-03-11T09:30"), "datetime"), true);
+	assert.equal(run("on", "20240311", at("2024-03-11T09:30"), "datetime"), true);
+	assert.equal(run("after", "202403110900", at("2024-03-11T09:30"), "datetime"), true);
+	assert.equal(run("before", "20240311", undefined, "date"), false);
+	assert.equal(run("before", "soon", at("2024-03-11T09:30"), "date"), false);
+});

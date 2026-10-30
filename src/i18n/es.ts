@@ -417,7 +417,7 @@ export const es: Translation = {
 	formFormatCustom: "Personalizado",
 	formCustomFormat: "Formato personalizado",
 	formCustomFormatDesc: "Un formato de Moment.js, como YYYY-MM-DD.",
-	formBlock: "Bloque",
+	formBlock: "Bloque condicional",
 	formBlockWhen: "Cuando",
 	editBlock: "Editar bloque",
 	collapseBlock: "Cerrar bloque",

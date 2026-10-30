@@ -1,6 +1,6 @@
 import { coreDatePlaceholder, isCreatableName } from "./newNotes.ts";
 import type { MomentDate, MomentFactory } from "../lists/vault.ts";
-import { parseNumber } from "../setProperties/values.ts";
+import { parseDateTime, parseNumber } from "../setProperties/values.ts";
 import { confirmedTime, typedTime } from "./dateInput.ts";
 import { DEFAULT_DATE_FORMATS, formFields, isBlock, isDateType } from "./form.ts";
 import type { BlockCondition, DateFieldType, Form, FormField } from "./form.ts";
@@ -104,7 +104,7 @@ function activeFieldIds(form: Form, answers: Answers, clock: FormClock): Set<str
 	const active: FormField[] = [];
 	for (const item of form.fields) {
 		if (!isBlock(item)) active.push(item);
-		else if (item.conditions.every((condition) => holds(condition, latest(active, condition.key, resolver(active, answers, clock))))) active.push(...item.fields);
+		else if (item.conditions.every((condition) => holds(condition, latest(active, condition.key, resolver(active, answers, clock)), clock))) active.push(...item.fields);
 	}
 	return new Set(active.map((field) => field.id));
 }
@@ -146,7 +146,7 @@ function latest(fields: readonly FormField[], key: string, resolve: (field: Form
 	return skipped;
 }
 
-function holds(condition: BlockCondition, resolved: ResolvedField | undefined): boolean {
+function holds(condition: BlockCondition, resolved: ResolvedField | undefined, clock: FormClock): boolean {
 	const value = resolved && !resolved.skipped ? resolved.value : undefined;
 	const expected = condition.value ?? "";
 	switch (condition.operator) {
@@ -166,6 +166,11 @@ function holds(condition: BlockCondition, resolved: ResolvedField | undefined): 
 			return items(value).includes(expected);
 		case "does not have item":
 			return !items(value).includes(expected);
+		case "on":
+		case "not on":
+		case "before":
+		case "after":
+			return comparesDate(condition.operator, resolved, expected, clock);
 		default:
 			return compares(condition.operator, parseNumber(valueText(value)), parseNumber(expected));
 	}
@@ -174,6 +179,25 @@ function holds(condition: BlockCondition, resolved: ResolvedField | undefined): 
 function items(value: unknown): string[] {
 	if (Array.isArray(value)) return value.map(valueText);
 	return isEmptyAnswer(value) ? [] : [valueText(value)];
+}
+
+const COMPARED_DATE_FORMATS: Record<DateFieldType, string> = {
+	date: "YYYY-MM-DD",
+	time: "HH:mm",
+	datetime: "YYYY-MM-DDTHH:mm",
+};
+
+function comparesDate(operator: "on" | "not on" | "before" | "after", resolved: ResolvedField | undefined, expected: string, clock: FormClock): boolean {
+	if (!resolved || resolved.skipped || !resolved.date || !isDateType(resolved.field.type)) return false;
+	const type = resolved.field.type;
+	const target = typedTime(type, expected, clock.now, clock.moment);
+	if (target === undefined) return false;
+	const format = COMPARED_DATE_FORMATS[type === "datetime" && parseDateTime(expected) === undefined ? "date" : type];
+	const actual = resolved.date.format(format);
+	const wanted = clock.moment(target).format(format);
+	if (operator === "on") return actual === wanted;
+	if (operator === "not on") return actual !== wanted;
+	return operator === "before" ? actual < wanted : actual > wanted;
 }
 
 function compares(operator: "=" | "≠" | "<" | ">", actual: number | undefined, expected: number | undefined): boolean {
