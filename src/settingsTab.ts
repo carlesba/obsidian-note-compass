@@ -28,7 +28,7 @@ import {
 import { newForm, newFormId } from "./forms/form";
 import { formClock } from "./forms/modal";
 import { duplicateEntry, duplicateName } from "./settings/duplicate";
-import { formPage, formPageId, formRow } from "./settings/formPage";
+import { customFieldsList, formPage, formPageId, formRow } from "./settings/formPage";
 import type { FormPageContext } from "./settings/formPage";
 import type { FieldEditorState } from "./settings/fieldEditor";
 import { propertySuggestions } from "./settings/listForm";
@@ -55,7 +55,7 @@ const TYPED_FIELDS = [
 	"rowName",
 ];
 
-const QUIETLY_SAVED_SCOPES = ["form", "formField", "formBlock", "fixedValue", "taskCommand", "taskAction"];
+const QUIETLY_SAVED_SCOPES = ["form", "formField", "formBlock", "customField", "fixedValue", "taskCommand", "taskAction"];
 
 const TYPING_PAUSE_MS = 800;
 
@@ -126,7 +126,7 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 
 	getSettingDefinitions(): SettingDefinitionItem[] {
 		this.definitionsAreStale = false;
-		const { forms, notePickers, setProperties, taskCommands } = this.plugin.settings;
+		const { customFields, forms, notePickers, setProperties, taskCommands } = this.plugin.settings;
 		const { properties } = setProperties;
 		const vault = createObsidianVault(this.app);
 		let suggestions: PropertySuggestion[] | undefined;
@@ -146,6 +146,7 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 			...context,
 			fieldEditor: this.fieldEditor,
 			formClock: () => formClock(vault, this.plugin.settings.dateNotes),
+			customFields: () => this.plugin.settings.customFields,
 			refresh: () => this.update(),
 			saveQuietly: (change: () => unknown) => {
 				change();
@@ -190,6 +191,7 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 		};
 		const formsList: SettingDefinitionList = {
 			type: "list",
+			heading: t("forms"),
 			cls: SORTABLE_LIST_CLASS,
 			emptyState: t("noFormsListed"),
 			items: forms.map((form) =>
@@ -261,7 +263,11 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 						},
 						hiddenPages(properties.map((entry) => propertyPage(entry, properties, formContext))),
 					]),
-					sectionPage(FORMS_PAGE_ID, t("forms"), t("formsSectionDesc"), [formsList, hiddenPages(forms.map((form) => formPage(form, formContext)))]),
+					sectionPage(FORMS_PAGE_ID, t("forms"), t("formsSectionDesc"), [
+						formsList,
+						customFieldsList(customFields, formContext),
+						hiddenPages(forms.map((form) => formPage(form, formContext))),
+					]),
 					sectionPage(TASKS_PAGE_ID, t("tasksSection"), t("tasksSectionDesc"), [
 						taskCommandsList,
 						hiddenPages(taskCommands.flatMap((command) => [taskCommandPage(command, formContext), ...taskDestinationsPages(command, formContext)])),

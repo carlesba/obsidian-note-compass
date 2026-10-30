@@ -86,7 +86,7 @@ The defaults give you the four relation lists in the "Default" navigation picker
 
 - [Jump to note](docs/jump-to-note.md): lists, relation lists, date notes and filtering.
 - [Set properties](docs/set-properties.md): picker rows, value pickers, presets and checkboxes.
-- [Forms](docs/forms.md): running a form, form settings, fields and placeholders.
+- [Forms](docs/forms.md): running a form, form settings, fields, custom fields and placeholders.
 - [Task commands](docs/task-commands.md): status filters, actions, destinations and batch processing.
 - [Settings](docs/settings.md): the main page and its Navigation, Properties, Forms and Tasks pages, rows, prefixes, list filters and property pages.
 - [Tips and known behaviour](docs/tips.md)

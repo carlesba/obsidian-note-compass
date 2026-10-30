@@ -5,6 +5,8 @@ import { isPeriod, readPeriodField, writeDateNoteSource, writePeriodField } from
 import type { PeriodField } from "./dateNotesForm.ts";
 import { findFixedValue, readFixedValueSetting, writeFixedValueSetting } from "./fixedValuesForm.ts";
 import type { FixedValueSetting } from "./fixedValuesForm.ts";
+import { findCustomField, readCustomFieldSetting, writeCustomFieldSetting } from "./customFieldsForm.ts";
+import type { CustomFieldSetting } from "./customFieldsForm.ts";
 import {
 	findBlock,
 	findField,
@@ -91,6 +93,11 @@ export function formBlockKey(formId: string, blockId: string, setting: BlockSett
 	return `formBlock/${formId}.${blockId}/${setting}/${index}`;
 }
 
+export function customFieldKey(id: string, setting: CustomFieldSetting, index?: number): string {
+	const key = `customField/${id}/${setting}`;
+	return index === undefined ? key : `${key}/${index}`;
+}
+
 export function taskCommandKey(id: string, setting: TaskCommandSetting, index?: number): string {
 	const key = `taskCommand/${id}/${setting}`;
 	return index === undefined ? key : `${key}/${index}`;
@@ -111,6 +118,10 @@ export function readControl(settings: JumpSettings, key: string): unknown {
 	const [scope, name, field, index] = key.split("/");
 	if (scope === "form" || scope === "formField") return readFormControl(settings, scope, name, field, index);
 	if (scope === "formBlock") return readBlockControl(settings, name, field, index);
+	if (scope === "customField") {
+		const template = findCustomField(settings.customFields, name);
+		return template ? readCustomFieldSetting(template, field as CustomFieldSetting, index === undefined ? undefined : Number(index)) : undefined;
+	}
 	if (scope === "taskCommand" || scope === "taskAction") return readTaskControl(settings, scope, name, field, index);
 	if (scope === "notePicker") {
 		const picker = settings.notePickers.find((candidate) => candidate.id === name && !candidate.unreadable);
@@ -145,6 +156,10 @@ export function writeControl(settings: JumpSettings, key: string, value: unknown
 	const [scope, name, field, index] = key.split("/");
 	if (scope === "form" || scope === "formField") return writeFormControl(settings, scope, name, field, index, value);
 	if (scope === "formBlock") return writeBlockControl(settings, name, field, index, value);
+	if (scope === "customField") {
+		const template = findCustomField(settings.customFields, name);
+		return template ? writeCustomFieldSetting(template, field as CustomFieldSetting, value, index === undefined ? undefined : Number(index)) : false;
+	}
 	if (scope === "taskCommand" || scope === "taskAction") return writeTaskControl(settings, scope, name, field, index, value);
 	if (scope === "notePicker") {
 		const picker = settings.notePickers.find((candidate) => candidate.id === name && !candidate.unreadable);

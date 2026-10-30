@@ -1,13 +1,16 @@
-import { ExtraButtonComponent, DropdownComponent, Menu, TextComponent, moment } from "obsidian";
+import { ExtraButtonComponent, DropdownComponent, TextComponent, moment } from "obsidian";
 import type { App, Setting, SettingDefinition, SettingDefinitionItem, SettingDefinitionList, SettingDefinitionPage, SettingDefinitionRender } from "obsidian";
-import { fieldSource, hasSources, isDateType, newBlock, takesValue } from "../forms/form";
+import { fieldSource, hasSources, isBlock, isDateType, newBlock, newCustomField, newFormId, takesValue, templateField } from "../forms/form";
 import type { FormClock } from "../forms/resolve";
 import { SET_DATE_PLACEHOLDERS, typedTime } from "../forms/dateInput";
-import { FIELD_PRESETS, presetField, presetFormat } from "../forms/presets";
-import type { FieldPreset } from "../forms/presets";
-import type { BlockCondition, DateFieldType, Form, FormBlock, FormField } from "../forms/form";
+import { presetField } from "../forms/presets";
+import type { BlockCondition, CustomField, DateFieldType, Form, FormBlock, FormField } from "../forms/form";
 import { t } from "../i18n";
-import { formBlockKey, formFieldKey, formKey } from "./controlKeys";
+import { customFieldKey, formBlockKey, formFieldKey, formKey } from "./controlKeys";
+import { CUSTOM_FIELDS_LIST_ID, customFieldLabel, customFieldWarning, fieldPickerEntries, templateForm } from "./customFieldsForm";
+import type { FieldPickerEntry } from "./customFieldsForm";
+import { duplicateEntry, duplicateName } from "./duplicate";
+import { FieldPickerModal } from "./fieldPicker";
 import {
 	addChoice,
 	addCondition,
@@ -68,6 +71,7 @@ import type { EditorBinding, ExpandingPageContext, Redraw } from "./fieldEditor"
 
 export interface FormPageContext extends ExpandingPageContext {
 	formClock: () => FormClock;
+	customFields: () => CustomField[];
 }
 
 type PatternSetting = "namePattern" | "contentPattern";
@@ -91,8 +95,6 @@ interface BlockEditor {
 	changed: () => void;
 }
 
-const BLOCK_ICON = "git-branch";
-
 const BLOCK_HEAD_CLASS = "note-compass-block-head";
 
 const BLOCK_MEMBER_CLASS = "note-compass-block-member";
@@ -100,39 +102,6 @@ const BLOCK_MEMBER_CLASS = "note-compass-block-member";
 const BLOCK_FOOT_CLASS = "note-compass-block-foot";
 
 const BLOCK_FOOT_ADD_CLASS = "note-compass-block-foot-add";
-
-const PRESET_ICONS: Record<FieldPreset, string> = {
-	blank: "plus",
-	date: "calendar",
-	time: "clock",
-	timestamp: "calendar-clock",
-	isoTimestamp: "globe",
-	entryDate: "calendar",
-	entryTime: "history",
-};
-
-const PRESET_LABELS: Record<FieldPreset, () => string> = {
-	blank: () => t("fieldPresetBlank"),
-	date: () => t("fieldPresetDate"),
-	time: () => t("fieldPresetTime"),
-	timestamp: () => t("fieldPresetTimestamp"),
-	isoTimestamp: () => t("fieldPresetIsoTimestamp"),
-	entryDate: () => t("fieldPresetEntryDate"),
-	entryTime: () => t("fieldPresetEntryTime"),
-};
-
-function presetTitle(preset: FieldPreset): DocumentFragment {
-	const title = createFragment();
-	title.createSpan({ text: PRESET_LABELS[preset]() });
-	const format = presetFormat(preset);
-	if (format !== undefined) {
-		const now = moment();
-		const example = format === "iso" ? now.toISOString() : now.format(format);
-		title.appendText(" ");
-		title.createSpan({ cls: "note-compass-menu-example", text: `(${example})` });
-	}
-	return title;
-}
 
 const SET_DATE_PREVIEWS: Record<DateFieldType, string> = {
 	date: "ddd D MMM YYYY",
@@ -275,47 +244,131 @@ function fieldList(form: Form, context: FormPageContext): SettingDefinitionList 
 			}),
 		addItem: {
 			name: t("addFormField"),
-			action: (buttonEl) => {
-				const menu = presetMenu(form, context, (field) => form.fields.push(field));
-				menu.addSeparator();
-				menu.addItem((item) =>
-					item
-						.setTitle(t("formBlock"))
-						.setIcon(BLOCK_ICON)
-						.onClick(() => {
-							const block = newBlock(form);
-							context.fieldEditor.expanded.set(form.id, block.id);
-							context.fieldEditor.focusesKey = block.id;
-							context.change(() => form.fields.push(block));
-						}),
-				);
-				showMenuBelow(menu, buttonEl);
+			action: () => openFieldPicker(form, context, (item) => form.fields.push(item), true),
+		},
+	};
+}
+
+function openFieldPicker(form: Form, context: FormPageContext, insert: (item: FormField | FormBlock) => void, offersBlock: boolean): void {
+	const entries = fieldPickerEntries(context.customFields(), { offersBlock });
+	new FieldPickerModal(context.app, entries, (entry) => {
+		const item = pickedItem(form, entry);
+		context.fieldEditor.expanded.set(form.id, item.id);
+		context.fieldEditor.focusesKey = item.id;
+		context.change(() => insert(item));
+	}).open();
+}
+
+function pickedItem(form: Form, entry: FieldPickerEntry): FormField | FormBlock {
+	if (entry.kind === "template") return templateField(form, entry.template);
+	if (entry.kind === "preset") return presetField(form, entry.preset);
+	return newBlock(form);
+}
+
+export function customFieldsList(customFields: CustomField[], context: FormPageContext): SettingDefinitionList {
+	const headers = new Map<string, () => void>();
+	const changed = () => {
+		for (const showHeader of headers.values()) showHeader();
+	};
+	return {
+		type: "list",
+		heading: t("customFields"),
+		cls: "note-compass-sortable-list note-compass-field-list",
+		emptyState: t("noCustomFieldsYet"),
+		items: customFields.map((template) => customFieldRow(customFields, template, context, headers, changed)),
+		onReorder: (from, to) => context.change(() => customFields.splice(to, 0, ...customFields.splice(from, 1))),
+		onDelete: (index) =>
+			context.change(() => {
+				const [removed] = customFields.splice(index, 1);
+				if (removed && context.fieldEditor.expanded.get(CUSTOM_FIELDS_LIST_ID) === removed.id) context.fieldEditor.expanded.delete(CUSTOM_FIELDS_LIST_ID);
+			}),
+		addItem: {
+			name: t("addCustomField"),
+			action: () => {
+				const template = newCustomField(customFields);
+				context.fieldEditor.expanded.set(CUSTOM_FIELDS_LIST_ID, template.id);
+				context.fieldEditor.focusesKey = template.id;
+				context.change(() => customFields.push(template));
 			},
 		},
 	};
 }
 
-function presetMenu(form: Form, context: FormPageContext, insert: (field: FormField) => void): Menu {
-	const menu = new Menu();
-	for (const preset of FIELD_PRESETS) {
-		menu.addItem((item) =>
-			item
-				.setTitle(presetTitle(preset))
-				.setIcon(PRESET_ICONS[preset])
-				.onClick(() => {
-					const field = presetField(form, preset);
-					context.fieldEditor.expanded.set(form.id, field.id);
-					context.fieldEditor.focusesKey = field.id;
-					context.change(() => insert(field));
-				}),
-		);
-	}
-	return menu;
+function customFieldRow(
+	customFields: CustomField[],
+	template: CustomField,
+	context: FormPageContext,
+	headers: Map<string, () => void>,
+	changed: () => void,
+): SettingDefinition {
+	const form = templateForm(template);
+	const editor: FieldEditor = {
+		form,
+		field: template,
+		key: (setting, index) => customFieldKey(template.id, setting, index),
+		context,
+		changed,
+		read: (setting) => readFieldSetting(template, setting),
+		write: (setting, value) => write(editor, setting, value),
+	};
+	return expandableRow({
+		id: `custom-field-${template.id}-row`,
+		name: customFieldLabel(template),
+		desc: customFieldWarning(template),
+		listId: CUSTOM_FIELDS_LIST_ID,
+		itemId: template.id,
+		context,
+		headers,
+		showHeader: (setting) => customFieldHeader(setting, template),
+		duplicate: template.unreadable
+			? undefined
+			: () =>
+					context.change(() => {
+						const copy = duplicateEntry(customFields, template, newFormId(customFields), (minted) => (minted.name = duplicateName(template.name)));
+						if (copy) context.fieldEditor.expanded.set(CUSTOM_FIELDS_LIST_ID, copy.id);
+					}),
+		expandTooltip: t("editCustomField"),
+		collapseTooltip: t("collapseCustomField"),
+		renderEditor: (editorEl, takesFocus) => {
+			if (template.unreadable) {
+				warningDescription(editorEl.createDiv({ cls: "setting-item-description" }), t("unreadableCustomFieldWarning"));
+				return;
+			}
+			renderEditor(
+				editorEl,
+				(parentEl, draw) => {
+					customFieldNameRow(parentEl, template, editor);
+					fieldEditorRows(parentEl, editor, draw);
+				},
+				takesFocus ? "name" : undefined,
+			);
+		},
+	});
 }
 
-function showMenuBelow(menu: Menu, buttonEl: HTMLElement): void {
-	const rect = buttonEl.getBoundingClientRect();
-	menu.showAtPosition({ x: rect.left, y: rect.bottom });
+function customFieldNameRow(parentEl: HTMLElement, template: CustomField, editor: FieldEditor): void {
+	const { controlEl } = editorRow(parentEl, t("customFieldName"), t("customFieldNameDesc"));
+	const text = new TextComponent(controlEl).setPlaceholder(template.key || t("customFieldNamePlaceholder"));
+	text.inputEl.setAttr(FOCUS_ATTRIBUTE, "name");
+	text.setValue(template.name).onChange((value) => {
+		editor.context.write(customFieldKey(template.id, "name"), value);
+		editor.changed();
+	});
+}
+
+function customFieldHeader(setting: Setting, template: CustomField): void {
+	const title = createFragment();
+	const nameEl = title.createSpan({ cls: "note-compass-field-title" });
+	nameEl.createSpan({ cls: "note-compass-field-name", text: customFieldLabel(template) });
+	if (template.name.trim() !== "" && template.key.trim() !== "") nameEl.createSpan({ cls: "note-compass-fixed-value", text: template.key });
+	if (!template.unreadable) {
+		for (const badge of fieldBadges(template)) nameEl.createSpan({ cls: `note-compass-field-badge mod-${badge.kind}`, text: badge.text });
+	}
+	setting.setName(title);
+	setting.setDesc("");
+	setting.descEl.removeClass("note-compass-warning");
+	const warning = customFieldWarning(template);
+	if (warning) warningDescription(setting.descEl, warning);
 }
 
 function fieldRow(
@@ -397,7 +450,16 @@ function blockFootRow(form: Form, block: FormBlock, context: FormPageContext): S
 			settingEl.addClass(BLOCK_FOOT_CLASS, ROW_CONTROL_CLASS);
 			const add = new ExtraButtonComponent(controlEl).setIcon("plus").setTooltip(t("addFieldToBlock"));
 			add.extraSettingsEl.addClass(BLOCK_FOOT_ADD_CLASS);
-			add.onClick(() => showMenuBelow(presetMenu(form, context, (field) => block.fields.push(field)), add.extraSettingsEl));
+			add.onClick(() =>
+				openFieldPicker(
+					form,
+					context,
+					(item) => {
+						if (!isBlock(item)) block.fields.push(item);
+					},
+					false,
+				),
+			);
 			return () => settingEl.removeClass(BLOCK_FOOT_CLASS);
 		},
 	};

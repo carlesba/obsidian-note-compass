@@ -5,8 +5,8 @@ import { emptyFilter, readFilter, singleRuleFilter } from "./lists/filters.ts";
 import type { FilterGroup } from "./lists/filters.ts";
 import { DEFAULT_CUSTOM_DATE_NOTES, PERIODS, defaultDateNoteSettings } from "./lists/dateNotes.ts";
 import type { DateNoteSettings, Period, PeriodFormat } from "./lists/dateNotes.ts";
-import { readForms, storedForms } from "./forms/form.ts";
-import type { Form } from "./forms/form.ts";
+import { readCustomFields, readForms, storedCustomFields, storedForms } from "./forms/form.ts";
+import type { CustomField, Form } from "./forms/form.ts";
 import { readFixedValues } from "./setProperties/fixedValues.ts";
 import type { FixedValue } from "./setProperties/fixedValues.ts";
 import { readTaskCommands, storedTaskCommands } from "./tasks/taskCommand.ts";
@@ -144,6 +144,7 @@ export interface JumpSettings {
 	dateNotes: DateNoteSettings;
 	setProperties: SetPropertiesSettings;
 	forms: Form[];
+	customFields: CustomField[];
 	taskCommands: TaskCommand[];
 }
 
@@ -218,6 +219,7 @@ export function storedSettings(settings: JumpSettings): unknown {
 		notePickers: settings.notePickers.map(storedNotePicker),
 		setProperties: { ...settings.setProperties, properties: settings.setProperties.properties.map(withStoredSource) },
 		forms: storedForms(settings.forms),
+		customFields: storedCustomFields(settings.customFields),
 		taskCommands: storedTaskCommands(settings.taskCommands),
 	};
 }
@@ -256,6 +258,7 @@ export function mergeSettings(stored: unknown): JumpSettings {
 		dateNotes: readDateNotes(data.dateNotes),
 		setProperties: readSetProperties(data.setProperties),
 		forms: readForms(data.forms),
+		customFields: readCustomFields(data.customFields),
 		taskCommands: readTaskCommands(data.taskCommands),
 	};
 }

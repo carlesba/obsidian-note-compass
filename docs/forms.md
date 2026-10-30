@@ -86,7 +86,7 @@ The fields list works like the other lists in the settings.
 - Drag the handle to reorder the fields.
 - The copy icon duplicates a field right below it.
 - The cross deletes a field.
-- The `+` in the header opens a menu to add one, described under [Adding fields](#adding-fields).
+- The `+` in the header opens a picker to add one, described under [Adding fields](#adding-fields).
 
 Each row shows the field's key, followed by small badges for how it is used, who fills it and its data type, as in `book` `variable` `ask` `text`. Property badges are blue and variable badges are purple. The badge for who fills it reads `fixed`, `ask`, `ask, optional` or `entry time`, and the type badge adds the source of an asked field when it is not typed, as in `list · notes` or `number · options`.
 
@@ -96,21 +96,22 @@ Click the row or its chevron to edit the field right below it, and click again t
 
 ### Adding fields
 
-The `+` in the "Fields" header offers a blank field and ready-made presets.
+The `+` in the "Fields" header opens a searchable picker, "Add which field?", with your [custom fields](#custom-fields) first and the built-in fields after them. Type to filter, and press Enter or click to add the highlighted one.
 
-![The menu of the Fields + button, with Blank field, Date, Time, Timestamp, ISO timestamp and entry confirmation presets, each showing what it would write right now](images/form-fields-add-menu.png)
+![The picker of the Fields + button, with the Custom group listing the user's templates and the Built-in group with Blank field, Date, Time, Timestamp, ISO timestamp, the entry confirmations and Conditional block](images/form-fields-add-menu.png)
 
-| Menu item | Adds |
-| --- | --- |
-| Blank field | An empty asked text field. |
-| Date | A fixed field set at creation, keyed `date`, formatted `YYYY-MM-DD`. |
-| Time | A fixed field set at creation, keyed `time`, formatted `HH:mm`. |
-| Timestamp | A fixed field set at creation, keyed `timestamp`, formatted `YYYY-MM-DDTHH:mm`. |
-| ISO timestamp | A fixed field set at creation, keyed `iso-timestamp`, formatted as ISO 8601. |
-| Conditional block | A [block](#conditional-blocks) of fields that are only used when its conditions hold. |
-| Confirm entry date / Confirm entry time | Asked variables `entry-date` / `entry-time` that change only the date / time. Both can be used in one form. See [Entry time](#entry-time). |
+| Group | Entry | Adds |
+| --- | --- | --- |
+| Custom | Each custom field, by its name or key | An independent copy of the template, with its key, type, source, options and the rest. See [Custom fields](#custom-fields). |
+| Built-in | Blank field | An empty asked text field. |
+| Built-in | Date | A fixed field set at creation, keyed `date`, formatted `YYYY-MM-DD`. |
+| Built-in | Time | A fixed field set at creation, keyed `time`, formatted `HH:mm`. |
+| Built-in | Timestamp | A fixed field set at creation, keyed `timestamp`, formatted `YYYY-MM-DDTHH:mm`. |
+| Built-in | ISO timestamp | A fixed field set at creation, keyed `iso-timestamp`, formatted as ISO 8601. |
+| Built-in | Confirm entry date / Confirm entry time | Asked variables `entry-date` / `entry-time` that change only the date / time. Both can be used in one form. See [Entry time](#entry-time). |
+| Built-in | Conditional block | A [block](#conditional-blocks) of fields that are only used when its conditions hold. Not offered by the `+` inside a block. |
 
-Each item shows what it would write right now. A key already in use gets a number, as in `timestamp-2`.
+Custom entries carry a bookmark icon and show the template's key and badges under the name. The date and time presets show what they would write right now, and a preset key already in use gets a number, as in `timestamp-2`. A custom field keeps its key even when the form already has it, since [repeated keys](#repeated-keys) are allowed.
 
 ## Fields
 
@@ -219,7 +220,8 @@ Add "Confirm entry date" and/or "Confirm entry time" to confirm when the note is
 - A field without a key, fixed options without any option, a notes source without its note or folder, or a date taken from a field that is not a date warn on the field's row and on the form.
 - A block without conditions or fields, a condition without a field or value, a condition on a field that is not above the block, or a condition that does not apply to its field's type warn on the block's row and on the form.
 - A form this version of Note Compass cannot read stays in the list switched off, with a warning and no pencil, like an unreadable list. Its saved setup is kept until you delete it.
-- A duplicated form is named `<name> copy`.
+- A duplicated form or custom field is named `<name> copy`.
+- A custom field this version cannot read stays in the "Custom fields" list with a warning and no copy icon, is left out of the `+` picker, and keeps its saved setup until you delete it.
 
 </details>
 
@@ -240,8 +242,8 @@ A conditional block holds fields that the form only uses when an earlier answer 
 
 ### Adding and arranging blocks
 
-- "Conditional block" in the `+` menu of the "Fields" header adds an empty block at the end of the list.
-- The `+` at the bottom of a block adds a field inside it, with the same menu.
+- "Conditional block" in the `+` picker of the "Fields" header adds an empty block at the end of the list.
+- The `+` at the bottom of a block adds a field inside it, with the same picker minus "Conditional block".
 - Drag a field between a block's heading and its bottom row to move it in, and drag it out to move it back to the list.
 - Dragging a block's heading moves the whole block. A block cannot go inside another block.
 - Deleting a block keeps its fields, which stay in the list where the block was.
@@ -271,6 +273,27 @@ A condition can only look at fields above its block, outside any block or in an 
 ### Repeated keys
 
 Several fields may share a key, such as a `categories` in each of two blocks. The last field with a value wins, and the property keeps the place of the first field with that key. A skipped field does not clear the value of an earlier one.
+
+## Custom fields
+
+A custom field is a field you define once, under "Custom fields" on the Forms page, and add to any form from the `+` picker of its "Fields" list, such as a `rating` with its five options or a `people` list answered from your person notes.
+
+```
+Forms
+⋮⋮ Reading log      ●  ⧉ ✎
+⋮⋮ Meeting note     ●  ⧉ ✎
+
+Custom fields
+⋮⋮ Rating 1–5  rating  property  ask  number · options
+⋮⋮ people             property  ask  list · notes
+```
+
+- The list works like a form's "Fields" list: drag the handle to reorder, the copy icon duplicates, the cross deletes, and clicking a row opens its editor right below it.
+- The editor is the same as a form field's, with "Name" first: the name shown in the `+` picker, falling back to the key when empty. Then Key, Stored as, Filled by, Question, Data type, Source, options or notes source, Optional and the date settings, as described under [Fields](#fields).
+- Its order in the list is its order in the picker's "Custom" group.
+- A `@` placeholder in a fixed value or option offers `today`, `tomorrow`, `yesterday`, `date`, `time` and the custom field's own key, since there is no form around it yet.
+
+Adding a custom field to a form inserts a copy with a fresh id. From then on the copy belongs to the form: edit it there as any other field, and editing or deleting the custom field later changes no form. Deleting a custom field only removes it from the picker.
 
 ## Placeholders
 

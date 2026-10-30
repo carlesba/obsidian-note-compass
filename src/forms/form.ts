@@ -76,6 +76,11 @@ export interface FormBlock {
 
 export type FormItem = FormField | FormBlock;
 
+export interface CustomField extends FormField {
+	name: string;
+	unreadable?: { stored: unknown };
+}
+
 export interface Form {
 	id: string;
 	enabled: boolean;
@@ -164,8 +169,23 @@ export function newForm(forms: readonly Form[]): Form {
 	};
 }
 
+export function blankField(id: string): FormField {
+	return { id, key: "", saveAs: "property", mode: "ask", type: "text", source: "typed" };
+}
+
 export function newField(form: Form): FormField {
-	return { id: newFormId(formIds(form)), key: "", saveAs: "property", mode: "ask", type: "text", source: "typed" };
+	return blankField(newFormId(formIds(form)));
+}
+
+export function newCustomField(customFields: readonly CustomField[]): CustomField {
+	return { ...blankField(newFormId(customFields)), name: "" };
+}
+
+export function templateField(form: Pick<Form, "fields">, template: CustomField): FormField {
+	const copy: FormField & Partial<Pick<CustomField, "name" | "unreadable">> = { ...structuredClone(template), id: newFormId(formIds(form)) };
+	delete copy.name;
+	delete copy.unreadable;
+	return copy;
 }
 
 export function newBlock(form: Form): FormBlock {
@@ -188,8 +208,25 @@ export function storedForms(forms: readonly Form[]): unknown[] {
 	return forms.map((form) => (form.unreadable ? form.unreadable.stored : withoutUnreadable(form)));
 }
 
-function withoutUnreadable(form: Form): Form {
-	const stored = { ...form };
+export function readCustomFields(stored: unknown): CustomField[] {
+	if (!Array.isArray(stored)) return [];
+	const fields: CustomField[] = [];
+	const known: { id: string }[] = [];
+	for (const entry of stored) {
+		const data = isRecord(entry) ? entry : {};
+		const field = readField(entry, known);
+		if (field) fields.push({ ...field, name: text(data.name) });
+		else fields.push({ ...blankField(knownId(data.id, known)), name: text(data.name), unreadable: { stored: entry } });
+	}
+	return fields;
+}
+
+export function storedCustomFields(fields: readonly CustomField[]): unknown[] {
+	return fields.map((field) => (field.unreadable ? field.unreadable.stored : withoutUnreadable(field)));
+}
+
+function withoutUnreadable<Entry extends { unreadable?: unknown }>(entry: Entry): Entry {
+	const stored = { ...entry };
 	delete stored.unreadable;
 	return stored;
 }

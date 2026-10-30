@@ -14,7 +14,7 @@ The main page opens with a short note on what each of its four pages holds, then
 | --- | --- |
 | Navigation | Your [navigation pickers](jump-to-note.md#navigation-pickers), each offered in the command palette as "Navigation: <name>". |
 | Properties | The properties of the [Set properties](set-properties.md) picker, and "Checkbox behaviour". |
-| Forms | Your [forms](forms.md). |
+| Forms | Your [forms](forms.md) and [custom fields](forms.md#custom-fields). |
 | Tasks | Your [task commands](task-commands.md), each offered under its name in the command palette. |
 | Integrations → Date notes source | Where date note formats come from, described in [Date notes](jump-to-note.md#date-notes). The pencil edits the custom formats. |
 
@@ -36,6 +36,7 @@ The Navigation page lists your navigation pickers with the same add, reorder, sw
 
 These pages use the same add, reorder, switch, edit, copy and delete controls as the other settings lists. Each row shows only its name; a second line appears only for warnings, not a configuration summary.
 
+- The Forms page lists your forms and, below them, your [custom fields](forms.md#custom-fields), the field templates offered when adding a field to any form.
 - A form’s page defines its note and questions: see [Forms](forms.md#form-page).
 - A task command’s page sets Command, Tasks to list, Tasks to skip, Options and Actions: see [Task commands](task-commands.md#command-page).
 - New task commands start with Bullet Journal actions; no task commands exist until you add one.
@@ -224,7 +225,7 @@ Several rows may write the same property, such as the default `related` rows wit
 
 ## Reset all settings
 
-"Reset all settings", at the bottom of the main page, puts every list, property, form, task command and option back to the defaults, which have no forms or task commands.
+"Reset all settings", at the bottom of the main page, puts every list, property, form, custom field, task command and option back to the defaults, which have no forms, custom fields or task commands.
 
 1. Choose "Reset all settings".
 2. Confirm. Cancel or Escape leaves everything as it was.

@@ -41,7 +41,7 @@ export interface ExpandableRow {
 	context: ExpandingPageContext;
 	headers: Map<string, () => void>;
 	showHeader: (setting: Setting) => void;
-	duplicate: () => void;
+	duplicate?: () => void;
 	expandTooltip: string;
 	collapseTooltip: string;
 	renderEditor: (editorEl: HTMLElement, takesFocus: boolean) => void;
@@ -69,7 +69,8 @@ export function expandableRow(row: ExpandableRow): SettingDefinitionRender & { i
 				toggleExpandedField(context.fieldEditor.expanded, listId, itemId);
 				context.refresh();
 			};
-			new ExtraButtonComponent(controlEl).setIcon("copy").setTooltip(t("duplicateRow")).onClick(row.duplicate);
+			const { duplicate } = row;
+			if (duplicate) new ExtraButtonComponent(controlEl).setIcon("copy").setTooltip(t("duplicateRow")).onClick(duplicate);
 			const chevronEl = controlEl.createDiv({ cls: "clickable-icon note-compass-field-chevron" });
 			setIcon(chevronEl, expanded ? "chevron-down" : "chevron-right");
 			setTooltip(chevronEl, expanded ? row.collapseTooltip : row.expandTooltip);
