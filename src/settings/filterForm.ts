@@ -47,7 +47,7 @@ export function ruleField(rule: FilterRule): RuleField {
 export function newRule(field: RuleField): FilterRule {
 	switch (field) {
 		case "property":
-			return { kind: "property", property: "", condition: { operator: "is set" } };
+			return { kind: "property", property: "", condition: { operator: "contains", value: "" } };
 		case "folder":
 			return { kind: "folder", folder: "" };
 		case "tag":

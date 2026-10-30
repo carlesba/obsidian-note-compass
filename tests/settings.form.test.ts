@@ -15,7 +15,7 @@ import {
 	writeControl,
 } from "../src/settings/controlKeys.ts";
 import { customPeriods, dateNoteSourceDescription, formatError, writePeriodField } from "../src/settings/dateNotesForm.ts";
-import { fitRuleToProperty, readConditionField, writeConditionField, writeRuleText } from "../src/settings/filterForm.ts";
+import { fitRuleToProperty, newRule, readConditionField, writeConditionField, writeRuleText } from "../src/settings/filterForm.ts";
 import type { ConditionField } from "../src/settings/filterForm.ts";
 import type { PropertyRule } from "../src/lists/filters.ts";
 import {
@@ -365,4 +365,13 @@ test("date lists switch missing notes on and off, keeping each source's default 
 	assert.equal(readListField(current, "showsMissing"), true);
 	writeListField(current, "showsMissing", false);
 	assert.deepEqual(current.source, { kind: "currentPeriods", periods: ["day"], showsMissing: false });
+});
+
+test("a new property rule starts with contains, and picking a list property switches it to has item", () => {
+	const rule = newRule("property");
+	assert.deepEqual(rule, { kind: "property", property: "", condition: { operator: "contains", value: "" } });
+	if (rule.kind !== "property") return;
+	rule.property = "tags";
+	fitRuleToProperty(rule, { tags: "tags" });
+	assert.equal(rule.condition.operator, "has item");
 });
