@@ -273,13 +273,12 @@ function fieldEditorRows(editorEl: HTMLElement, editor: FieldEditor, draw: Redra
 	const { field } = editor;
 	const asks = field.mode === "ask";
 	const redraws = (setting: FieldSetting) => () => draw(setting);
-	dropdownRow(editorEl, editor, "saveAs", t("formSaveAs"), t("formSaveAsDesc"), saveAsOptions(), redraws("saveAs"));
 	const questionInput = keyRow(editorEl, editor);
+	dropdownRow(editorEl, editor, "saveAs", t("formSaveAs"), t("formSaveAsDesc"), saveAsOptions(), redraws("saveAs"));
 	dropdownRow(editorEl, editor, "mode", t("formMode"), t("formModeDesc"), fieldModeOptions(), redraws("mode"));
-	dropdownRow(editorEl, editor, "type", t("type"), t("formTypeDesc"), fieldTypeOptions(field.mode), redraws("type"));
+	if (asks) questionInput.placeholderOf = textRow(editorEl, editor, "question", t("formQuestion"), t("formQuestionDesc"), field.key).text;
+	dropdownRow(editorEl, editor, "type", t("formFieldType"), t("formTypeDesc"), fieldTypeOptions(field.mode), redraws("type"));
 	if (asks) {
-		const question = textRow(editorEl, editor, "question", t("formQuestion"), t("formQuestionDesc"), field.key);
-		questionInput.placeholderOf = question.text;
 		toggleRow(editorEl, editor, "optional", t("formOptional"), t("formOptionalDesc"));
 		if (isDateType(field.type)) toggleRow(editorEl, editor, "entryTime", t("formEntryTime"), t("formEntryTimeDesc"));
 	} else {

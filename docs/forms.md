@@ -88,11 +88,11 @@ The fields list works like the other lists in the settings.
 - The cross deletes a field.
 - The `+` in the header opens a menu to add one, described under [Adding fields](#adding-fields).
 
-Each row shows the field's key, followed by small badges for where it is saved, its mode and its type, as in `book` `variable` `ask` `text`. Property badges are blue and variable badges are purple. The mode badge reads `fixed`, `ask`, `ask, optional` or `entry time`.
+Each row shows the field's key, followed by small badges for how it is used, who fills it and its type, as in `book` `variable` `ask` `text`. Property badges are blue and variable badges are purple. The badge for who fills it reads `fixed`, `ask`, `ask, optional` or `entry time`.
 
 Click the row or its chevron to edit the field right below it, and click again to close it. One field is open at a time, and a new field opens straight away.
 
-![The rating field of the Reading log form opened inline below its row, with Save as, Key, Mode, Type, Question, Optional, Store values as and its Choices](images/form-field-editor.png)
+![The rating field of the Reading log form opened inline below its row, with Key, Used as, Filled by, Question, Field type, Optional, Store values as and its Choices](images/form-field-editor.png)
 
 ### Adding fields
 
@@ -117,10 +117,10 @@ Every field is a fixed value the form fills in, or a question it asks.
 
 | Setting | Options |
 | --- | --- |
-| Save as | "Property", the default, writes the value to the new note's properties under its key. "Variable" only fills placeholders in the name and content and is never written. |
 | Key | The property name or the variable's name, used as `{{key}}` in both cases. |
-| Mode | "Fixed" for a value filled in for you, or "Ask" for a question. |
-| Type | What kind of value the field holds, listed below. |
+| Used as | "Property", the default, writes the value to the new note's properties under its key. "Variable" only fills placeholders in the name and content and is never written. |
+| Filled by | "The form, with a fixed value" fills it in for you. "You, with a question" asks for it when the form runs, with the "Question" row as its prompt. |
+| Field type | What kind of value the field holds, listed below. |
 
 ### Fixed values
 
@@ -225,7 +225,7 @@ Any other placeholder is left as it is.
 
 A "Reading log" form could have these fields:
 
-| Key | Save as | Mode | Type | Value |
+| Key | Used as | Filled by | Field type | Value |
 | --- | --- | --- | --- | --- |
 | `book` | property | ask | select | The books Dune, The Hobbit and Middlemarch. |
 | `rating` | property | ask | select | Choices `1` to `5` with labels such as `5 · Great`, stored as numbers. |
