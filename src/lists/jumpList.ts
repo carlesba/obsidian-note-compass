@@ -40,14 +40,8 @@ export function buildJumpList(
 	dateNoteSettings: DateNoteSettings = defaultDateNoteSettings(),
 	pickerFilter: FilterGroup = emptyFilter(),
 ): JumpListEntry[] {
-	const dateNotes = resolveDateNotes(dateNoteSettings, vault);
-	const context: ListContext = {
-		vault,
-		current,
-		dateNotes,
-		propertyTypes: vault.propertyTypes(),
-		today: vault.moment(vault.now()).startOf("day"),
-	};
+	const context = listContext(vault, current, dateNoteSettings);
+	const { dateNotes } = context;
 	const matchesPicker = noteMatcher(pickerFilter, context);
 	const lists: PrefixedList[] = noteLists
 		.filter((list) => list.enabled && list.source.kind !== "unreadable")
@@ -68,6 +62,22 @@ export function buildJumpList(
 		}
 	}
 	return entries;
+}
+
+export function existingSourceNotes(source: ListSource, vault: JumpListVault, current: VaultNote | undefined, dateNoteSettings: DateNoteSettings): VaultNote[] {
+	return sourceNotes(source, listContext(vault, current, dateNoteSettings))
+		.filter((listed) => listed.missing === undefined)
+		.map((listed) => listed.file);
+}
+
+function listContext(vault: JumpListVault, current: VaultNote | undefined, dateNoteSettings: DateNoteSettings): ListContext {
+	return {
+		vault,
+		current,
+		dateNotes: resolveDateNotes(dateNoteSettings, vault),
+		propertyTypes: vault.propertyTypes(),
+		today: vault.moment(vault.now()).startOf("day"),
+	};
 }
 
 function sourceNotes(source: ListSource, context: ListContext): ListedNote[] {

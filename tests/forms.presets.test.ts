@@ -1,11 +1,11 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
-import { newForm, formFields } from "../src/forms/form.ts";
-import { presetField } from "../src/forms/presets.ts";
+import { FIELD_TYPES, newForm, formFields, readForms, storedForms } from "../src/forms/form.ts";
+import { FIELD_PRESETS, presetField } from "../src/forms/presets.ts";
 
 test("a blank preset is the same new field the + always added", () => {
 	const field = presetField(newForm([]), "blank");
-	assert.deepEqual(field, { id: "1", key: "", saveAs: "property", mode: "ask", type: "text" });
+	assert.deepEqual(field, { id: "1", key: "", saveAs: "property", mode: "ask", type: "text", source: "typed" });
 });
 
 test("time presets are fixed fields set at creation with their format", () => {
@@ -34,4 +34,17 @@ test("the entry time preset asks for a time kept as a variable that sets the for
 		dateFormat: "HH:mm",
 		entryTime: true,
 	});
+});
+
+test("every preset builds a field of the current model: only asked text fields carry a source", () => {
+	const form = newForm([]);
+	for (const preset of FIELD_PRESETS) {
+		const field = presetField(form, preset);
+		assert.equal(field.source, preset === "blank" ? "typed" : undefined, preset);
+		assert.equal(field.choices, undefined, preset);
+		assert.equal(field.notesFrom, undefined, preset);
+		assert.ok(FIELD_TYPES.includes(field.type), preset);
+		const [read] = readForms(storedForms([{ ...form, fields: [field] }]));
+		assert.deepEqual(read.fields, [field], preset);
+	}
 });

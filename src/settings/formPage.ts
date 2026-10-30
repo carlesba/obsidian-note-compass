@@ -1,6 +1,6 @@
 import { ExtraButtonComponent, DropdownComponent, Menu, TextComponent, moment } from "obsidian";
-import type { Setting, SettingDefinition, SettingDefinitionItem, SettingDefinitionList, SettingDefinitionPage, SettingDefinitionRender } from "obsidian";
-import { hasChoices, isDateType, newBlock, takesValue } from "../forms/form";
+import type { App, Setting, SettingDefinition, SettingDefinitionItem, SettingDefinitionList, SettingDefinitionPage, SettingDefinitionRender } from "obsidian";
+import { fieldSource, hasSources, isDateType, newBlock, takesValue } from "../forms/form";
 import type { FormClock } from "../forms/resolve";
 import { SET_DATE_PLACEHOLDERS, typedTime } from "../forms/dateInput";
 import { FIELD_PRESETS, presetField, presetFormat } from "../forms/presets";
@@ -28,6 +28,7 @@ import {
 	fieldBadges,
 	fieldRowName,
 	fieldRows,
+	fieldSourceOptions,
 	fieldSummary,
 	fieldTypeOptions,
 	fieldValueError,
@@ -36,9 +37,9 @@ import {
 	formWarning,
 	moveChoice,
 	moveFieldRow,
+	notesSourceOptions,
 	readFieldSetting,
 	saveAsOptions,
-	storeAsOptions,
 } from "./formsForm";
 import type { BlockSetting, FieldSetting } from "./formsForm";
 import { editableRow } from "./listPage";
@@ -48,7 +49,10 @@ import { ROW_CONTROL_CLASS } from "./tabOrder";
 import { knownPlaceholderKeys, placeholderEntries, placeholderPreview } from "./placeholderMenu";
 import { pillInput, renderPillText } from "./pillInput";
 import type { PillInput, PillInputOptions } from "./pillInput";
-import { PropertySuggest, warningDescription } from "./suggest";
+import { NoteSuggest, PropertySuggest, TextSuggest, warningDescription } from "./suggest";
+import type { TextSuggestion } from "./suggest";
+import { renderFilter } from "./filterEditor";
+import { filterRules } from "../lists/filters";
 import {
 	FOCUS_ATTRIBUTE,
 	checkedTextRow,
@@ -515,16 +519,18 @@ function fieldEditorRows(editorEl: HTMLElement, editor: FieldEditor, draw: Redra
 	dropdownRow(editorEl, editor, "saveAs", t("formSaveAs"), t("formSaveAsDesc"), saveAsOptions(), redraws("saveAs"));
 	dropdownRow(editorEl, editor, "mode", t("formMode"), t("formModeDesc"), fieldModeOptions(), redraws("mode"));
 	if (asks) questionInput.placeholderOf = textRow(editorEl, editor, "question", t("formQuestion"), t("formQuestionDesc"), field.key).text;
-	dropdownRow(editorEl, editor, "type", t("formFieldType"), t("formTypeDesc"), fieldTypeOptions(field.mode), redraws("type"));
+	dropdownRow(editorEl, editor, "type", t("formFieldType"), t("formTypeDesc"), fieldTypeOptions(), redraws("type"));
+	if (asks && hasSources(field.type)) {
+		dropdownRow(editorEl, editor, "source", t("formSource"), t("formSourceDesc"), fieldSourceOptions(field.type), redraws("source"));
+		const source = fieldSource(field);
+		if (source === "options") choicesSection(editorEl, editor, draw);
+		if (source === "notes") notesSourceRows(editorEl, editor, draw);
+	}
 	if (asks) {
 		toggleRow(editorEl, editor, "optional", t("formOptional"), t("formOptionalDesc"));
 		if (isDateType(field.type)) toggleRow(editorEl, editor, "entryTime", t("formEntryTime"), t("formEntryTimeDesc"));
 	} else {
 		staticValueRows(editorEl, editor);
-	}
-	if (asks && hasChoices(field.type)) {
-		dropdownRow(editorEl, editor, "storeAs", t("formStoreAs"), t("formStoreAsDesc"), storeAsOptions());
-		choicesSection(editorEl, editor, draw);
 	}
 	if (isDateType(field.type)) {
 		const showsCustomFormat = () => customFormat.rowEl.toggle(field.dateFormat === "custom");
@@ -532,6 +538,42 @@ function fieldEditorRows(editorEl: HTMLElement, editor: FieldEditor, draw: Redra
 		const customFormat = textRow(editorEl, editor, "customFormat", t("formCustomFormat"), t("formCustomFormatDesc"), "dddd D MMMM YYYY");
 		showsCustomFormat();
 	}
+}
+
+function notesSourceRows(parentEl: HTMLElement, editor: FieldEditor, draw: Redraw): void {
+	const { field, context } = editor;
+	const source = field.notesFrom;
+	if (!source) return;
+	dropdownRow(parentEl, editor, "notesSource", t("formNotesFrom"), t("formNotesFromDesc"), notesSourceOptions(field), () => draw("notesSource"));
+	if (source.kind === "linksToNote") {
+		const { text } = textRow(parentEl, editor, "notesNote", t("note"), t("noteDesc"), t("notePlaceholder"));
+		new NoteSuggest(context.app, text.inputEl, (file) => file.path);
+	} else if (source.kind === "inFolder") {
+		const { text } = textRow(parentEl, editor, "notesFolder", t("folder"), t("folderDesc"), "");
+		const suggest = new TextSuggest(context.app, text.inputEl, () => folderSuggestions(context.app));
+		suggest.onSelect((suggestion) => {
+			suggest.setValue(suggestion.value);
+			suggest.close();
+			write(editor, "notesFolder", suggestion.value);
+		});
+	} else if (source.kind === "filter") {
+		const { filter } = source;
+		const { rowEl } = editorRow(parentEl, t("filter"), filterRules(filter).length === 0 ? t("filterEmptyDesc") : t("filterDesc"), true);
+		renderFilter(rowEl, filter, {
+			...context,
+			change: (mutate) => {
+				context.saveQuietly(mutate);
+				editor.changed();
+			},
+		});
+	}
+}
+
+function folderSuggestions(app: App): TextSuggestion[] {
+	return app.vault
+		.getAllFolders()
+		.map((folder) => ({ value: folder.path }))
+		.sort((a, b) => a.value.localeCompare(b.value));
 }
 
 function write(editor: FieldEditor, setting: FieldSetting, value: unknown, index?: number): void {
@@ -657,20 +699,25 @@ function choicesSection(parentEl: HTMLElement, editor: FieldEditor, draw: Redraw
 }
 
 function choiceRow(listEl: HTMLElement, editor: FieldEditor, index: number, draw: Redraw): void {
-	const { field, context } = editor;
+	const { form, field, context } = editor;
 	const choice = field.choices?.[index];
 	if (!choice) return;
 	const rowEl = listEl.createDiv({ cls: "note-compass-form-choice" });
 	new ExtraButtonComponent(rowEl).setIcon("grip-vertical").setTooltip(t("dragToReorder")).extraSettingsEl.addClass("note-compass-form-choice-handle");
 	const inputsEl = rowEl.createDiv({ cls: "note-compass-form-choice-inputs" });
-	const value = new TextComponent(inputsEl).setPlaceholder(t("formChoiceValuePlaceholder")).setValue(choice.value);
-	const label = new TextComponent(inputsEl).setPlaceholder(choice.value || t("formChoiceLabelPlaceholder")).setValue(choice.label ?? "");
-	value.inputEl.setAttrs({ [FOCUS_ATTRIBUTE]: `choiceValue/${index}`, "aria-label": t("formChoiceValuePlaceholder") });
-	label.inputEl.setAttr("aria-label", t("formChoiceLabelPlaceholder"));
-	value.onChange((typed) => {
-		write(editor, "choiceValue", typed, index);
-		label.setPlaceholder(choice.value || t("formChoiceLabelPlaceholder"));
+	const value = placeholderInput(inputsEl, form, context, false, {
+		multiline: false,
+		placeholder: t("formChoiceValuePlaceholder"),
+		ariaLabel: t("formChoiceValuePlaceholder"),
+		changed: (typed) => {
+			write(editor, "choiceValue", typed, index);
+			label.setPlaceholder(choice.value || t("formChoiceLabelPlaceholder"));
+		},
 	});
+	value.el.setAttr(FOCUS_ATTRIBUTE, `choiceValue/${index}`);
+	value.setValue(choice.value);
+	const label = new TextComponent(inputsEl).setPlaceholder(choice.value || t("formChoiceLabelPlaceholder")).setValue(choice.label ?? "");
+	label.inputEl.setAttr("aria-label", t("formChoiceLabelPlaceholder"));
 	label.onChange((typed) => write(editor, "choiceLabel", typed, index));
 	new ExtraButtonComponent(rowEl)
 		.setIcon("x")

@@ -27,7 +27,7 @@ function block(id: string, conditions: BlockCondition[], fields: FormField[]): F
 	return { id, kind: "block", conditions, fields };
 }
 
-const kind = () => field("1", "kind", { type: "select", choices: [{ value: "book", label: "Book" }, { value: "article" }], storeAs: "text" });
+const kind = () => field("1", "kind", { source: "options", choices: [{ value: "book", label: "Book" }, { value: "article" }] });
 
 function readingLog(): Form {
 	return {
@@ -152,7 +152,7 @@ test("block warnings cover missing conditions, fields, keys, values, operators a
 	first.fields.splice(0, first.fields.length);
 	assert.equal(blockWarning(form, first), "Add at least one field to this block.");
 	first.conditions[0] = { key: "kind", operator: ">", value: "3" };
-	assert.equal(blockWarning(form, first), '">" does not apply to a select, one choice field.');
+	assert.equal(blockWarning(form, first), '">" does not apply to a text field.');
 });
 
 test("conditions are read and written through formBlock control keys, resetting the operator when the key's type no longer allows it", () => {
@@ -171,7 +171,7 @@ test("conditions are read and written through formBlock control keys, resetting 
 	assert.equal(writeControl(settings, key("operator"), "is not"), true);
 	assert.equal(writeControl(settings, key("value"), " article "), true);
 	assert.deepEqual(first.conditions[0], { key: "kind", operator: "is not", value: "article" });
-	first.fields.push(field("11", "tags", { type: "multiselect", choices: [], storeAs: "text" }));
+	first.fields.push(field("11", "tags", { type: "list", source: "options", choices: [] }));
 	const second = form.fields[3] as FormBlock;
 	const secondKey = formBlockKey(form.id, second.id, "key", 0);
 	assert.equal(writeControl(settings, secondKey, "tags"), true);

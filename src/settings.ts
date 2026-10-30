@@ -498,10 +498,10 @@ function readLists<Fields extends object>(
 }
 
 function readSourceOrKeep(stored: unknown): ListSource {
-	return readSource(stored) ?? { kind: "unreadable", stored };
+	return readListSource(stored) ?? { kind: "unreadable", stored };
 }
 
-function readSource(stored: unknown): ListSource | undefined {
+export function readListSource(stored: unknown): ListSource | undefined {
 	if (!isRecord(stored) || typeof stored.kind !== "string") return undefined;
 	if (stored.kind === "adjacentDates") return readAdjacentDates(stored);
 	const kind = RELATION_SOURCE_KINDS.find((relation) => relation === stored.kind);

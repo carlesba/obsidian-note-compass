@@ -9,9 +9,11 @@ import { answered, entryClock, resolveForm, skippedAnswer } from "../src/forms/r
 import { NOW } from "./fakeVault.ts";
 import { moment } from "./moment.ts";
 
-function question(extra: Partial<FormField>, vaultValues: Question["vaultValues"] = []): Question {
-	return { field: { id: "1", key: "topic", saveAs: "property", mode: "ask", type: "text", ...extra }, vaultValues, now: NOW, moment };
+function question(extra: Partial<FormField>, vaultValues: Question["vaultValues"] = [], notes: Question["notes"] = []): Question {
+	return { field: { id: "1", key: "topic", saveAs: "property", mode: "ask", type: "text", ...extra }, vaultValues, notes, now: NOW, moment };
 }
+
+const note = (name: string, folder = ""): Question["notes"][number] => ({ name, path: `${folder}${name}.md`, link: `[[${name}]]` });
 
 const labels = (choices: { label: string }[]) => choices.map((choice) => choice.label);
 
@@ -29,22 +31,52 @@ test("a text question offers what was typed, the earlier answer and the property
 	assert.deepEqual(use.action, { action: "answer", answer: answered(4.5) });
 });
 
-test("select shows labels and answers with the value", () => {
-	const choices = questionChoices(question({ type: "select", choices: [{ value: "4", label: "4 · Great" }, { value: "2" }, { value: "" }] }), answered("2"), "");
+test("fixed options show labels and answer with the value, for text and number fields alike", () => {
+	const choices = questionChoices(question({ source: "options", choices: [{ value: "4", label: "4 · Great" }, { value: "2" }, { value: "" }] }), answered("2"), "");
 	assert.deepEqual(labels(choices), ["4 · Great", "✓ 2"]);
 	assert.deepEqual(choices[0].action, { action: "answer", answer: answered("4") });
+	const numbers = questionChoices(question({ type: "number", source: "options", choices: [{ value: "4", label: "4 · Great" }] }), undefined, "");
+	assert.deepEqual(labels(numbers), ["4 · Great"]);
+	assert.deepEqual(numbers[0].action, { action: "answer", answer: answered("4") });
 });
 
-test("multiselect toggles choices in choice order and finishes with Done", () => {
-	const shape = question({ type: "multiselect", choices: [{ value: "a", label: "Alpha" }, { value: "b", label: "Beta" }] });
-	const once = toggledChoice(undefined, "b", shape.field);
-	const twice = toggledChoice(once, "a", shape.field);
+test("a text question from notes offers each note and answers with its link", () => {
+	const choices = questionChoices(question({ source: "notes", notesFrom: { kind: "modifiedToday" } }, [], [note("Dune"), note("Emma")]), answered("[[Emma]]"), "");
+	assert.deepEqual(labels(choices), ["Dune", "✓ Emma"]);
+	assert.deepEqual(choices[0].action, { action: "answer", answer: answered("[[Dune]]") });
+	assert.deepEqual(labels(questionChoices(question({ source: "notes", notesFrom: { kind: "modifiedToday" } }, [], [note("Dune"), note("Emma")]), undefined, "em")), ["Emma"]);
+});
+
+test("a list from fixed options toggles choices in choice order and finishes with Done", () => {
+	const shape = question({ type: "list", source: "options", choices: [{ value: "a", label: "Alpha" }, { value: "b", label: "Beta" }] });
+	const once = toggledChoice(undefined, "b", shape);
+	const twice = toggledChoice(once, "a", shape);
 	assert.deepEqual(twice, answered(["a", "b"]));
-	assert.deepEqual(toggledChoice(twice, "a", shape.field), answered(["b"]));
+	assert.deepEqual(toggledChoice(twice, "a", shape), answered(["b"]));
 	const choices = questionChoices(shape, once, "");
 	assert.deepEqual(labels(choices), ["🏁 Done", "Alpha", "✓ Beta"]);
 	assert.deepEqual(choices[1].action, { action: "toggle", value: "a" });
 	assert.deepEqual(labels(questionChoices(shape, once, "al")), ["Alpha", "🏁 Done"]);
+});
+
+test("a list from notes toggles links in the order the notes are offered", () => {
+	const shape = question({ type: "list", source: "notes", notesFrom: { kind: "modifiedToday" } }, [], [note("Dune"), note("Emma")]);
+	const picked = toggledChoice(toggledChoice(undefined, "[[Emma]]", shape), "[[Dune]]", shape);
+	assert.deepEqual(picked, answered(["[[Dune]]", "[[Emma]]"]));
+	assert.deepEqual(labels(questionChoices(shape, picked, "")), ["🏁 Done", "✓ Dune", "✓ Emma"]);
+});
+
+test("a typed list offers what was typed, the items picked so far and the property's vault values", () => {
+	const shape = question({ type: "list", source: "typed" }, [{ value: "fiction", count: 2 }, { value: 3, count: 1 }]);
+	assert.deepEqual(labels(questionChoices(shape, undefined, "")), ["🏁 Done", "fiction ×2"]);
+	const typed = questionChoices(shape, undefined, "sci-fi");
+	assert.deepEqual(labels(typed), ['✏️ Use "sci-fi"', "🏁 Done"]);
+	assert.deepEqual(typed[0].action, { action: "toggle", value: "sci-fi" });
+	const once = toggledChoice(undefined, "sci-fi", shape);
+	const twice = toggledChoice(once, "fiction", shape);
+	assert.deepEqual(twice, answered(["sci-fi", "fiction"]));
+	assert.deepEqual(labels(questionChoices(shape, twice, "")), ["🏁 Done", "✓ sci-fi", "✓ fiction ×2"]);
+	assert.deepEqual(toggledChoice(twice, "sci-fi", shape), answered(["fiction"]));
 });
 
 test("date questions parse typed dates and offer now, today and tomorrow", () => {
@@ -118,7 +150,7 @@ test("date and time confirmations compose, survive saving, and can be edited fro
 			const field = formFields(form).find((field) => field.type === type)!;
 			const current = entryClock(form, answers, clock);
 			assert.equal(questionPlaceholder(field, current.now, moment), moment(current.now).format(type === "date" ? "YYYYMMDD" : "HHmm"));
-			const [choice] = questionChoices({ field, now: current.now, moment, vaultValues: [] }, answers.get(field.id), query);
+			const [choice] = questionChoices({ field, now: current.now, moment, vaultValues: [], notes: [] }, answers.get(field.id), query);
 			assert.equal(choice.parts.content, `Use "${preview}"`);
 			assert.equal(choice.action.action, "answer");
 			if (choice.action.action === "answer") answers.set(field.id, choice.action.answer);
@@ -140,6 +172,6 @@ test("date and time confirmations compose, survive saving, and can be edited fro
 		assert.deepEqual(confirmChoices(resolved, "").filter((choice) => choice.action.action === "edit").map((choice) => choice.parts.value), ["2028-11-03 08:10", "2028-11-03 08:10"]);
 		const date = formFields(form).find((field) => field.type === "date")!;
 		const current = entryClock(form, answers, clock);
-		assert.equal(questionChoices({ field: date, now: current.now, moment, vaultValues: [] }, undefined, "")[0].parts.value, "2028-11-03 08:10");
+		assert.equal(questionChoices({ field: date, now: current.now, moment, vaultValues: [], notes: [] }, undefined, "")[0].parts.value, "2028-11-03 08:10");
 	}
 });

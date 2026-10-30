@@ -7,14 +7,16 @@ import { parseNumber, sameValue } from "../setProperties/values.ts";
 import { confirmedTime, DIGIT_DATE_FORMATS, typedTime } from "./dateInput.ts";
 
 export { typedTime };
-import { isDateType, questionText } from "./form.ts";
-import type { DateFieldType, Form, FormField } from "./form.ts";
+import { fieldSource, isDateType, picksSeveral, questionText } from "./form.ts";
+import type { DateFieldType, Form, FormChoice as FieldOption, FormField } from "./form.ts";
+import type { NoteOption } from "./notes.ts";
 import { answered, skippedAnswer } from "./resolve.ts";
 import type { Answer, ResolvedForm } from "./resolve.ts";
 
 export interface Question {
 	field: FormField;
 	vaultValues: PropertyValueCount[];
+	notes: NoteOption[];
 	now: number;
 	moment: MomentFactory;
 }
@@ -71,7 +73,7 @@ export function questionChoices(question: Question, answer: Answer | undefined, 
 	const { field } = question;
 	const kept: QuestionChoice[] = [];
 	if (field.optional) kept.push(keptRow(markOf(answer?.skipped === true, SKIP_MARK), t("skip"), { action: "answer", answer: skippedAnswer() }));
-	if (field.type === "multiselect") kept.push(keptRow(DONE_MARK, t("done"), { action: "done" }));
+	if (picksSeveral(field)) kept.push(keptRow(DONE_MARK, t("done"), { action: "done" }));
 	const pending = answer && !answer.skipped ? answer.value : undefined;
 	const rows = typeRows(question, pending, query);
 	if (!query) return [...kept, ...rows];
@@ -80,35 +82,55 @@ export function questionChoices(question: Question, answer: Answer | undefined, 
 
 function typeRows(question: Question, pending: unknown, query: string): QuestionChoice[] {
 	const { field } = question;
+	const source = fieldSource(field);
 	const offer = (content: string, value: unknown, detail?: string) =>
 		row({ mark: markOf(sameValue(value, pending)), content, value: detail }, answerWith(value));
 	switch (field.type) {
 		case "checkbox":
 			return [offer("true", true), offer("false", false)];
-		case "select":
-			return (field.choices ?? [])
-				.filter((choice) => choice.value !== "")
-				.map((choice) => offer(choice.label?.trim() || choice.value, choice.value));
-		case "multiselect": {
-			const picked = Array.isArray(pending) ? pending : [];
-			return (field.choices ?? [])
-				.filter((choice) => choice.value !== "")
-				.map((choice) =>
-					row(
-						{ mark: markOf(picked.includes(choice.value)), content: choice.label?.trim() || choice.value },
-						{ action: "toggle" as const, value: choice.value },
-					),
-				);
-		}
+		case "list":
+			return listRows(question, pending, query);
 		case "number":
+			if (source === "options") return options(field).map((choice) => offer(choiceLabel(choice), choice.value));
 			return knownValueRows(question, pending, parseNumber(query), "number");
 		case "text": {
+			if (source === "options") return options(field).map((choice) => offer(choiceLabel(choice), choice.value));
+			if (source === "notes") return question.notes.map((note) => offer(note.name, note.link));
 			const typed = query.trim();
 			return knownValueRows(question, pending, typed === "" ? undefined : typed, "string");
 		}
 		default:
 			return isDateType(field.type) ? dateRows(question, field.type, pending, query) : [];
 	}
+}
+
+function options(field: FormField): FieldOption[] {
+	return (field.choices ?? []).filter((choice) => choice.value !== "");
+}
+
+function choiceLabel(choice: FieldOption): string {
+	return choice.label?.trim() || choice.value;
+}
+
+function listRows(question: Question, pending: unknown, query: string): QuestionChoice[] {
+	const { field } = question;
+	const picked = Array.isArray(pending) ? pending.map(String) : [];
+	const toggle = (content: string, value: string, detail?: string) =>
+		row({ mark: markOf(picked.includes(value)), content, value: detail }, { action: "toggle" as const, value });
+	const source = fieldSource(field);
+	if (source === "options") return options(field).map((choice) => toggle(choiceLabel(choice), choice.value));
+	if (source === "notes") return question.notes.map((note) => toggle(note.name, note.link));
+	const typed = query.trim();
+	const known = question.vaultValues
+		.filter((count) => typeof count.value === "string")
+		.sort((a, b) => b.count - a.count || String(a.value).localeCompare(String(b.value)));
+	const rows: QuestionChoice[] = [];
+	if (typed !== "" && !picked.includes(typed) && !known.some((count) => count.value === typed)) {
+		rows.push({ ...row({ mark: USE_MARK, content: t("useValue", { value: typed }) }, { action: "toggle", value: typed }), typed: true });
+	}
+	for (const item of picked) if (!known.some((count) => count.value === item)) rows.push(toggle(item, item));
+	for (const count of known) rows.push(toggle(String(count.value), String(count.value), `×${count.count}`));
+	return rows;
 }
 
 function knownValueRows(
@@ -152,11 +174,18 @@ function dateRows(question: Question, type: DateFieldType, pending: unknown, que
 	return [...rows, ...presets.map(([name, time]) => offer(name, time))];
 }
 
-export function toggledChoice(answer: Answer | undefined, value: string, field: FormField): Answer {
+export function toggledChoice(answer: Answer | undefined, value: string, question: Question): Answer {
 	const current = answer && !answer.skipped && Array.isArray(answer.value) ? answer.value.map(String) : [];
 	const chosen = current.includes(value) ? current.filter((item) => item !== value) : [...current, value];
-	const order = (field.choices ?? []).map((choice) => choice.value);
-	return answered(order.filter((item) => chosen.includes(item)));
+	const order = pickOrder(question);
+	return answered(order ? order.filter((item) => chosen.includes(item)) : chosen);
+}
+
+function pickOrder(question: Question): string[] | undefined {
+	const source = fieldSource(question.field);
+	if (source === "options") return options(question.field).map((choice) => choice.value);
+	if (source === "notes") return question.notes.map((note) => note.link);
+	return undefined;
 }
 
 export function confirmChoices(resolved: ResolvedForm, query: string): ConfirmChoice[] {

@@ -1,12 +1,15 @@
+import { readListSource } from "../settings.ts";
+import type { ListSource } from "../settings.ts";
+
 export type FieldMode = "static" | "ask";
 
-export type FieldType = "text" | "number" | "checkbox" | "list" | "select" | "multiselect" | "date" | "time" | "datetime";
+export type FieldType = "text" | "number" | "checkbox" | "list" | "date" | "time" | "datetime";
+
+export type FieldSource = "typed" | "options" | "notes";
 
 export type DateFieldType = Extract<FieldType, "date" | "time" | "datetime">;
 
 export type DateFormat = "YYYY-MM-DD" | "HH:mm" | "YYYY-MM-DDTHH:mm" | "iso" | "custom";
-
-export type StoredChoiceType = "text" | "number";
 
 export type StaticValue = string | number | boolean | string[];
 
@@ -16,13 +19,11 @@ export const FIELD_MODES: readonly FieldMode[] = ["static", "ask"];
 
 export const SAVE_AS: readonly SaveAs[] = ["property", "variable"];
 
-export const STATIC_FIELD_TYPES: readonly FieldType[] = ["text", "number", "checkbox", "list", "date", "time", "datetime"];
+export const FIELD_TYPES: readonly FieldType[] = ["text", "number", "checkbox", "list", "date", "time", "datetime"];
 
-export const ASK_FIELD_TYPES: readonly FieldType[] = ["text", "number", "checkbox", "select", "multiselect", "date", "time", "datetime"];
+export const FIELD_SOURCES: readonly FieldSource[] = ["typed", "options", "notes"];
 
 export const DATE_FORMATS: readonly DateFormat[] = ["YYYY-MM-DD", "HH:mm", "YYYY-MM-DDTHH:mm", "iso", "custom"];
-
-export const STORED_CHOICE_TYPES: readonly StoredChoiceType[] = ["text", "number"];
 
 export const DEFAULT_DATE_FORMATS: Record<DateFieldType, DateFormat> = {
 	date: "YYYY-MM-DD",
@@ -44,8 +45,9 @@ export interface FormField {
 	value?: StaticValue;
 	optional?: boolean;
 	question?: string;
+	source?: FieldSource;
 	choices?: FormChoice[];
-	storeAs?: StoredChoiceType;
+	notesFrom?: ListSource;
 	dateFormat?: DateFormat;
 	customFormat?: string;
 	from?: string;
@@ -90,12 +92,23 @@ export function isDateType(type: FieldType): type is DateFieldType {
 	return type === "date" || type === "time" || type === "datetime";
 }
 
-export function hasChoices(type: FieldType): boolean {
-	return type === "select" || type === "multiselect";
+export function sourcesFor(type: FieldType): readonly FieldSource[] {
+	if (type === "text" || type === "list") return FIELD_SOURCES;
+	if (type === "number") return ["typed", "options"];
+	return [];
 }
 
-export function typesFor(mode: FieldMode): readonly FieldType[] {
-	return mode === "ask" ? ASK_FIELD_TYPES : STATIC_FIELD_TYPES;
+export function hasSources(type: FieldType): boolean {
+	return sourcesFor(type).length > 0;
+}
+
+export function fieldSource(field: Pick<FormField, "mode" | "type" | "source">): FieldSource | undefined {
+	if (field.mode !== "ask" || !hasSources(field.type)) return undefined;
+	return field.source !== undefined && sourcesFor(field.type).includes(field.source) ? field.source : "typed";
+}
+
+export function picksSeveral(field: Pick<FormField, "mode" | "type">): boolean {
+	return field.mode === "ask" && field.type === "list";
 }
 
 export function isBlock(item: FormItem): item is FormBlock {
@@ -119,8 +132,8 @@ export function askedFields(form: Form): FormField[] {
 }
 
 export function operatorsFor(type: FieldType): readonly BlockOperator[] {
-	if (type === "select" || type === "text") return ["is", "is not", "is set", "is not set"];
-	if (type === "multiselect" || type === "list") return ["has item", "does not have item", "is set", "is not set"];
+	if (type === "text") return ["is", "is not", "is set", "is not set"];
+	if (type === "list") return ["has item", "does not have item", "is set", "is not set"];
 	if (type === "number") return ["=", "≠", "<", ">", "is set", "is not set"];
 	if (type === "checkbox") return ["is true", "is false"];
 	return ["on", "not on", "before", "after", "is set", "is not set"];
@@ -152,7 +165,7 @@ export function newForm(forms: readonly Form[]): Form {
 }
 
 export function newField(form: Form): FormField {
-	return { id: newFormId(formIds(form)), key: "", saveAs: "property", mode: "ask", type: "text" };
+	return { id: newFormId(formIds(form)), key: "", saveAs: "property", mode: "ask", type: "text", source: "typed" };
 }
 
 export function newBlock(form: Form): FormBlock {
@@ -262,7 +275,7 @@ function knownId(stored: unknown, known: { id: string }[]): string {
 function readField(entry: unknown, known: { id: string }[]): FormField | undefined {
 	if (!isRecord(entry) || typeof entry.key !== "string") return undefined;
 	const mode = FIELD_MODES.find((candidate) => candidate === entry.mode);
-	const type = mode && typesFor(mode).find((candidate) => candidate === entry.type);
+	const type = FIELD_TYPES.find((candidate) => candidate === entry.type) ?? choiceFieldType(entry);
 	if (!mode || !type) return undefined;
 	const id = knownId(entry.id, known);
 	const saveAs = SAVE_AS.find((candidate) => candidate === entry.saveAs) ?? "property";
@@ -277,15 +290,30 @@ function readField(entry: unknown, known: { id: string }[]): FormField | undefin
 		if (entry.entryTime === true && isDateType(type)) field.entryTime = true;
 		if (typeof entry.question === "string" && entry.question.trim() !== "") field.question = entry.question;
 	}
-	if (mode === "ask" && hasChoices(type)) {
-		field.choices = readChoices(entry.choices);
-		field.storeAs = STORED_CHOICE_TYPES.find((candidate) => candidate === entry.storeAs) ?? "text";
+	if (mode === "ask" && hasSources(type)) {
+		field.source = choiceFieldType(entry) ? "options" : readSource(type, entry.source);
+		if (field.source === "options") field.choices = readChoices(entry.choices);
+		if (field.source === "notes") {
+			const notesFrom = readListSource(entry.notesFrom);
+			if (!notesFrom) return undefined;
+			field.notesFrom = notesFrom;
+		}
 	}
 	if (isDateType(type)) {
 		field.dateFormat = DATE_FORMATS.find((candidate) => candidate === entry.dateFormat) ?? DEFAULT_DATE_FORMATS[type];
 		if (typeof entry.customFormat === "string") field.customFormat = entry.customFormat;
 	}
 	return field;
+}
+
+function choiceFieldType(entry: Record<string, unknown>): FieldType | undefined {
+	if (entry.type === "select") return entry.storeAs === "number" ? "number" : "text";
+	if (entry.type === "multiselect") return "list";
+	return undefined;
+}
+
+function readSource(type: FieldType, stored: unknown): FieldSource {
+	return sourcesFor(type).find((candidate) => candidate === stored) ?? "typed";
 }
 
 function readStaticValue(type: FieldType, value: unknown): StaticValue | undefined {

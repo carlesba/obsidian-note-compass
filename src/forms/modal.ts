@@ -5,17 +5,22 @@ import { createdNotice } from "./newNotes";
 import { t } from "../i18n";
 import { dailyNoteFormat, resolveDateNotes } from "../lists/dateNotes";
 import type { DateNoteSettings } from "../lists/dateNotes";
-import type { JumpListVault, NewNoteVault } from "../lists/vault";
+import type { JumpListVault, NewNoteVault, NoteBodyVault } from "../lists/vault";
 import { createFormNote } from "./create";
+import { fieldSource } from "./form";
 import type { Form, FormField } from "./form";
+import { offeredNotes } from "./notes";
+import type { NoteOption } from "./notes";
 import { confirmChoices, formChoices, questionChoices, questionPlaceholder, toggledChoice } from "./questions";
 import type { ConfirmChoice, FormChoice, Question, QuestionChoice } from "./questions";
 import { activeQuestions, entryClock, hasCreatableName, resolveForm, unansweredQuestions } from "./resolve";
 import type { Answer, Answers, FormClock } from "./resolve";
 
+type FormVault = JumpListVault & NewNoteVault & Pick<NoteBodyVault, "linkText">;
+
 export function pickForm(
 	app: App,
-	vault: JumpListVault & NewNoteVault,
+	vault: FormVault,
 	forms: readonly Form[],
 	dateNotes: DateNoteSettings,
 	sourcePath: string | undefined,
@@ -44,11 +49,22 @@ export function formClock(vault: JumpListVault & NewNoteVault, dateNotes: DateNo
 	};
 }
 
-export function fillForm(app: App, vault: JumpListVault & NewNoteVault, form: Form, dateNotes: DateNoteSettings, sourcePath: string | undefined): void {
+export function fillForm(app: App, vault: FormVault, form: Form, dateNotes: DateNoteSettings, sourcePath: string | undefined): void {
 	const clock = formClock(vault, dateNotes);
+	const current = sourcePath === undefined ? undefined : vault.notes().find((note) => note.path === sourcePath);
+	const notesByField = new Map<string, NoteOption[]>();
+	const notesFor = (field: FormField): NoteOption[] => {
+		if (fieldSource(field) !== "notes" || !field.notesFrom) return [];
+		const known = notesByField.get(field.id);
+		if (known) return known;
+		const notes = offeredNotes(field.notesFrom, vault, current, dateNotes, (path) => vault.linkText(path, ""));
+		notesByField.set(field.id, notes);
+		return notes;
+	};
 	const question = (field: FormField, answers: Answers): Question => ({
 		field,
-		vaultValues: field.saveAs === "property" && (field.type === "text" || field.type === "number") && field.key !== "" ? vault.propertyValueCounts(field.key) : [],
+		vaultValues: offersVaultValues(field) ? vault.propertyValueCounts(field.key) : [],
+		notes: notesFor(field),
 		now: entryClock(form, answers, clock).now,
 		moment: clock.moment,
 	});
@@ -92,7 +108,7 @@ export function fillForm(app: App, vault: JumpListVault & NewNoteVault, form: Fo
 		new ChoiceModal<QuestionChoice>(app, questionPlaceholder(field, entryClock(form, answers, clock).now, clock.moment), (typed) => questionChoices(question(field, answers), answerOf(), typed), {
 			choose: ({ action }) => {
 				if (action.action === "answer") return after(field, withAnswer(action.answer), editing);
-				if (action.action === "toggle") return openQuestion(field, withAnswer(toggledChoice(answerOf(), action.value, field)), editing);
+				if (action.action === "toggle") return openQuestion(field, withAnswer(toggledChoice(answerOf(), action.value, question(field, answers))), editing);
 				const picked = answerOf();
 				if (picked && !picked.skipped && Array.isArray(picked.value) && picked.value.length > 0) return after(field, answers, editing);
 				if (field.optional) return after(field, withAnswer({ skipped: true }), editing);
@@ -122,4 +138,8 @@ export function fillForm(app: App, vault: JumpListVault & NewNoteVault, form: Fo
 	const first = questionsFor(new Map())[0];
 	if (first) openQuestion(first, new Map(), false);
 	else openConfirm(new Map());
+}
+
+function offersVaultValues(field: FormField): boolean {
+	return field.saveAs === "property" && field.key !== "" && fieldSource(field) === "typed";
 }

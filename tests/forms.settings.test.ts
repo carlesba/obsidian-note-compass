@@ -8,11 +8,13 @@ import {
 	addChoice,
 	dateSourceOptions,
 	fieldBadges,
+	fieldSourceOptions,
 	fieldSummary,
 	fieldWarning,
 	formWarning,
 	headerClickToggles,
 	moveChoice,
+	notesSourceOptions,
 	toggleExpandedField,
 } from "../src/settings/formsForm.ts";
 
@@ -43,15 +45,15 @@ test("form settings are read and written through their control keys", () => {
 	assert.equal(writeControl(settings, "form/9/name", "x"), false);
 });
 
-test("switching a field to fixed keeps a type it can hold and drops the question settings", () => {
+test("switching a field to fixed keeps its type and drops the question settings", () => {
 	const { settings, form, field } = settingsWithForm();
 	const key = (setting: Parameters<typeof formFieldKey>[2], index?: number) => formFieldKey(form.id, field.id, setting, index);
 	writeControl(settings, key("key"), " tags ");
-	writeControl(settings, key("type"), "multiselect");
+	writeControl(settings, key("type"), "list");
+	writeControl(settings, key("source"), "options");
 	writeControl(settings, key("optional"), true);
 	assert.deepEqual(field.choices, []);
-	assert.equal(field.storeAs, "text");
-	assert.equal(fieldSummary(field), "tags · ask, optional · multiselect, several choices · property");
+	assert.equal(fieldSummary(field), "tags · ask, optional · list · options · property");
 	writeControl(settings, key("mode"), "static");
 	assert.deepEqual(field, { id: field.id, key: "tags", saveAs: "property", mode: "static", type: "list" });
 	assert.equal(writeControl(settings, key("saveAs"), "variable"), true);
@@ -59,9 +61,60 @@ test("switching a field to fixed keeps a type it can hold and drops the question
 	assert.equal(fieldSummary(field), "tags · fixed · list · variable");
 	writeControl(settings, key("listItems"), ["[[Books]]", " ", "[[Reading]]"]);
 	assert.deepEqual(readControl(settings, key("listItems")), ["[[Books]]", "[[Reading]]"]);
+	writeControl(settings, key("mode"), "ask");
+	assert.deepEqual(field, { id: field.id, key: "tags", saveAs: "variable", mode: "ask", type: "list", source: "typed" });
 });
 
-test("a fixed number only keeps numbers and choices keep their value and label", () => {
+test("each data type offers the sources that fit it, and a type change resets a source that no longer fits", () => {
+	const { settings, form, field } = settingsWithForm();
+	const key = (setting: Parameters<typeof formFieldKey>[2]) => formFieldKey(form.id, field.id, setting);
+	assert.deepEqual(Object.keys(fieldSourceOptions("text")), ["typed", "options", "notes"]);
+	assert.deepEqual(Object.keys(fieldSourceOptions("number")), ["typed", "options"]);
+	assert.deepEqual(Object.keys(fieldSourceOptions("list")), ["typed", "options", "notes"]);
+	assert.deepEqual(fieldSourceOptions("checkbox"), {});
+	assert.deepEqual(fieldSourceOptions("date"), {});
+	assert.deepEqual(fieldSourceOptions("datetime"), {});
+	assert.equal(readControl(settings, key("source")), "typed");
+	assert.equal(writeControl(settings, key("source"), "notes"), true);
+	assert.deepEqual(field.notesFrom, { kind: "modifiedToday" });
+	assert.equal(field.choices, undefined);
+	assert.equal(fieldSummary(field), "New field · ask · text · notes · property");
+	writeControl(settings, key("type"), "list");
+	assert.equal(field.source, "notes");
+	writeControl(settings, key("type"), "number");
+	assert.equal(field.source, "typed");
+	assert.equal(field.notesFrom, undefined);
+	assert.equal(writeControl(settings, key("source"), "notes"), false);
+	writeControl(settings, key("source"), "options");
+	writeControl(settings, key("type"), "checkbox");
+	assert.deepEqual(field, { id: field.id, key: "", saveAs: "property", mode: "ask", type: "checkbox" });
+	assert.equal(readControl(settings, key("source")), undefined);
+});
+
+test("the notes source of a field is edited like a list's source and warns until it names its note or folder", () => {
+	const { settings, form, field } = settingsWithForm();
+	const key = (setting: Parameters<typeof formFieldKey>[2]) => formFieldKey(form.id, field.id, setting);
+	writeControl(settings, key("key"), "book");
+	writeControl(settings, key("source"), "notes");
+	assert.deepEqual(Object.keys(notesSourceOptions(field)), ["filter", "linksToNote", "inFolder", "modifiedToday", "linksOut", "linksIn", "sameDay"]);
+	assert.equal(writeControl(settings, key("notesSource"), "adjacentDates"), false);
+	assert.equal(writeControl(settings, key("notesSource"), "linksToNote"), true);
+	assert.deepEqual(field.notesFrom, { kind: "linksToNote", note: "" });
+	assert.equal(fieldWarning(form, field), "Note not chosen");
+	writeControl(settings, key("notesNote"), " Books/Book 📚.md ");
+	assert.equal(readControl(settings, key("notesNote")), "Books/Book 📚.md");
+	assert.equal(fieldWarning(form, field), undefined);
+	writeControl(settings, key("notesSource"), "inFolder");
+	assert.equal(fieldWarning(form, field), "Folder not chosen");
+	writeControl(settings, key("notesFolder"), "books");
+	assert.deepEqual(field.notesFrom, { kind: "inFolder", folder: "books" });
+	writeControl(settings, key("notesSource"), "filter");
+	assert.equal(fieldWarning(form, field), "Add a condition to list notes.");
+	writeControl(settings, key("source"), "typed");
+	assert.equal(writeControl(settings, key("notesSource"), "inFolder"), false);
+});
+
+test("a fixed number only keeps numbers and options keep their value and label, with placeholders allowed", () => {
 	const { settings, form, field } = settingsWithForm();
 	const key = (setting: Parameters<typeof formFieldKey>[2], index?: number) => formFieldKey(form.id, field.id, setting, index);
 	writeControl(settings, key("mode"), "static");
@@ -71,14 +124,21 @@ test("a fixed number only keeps numbers and choices keep their value and label",
 	writeControl(settings, key("number"), "twelve");
 	assert.equal(field.value, undefined);
 	writeControl(settings, key("mode"), "ask");
-	writeControl(settings, key("type"), "select");
+	assert.equal(fieldWarning(form, field), "Give this field a name.");
+	writeControl(settings, key("key"), "rating");
+	writeControl(settings, key("source"), "options");
+	assert.equal(fieldWarning(form, field), "Add at least one option.");
+	addChoice(field);
 	addChoice(field);
 	addChoice(field);
 	writeControl(settings, key("choiceValue", 0), " 4 ");
 	writeControl(settings, key("choiceLabel", 0), "4 · Great");
 	writeControl(settings, key("choiceValue", 1), "2");
+	writeControl(settings, key("choiceValue", 2), "[[{{today}}]]");
 	moveChoice(field, 1, 0);
-	assert.deepEqual(field.choices, [{ value: "2" }, { value: "4", label: "4 · Great" }]);
+	assert.deepEqual(field.choices, [{ value: "2" }, { value: "4", label: "4 · Great" }, { value: "[[{{today}}]]" }]);
+	assert.equal(fieldWarning(form, field), undefined);
+	assert.equal(fieldSummary(field), "rating · ask · number · options · property");
 });
 
 test("date fields default their format per type and offer other date fields as a source", () => {

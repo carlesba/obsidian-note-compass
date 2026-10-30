@@ -605,7 +605,7 @@ function sourceItems(
 			desc: filter && filterRules(filter).length === 0 ? t("filterEmptyDesc") : t("filterDesc"),
 			searchable: false,
 			visible: () => list.source.kind === "filter",
-			render: (setting) => (list.source.kind === "filter" ? renderFilter(setting, list.source.filter, context) : undefined),
+			render: (setting) => (list.source.kind === "filter" ? renderFilter(setting.settingEl, list.source.filter, context) : undefined),
 		},
 	];
 }

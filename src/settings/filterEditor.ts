@@ -1,5 +1,5 @@
 import { DropdownComponent, TextComponent, getAllTags, setIcon } from "obsidian";
-import type { App, Setting } from "obsidian";
+import type { App } from "obsidian";
 import { t } from "../i18n";
 import type { TranslationKey } from "../i18n";
 import { typeLabel } from "../i18n/labels";
@@ -88,10 +88,10 @@ const FILE_FIELD_PREFIX = "file:";
 
 const PROPERTY_PREFIX = "property:";
 
-export function renderFilter(setting: Setting, filter: FilterGroup, editing: FilterEditing): () => void {
-	setting.settingEl.addClass("note-compass-filter-setting");
-	setting.settingEl.querySelectorAll(`:scope > .${EDITOR_CLASS}`).forEach((el) => el.remove());
-	const editorEl = setting.settingEl.createDiv({ cls: ["bases-query-container", EDITOR_CLASS] });
+export function renderFilter(settingEl: HTMLElement, filter: FilterGroup, editing: FilterEditing): () => void {
+	settingEl.addClass("note-compass-filter-setting");
+	settingEl.querySelectorAll(`:scope > .${EDITOR_CLASS}`).forEach((el) => el.remove());
+	const editorEl = settingEl.createDiv({ cls: ["bases-query-container", EDITOR_CLASS] });
 	const redraw = () => {
 		editorEl.empty();
 		renderGroup(editorEl, filter, { depth: 1, editing: { ...editing, change } });

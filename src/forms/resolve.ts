@@ -1,8 +1,8 @@
 import { coreDatePlaceholder, isCreatableName } from "./newNotes.ts";
 import type { MomentDate, MomentFactory } from "../lists/vault.ts";
-import { parseDateTime, parseNumber } from "../setProperties/values.ts";
+import { linkTitle, parseDateTime, parseNumber } from "../setProperties/values.ts";
 import { confirmedTime, typedTime } from "./dateInput.ts";
-import { DEFAULT_DATE_FORMATS, formFields, isBlock, isDateType } from "./form.ts";
+import { DEFAULT_DATE_FORMATS, fieldSource, formFields, isBlock, isDateType } from "./form.ts";
 import type { BlockCondition, DateFieldType, Form, FormField } from "./form.ts";
 import { DEFAULT_DAILY_FORMAT, TITLE_PLACEHOLDER, placeholderFormat, placeholderKey, relativeDayOffset } from "./placeholders.ts";
 
@@ -223,12 +223,32 @@ function resolveValue(field: FormField, answers: Answers, clock: FormClock, look
 		if (typeof value !== "number") return SKIPPED;
 		return dated(field, field.type, clock.moment(field.entryTime ? confirmedTime(field.type, value, clock.now, clock.moment) : value));
 	}
-	if (field.type === "select") return valued(storedChoice(field, String(value)));
-	if (field.type === "multiselect") {
-		const items = Array.isArray(value) ? value.map((item) => storedChoice(field, String(item))) : [];
-		return items.length === 0 ? SKIPPED : valued(items);
+	const source = fieldSource(field);
+	if (field.type === "list") {
+		const picked = Array.isArray(value) ? value.map(String) : [];
+		const items = source === "options" ? picked.map((item) => optionValue(field, item, clock, lookup)).filter((item) => !isBlankOption(item)) : picked.filter((item) => item.trim() !== "");
+		if (items.length === 0) return SKIPPED;
+		return source === "notes" ? linked(items) : valued(items);
 	}
-	return valued(value);
+	if (source === "options") {
+		const chosen = optionValue(field, String(value), clock, lookup);
+		return isBlankOption(chosen) ? SKIPPED : valued(chosen);
+	}
+	return source === "notes" ? linked(value) : valued(value);
+}
+
+function linked(value: unknown): Omit<ResolvedField, "field"> {
+	const titles = Array.isArray(value) ? value.map(linkTitle) : linkTitle(value);
+	return { skipped: false, value, text: valueText(titles) };
+}
+
+function optionValue(field: FormField, value: string, clock: FormClock, lookup: Lookup): string | number {
+	const filled = fillWith(value, lookup.field, clock);
+	return field.type === "number" ? parseNumber(filled) ?? filled : filled;
+}
+
+function isBlankOption(value: string | number): boolean {
+	return typeof value === "string" && isBlankValue(value);
 }
 
 function staticValue(field: FormField, clock: FormClock, lookup: Lookup): Omit<ResolvedField, "field"> {
@@ -258,11 +278,6 @@ function isBlankValue(text: string): boolean {
 function setDate(type: DateFieldType, text: string, clock: FormClock): MomentDate | undefined {
 	const time = typedTime(type, text, clock.now, clock.moment);
 	return time === undefined ? undefined : clock.moment(time);
-}
-
-function storedChoice(field: FormField, value: string): string | number {
-	if (field.storeAs !== "number") return value;
-	return parseNumber(value) ?? value;
 }
 
 function valued(value: unknown): Omit<ResolvedField, "field"> {

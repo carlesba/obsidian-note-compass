@@ -17,8 +17,9 @@ export function presetFormat(preset: FieldPreset): DateFormat | undefined {
 }
 
 export function presetField(form: Form, preset: FieldPreset): FormField {
-	const field = newField(form);
-	if (preset === "blank") return field;
+	const blank = newField(form);
+	if (preset === "blank") return blank;
+	const field = withoutSource(blank);
 	if (preset === "entryDate") {
 		return { ...field, key: unusedKey(form, "entry-date"), saveAs: "variable", type: "date", dateFormat: "YYYY-MM-DD", entryTime: true };
 	}
@@ -27,6 +28,12 @@ export function presetField(form: Form, preset: FieldPreset): FormField {
 	}
 	const { key, type, dateFormat } = DATE_PRESETS[preset];
 	return { ...field, key: unusedKey(form, key), mode: "static", type, dateFormat };
+}
+
+function withoutSource(field: FormField): FormField {
+	const dated = { ...field };
+	delete dated.source;
+	return dated;
 }
 
 function unusedKey(form: Form, key: string): string {

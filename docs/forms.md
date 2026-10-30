@@ -27,7 +27,7 @@ Running a form takes you through its questions, then a summary where you check t
 2. Review the summary, "Check the answers…", that opens after the last question.
 3. Choose `✅ Create "<name>"`.
 
-![A select question for the rating field of the Reading log form, with Skip first and the choices 1 · Poor to 5 · Great shown by their labels](images/form-question.png)
+![A question for the rating field of the Reading log form, with Skip first and the fixed options 1 · Poor to 5 · Great shown by their labels](images/form-question.png)
 
 ### Moving around
 
@@ -88,11 +88,11 @@ The fields list works like the other lists in the settings.
 - The cross deletes a field.
 - The `+` in the header opens a menu to add one, described under [Adding fields](#adding-fields).
 
-Each row shows the field's key, followed by small badges for how it is used, who fills it and its type, as in `book` `variable` `ask` `text`. Property badges are blue and variable badges are purple. The badge for who fills it reads `fixed`, `ask`, `ask, optional` or `entry time`.
+Each row shows the field's key, followed by small badges for how it is used, who fills it and its data type, as in `book` `variable` `ask` `text`. Property badges are blue and variable badges are purple. The badge for who fills it reads `fixed`, `ask`, `ask, optional` or `entry time`, and the type badge adds the source of an asked field when it is not typed, as in `list · notes` or `number · options`.
 
 Click the row or its chevron to edit the field right below it, and click again to close it. One field is open at a time, and a new field opens straight away.
 
-![The rating field of the Reading log form opened inline below its row, with Key, Stored as, Filled by, Question, Field type, Optional, Choice value type and its Choices](images/form-field-editor.png)
+![The rating field of the Reading log form opened inline below its row, with Key, Stored as, Filled by, Question, Data type, Source, its Options and Optional](images/form-field-editor.png)
 
 ### Adding fields
 
@@ -121,7 +121,8 @@ Every field is a fixed value the form fills in, or a question it asks.
 | Key | The property name or the variable's name, used as `{{key}}` in both cases. |
 | Stored as | "Property", the default, writes the value to the new note's frontmatter under its key. "Variable" is never written and only fills `{{key}}` in the name and content. |
 | Filled by | "Fixed value" fills it in every time the form runs. "Question" asks for it when the form runs, with the "Question" row as its prompt. |
-| Field type | What kind of value the field holds, listed below. |
+| Data type | What kind of value the field writes: text, number, checkbox, list, date, time or datetime. |
+| Source | For an asked text, number or list, where the answer comes from: "Typed input", "Fixed options" or "Notes". See [Sources](#sources). |
 
 ### Fixed values
 
@@ -145,28 +146,35 @@ A fixed text value and each list item can also be composed from the form's other
 
 ### Asked questions
 
-An asked field becomes one question when the form runs.
+An asked field becomes one question when the form runs. Its data type says what is written, and its source says where the answer comes from.
 
 | Setting | What it does |
 | --- | --- |
 | Question | The prompt. When empty, the field's key is used. |
+| Source | Only for text, number and list. Changing the data type to one that cannot use the source resets it to "Typed input". |
 | Optional | Puts `⏭️ Skip` first in the question. A skipped property is not written at all, and a skipped variable is empty. |
 
-| Type | The question |
-| --- | --- |
-| Text, number | Takes anything you type. A text or number property also offers the values the property already has in the vault. |
-| Checkbox | `true` or `false`. |
-| Select | One of its choices. |
-| Multiselect | Several of its choices, each marked with a check once picked. Finish with `🏁 Done`. |
-| Date, time, datetime | See [Dates and times](#dates-and-times). |
+| Data type | Typed input | Fixed options | Notes |
+| --- | --- | --- | --- |
+| Text | Anything you type. A property also offers the values it already has in the vault. | One of the options, written as text. | One note, written as its `[[link]]`. |
+| Number | A number you type, with the property's vault values. | One of the options, written as a number. | — |
+| List | Items you type one by one, with the property's vault values. Each item toggles with a check; finish with `🏁 Done`. | Several of the options, written as items. | Several notes, written as links. |
+| Checkbox | `true` or `false`. | — | — |
+| Date, time, datetime | See [Dates and times](#dates-and-times). | — | — |
 
-### Choices
+### Sources
 
-Select and multiselect fields offer a list of "Choices", each with a value and an optional label.
+A source is where the answer to a text, number or list question comes from. Checkbox, date and time fields have no source row.
 
-- The `+` in the "Choices" header adds one, the cross removes one, and dragging a choice's handle reorders it.
-- The question shows the label, or the value when there is none, and the note gets the value.
-- "Choice value type" writes the values as text or as numbers. A choice with the value `4` and the label `4 · Great` can write the number 4.
+**Typed input** is the default. The question takes what you type, and a property also offers the values it already has in the vault, most used first. A list adds each item you type or pick, marked with a check, until you choose `🏁 Done`.
+
+**Fixed options** shows a list of "Options", each with a value and an optional label.
+
+- The `+` in the "Options" header adds one, the cross removes one, and dragging an option's handle reorders it.
+- The question shows the label, or the value when there is none, and the note gets the value. A number field writes the value as a number, so the option `4` with the label `4 · Great` writes the number 4. A list writes the picked values as items.
+- A value may hold [placeholders](#placeholders), typed with `@` as in a fixed value, such as `[[{{today}}]]`. They are filled when the form runs, and an option that ends up empty is skipped.
+
+**Notes** offers notes from a "Notes from" source, chosen as a list of "Jump to note" is: a filter, notes that link to a note, notes in a folder, notes modified today, or the notes linked from, linking to or sharing the day of the note in focus. The question lists the notes most recently changed first, and the note gets the note's `[[link]]`, with the folder only when two notes share the name. A text field writes one link, and a list writes the links of every picked note. In the note name and content, `{{key}}` becomes the note's name without brackets, so it can name the new note, and `[[{{key}}]]` links it.
 
 ### Dates and times
 
@@ -208,7 +216,7 @@ Add "Confirm entry date" and/or "Confirm entry time" to confirm when the note is
 
 <details><summary>Warnings and unreadable forms</summary>
 
-- A field without a key, a select without choices, or a date taken from a field that is not a date warn on the field's row and on the form.
+- A field without a key, fixed options without any option, a notes source without its note or folder, or a date taken from a field that is not a date warn on the field's row and on the form.
 - A block without conditions or fields, a condition without a field or value, a condition on a field that is not above the block, or a condition that does not apply to its field's type warn on the block's row and on the form.
 - A form this version of Note Compass cannot read stays in the list switched off, with a warning and no pencil, like an unreadable list. Its saved setup is kept until you delete it.
 - A duplicated form is named `<name> copy`.
@@ -220,7 +228,7 @@ Add "Confirm entry date" and/or "Confirm entry time" to confirm when the note is
 A conditional block holds fields that the form only uses when an earlier answer matches, such as asking for the pages only when the note is about a book.
 
 ```
-⋮⋮ kind          property  ask    select
+⋮⋮ kind          property  ask    text · options
 ⋮⋮ When  kind is book
 │  ⋮⋮ pages       property  ask    number
 │  ⋮⋮ categories  property  fixed  list   [[Books]]
@@ -243,15 +251,15 @@ A conditional block holds fields that the form only uses when an earlier answer 
 
 Click a block's heading to edit its conditions. Each condition picks a field, a check and, for most checks, a value. The block runs only when every condition holds.
 
-| Field type | Checks |
+| Data type | Checks |
 | --- | --- |
-| Text, select | is, is not, is set, is not set |
-| Multiselect, list | has item, does not have item, is set, is not set |
+| Text | is, is not, is set, is not set |
+| List | has item, does not have item, is set, is not set |
 | Number | =, ≠, <, >, is set, is not set |
 | Checkbox | is true, is false |
 | Date, time, datetime | on, not on, before, after, is set, is not set |
 
-A select or multiselect offers its choices as the value, and the other types take a typed value. A date, time or datetime is typed like a [set date](#dates-and-times), as `YYYYMMDD`, `HHmm` or `YYYYMMDDHHmm`, and a datetime compared with a date alone is compared by day.
+A field with fixed options offers them as the value, and the other fields take a typed value. A field answered from notes holds links, so its value is typed as `[[Dune]]`. A date, time or datetime is typed like a [set date](#dates-and-times), as `YYYYMMDD`, `HHmm` or `YYYYMMDDHHmm`, and a datetime compared with a date alone is compared by day.
 
 A condition can only look at fields above its block, outside any block or in an earlier block that runs. Changing an answer from the summary checks the blocks again, and a required question that a block now asks comes next.
 
@@ -293,13 +301,14 @@ Type `@` at the start of the text or after a space, `[` or `(` to open a menu of
 
 A "Reading log" form could have these fields:
 
-| Key | Stored as | Filled by | Field type | Value |
-| --- | --- | --- | --- | --- |
-| `book` | property | ask | select | The books Dune, The Hobbit and Middlemarch. |
-| `rating` | property | ask | select | Choices `1` to `5` with labels such as `5 · Great`, stored as numbers. |
-| `started` | property | fixed | date | At creation. |
-| `categories` | property | fixed | list | `[[Books]]`, `[[Reading]]`. |
-| `dates` | property | fixed | list | `[[today]]`, typed with `@`. |
-| `entry-time` | variable | ask | time | Use as the entry date/time. |
+| Key | Stored as | Filled by | Data type | Source | Value |
+| --- | --- | --- | --- | --- | --- |
+| `book` | property | ask | text | Notes | Notes from the `Books` folder, written as a link such as `[[Dune]]`. |
+| `rating` | property | ask | number | Fixed options | Options `1` to `5` with labels such as `5 · Great`, written as numbers. |
+| `people` | property | ask | list | Notes | Notes that link to `Person`, written as links. |
+| `started` | property | fixed | date | | At creation. |
+| `categories` | property | fixed | list | | `[[Books]]`, `[[Reading]]`. |
+| `dates` | property | fixed | list | | `[[today]]`, typed with `@`. |
+| `entry-time` | variable | ask | time | | Use as the entry date/time. |
 
-With the note name `{{date:YYMMDDHHmm}} {{book}}`, each run asks for the book, the rating and the time, and creates a note such as `2810300930 Dune` linked to `[[Books]]`, `[[Reading]]` and the daily note `[[2028-10-30]]`.
+With the note name `{{date:YYMMDDHHmm}} {{book}}`, each run asks for the book, the rating, the people and the time, and creates a note such as `2810300930 Dune` linked to `[[Dune]]`, `[[Books]]`, `[[Reading]]` and the daily note `[[2028-10-30]]`.

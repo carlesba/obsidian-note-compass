@@ -195,7 +195,7 @@ test("fixed text values and list items compose other fields and relative days", 
 	const log = form({
 		fields: [
 			field("1", "book"),
-			field("2", "rating", { type: "select", storeAs: "number", choices: [{ value: "4" }] }),
+			field("2", "rating", { type: "number", source: "options", choices: [{ value: "4" }] }),
 			field("3", "started", { type: "date" }),
 			fixed("4", "summary", "{{book}} rated {{rating}} on {{started:dddd}}"),
 			fixed("5", "dates", ["[[{{today}}]]", "[[{{yesterday}}]]", "[[Reading]]"]),

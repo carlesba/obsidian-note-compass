@@ -6,35 +6,39 @@ import {
 	DATE_FORMATS,
 	DEFAULT_DATE_FORMATS,
 	FIELD_MODES,
+	FIELD_TYPES,
 	SAVE_AS,
-	STORED_CHOICE_TYPES,
 	blockOf,
+	fieldSource,
 	formFields,
 	formIds,
-	hasChoices,
 	isBlock,
 	isDateType,
 	newFormId,
 	operatorsFor,
+	sourcesFor,
 	takesValue,
-	typesFor,
 } from "../forms/form.ts";
 import type {
 	BlockCondition,
 	BlockOperator,
 	DateFormat,
 	FieldMode,
+	FieldSource,
 	FieldType,
 	Form,
 	FormBlock,
 	FormField,
 	FormItem,
 	SaveAs,
-	StoredChoiceType,
 } from "../forms/form.ts";
 import { duplicateEntry } from "./duplicate.ts";
 import { parseNumber } from "../setProperties/values.ts";
 import { SET_DATE_PLACEHOLDERS, readsAsDate } from "../forms/dateInput.ts";
+import { readListField, sourceOptions, writeListField } from "./listForm.ts";
+import type { SourceChoice } from "./listForm.ts";
+import { filterRules } from "../lists/filters.ts";
+import type { ListSource, NoteList } from "../settings.ts";
 
 export type FormSetting = "enabled" | "name" | "namePattern" | "contentPattern" | "folder" | "opensNote";
 
@@ -54,7 +58,10 @@ export type FieldSetting =
 	| "optional"
 	| "entryTime"
 	| "question"
-	| "storeAs"
+	| "source"
+	| "notesSource"
+	| "notesNote"
+	| "notesFolder"
 	| "dateFormat"
 	| "customFormat"
 	| "from"
@@ -73,8 +80,6 @@ const FIELD_TYPE_KEYS: Record<FieldType, TranslationKey> = {
 	number: "typeNumber",
 	checkbox: "typeCheckbox",
 	list: "formTypeList",
-	select: "formTypeSelect",
-	multiselect: "formTypeMultiselect",
 	date: "typeDate",
 	time: "formTypeTime",
 	datetime: "typeDatetime",
@@ -90,10 +95,18 @@ const SAVE_AS_KEYS: Record<SaveAs, TranslationKey> = {
 	variable: "formSaveAsVariable",
 };
 
-const STORED_CHOICE_KEYS: Record<StoredChoiceType, TranslationKey> = {
-	text: "typeText",
-	number: "typeNumber",
+const SOURCE_KEYS: Record<FieldSource, TranslationKey> = {
+	typed: "formSourceTyped",
+	options: "formSourceOptions",
+	notes: "formSourceNotes",
 };
+
+const SOURCE_BADGE_KEYS: Record<Exclude<FieldSource, "typed">, TranslationKey> = {
+	options: "formSummaryOptions",
+	notes: "formSummaryNotes",
+};
+
+const NOTES_SOURCE_CHOICES: readonly SourceChoice[] = ["filter", "linksToNote", "inFolder", "modifiedToday", "linksOut", "linksIn", "sameDay"];
 
 const DATE_FORMAT_KEYS: Partial<Record<DateFormat, TranslationKey>> = {
 	iso: "formFormatIso",
@@ -108,18 +121,33 @@ export function fieldModeOptions(): Record<FieldMode, string> {
 	return translatedLabels(MODE_KEYS);
 }
 
-export function fieldTypeOptions(mode: FieldMode): Record<string, string> {
+export function fieldTypeOptions(): Record<string, string> {
 	const options: Record<string, string> = {};
-	for (const type of typesFor(mode)) options[type] = fieldTypeLabel(type);
+	for (const type of FIELD_TYPES) options[type] = fieldTypeLabel(type);
+	return options;
+}
+
+export function fieldSourceLabel(source: FieldSource): string {
+	return t(SOURCE_KEYS[source]);
+}
+
+export function fieldSourceOptions(type: FieldType): Record<string, string> {
+	const options: Record<string, string> = {};
+	for (const source of sourcesFor(type)) options[source] = fieldSourceLabel(source);
+	return options;
+}
+
+export function notesSourceOptions(field: FormField): Record<string, string> {
+	const all = sourceOptions();
+	const options: Record<string, string> = {};
+	for (const choice of NOTES_SOURCE_CHOICES) options[choice] = all[choice];
+	const current = field.notesFrom?.kind;
+	if (current !== undefined && current !== "unreadable" && !(current in options)) options[current] = all[current];
 	return options;
 }
 
 export function saveAsOptions(): Record<SaveAs, string> {
 	return translatedLabels(SAVE_AS_KEYS);
-}
-
-export function storeAsOptions(): Record<StoredChoiceType, string> {
-	return translatedLabels(STORED_CHOICE_KEYS);
 }
 
 export function dateFormatOptions(): Record<string, string> {
@@ -161,8 +189,14 @@ export function fieldBadges(field: FormField): FieldBadge[] {
 	return [
 		field.saveAs === "property" ? { kind: "property", text: t("formSummaryProperty") } : { kind: "variable", text: t("formSummaryVariable") },
 		{ kind: "mode", text: mode },
-		{ kind: "type", text: fieldTypeLabel(field.type) },
+		{ kind: "type", text: fieldTypeBadge(field) },
 	];
+}
+
+function fieldTypeBadge(field: FormField): string {
+	const source = fieldSource(field);
+	const type = fieldTypeLabel(field.type);
+	return source === undefined || source === "typed" ? type : `${type} · ${t(SOURCE_BADGE_KEYS[source])}`;
 }
 
 export function fieldSummary(field: FormField): string {
@@ -179,7 +213,17 @@ export function fieldWarning(form: Form, field: FormField): string | undefined {
 		return t("formSetDateUnreadable", { format: SET_DATE_PLACEHOLDERS[field.type] });
 	}
 	if (field.entryTime && formFields(form).some((other) => other !== field && other.entryTime && other.mode === "ask" && (other.type === field.type || other.type === "datetime" || field.type === "datetime"))) return t("formSecondEntryTime");
-	if (hasChoices(field.type) && field.mode === "ask" && !(field.choices ?? []).some((choice) => choice.value.trim() !== "")) return t("formNeedsChoices");
+	const source = fieldSource(field);
+	if (source === "options" && !(field.choices ?? []).some((choice) => choice.value.trim() !== "")) return t("formNeedsChoices");
+	if (source === "notes") return notesSourceWarning(field.notesFrom);
+	return undefined;
+}
+
+function notesSourceWarning(source: ListSource | undefined): string | undefined {
+	if (!source || source.kind === "unreadable") return t("unreadableListWarning");
+	if (source.kind === "linksToNote" && source.note.trim() === "") return t("noteNotChosen");
+	if (source.kind === "inFolder" && source.folder.trim() === "") return t("folderNotChosen");
+	if (source.kind === "filter" && filterRules(source.filter).length === 0) return t("filterEmptyDesc");
 	return undefined;
 }
 
@@ -293,7 +337,7 @@ export function conditionOperatorOptions(form: Pick<Form, "fields">, block: Form
 
 export function conditionValueOptions(form: Pick<Form, "fields">, block: FormBlock, condition: BlockCondition): Record<string, string> | undefined {
 	const field = conditionField(form, block, condition.key);
-	if (!field || !hasChoices(field.type)) return undefined;
+	if (!field || fieldSource(field) !== "options") return undefined;
 	const options: Record<string, string> = {};
 	for (const choice of field.choices ?? []) if (choice.value !== "") options[choice.value] = choice.label ?? choice.value;
 	const value = condition.value ?? "";
@@ -441,8 +485,14 @@ export function readFieldSetting(field: FormField, setting: FieldSetting, index?
 			return field.choices?.[index ?? -1]?.value;
 		case "choiceLabel":
 			return field.choices?.[index ?? -1]?.label ?? "";
-		case "storeAs":
-			return field.storeAs ?? "text";
+		case "source":
+			return fieldSource(field);
+		case "notesSource":
+			return field.notesFrom?.kind;
+		case "notesNote":
+			return field.notesFrom ? readListField(notesList(field, field.notesFrom), "note") : undefined;
+		case "notesFolder":
+			return field.notesFrom ? readListField(notesList(field, field.notesFrom), "folder") : undefined;
 		default:
 			return field[setting];
 	}
@@ -462,20 +512,29 @@ export function writeFieldSetting(field: FormField, setting: FieldSetting, value
 		case "mode": {
 			const mode = FIELD_MODES.find((candidate) => candidate === value);
 			if (!mode) return false;
-			const previous = field.type;
 			field.mode = mode;
-			field.type = typeForMode(field.type, mode);
-			normalizeField(field, previous);
+			normalizeField(field, field.type);
 			return true;
 		}
 		case "type": {
-			const type = typesFor(field.mode).find((candidate) => candidate === value);
+			const type = FIELD_TYPES.find((candidate) => candidate === value);
 			if (!type) return false;
 			const previous = field.type;
 			field.type = type;
 			normalizeField(field, previous);
 			return true;
 		}
+		case "source": {
+			const source = sourcesFor(field.type).find((candidate) => candidate === value);
+			if (!source || field.mode !== "ask") return false;
+			field.source = source;
+			normalizeField(field, field.type);
+			return true;
+		}
+		case "notesSource":
+		case "notesNote":
+		case "notesFolder":
+			return writeNotesSource(field, setting, value);
 		case "text":
 			field.value = text;
 			return true;
@@ -502,9 +561,6 @@ export function writeFieldSetting(field: FormField, setting: FieldSetting, value
 		case "question":
 			if (text.trim() === "") delete field.question;
 			else field.question = text;
-			return true;
-		case "storeAs":
-			field.storeAs = STORED_CHOICE_TYPES.find((candidate) => candidate === value) ?? "text";
 			return true;
 		case "dateFormat":
 			field.dateFormat = DATE_FORMATS.find((candidate) => candidate === value) ?? field.dateFormat;
@@ -592,11 +648,21 @@ function writeChoice(field: FormField, setting: "choiceValue" | "choiceLabel", i
 	return true;
 }
 
-function typeForMode(type: FieldType, mode: FieldMode): FieldType {
-	if (typesFor(mode).includes(type)) return type;
-	if (type === "list") return "multiselect";
-	if (type === "multiselect") return "list";
-	return "text";
+function notesList(field: FormField, source: ListSource): NoteList {
+	return { id: field.id, enabled: true, prefix: "", source };
+}
+
+function writeNotesSource(field: FormField, setting: "notesSource" | "notesNote" | "notesFolder", value: unknown): boolean {
+	if (fieldSource(field) !== "notes" || !field.notesFrom) return false;
+	const list = notesList(field, field.notesFrom);
+	if (setting === "notesSource" && !NOTES_SOURCE_CHOICES.includes(value as SourceChoice)) return false;
+	writeListField(list, setting === "notesSource" ? "source" : setting === "notesNote" ? "note" : "folder", value);
+	field.notesFrom = list.source;
+	return true;
+}
+
+function defaultNotesSource(): ListSource {
+	return { kind: "modifiedToday" };
 }
 
 function normalizeField(field: FormField, previous: FieldType): void {
@@ -610,13 +676,13 @@ function normalizeField(field: FormField, previous: FieldType): void {
 		delete field.at;
 	}
 	if (previous !== field.type || field.mode === "ask") delete field.value;
-	if (field.mode === "ask" && hasChoices(field.type)) {
-		field.choices = field.choices ?? [];
-		field.storeAs = field.storeAs ?? "text";
-	} else {
-		delete field.choices;
-		delete field.storeAs;
-	}
+	const source = fieldSource(field);
+	if (source === undefined) delete field.source;
+	else field.source = source;
+	if (source === "options") field.choices = field.choices ?? [];
+	else delete field.choices;
+	if (source === "notes") field.notesFrom = field.notesFrom ?? defaultNotesSource();
+	else delete field.notesFrom;
 	if (isDateType(field.type)) {
 		const presets = Object.values(DEFAULT_DATE_FORMATS);
 		if (field.dateFormat === undefined || (presets.includes(field.dateFormat) && field.dateFormat !== DEFAULT_DATE_FORMATS[field.type])) {

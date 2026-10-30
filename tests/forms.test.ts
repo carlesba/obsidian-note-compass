@@ -6,7 +6,8 @@ import type { Form, FormField } from "../src/forms/form.ts";
 import { answered, resolveForm, skippedAnswer, unansweredQuestions } from "../src/forms/resolve.ts";
 import type { Answer, FormClock } from "../src/forms/resolve.ts";
 import { defaultSettings, mergeSettings, storedSettings } from "../src/settings.ts";
-import { NOW, fakeVault } from "./fakeVault.ts";
+import { offeredNotes } from "../src/forms/notes.ts";
+import { HOURS_AGO, NOW, fakeVault } from "./fakeVault.ts";
 import { moment } from "./moment.ts";
 
 const clock: FormClock = { now: NOW, moment, coreTemplatesOptions: undefined };
@@ -42,11 +43,11 @@ const readingLog = (): Form =>
 		namePattern: "{{date:YYMMDDHHmm}}   {{book}}",
 		contentPattern: "# {{title}}\nBy {{author}} on {{started:dddd}}, rated {{rating}}.\n{{unknown}} stays",
 		fields: [
-			variable("1", "book"),
-			field("2", "author"),
+			variable("1", "book", { source: "typed" }),
+			field("2", "author", { source: "typed" }),
 			field("3", "started", { type: "datetime", dateFormat: "YYYY-MM-DDTHH:mm" }),
 			field("4", "day", { mode: "static", type: "date", dateFormat: "YYYY-MM-DD", from: "started" }),
-			field("5", "rating", { type: "select", storeAs: "number", choices: [{ value: "4", label: "4 · Great" }, { value: "2" }] }),
+			field("5", "rating", { type: "number", source: "options", choices: [{ value: "4", label: "4 · Great" }, { value: "2" }] }),
 			field("6", "categories", { mode: "static", type: "list", value: ["[[Books]]", "[[Reading]]"] }),
 		],
 	});
@@ -97,7 +98,7 @@ test("forms saved with separate variables and properties read as one fields list
 		},
 		{ id: "2", enabled: true, variables: "book" },
 	]);
-	assert.deepEqual(converted.fields, [variable("1", "book"), field("2", "author"), field("3", "kind", { mode: "static", value: "book" })]);
+	assert.deepEqual(converted.fields, [variable("1", "book", { source: "typed" }), field("2", "author", { source: "typed" }), field("3", "kind", { mode: "static", value: "book" })]);
 	assert.deepEqual(broken.unreadable, { stored: { id: "2", enabled: true, variables: "book" } });
 	const settings = defaultSettings();
 	settings.forms = [converted];
@@ -147,10 +148,10 @@ test("a date field at creation uses the creation time and can be written as ISO 
 	]);
 });
 
-test("multiselect writes the chosen values as a list, label only shown, stored as text by default", () => {
+test("a list from fixed options writes the chosen values as a list, label only shown", () => {
 	const shape = form({
 		namePattern: "{{topics}}",
-		fields: [field("1", "topics", { type: "multiselect", choices: [{ value: "a", label: "Alpha" }, { value: "b" }] })],
+		fields: [field("1", "topics", { type: "list", source: "options", choices: [{ value: "a", label: "Alpha" }, { value: "b" }] })],
 	});
 	const resolved = resolveForm(shape, answers({ "1": answered(["a", "b"]) }), clock);
 	assert.deepEqual(resolved.frontmatter, [["topics", ["a", "b"]]]);
@@ -244,4 +245,154 @@ test("saved entryTime markers and date types round-trip without migration", () =
 		const reloaded = mergeSettings(JSON.parse(JSON.stringify(storedSettings(settings))));
 		assert.deepEqual(reloaded.forms[0].fields, shape.fields);
 	}
+});
+
+test("saved select and multiselect fields read as a data type with fixed options, and are saved in the new shape only", () => {
+	const saved = {
+		id: "1",
+		enabled: true,
+		fields: [
+			{ id: "1", key: "rating", mode: "ask", type: "select", storeAs: "number", choices: [{ value: "4", label: "4 · Great" }] },
+			{ id: "2", key: "kind", mode: "ask", type: "select", storeAs: "text", choices: [{ value: "book" }] },
+			{ id: "3", key: "genre", mode: "ask", type: "select", choices: [{ value: "sci-fi", label: "Sci-fi" }, { label: "no value" }] },
+			{ id: "4", key: "topics", mode: "ask", type: "multiselect", storeAs: "text", choices: [{ value: "a" }] },
+			{ id: "5", key: "author", mode: "ask", type: "text" },
+			{ id: "6", key: "pages", mode: "ask", type: "number", optional: true },
+			{ id: "7", key: "read", mode: "ask", type: "checkbox" },
+			{ id: "8", key: "day", mode: "ask", type: "date" },
+		],
+	};
+	const [read] = readForms([saved]);
+	assert.equal(read.unreadable, undefined);
+	assert.deepEqual(read.fields, [
+		field("1", "rating", { type: "number", source: "options", choices: [{ value: "4", label: "4 · Great" }] }),
+		field("2", "kind", { type: "text", source: "options", choices: [{ value: "book" }] }),
+		field("3", "genre", { type: "text", source: "options", choices: [{ value: "sci-fi", label: "Sci-fi" }] }),
+		field("4", "topics", { type: "list", source: "options", choices: [{ value: "a" }] }),
+		field("5", "author", { source: "typed" }),
+		field("6", "pages", { type: "number", source: "typed", optional: true }),
+		field("7", "read", { type: "checkbox" }),
+		field("8", "day", { type: "date", dateFormat: "YYYY-MM-DD" }),
+	]);
+	const settings = defaultSettings();
+	settings.forms = [read];
+	const stored = JSON.parse(JSON.stringify(storedSettings(settings))) as { forms: { fields: Record<string, unknown>[] }[] };
+	assert.deepEqual(stored.forms[0].fields.map((saved) => saved.type), ["number", "text", "text", "list", "text", "number", "checkbox", "date"]);
+	assert.deepEqual(stored.forms[0].fields.map((saved) => saved.source), ["options", "options", "options", "options", "typed", "typed", undefined, undefined]);
+	assert.equal(stored.forms[0].fields.some((saved) => "storeAs" in saved), false);
+	assert.deepEqual(mergeSettings(stored).forms, settings.forms);
+});
+
+test("a saved source that does not fit its data type reads as typed input, and an unreadable notes source makes the form unreadable", () => {
+	const [read] = readForms([
+		{
+			id: "1",
+			fields: [
+				{ id: "1", key: "pages", mode: "ask", type: "number", source: "notes", notesFrom: { kind: "modifiedToday" } },
+				{ id: "2", key: "read", mode: "ask", type: "checkbox", source: "options", choices: [{ value: "x" }] },
+				{ id: "3", key: "book", mode: "ask", type: "text", source: "notes", notesFrom: { kind: "inFolder", folder: "books" } },
+				{ id: "4", key: "people", mode: "ask", type: "list", source: "notes", notesFrom: { kind: "filter", filter: { kind: "group", mode: "all", items: [] } } },
+				{ id: "5", key: "kind", mode: "static", type: "text", source: "options", value: "book" },
+			],
+		},
+	]);
+	assert.deepEqual(read.fields, [
+		field("1", "pages", { type: "number", source: "typed" }),
+		field("2", "read", { type: "checkbox" }),
+		field("3", "book", { source: "notes", notesFrom: { kind: "inFolder", folder: "books" } }),
+		field("4", "people", { type: "list", source: "notes", notesFrom: { kind: "filter", filter: { kind: "group", mode: "all", items: [] } } }),
+		field("5", "kind", { mode: "static", value: "book" }),
+	]);
+	const broken = { id: "2", enabled: true, fields: [{ id: "1", key: "book", mode: "ask", type: "text", source: "notes", notesFrom: { kind: "someday" } }] };
+	const [unreadable] = readForms([broken]);
+	assert.equal(unreadable.enabled, false);
+	assert.deepEqual(unreadable.unreadable, { stored: broken });
+	const settings = defaultSettings();
+	settings.forms = [read, unreadable];
+	const reloaded = mergeSettings(JSON.parse(JSON.stringify(storedSettings(settings))));
+	assert.deepEqual(reloaded.forms, settings.forms);
+});
+
+test("each data type and source combination writes its own shape: numbers from options, links from notes, lists as items", () => {
+	const shape = form({
+		namePattern: "{{book}} by {{author}}",
+		contentPattern: "[[{{book}}]] with {{people}}",
+		fields: [
+			field("1", "book", { source: "notes", notesFrom: { kind: "inFolder", folder: "books" } }),
+			field("2", "author", { source: "options", choices: [{ value: "Herbert", label: "Frank Herbert" }] }),
+			field("3", "rating", { type: "number", source: "options", choices: [{ value: "4", label: "4 · Great" }, { value: "n/a" }] }),
+			field("4", "pages", { type: "number", source: "typed" }),
+			field("5", "topics", { type: "list", source: "options", choices: [{ value: "a", label: "Alpha" }, { value: "b" }] }),
+			field("6", "people", { type: "list", source: "notes", notesFrom: { kind: "modifiedToday" } }),
+			field("7", "tags", { type: "list", source: "typed" }),
+			field("8", "summary", { source: "typed" }),
+		],
+	});
+	const resolved = resolveForm(
+		shape,
+		answers({
+			"1": answered("[[Dune]]"),
+			"2": answered("Herbert"),
+			"3": answered("4"),
+			"4": answered(412),
+			"5": answered(["a", "b"]),
+			"6": answered(["[[Paul]]", "[[People/Leto]]"]),
+			"7": answered(["fiction", " ", "classic"]),
+			"8": answered("Great read"),
+		}),
+		clock,
+	);
+	assert.equal(resolved.name, "Dune by Herbert");
+	assert.equal(resolved.fields.find((each) => each.field.key === "people")?.text, "Paul, People/Leto");
+	assert.equal(resolved.content, "[[Dune]] with Paul, People/Leto");
+	assert.deepEqual(resolved.frontmatter, [
+		["book", "[[Dune]]"],
+		["author", "Herbert"],
+		["rating", 4],
+		["pages", 412],
+		["topics", ["a", "b"]],
+		["people", ["[[Paul]]", "[[People/Leto]]"]],
+		["tags", ["fiction", "classic"]],
+		["summary", "Great read"],
+	]);
+	const partial = resolveForm(shape, answers({ "3": answered("n/a"), "5": answered([]), "7": answered([" "]) }), clock);
+	assert.deepEqual(partial.frontmatter, [["rating", "n/a"]]);
+});
+
+test("option values may hold placeholders, filled when the form runs, and an option that ends up empty is skipped", () => {
+	const shape = form({
+		fields: [
+			variable("1", "book", { source: "typed", optional: true }),
+			field("2", "about", { source: "options", choices: [{ value: "[[{{book}}]]", label: "The book" }, { value: "[[{{today}}]]", label: "Today" }] }),
+			field("3", "dates", { type: "list", source: "options", choices: [{ value: "[[{{today}}]]", label: "Today" }, { value: "[[{{tomorrow}}]]", label: "Tomorrow" }, { value: "{{book}}" }] }),
+			field("4", "score", { type: "number", source: "options", choices: [{ value: "{{points}}", label: "From points" }] }),
+			variable("5", "points", { type: "number", source: "typed" }),
+		],
+	});
+	const resolved = resolveForm(shape, answers({ "1": answered("Dune"), "2": answered("[[{{book}}]]"), "3": answered(["[[{{today}}]]", "{{book}}"]), "4": answered("{{points}}"), "5": answered(7) }), clock);
+	assert.deepEqual(resolved.frontmatter, [
+		["about", "[[Dune]]"],
+		["dates", ["[[2024-03-09]]", "Dune"]],
+		["score", 7],
+	]);
+	const skipped = resolveForm(shape, answers({ "1": skippedAnswer(), "2": answered("[[{{book}}]]"), "3": answered(["[[{{tomorrow}}]]", "{{book}}"]) }), clock);
+	assert.deepEqual(skipped.frontmatter, [["dates", ["[[2024-03-10]]"]]]);
+});
+
+test("the notes offered to a question come from its list source, most recently changed first, with links that stay unique", () => {
+	const vault = fakeVault([
+		{ path: "books/Dune.md", mtime: HOURS_AGO(1) },
+		{ path: "books/Emma.md", mtime: HOURS_AGO(3) },
+		{ path: "books/old/Emma.md", mtime: HOURS_AGO(2) },
+		{ path: "people/Paul.md", mtime: HOURS_AGO(1), links: ["books/Dune.md"] },
+	]);
+	const linkText = (path: string) => vault.linkText(path, "");
+	const dateNotes = defaultSettings().dateNotes;
+	const inFolder = offeredNotes({ kind: "inFolder", folder: "books" }, vault, undefined, dateNotes, linkText);
+	assert.deepEqual(inFolder.map((note) => [note.name, note.link]), [["Dune", "[[Dune]]"], ["Emma", "[[books/old/Emma]]"], ["Emma", "[[books/Emma]]"]]);
+	const linking = offeredNotes({ kind: "linksToNote", note: "Dune" }, vault, undefined, dateNotes, linkText);
+	assert.deepEqual(linking.map((note) => note.path), ["people/Paul.md"]);
+	const current = vault.note("people/Paul.md");
+	assert.deepEqual(offeredNotes({ kind: "linksOut" }, vault, current, dateNotes, linkText).map((note) => note.link), ["[[Dune]]"]);
+	assert.deepEqual(offeredNotes({ kind: "linksOut" }, vault, undefined, dateNotes, linkText), []);
 });

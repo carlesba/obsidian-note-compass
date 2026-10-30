@@ -11,7 +11,9 @@ import { moment } from "./moment.ts";
 const clock: FormClock = { now: NOW, moment, coreTemplatesOptions: undefined };
 
 function field(id: string, key: string, extra: Partial<FormField> = {}): FormField {
-	return { id, key, saveAs: "property", mode: "ask", type: "text", ...extra };
+	const shape: FormField = { id, key, saveAs: "property", mode: "ask", type: "text", ...extra };
+	if (shape.mode === "ask" && (shape.type === "text" || shape.type === "number" || shape.type === "list")) shape.source = shape.source ?? "typed";
+	return shape;
 }
 
 function block(id: string, conditions: BlockCondition[], fields: FormField[]): FormBlock {
@@ -22,7 +24,7 @@ function answers(entries: Record<string, Answer>): Map<string, Answer> {
 	return new Map(Object.entries(entries));
 }
 
-const kind = field("1", "kind", { type: "select", choices: [{ value: "book" }, { value: "article" }], storeAs: "text" });
+const kind = field("1", "kind", { source: "options", choices: [{ value: "book" }, { value: "article" }] });
 
 const readingLog = (): Form => ({
 	id: "1",
@@ -98,8 +100,8 @@ test("conditions compare by type, and every condition of a block must hold", () 
 	assert.equal(run([{ key: "x", operator: "is not", value: "a" }], undefined), true);
 	assert.equal(run([{ key: "x", operator: "is true" }], true, "checkbox"), true);
 	assert.equal(run([{ key: "x", operator: "is false" }], true, "checkbox"), false);
-	assert.equal(run([{ key: "x", operator: "has item", value: "b" }], ["a", "b"], "multiselect"), true);
-	assert.equal(run([{ key: "x", operator: "does not have item", value: "b" }], ["a", "b"], "multiselect"), false);
+	assert.equal(run([{ key: "x", operator: "has item", value: "b" }], ["a", "b"], "list"), true);
+	assert.equal(run([{ key: "x", operator: "does not have item", value: "b" }], ["a", "b"], "list"), false);
 	assert.equal(run([{ key: "x", operator: ">", value: "3" }], 4, "number"), true);
 	assert.equal(run([{ key: "x", operator: "<", value: "3" }], 4, "number"), false);
 	assert.equal(run([{ key: "x", operator: "≠", value: "3" }], undefined, "number"), false);
@@ -145,4 +147,36 @@ test("date, time and datetime conditions compare the answer with a typed moment,
 	assert.equal(run("after", "202403110900", at("2024-03-11T09:30"), "datetime"), true);
 	assert.equal(run("before", "20240311", undefined, "date"), false);
 	assert.equal(run("before", "soon", at("2024-03-11T09:30"), "date"), false);
+});
+
+test("conditions on fields saved as select or multiselect keep holding after they read as options", () => {
+	const [form] = readForms([
+		{
+			id: "1",
+			enabled: true,
+			fields: [
+				{ id: "1", key: "kind", mode: "ask", type: "select", storeAs: "text", choices: [{ value: "book" }, { value: "article" }] },
+				{ id: "2", key: "rating", mode: "ask", type: "select", storeAs: "number", choices: [{ value: "4" }, { value: "2" }] },
+				{ id: "3", key: "topics", mode: "ask", type: "multiselect", choices: [{ value: "a" }, { value: "b" }] },
+				block("4", [{ key: "kind", operator: "is", value: "book" }, { key: "rating", operator: ">", value: "3" }, { key: "topics", operator: "has item", value: "b" }], [field("5", "pages", { type: "number" })]),
+			],
+		},
+	]);
+	assert.equal(form.unreadable, undefined);
+	assert.deepEqual(keys(activeQuestions(form, answers({ "1": answered("book"), "2": answered("4"), "3": answered(["a", "b"]) }), clock)), ["kind", "rating", "topics", "pages"]);
+	assert.deepEqual(keys(activeQuestions(form, answers({ "1": answered("book"), "2": answered("2"), "3": answered(["a", "b"]) }), clock)), ["kind", "rating", "topics"]);
+	assert.deepEqual(keys(activeQuestions(form, answers({ "1": answered("book"), "2": answered("4"), "3": answered(["a"]) }), clock)), ["kind", "rating", "topics"]);
+});
+
+test("a text answered from notes is compared as its link, and a list of links has that link as an item", () => {
+	const form: Form = {
+		...readingLog(),
+		fields: [
+			field("1", "book", { source: "notes", notesFrom: { kind: "modifiedToday" } }),
+			field("2", "people", { type: "list", source: "notes", notesFrom: { kind: "modifiedToday" } }),
+			block("3", [{ key: "book", operator: "is", value: "[[Dune]]" }, { key: "people", operator: "has item", value: "[[Paul]]" }], [field("4", "y")]),
+		],
+	};
+	assert.deepEqual(keys(activeQuestions(form, answers({ "1": answered("[[Dune]]"), "2": answered(["[[Paul]]", "[[Leto]]"]) }), clock)), ["book", "people", "y"]);
+	assert.deepEqual(keys(activeQuestions(form, answers({ "1": answered("[[Emma]]"), "2": answered(["[[Paul]]"]) }), clock)), ["book", "people"]);
 });

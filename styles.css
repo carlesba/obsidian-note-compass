@@ -592,8 +592,10 @@
 	min-width: 0;
 }
 
-.note-compass-form-choice-inputs input[type="text"] {
+.note-compass-form-choice-inputs input[type="text"],
+.note-compass-form-choice-inputs .note-compass-pill-input {
 	flex: 1 1 9em;
+	width: auto;
 	min-width: 0;
 }
 

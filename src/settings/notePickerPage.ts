@@ -75,7 +75,7 @@ export function notePickerPage(picker: NotePicker, context: NotePickerPageContex
 							name: t("notePickerFilter"),
 							desc: filterRules(picker.filter).length === 0 ? t("notePickerFilterEmptyDesc") : t("notePickerFilterDesc"),
 							searchable: false,
-							render: (setting) => renderFilter(setting, picker.filter, context),
+							render: (setting) => renderFilter(setting.settingEl, picker.filter, context),
 						},
 					],
 				},
