@@ -407,7 +407,7 @@ export const en = {
 	formSetDateDesc: "Type it as {format}, or with dashes and colons.",
 	formSetDateUnreadable: "Can't read this date. Type it as {format}.",
 	formFromMissingField: "Field {key} is not a date or time of this form.",
-	formStoreAs: "Store values as",
+	formStoreAs: "Choice value type",
 	formStoreAsDesc: "Write the chosen values as text or as numbers.",
 	formChoices: "Choices",
 	noFormChoices: "No choices yet.",

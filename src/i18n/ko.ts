@@ -409,7 +409,7 @@ export const ko: Translation = {
 	formSetDateDesc: "{format} 형식으로 입력하세요. 하이픈과 콜론을 넣어도 됩니다.",
 	formSetDateUnreadable: "이 날짜를 읽을 수 없습니다. {format} 형식으로 입력하세요.",
 	formFromMissingField: "{key} 필드는 이 양식의 날짜나 시간이 아닙니다.",
-	formStoreAs: "값 저장 형식",
+	formStoreAs: "선택지 값 형식",
 	formStoreAsDesc: "선택한 값을 텍스트나 숫자로 기록합니다.",
 	formChoices: "선택지",
 	noFormChoices: "아직 선택지가 없습니다.",

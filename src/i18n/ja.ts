@@ -409,7 +409,7 @@ export const ja: Translation = {
 	formSetDateDesc: "{format} の形式で入力します。ハイフンやコロンを含めても構いません。",
 	formSetDateUnreadable: "この日付を読み取れません。{format} の形式で入力してください。",
 	formFromMissingField: "フィールド {key} はこのフォームの日付・時刻ではありません。",
-	formStoreAs: "値の保存形式",
+	formStoreAs: "選択肢の値の型",
 	formStoreAsDesc: "選んだ値をテキストか数値として書き込みます。",
 	formChoices: "選択肢",
 	noFormChoices: "選択肢はまだありません。",

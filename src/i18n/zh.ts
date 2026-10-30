@@ -409,7 +409,7 @@ export const zh: Translation = {
 	formSetDateDesc: "按 {format} 输入，也可以带短横线和冒号。",
 	formSetDateUnreadable: "无法读取此日期。请按 {format} 输入。",
 	formFromMissingField: "字段 {key} 不是此表单中的日期或时间。",
-	formStoreAs: "值的保存方式",
+	formStoreAs: "选项值类型",
 	formStoreAsDesc: "将所选的值写为文本或数字。",
 	formChoices: "选项",
 	noFormChoices: "还没有选项。",

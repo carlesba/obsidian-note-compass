@@ -408,7 +408,7 @@ export const es: Translation = {
 	formSetDateDesc: "Escríbela como {format}, o con guiones y dos puntos.",
 	formSetDateUnreadable: "No se puede leer esta fecha. Escríbela como {format}.",
 	formFromMissingField: "El campo {key} no es una fecha ni una hora de este formulario.",
-	formStoreAs: "Guardar valores como",
+	formStoreAs: "Tipo de valor de las opciones",
 	formStoreAsDesc: "Escribe los valores elegidos como texto o como números.",
 	formChoices: "Opciones",
 	noFormChoices: "Aún no hay opciones.",

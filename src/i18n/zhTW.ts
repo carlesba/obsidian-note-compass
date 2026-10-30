@@ -409,7 +409,7 @@ export const zhTW: Translation = {
 	formSetDateDesc: "以 {format} 輸入，也可以加上連字號和冒號。",
 	formSetDateUnreadable: "無法讀取此日期。請以 {format} 輸入。",
 	formFromMissingField: "欄位 {key} 不是此表單中的日期或時間。",
-	formStoreAs: "值的儲存方式",
+	formStoreAs: "選項值類型",
 	formStoreAsDesc: "將選取的值寫成文字或數字。",
 	formChoices: "選項",
 	noFormChoices: "尚無選項。",

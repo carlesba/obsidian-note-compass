@@ -92,7 +92,7 @@ Each row shows the field's key, followed by small badges for how it is used, who
 
 Click the row or its chevron to edit the field right below it, and click again to close it. One field is open at a time, and a new field opens straight away.
 
-![The rating field of the Reading log form opened inline below its row, with Key, Stored as, Filled by, Question, Field type, Optional, Store values as and its Choices](images/form-field-editor.png)
+![The rating field of the Reading log form opened inline below its row, with Key, Stored as, Filled by, Question, Field type, Optional, Choice value type and its Choices](images/form-field-editor.png)
 
 ### Adding fields
 
@@ -160,7 +160,7 @@ Select and multiselect fields offer a list of "Choices", each with a value and a
 
 - The `+` in the "Choices" header adds one, the cross removes one, and dragging a choice's handle reorders it.
 - The question shows the label, or the value when there is none, and the note gets the value.
-- "Store values as" writes the values as text or as numbers. A choice with the value `4` and the label `4 · Great` can write the number 4.
+- "Choice value type" writes the values as text or as numbers. A choice with the value `4` and the label `4 · Great` can write the number 4.
 
 ### Dates and times
 
