@@ -1,6 +1,7 @@
 import { ExtraButtonComponent, DropdownComponent, Menu, TextComponent, moment } from "obsidian";
 import type { Setting, SettingDefinition, SettingDefinitionItem, SettingDefinitionList, SettingDefinitionPage, SettingDefinitionRender } from "obsidian";
 import { hasChoices, isDateType, newBlock, takesValue } from "../forms/form";
+import type { FormClock } from "../forms/resolve";
 import { SET_DATE_PLACEHOLDERS, typedTime } from "../forms/dateInput";
 import { FIELD_PRESETS, presetField, presetFormat } from "../forms/presets";
 import type { FieldPreset } from "../forms/presets";
@@ -44,7 +45,10 @@ import { editableRow } from "./listPage";
 import type { EditableRow, ListPageContext } from "./listPage";
 import { sortableRows } from "./sortable";
 import { ROW_CONTROL_CLASS } from "./tabOrder";
-import { LinkSuggest, PropertySuggest, warningDescription } from "./suggest";
+import { knownPlaceholderKeys, placeholderEntries, placeholderPreview } from "./placeholderMenu";
+import { pillInput, renderPillText } from "./pillInput";
+import type { PillInput, PillInputOptions } from "./pillInput";
+import { PropertySuggest, warningDescription } from "./suggest";
 import {
 	FOCUS_ATTRIBUTE,
 	checkedTextRow,
@@ -58,7 +62,11 @@ import {
 } from "./fieldEditor";
 import type { EditorBinding, ExpandingPageContext, Redraw } from "./fieldEditor";
 
-export type FormPageContext = ExpandingPageContext;
+export interface FormPageContext extends ExpandingPageContext {
+	formClock: () => FormClock;
+}
+
+type PatternSetting = "namePattern" | "contentPattern";
 
 type IdentifiedPage = SettingDefinitionPage & { id: string };
 
@@ -181,16 +189,8 @@ export function formPage(form: Form, context: FormPageContext): SettingDefinitio
 		: [
 				{ name: t("enabled"), desc: t("formEnabledDesc"), control: { type: "toggle", key: key("enabled") } },
 				{ name: t("formName"), desc: t("formNameDesc"), control: { type: "text", key: key("name"), placeholder: t("formNamePlaceholder") } },
-				{
-					name: t("formNamePattern"),
-					desc: t("formNamePatternDesc"),
-					control: { type: "text", key: key("namePattern"), placeholder: NAME_PATTERN_EXAMPLE },
-				},
-				{
-					name: t("formContentPattern"),
-					desc: t("formContentPatternDesc"),
-					control: { type: "textarea", key: key("contentPattern"), rows: 6 },
-				},
+				patternRow(form, context, "namePattern", t("formNamePattern"), t("formNamePatternDesc"), NAME_PATTERN_EXAMPLE),
+				patternRow(form, context, "contentPattern", t("formContentPattern"), t("formContentPatternDesc"), ""),
 				{ name: t("folder"), desc: t("newNoteFolderDesc"), control: { type: "folder", key: key("folder") } },
 				{ name: t("formOpensNote"), desc: t("formOpensNoteDesc"), control: { type: "toggle", key: key("opensNote") } },
 				fieldList(form, context),
@@ -204,6 +204,47 @@ export function formPage(form: Form, context: FormPageContext): SettingDefinitio
 		items,
 	};
 	return page;
+}
+
+function patternRow(form: Form, context: FormPageContext, setting: PatternSetting, name: string, desc: string, placeholder: string): SettingDefinitionRender {
+	const multiline = setting === "contentPattern";
+	return {
+		name,
+		desc,
+		render: ({ settingEl, controlEl }) => {
+			settingEl.addClass("note-compass-pill-setting");
+			if (multiline) settingEl.addClass("mod-multiline");
+			const input = placeholderInput(controlEl, form, context, multiline, {
+				multiline,
+				placeholder,
+				ariaLabel: name,
+				changed: (text) => context.write(formKey(form.id, setting), text),
+			});
+			input.setValue(form[setting]);
+			return () => {
+				input.el.remove();
+				settingEl.removeClass("note-compass-pill-setting", "mod-multiline");
+			};
+		},
+	};
+}
+
+function placeholderInput(
+	parentEl: HTMLElement,
+	form: Form,
+	context: FormPageContext,
+	inContent: boolean,
+	options: Omit<PillInputOptions, "app" | "entries" | "knownKeys">,
+): PillInput {
+	return pillInput(parentEl, {
+		app: context.app,
+		entries: () => {
+			const clock = context.formClock();
+			return placeholderEntries(form, { inContent, preview: (key) => placeholderPreview(key, clock) });
+		},
+		knownKeys: () => knownPlaceholderKeys(form, inContent),
+		...options,
+	});
 }
 
 function fieldList(form: Form, context: FormPageContext): SettingDefinitionList {
@@ -526,7 +567,7 @@ function staticValueRows(parentEl: HTMLElement, editor: FieldEditor): void {
 	const { form, field } = editor;
 	switch (field.type) {
 		case "text":
-			linkSuggestions(textRow(parentEl, editor, "text", t("formValue"), t("formStaticValueDesc"), t("formLinkHint")).text.inputEl, editor);
+			staticTextRow(parentEl, editor);
 			return;
 		case "number":
 			numberRow(parentEl, editor);
@@ -573,8 +614,17 @@ function setDateRow(parentEl: HTMLElement, editor: FieldEditor, type: DateFieldT
 	return { rowEl };
 }
 
-function linkSuggestions(inputEl: HTMLInputElement, editor: FieldEditor, picked?: () => void): LinkSuggest {
-	return new LinkSuggest(editor.context.app, inputEl, picked);
+function staticTextRow(parentEl: HTMLElement, editor: FieldEditor): void {
+	const { form, field, context } = editor;
+	const { controlEl } = editorRow(parentEl, t("formValue"), t("formStaticTextDesc"));
+	const input = placeholderInput(controlEl, form, context, false, {
+		multiline: false,
+		placeholder: t("formLinkHint"),
+		ariaLabel: t("formValue"),
+		changed: (text) => write(editor, "text", text),
+	});
+	input.el.setAttr(FOCUS_ATTRIBUTE, "text");
+	input.setValue(typeof field.value === "string" ? field.value : "");
 }
 
 function numberRow(parentEl: HTMLElement, editor: FieldEditor): void {
@@ -633,21 +683,16 @@ function choiceRow(listEl: HTMLElement, editor: FieldEditor, index: number, draw
 }
 
 function listItemsInput(controlEl: HTMLElement, editor: FieldEditor): void {
-	const { field } = editor;
+	const { form, field, context } = editor;
 	const items = Array.isArray(field.value) ? [...field.value] : [];
 	const boxEl = controlEl.createDiv({ cls: "note-compass-chip-input" });
-	const inputEl = createEl("input", {
-		type: "text",
-		cls: "note-compass-chip-input-text",
-		attr: { placeholder: t("formListItemPlaceholder"), "aria-label": t("formListItems"), [FOCUS_ATTRIBUTE]: "listItems" },
-	});
+	const known = () => knownPlaceholderKeys(form, false);
 	const save = () => write(editor, "listItems", [...items]);
-	boxEl.appendChild(inputEl);
 	const draw = () => {
 		for (const chipEl of Array.from(boxEl.querySelectorAll(".note-compass-list-chip"))) chipEl.remove();
 		items.forEach((item, index) => {
 			const chipEl = createSpan({ cls: "note-compass-row-prefix note-compass-list-chip" });
-			chipEl.createSpan({ cls: "note-compass-chip-text", text: item });
+			renderPillText(chipEl.createSpan({ cls: "note-compass-chip-text" }), item, known());
 			new ExtraButtonComponent(chipEl)
 				.setIcon("x")
 				.setTooltip(t("formRemoveItem"))
@@ -655,37 +700,45 @@ function listItemsInput(controlEl: HTMLElement, editor: FieldEditor): void {
 					items.splice(index, 1);
 					draw();
 					save();
-					inputEl.focus();
+					input.el.focus();
 				});
-			boxEl.insertBefore(chipEl, inputEl);
+			boxEl.insertBefore(chipEl, input.el);
 		});
 	};
 	const add = (keepsFocus: boolean) => {
-		const item = inputEl.value.trim();
+		const item = input.value().trim();
 		if (item === "") return;
 		items.push(item);
-		inputEl.value = "";
+		input.setValue("");
 		draw();
-		if (keepsFocus) inputEl.focus();
+		if (keepsFocus) input.el.focus();
 		save();
 	};
-	const suggest = linkSuggestions(inputEl, editor, () => add(true));
-	inputEl.addEventListener("keydown", (event) => {
-		if (event.isComposing || suggest.isOpen) return;
+	const input = placeholderInput(boxEl, form, context, false, {
+		multiline: false,
+		placeholder: t("formListItemPlaceholder"),
+		ariaLabel: t("formListItems"),
+		changed: () => undefined,
+		linkPicked: () => add(true),
+	});
+	input.el.addClass("note-compass-chip-input-text");
+	input.el.setAttr(FOCUS_ATTRIBUTE, "listItems");
+	input.el.addEventListener("keydown", (event) => {
+		if (event.isComposing || input.suggest.isOpen) return;
 		if (event.key === "Enter") {
 			event.preventDefault();
 			event.stopPropagation();
 			add(true);
-		} else if (event.key === "Backspace" && inputEl.value === "" && items.length > 0) {
+		} else if (event.key === "Backspace" && input.value() === "" && items.length > 0) {
 			event.stopPropagation();
 			items.pop();
 			draw();
 			save();
 		}
 	});
-	inputEl.addEventListener("blur", () => add(false));
+	input.el.addEventListener("blur", () => add(false));
 	boxEl.addEventListener("click", (event) => {
-		if (event.target === boxEl) inputEl.focus();
+		if (event.target === boxEl) input.el.focus();
 	});
 	draw();
 }

@@ -4,6 +4,7 @@ import { parseDateTime, parseNumber } from "../setProperties/values.ts";
 import { confirmedTime, typedTime } from "./dateInput.ts";
 import { DEFAULT_DATE_FORMATS, formFields, isBlock, isDateType } from "./form.ts";
 import type { BlockCondition, DateFieldType, Form, FormField } from "./form.ts";
+import { DEFAULT_DAILY_FORMAT, TITLE_PLACEHOLDER, placeholderFormat, placeholderKey, relativeDayOffset } from "./placeholders.ts";
 
 export type Answer = { skipped: true } | { skipped: false; value: unknown };
 
@@ -13,6 +14,12 @@ export interface FormClock {
 	now: number;
 	moment: MomentFactory;
 	coreTemplatesOptions: unknown;
+	dailyFormat?: string;
+}
+
+interface Lookup {
+	field: (key: string) => ResolvedField | undefined;
+	date: (key: string) => MomentDate | undefined;
 }
 
 export interface ResolvedField {
@@ -32,6 +39,8 @@ export interface ResolvedForm {
 }
 
 const PLACEHOLDER = /{{([^{}]+?)}}/g;
+
+const EMPTY_LINK = /^\[\[\s*\]\]$/;
 
 const SKIPPED: Omit<ResolvedField, "field"> = { skipped: true, text: "" };
 
@@ -117,7 +126,7 @@ function resolver(fields: readonly FormField[], answers: Answers, clock: FormClo
 		if (known) return known;
 		if (visiting.has(field.id)) return { field, ...SKIPPED };
 		visiting.add(field.id);
-		const result = { field, ...resolveValue(field, answers, clock, (key) => source(fields, field, key, resolve)) };
+		const result = { field, ...resolveValue(field, answers, clock, lookupFor(fields, field, resolve)) };
 		visiting.delete(field.id);
 		resolved.set(field.id, result);
 		return result;
@@ -125,14 +134,12 @@ function resolver(fields: readonly FormField[], answers: Answers, clock: FormClo
 	return resolve;
 }
 
-function source(
-	fields: readonly FormField[],
-	field: FormField,
-	key: string,
-	resolve: (field: FormField) => ResolvedField,
-): MomentDate | undefined {
-	const dates = fields.filter((candidate) => candidate !== field && isDateType(candidate.type));
-	return latest(dates, key, resolve)?.date;
+function lookupFor(fields: readonly FormField[], field: FormField, resolve: (field: FormField) => ResolvedField): Lookup {
+	const otherDates = fields.filter((candidate) => candidate !== field && isDateType(candidate.type));
+	return {
+		field: (key) => latest(fields, key, resolve),
+		date: (key) => latest(otherDates, key, resolve)?.date,
+	};
 }
 
 function latest(fields: readonly FormField[], key: string, resolve: (field: FormField) => ResolvedField): ResolvedField | undefined {
@@ -207,13 +214,8 @@ function compares(operator: "=" | "≠" | "<" | ">", actual: number | undefined,
 	return operator === "<" ? actual < expected : actual > expected;
 }
 
-function resolveValue(
-	field: FormField,
-	answers: Answers,
-	clock: FormClock,
-	dateFrom: (key: string) => MomentDate | undefined,
-): Omit<ResolvedField, "field"> {
-	if (field.mode === "static") return staticValue(field, clock, dateFrom);
+function resolveValue(field: FormField, answers: Answers, clock: FormClock, lookup: Lookup): Omit<ResolvedField, "field"> {
+	if (field.mode === "static") return staticValue(field, clock, lookup);
 	const answer = answers.get(field.id);
 	if (answer === undefined || answer.skipped || isEmptyAnswer(answer.value)) return SKIPPED;
 	const { value } = answer;
@@ -229,15 +231,28 @@ function resolveValue(
 	return valued(value);
 }
 
-function staticValue(field: FormField, clock: FormClock, dateFrom: (key: string) => MomentDate | undefined): Omit<ResolvedField, "field"> {
+function staticValue(field: FormField, clock: FormClock, lookup: Lookup): Omit<ResolvedField, "field"> {
 	if (isDateType(field.type)) {
-		const date = field.at !== undefined ? setDate(field.type, field.at, clock) : field.from === undefined ? clock.moment(clock.now) : dateFrom(field.from);
+		const date = field.at !== undefined ? setDate(field.type, field.at, clock) : field.from === undefined ? clock.moment(clock.now) : lookup.date(field.from);
 		return date && date.isValid() ? dated(field, field.type, date.clone()) : SKIPPED;
 	}
 	if (field.type === "checkbox") return valued(field.value === true);
 	const { value } = field;
 	if (value === undefined || isEmptyAnswer(value)) return SKIPPED;
+	if (typeof value === "string") {
+		const filled = fillWith(value, lookup.field, clock);
+		return isBlankValue(filled) ? SKIPPED : valued(filled);
+	}
+	if (Array.isArray(value)) {
+		const items = value.map((item) => fillWith(item, lookup.field, clock)).filter((item) => !isBlankValue(item));
+		return items.length === 0 ? SKIPPED : valued(items);
+	}
 	return valued(value);
+}
+
+function isBlankValue(text: string): boolean {
+	const trimmed = text.trim();
+	return trimmed === "" || EMPTY_LINK.test(trimmed);
 }
 
 function setDate(type: DateFieldType, text: string, clock: FormClock): MomentDate | undefined {
@@ -273,19 +288,29 @@ export function valueText(value: unknown): string {
 }
 
 export function fillPattern(pattern: string, fields: readonly ResolvedField[], clock: FormClock, title?: string): string {
+	return fillWith(pattern, (key) => latestResolved(fields, key), clock, title);
+}
+
+function fillWith(pattern: string, lookup: (key: string) => ResolvedField | undefined, clock: FormClock, title?: string): string {
 	return pattern.replace(PLACEHOLDER, (match, inner: string) => {
-		const separator = inner.indexOf(":");
-		const key = (separator === -1 ? inner : inner.slice(0, separator)).trim();
-		const format = separator === -1 ? undefined : inner.slice(separator + 1);
-		const resolved = latestResolved(fields, key);
+		const key = placeholderKey(inner);
+		const format = placeholderFormat(inner);
+		const resolved = lookup(key);
 		if (resolved) {
 			if (resolved.skipped) return "";
 			return format !== undefined && resolved.date ? resolved.date.format(format) : resolved.text;
 		}
-		if (title !== undefined && format === undefined && key.toLowerCase() === "title") return title;
+		if (title !== undefined && format === undefined && key.toLowerCase() === TITLE_PLACEHOLDER) return title;
 		if (/^(date|time)$/i.test(key)) return coreDatePlaceholder(key, format, clock.moment(clock.now), clock.coreTemplatesOptions);
-		return match;
+		const day = relativeDay(key, clock, format);
+		return day ?? match;
 	});
+}
+
+export function relativeDay(key: string, clock: FormClock, format?: string): string | undefined {
+	const offset = relativeDayOffset(key);
+	if (offset === undefined) return undefined;
+	return clock.moment(clock.now).add(offset, "day").format(format || clock.dailyFormat || DEFAULT_DAILY_FORMAT);
 }
 
 function latestResolved(fields: readonly ResolvedField[], key: string): ResolvedField | undefined {

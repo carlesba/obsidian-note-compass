@@ -66,6 +66,11 @@ export function resolveDateNotes(settings: DateNoteSettings, vault: DateNoteVaul
 	return { from: "custom", periods: custom };
 }
 
+export function dailyNoteFormat(resolved: ResolvedDateNotes): string | undefined {
+	const day = resolved.periods.day;
+	return day.enabled && day.format.trim() !== "" ? day.format.trim() : undefined;
+}
+
 function readSource(source: DateNoteSource, custom: DateNoteFormats, vault: DateNoteVault): DateNoteFormats | undefined {
 	if (source === "periodicNotes") return readPeriodicNotes(vault.periodicNotesSettings());
 	if (source === "dailyNotes") return readDailyNotes(vault.dailyNotesOptions(), custom);

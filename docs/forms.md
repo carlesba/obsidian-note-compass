@@ -71,7 +71,7 @@ A form's page, under Settings → Note Compass → Forms, holds everything the f
 | --- | --- |
 | Enabled | Offers the form in "Fill form" and as a command. |
 | Name | Shown in "Fill form" and as the command name. |
-| Note name | The pattern for the new note's name, such as `{{date:YYMMDDHHmm}} {{book}}`. |
+| Note name | The pattern for the new note's name, such as `{{date:YYMMDDHHmm}} {{book}}`. Type `@` to insert a [placeholder](#placeholders). |
 | Note content | The new note's text, with the same [placeholders](#placeholders). |
 | Folder | Where new notes go. |
 | Open the note after creating it | On by default. Switch it off to stay where you are. |
@@ -129,13 +129,19 @@ A fixed field writes the same value every time the form runs, or a date worked o
 
 | Type | Value |
 | --- | --- |
-| Text | Any text. Typing `[[` suggests the vault's notes. |
+| Text | Any text. Typing `[[` suggests the vault's notes, and `@` inserts a [placeholder](#placeholders). |
 | Number | Only keeps numbers. |
 | Checkbox | A switch. |
-| List | A box where each item shows as a chip. Type an item and press Enter to add it, and use its × to remove it. |
+| List | A box where each item shows as a chip. Type an item and press Enter to add it, and use its × to remove it. `[[` and `@` work as in a text value. |
 | Date, time, datetime | See [Dates and times](#dates-and-times). |
 
 List items may be links, so `[[Books]]` and `[[Reading]]` write `categories: ["[[Books]]", "[[Reading]]"]`. This is how a form links its notes to other notes. In a fixed text value or the list's box, typing `[[` suggests the vault's notes, and picking one writes its link, such as `[[Books]]`, using the folder only when two notes share the name. In the list's box the picked link becomes a chip straight away.
+
+A fixed text value and each list item can also be composed from the form's other fields and from the date, with the same [placeholders](#placeholders) as the note name. A `dates` list with the item `[[today]]` writes `dates: ["[[2026-10-31]]"]`, linking the new note to today's daily note, and a `summary` text with `{{book}} rated {{rating}}` writes `Dune rated 4`. The order of the fields does not matter.
+
+- A list item that ends up empty or as `[[]]`, because the field it uses was skipped, is dropped.
+- A text value that ends up empty is not written.
+- Conditions on a composed field compare against the composed value.
 
 ### Asked questions
 
@@ -260,17 +266,28 @@ Several fields may share a key, such as a `categories` in each of two blocks. Th
 
 ## Placeholders
 
-Placeholders fill a form's note name and note content with its answers and the time.
+Placeholders fill a form's note name, note content, fixed text values and list items with its answers and the time.
 
 | Placeholder | Becomes |
 | --- | --- |
 | `{{date}}`, `{{time}}` | The time the form started, or the entry time, in the formats set in the core Templates plugin. |
 | `{{date:FORMAT}}`, `{{time:FORMAT}}` | The same time in the format given. |
-| `{{key}}` | The value of the field called `key`. Lists are joined with commas, and a skipped field is empty. |
+| `{{today}}`, `{{tomorrow}}`, `{{yesterday}}` | The entry date, the day after or the day before, in the daily-note format of the [Date notes source](settings.md), or `YYYY-MM-DD` without one. `{{today:FORMAT}}` uses the format given. |
+| `{{key}}` | The value of the field called `key`. Lists are joined with commas, and a skipped field is empty. A field called `today` wins over the built-in `{{today}}`. |
 | `{{key:FORMAT}}` | A date or time field in the format given, such as `{{started:dddd}}`. |
 | `{{title}}` | The new note's name. In the content only. |
 
-Any other placeholder is left as it is.
+Wrapping a placeholder in a link, as in `[[{{today}}]]`, links the note it names, so `[[{{today}}]]` becomes `[[2026-10-31]]`. Any other placeholder is left as it is.
+
+### Typing placeholders
+
+Type `@` at the start of the text or after a space, `[` or `(` to open a menu of the placeholders the form knows, filtered by what you type after the `@`.
+
+- The menu offers `today`, `tomorrow` and `yesterday` with the date they would write right now, every field key of the form, including fields inside conditional blocks, then `date` and `time`, and `title` in the note content.
+- Each entry comes twice: plain, as `today`, and as a link, as `[[today]]`.
+- Picking an entry replaces `@` and what you typed with a pill. A pill is one block: the caret jumps over it and Backspace or Delete removes it whole. Escape closes the menu and keeps the text.
+- A placeholder typed or pasted by hand, such as `{{book}}`, becomes a pill too, and `[[{{book}}]]` becomes one link pill. A pill for a key the form does not have is drawn with a dashed border and left as it is when the note is created.
+- The settings keep plain text with `{{…}}`; pills are only how the inputs show it.
 
 ## Example
 
@@ -282,6 +299,7 @@ A "Reading log" form could have these fields:
 | `rating` | property | ask | select | Choices `1` to `5` with labels such as `5 · Great`, stored as numbers. |
 | `started` | property | fixed | date | At creation. |
 | `categories` | property | fixed | list | `[[Books]]`, `[[Reading]]`. |
+| `dates` | property | fixed | list | `[[today]]`, typed with `@`. |
 | `entry-time` | variable | ask | time | Use as the entry date/time. |
 
-With the note name `{{date:YYMMDDHHmm}} {{book}}`, each run asks for the book, the rating and the time, and creates a note such as `2810300930 Dune` linked to `[[Books]]` and `[[Reading]]`.
+With the note name `{{date:YYMMDDHHmm}} {{book}}`, each run asks for the book, the rating and the time, and creates a note such as `2810300930 Dune` linked to `[[Books]]`, `[[Reading]]` and the daily note `[[2028-10-30]]`.

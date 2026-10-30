@@ -54,7 +54,7 @@ export default class NoteCompassPlugin extends Plugin {
 			id: "fill-form",
 			name: t("fillForm"),
 			icon: "clipboard-list",
-			callback: () => pickForm(this.app, createObsidianVault(this.app), this.settings.forms, this.currentNote()?.path),
+			callback: () => pickForm(this.app, createObsidianVault(this.app), this.settings.forms, this.settings.dateNotes, this.currentNote()?.path),
 		});
 
 		this.registerNotePickerCommands();
@@ -120,7 +120,7 @@ export default class NoteCompassPlugin extends Plugin {
 				id,
 				name: formName(form),
 				icon: "clipboard-list",
-				callback: () => fillForm(this.app, createObsidianVault(this.app), form, this.currentNote()?.path),
+				callback: () => fillForm(this.app, createObsidianVault(this.app), form, this.settings.dateNotes, this.currentNote()?.path),
 			});
 			this.formCommandIds.push(id);
 		}

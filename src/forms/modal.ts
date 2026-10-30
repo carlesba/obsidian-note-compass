@@ -3,6 +3,8 @@ import type { App } from "obsidian";
 import { ChoiceModal } from "../choiceModal";
 import { createdNotice } from "./newNotes";
 import { t } from "../i18n";
+import { dailyNoteFormat, resolveDateNotes } from "../lists/dateNotes";
+import type { DateNoteSettings } from "../lists/dateNotes";
 import type { JumpListVault, NewNoteVault } from "../lists/vault";
 import { createFormNote } from "./create";
 import type { Form, FormField } from "./form";
@@ -11,14 +13,20 @@ import type { ConfirmChoice, FormChoice, Question, QuestionChoice } from "./ques
 import { activeQuestions, entryClock, hasCreatableName, resolveForm, unansweredQuestions } from "./resolve";
 import type { Answer, Answers, FormClock } from "./resolve";
 
-export function pickForm(app: App, vault: JumpListVault & NewNoteVault, forms: readonly Form[], sourcePath: string | undefined): void {
+export function pickForm(
+	app: App,
+	vault: JumpListVault & NewNoteVault,
+	forms: readonly Form[],
+	dateNotes: DateNoteSettings,
+	sourcePath: string | undefined,
+): void {
 	const runnable = forms.filter(isRunnable);
 	if (!runnable.length) {
 		new Notice(t("noFormsYet"));
 		return;
 	}
 	new ChoiceModal<FormChoice>(app, t("pickAForm"), (query) => formChoices(runnable, query), {
-		choose: ({ action }) => fillForm(app, vault, action.form, sourcePath),
+		choose: ({ action }) => fillForm(app, vault, action.form, dateNotes, sourcePath),
 		dismiss: () => undefined,
 	}).open();
 }
@@ -27,8 +35,17 @@ export function isRunnable(form: Form): boolean {
 	return form.enabled && form.unreadable === undefined;
 }
 
-export function fillForm(app: App, vault: JumpListVault & NewNoteVault, form: Form, sourcePath: string | undefined): void {
-	const clock: FormClock = { now: vault.now(), moment: vault.moment, coreTemplatesOptions: vault.coreTemplatesOptions() };
+export function formClock(vault: JumpListVault & NewNoteVault, dateNotes: DateNoteSettings): FormClock {
+	return {
+		now: vault.now(),
+		moment: vault.moment,
+		coreTemplatesOptions: vault.coreTemplatesOptions(),
+		dailyFormat: dailyNoteFormat(resolveDateNotes(dateNotes, vault)),
+	};
+}
+
+export function fillForm(app: App, vault: JumpListVault & NewNoteVault, form: Form, dateNotes: DateNoteSettings, sourcePath: string | undefined): void {
+	const clock = formClock(vault, dateNotes);
 	const question = (field: FormField, answers: Answers): Question => ({
 		field,
 		vaultValues: field.saveAs === "property" && (field.type === "text" || field.type === "number") && field.key !== "" ? vault.propertyValueCounts(field.key) : [],

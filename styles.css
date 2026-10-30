@@ -343,7 +343,7 @@
 	--icon-size: var(--icon-xs);
 }
 
-.note-compass-chip-input input.note-compass-chip-input-text {
+.note-compass-chip-input .note-compass-chip-input-text {
 	flex: 1 1 6em;
 	min-width: 6em;
 	border: none;
@@ -351,6 +351,108 @@
 	box-shadow: none;
 	padding: 0;
 	height: auto;
+	min-height: 0;
+}
+
+.note-compass-chip-input .note-compass-chip-input-text:focus {
+	box-shadow: none;
+}
+
+.note-compass-pill-input {
+	position: relative;
+	box-sizing: border-box;
+	width: 100%;
+	min-height: var(--input-height);
+	padding: var(--size-2-1) var(--size-4-2);
+	font-size: var(--font-ui-small);
+	line-height: var(--line-height-tight);
+	color: var(--text-normal);
+	background: var(--background-modifier-form-field);
+	border: var(--input-border-width) solid var(--background-modifier-border);
+	border-radius: var(--input-radius);
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+	cursor: text;
+}
+
+.note-compass-pill-input:focus {
+	outline: none;
+	box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
+}
+
+.note-compass-pill-input.mod-multiline {
+	min-height: calc(6 * var(--line-height-tight) * 1em + 2 * var(--size-2-1));
+}
+
+.note-compass-pill-input.is-empty::before {
+	content: attr(data-placeholder);
+	position: absolute;
+	inset: var(--size-2-1) var(--size-4-2);
+	color: var(--text-faint);
+	pointer-events: none;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.setting-item.note-compass-pill-setting .setting-item-control {
+	flex: 1 1 50%;
+	min-width: 0;
+}
+
+.setting-item.note-compass-pill-setting.mod-multiline {
+	flex-direction: column;
+	align-items: stretch;
+}
+
+.setting-item.note-compass-pill-setting.mod-multiline .setting-item-control {
+	flex-basis: auto;
+	margin-top: var(--size-4-2);
+}
+
+.note-compass-field-setting-control > .note-compass-pill-input {
+	width: min(100%, 20em);
+}
+
+.note-compass-pill {
+	display: inline-block;
+	box-sizing: border-box;
+	margin: 0 1px;
+	padding: 0 var(--size-4-1);
+	font-size: var(--font-ui-smaller);
+	line-height: 1.5;
+	vertical-align: baseline;
+	color: var(--text-muted);
+	background: var(--background-modifier-hover);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	white-space: nowrap;
+	user-select: none;
+}
+
+.note-compass-pill.mod-link {
+	color: var(--text-accent);
+	background: color-mix(in srgb, var(--text-accent) 12%, var(--background-primary));
+	border-color: color-mix(in srgb, var(--text-accent) 40%, var(--background-modifier-border));
+}
+
+.note-compass-pill.is-unknown {
+	color: var(--text-warning);
+	border-style: dashed;
+	border-color: var(--text-warning);
+}
+
+.note-compass-list-chip .note-compass-pill {
+	font-size: inherit;
+	line-height: 1.2;
+	margin: 0;
+	padding: 0 var(--size-2-1);
+}
+
+.note-compass-pill-suggestion {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-1);
 }
 
 .note-compass-sortable-list .setting-items .setting-item.note-compass-field-row {

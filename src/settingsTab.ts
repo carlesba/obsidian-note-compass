@@ -26,6 +26,7 @@ import {
 	periodName,
 } from "./settings/dateNotesForm";
 import { newForm, newFormId } from "./forms/form";
+import { formClock } from "./forms/modal";
 import { duplicateEntry, duplicateName } from "./settings/duplicate";
 import { formPage, formPageId, formRow } from "./settings/formPage";
 import type { FormPageContext } from "./settings/formPage";
@@ -144,6 +145,7 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 		const formContext: FormPageContext = {
 			...context,
 			fieldEditor: this.fieldEditor,
+			formClock: () => formClock(vault, this.plugin.settings.dateNotes),
 			refresh: () => this.update(),
 			saveQuietly: (change: () => unknown) => {
 				change();

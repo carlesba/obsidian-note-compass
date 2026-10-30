@@ -15,7 +15,7 @@ export function openLinkAt(text: string, caret: number): OpenLink | undefined {
 	const start = before.lastIndexOf("[[");
 	if (start === -1) return undefined;
 	const query = before.slice(start + 2);
-	if (/\]\]|\||\n/.test(query)) return undefined;
+	if (/\]\]|\||\n/.test(query) || query.startsWith("{{")) return undefined;
 	return { start, query };
 }
 
