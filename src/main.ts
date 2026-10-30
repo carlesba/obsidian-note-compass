@@ -132,6 +132,7 @@ export default class NoteCompassPlugin extends Plugin {
 			createObsidianVault(this.app),
 			this.currentNote(),
 			this.settings.dateNotes,
+			picker.filter,
 		);
 		if (!entries.length) {
 			new Notice(t("noNotesToJumpTo"));

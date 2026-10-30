@@ -183,3 +183,28 @@ test("folder, tag and links conditions can be negated, and the negation is store
 	assert.equal(sourceSummary(filter(all({ kind: "tag", tag: "work", negated: true }))), "Not tagged work");
 	assert.equal(sourceSummary(filter(all({ kind: "linksTo", note: "people/Person.md", negated: true }))), "Does not link to Person");
 });
+
+test("a navigation picker's filter narrows every list on top of each list's own filter", () => {
+	const vault = fakeVault(notes.map((fake) => ({ ...fake })), { propertyTypes: TYPES });
+	const lists: NoteList[] = [
+		{ id: "list-1", enabled: true, prefix: "a", source: filter(all(property("status", { operator: "is", value: "doing" }))) },
+		{ id: "list-2", enabled: true, prefix: "b", source: { kind: "inFolder", folder: "projects" } },
+	];
+	const names = (pickerFilter?: FilterGroup) => buildJumpList(lists, vault, undefined, undefined, pickerFilter).map((entry) => `${entry.prefix} ${entry.name}`);
+	assert.deepEqual(names(), ["a Alpha", "a Delta", "b Alpha", "b Beta"]);
+	assert.deepEqual(names(all()), names());
+	assert.deepEqual(names(all(isTrue("active"))), ["a Alpha", "b Alpha"]);
+	assert.deepEqual(names(none({ kind: "folder", folder: "projects" })), ["a Delta"]);
+});
+
+test("a navigation picker's filter round-trips, defaults to empty, and an unreadable one keeps the picker saved but switched off", () => {
+	const pickerFilter = all(isTrue("active"));
+	const settings = mergeSettings({ notePickers: [{ id: "1", enabled: true, name: "Work", filter: pickerFilter, lists: [] }, { id: "2", enabled: true, name: "Old", lists: [] }] });
+	assert.deepEqual(settings.notePickers.map((picker) => picker.filter), [pickerFilter, all()]);
+	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(storedSettings(settings)))).notePickers, settings.notePickers);
+	const broken = { id: "3", enabled: true, name: "Broken", filter: { kind: "group", mode: "sometimes", items: [] }, lists: [] };
+	const [picker] = mergeSettings({ notePickers: [broken] }).notePickers;
+	assert.equal(picker.enabled, false);
+	assert.deepEqual(picker.unreadable, { stored: broken });
+	assert.deepEqual((storedSettings(mergeSettings({ notePickers: [broken] })) as { notePickers: unknown[] }).notePickers, [broken]);
+});

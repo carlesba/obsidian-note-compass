@@ -8,6 +8,8 @@ A navigation picker shows the notes related to the note in focus and the lists y
 
 Each navigation picker you create under Settings → Note Compass → Navigation is offered in the command palette as "Navigation: <name>", so you can give each one its own hotkey. A new install starts with one picker named "Default", and the lists saved before navigation pickers existed move into it unchanged.
 
+A picker's own filter, under Settings → Note Compass → Navigation → the picker, narrows all of its lists at once, such as leaving out notes in an `Archive` folder from every list. It applies to the date notes a list would create too, as if they were notes with no properties or tags.
+
 "Jump to note" asks "Open which navigation picker?" and lists every enabled picker, then opens the one you choose.
 
 ## The picker

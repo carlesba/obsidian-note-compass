@@ -21,7 +21,7 @@ test("saved lists from before navigation pickers become one Default picker with 
 	const lists = [{ id: "list-4", enabled: true, prefix: "🔗", source: linksIn }];
 	const [picker, ...others] = mergeSettings({ lists }).notePickers;
 	assert.deepEqual(others, []);
-	assert.deepEqual(picker, { id: "1", enabled: true, name: "Default", lists });
+	assert.deepEqual(picker, { id: "1", enabled: true, name: "Default", filter: { kind: "group", mode: "all", items: [] }, lists });
 	const stored = storedSettings(mergeSettings({ lists })) as Record<string, unknown>;
 	assert.equal("lists" in stored, false);
 	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(stored))).notePickers, [picker]);
@@ -53,7 +53,7 @@ test("a new note picker starts empty and untitled, and duplicating one copies it
 	const settings = defaultSettings();
 	const [related] = settings.notePickers;
 	const added = newNotePicker(settings.notePickers);
-	assert.deepEqual(added, { id: "2", enabled: true, name: "", lists: [] });
+	assert.deepEqual(added, { id: "2", enabled: true, name: "", filter: { kind: "group", mode: "all", items: [] }, lists: [] });
 	assert.equal(notePickerName(added), "Untitled navigation picker");
 	const copy = duplicateNotePicker(settings.notePickers, related, "Default copy");
 	assert.ok(copy);

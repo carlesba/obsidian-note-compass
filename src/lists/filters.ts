@@ -54,6 +54,10 @@ export function filterRules(node: FilterNode): FilterRule[] {
 	return node.kind === "group" ? node.items.flatMap(filterRules) : [node];
 }
 
+export function noteMatcher(filter: FilterGroup, context: FilterContext): NotePredicate {
+	return compile(filter, context) ?? (() => true);
+}
+
 export function filterNotes(filter: FilterGroup, context: FilterContext): VaultNote[] {
 	const matches = compile(filter, context);
 	return matches ? context.vault.notes().filter(matches) : [];

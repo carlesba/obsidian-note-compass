@@ -3,7 +3,8 @@ import type { ListSource, NoteList } from "../settings";
 import { defaultDateNoteSettings, resolveDateNotes } from "./dateNotes.ts";
 import type { DateNoteSettings, ResolvedDateNotes } from "./dateNotes.ts";
 import { dateNoteSuffix, parseDateNote } from "./dates.ts";
-import { filterNotes } from "./filters.ts";
+import { emptyFilter, filterNotes, noteMatcher } from "./filters.ts";
+import type { FilterGroup } from "./filters.ts";
 import {
 	adjacentDateNotes,
 	currentPeriodNotes,
@@ -37,6 +38,7 @@ export function buildJumpList(
 	vault: JumpListVault,
 	current?: VaultNote,
 	dateNoteSettings: DateNoteSettings = defaultDateNoteSettings(),
+	pickerFilter: FilterGroup = emptyFilter(),
 ): JumpListEntry[] {
 	const dateNotes = resolveDateNotes(dateNoteSettings, vault);
 	const context: ListContext = {
@@ -46,12 +48,13 @@ export function buildJumpList(
 		propertyTypes: vault.propertyTypes(),
 		today: vault.moment(vault.now()).startOf("day"),
 	};
+	const matchesPicker = noteMatcher(pickerFilter, context);
 	const lists: PrefixedList[] = noteLists
 		.filter((list) => list.enabled && list.source.kind !== "unreadable")
 		.map((list) => ({
 			prefix: list.prefix,
 			prefixColor: list.prefixColor,
-			notes: sourceNotes(list.source, context),
+			notes: sourceNotes(list.source, context).filter((listed) => matchesPicker(listed.file)),
 			keepsOrder: list.source.kind === "currentPeriods" || list.source.kind === "adjacentDates",
 		}));
 

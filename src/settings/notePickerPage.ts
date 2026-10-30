@@ -5,6 +5,8 @@ import type { NotePicker } from "../settings";
 import { notePickerKey } from "./controlKeys";
 import { duplicateEntry } from "./duplicate";
 import { newList } from "./listForm";
+import { filterRules } from "../lists/filters";
+import { renderFilter } from "./filterEditor";
 import { editableRow, listPage, listPageId, listRow } from "./listPage";
 import type { ListPageContext } from "./listPage";
 import { warningDescription } from "./suggest";
@@ -62,6 +64,18 @@ export function notePickerPage(picker: NotePicker, context: NotePickerPageContex
 							name: t("notePickerName"),
 							desc: t("notePickerNameDesc"),
 							control: { type: "text", key: notePickerKey(picker.id, "name"), placeholder: t("defaultNotePickerName") },
+						},
+					],
+				},
+				{
+					type: "group",
+					heading: t("filter"),
+					items: [
+						{
+							name: t("notePickerFilter"),
+							desc: filterRules(picker.filter).length === 0 ? t("notePickerFilterEmptyDesc") : t("notePickerFilterDesc"),
+							searchable: false,
+							render: (setting) => renderFilter(setting, picker.filter, context),
 						},
 					],
 				},

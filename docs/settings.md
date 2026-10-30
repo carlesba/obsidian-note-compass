@@ -25,11 +25,12 @@ Click anywhere on one of the four rows to open its page, and use the back arrow 
 
 ## Navigation pickers
 
-The Navigation page lists your navigation pickers with the same add, reorder, switch, edit, copy and delete controls as the other settings lists. A new picker starts with no lists, and the copy icon duplicates a picker with all its lists.
+The Navigation page lists your navigation pickers with the same add, reorder, switch, edit, copy and delete controls as the other settings lists. A new picker starts with no lists and an empty filter, and the copy icon duplicates a picker with its filter and all its lists.
 
 | Section | Setting | What it does |
 | --- | --- | --- |
 | Navigation picker | Enabled, Name | Offers the picker as "Navigation: <name>" in the command palette and in "Jump to note". |
+| Filter | Applies to every list below | A [filter](#filters) every note must match to show in this picker, on top of each list's own source and filter. Empty by default, so it hides nothing. |
 | Lists | List rows | The lists the picker shows, described under [Lists and property rows](#lists-and-property-rows) and [List pages](#list-pages). |
 
 ## Forms and Tasks
