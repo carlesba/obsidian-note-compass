@@ -1,7 +1,7 @@
 import type { Translation } from "./en.ts";
 
 export const zh: Translation = {
-	jumpToNote: "跳转到笔记",
+	selectNavigationPicker: "选择导航选择器",
 	setProperties: "设置属性",
 	createNote: "创建笔记",
 	noNotesToJumpTo: "没有可跳转的笔记。",
@@ -66,7 +66,7 @@ export const zh: Translation = {
 	dateNotesSource: "日期笔记来源",
 	navigationSection: "导航",
 	navigationPickerCommand: "导航：{name}",
-	jumpToNoteSectionDesc: "具名的导航选择器，各有自己的命令。“跳转到笔记”会列出所有选择器。",
+	navigationSectionDesc: "具名的导航选择器，各有自己的命令。“选择导航选择器”会列出所有选择器。",
 	propertiesSection: "属性",
 	propertiesSectionDesc: "“设置属性”编辑的属性，以及复选框的行为。",
 	formsSectionDesc: "“填写表单”用来创建笔记的表单。",
@@ -79,9 +79,9 @@ export const zh: Translation = {
 	untitledNotePicker: "未命名的导航选择器",
 	defaultNotePickerName: "默认",
 	notePickerSection: "导航选择器",
-	notePickerEnabledDesc: "将此导航选择器作为独立命令提供，并显示在“跳转到笔记”中。",
+	notePickerEnabledDesc: "将此导航选择器作为独立命令提供，并显示在“选择导航选择器”中。",
 	notePickerName: "名称",
-	notePickerNameDesc: "作为命令名称显示在命令面板和“跳转到笔记”中。",
+	notePickerNameDesc: "作为命令名称显示在命令面板和“选择导航选择器”中。",
 	notePickerLists: "列表",
 	notePickerFilter: "应用于下方所有列表",
 	notePickerFilterDesc: "在每个列表自身的筛选之外，只显示符合此筛选的笔记。",

@@ -1,7 +1,7 @@
 import type { Translation } from "./en.ts";
 
 export const ko: Translation = {
-	jumpToNote: "노트로 이동",
+	selectNavigationPicker: "탐색 선택기 선택",
 	setProperties: "속성 설정",
 	createNote: "노트 만들기",
 	noNotesToJumpTo: "이동할 노트가 없습니다.",
@@ -66,7 +66,7 @@ export const ko: Translation = {
 	dateNotesSource: "날짜 노트 원본",
 	navigationSection: "탐색",
 	navigationPickerCommand: "탐색: {name}",
-	jumpToNoteSectionDesc: "이름이 있는 탐색 선택기이며, 각각 자체 명령이 있습니다. \"노트로 이동\"에서 모두 고를 수 있습니다.",
+	navigationSectionDesc: "이름이 있는 탐색 선택기이며, 각각 자체 명령이 있습니다. \"탐색 선택기 선택\"에서 모두 고를 수 있습니다.",
 	propertiesSection: "속성",
 	propertiesSectionDesc: "속성 설정에서 편집할 속성과 체크박스 동작입니다.",
 	formsSectionDesc: "양식 작성으로 노트를 만들 때 쓰는 양식입니다.",
@@ -79,9 +79,9 @@ export const ko: Translation = {
 	untitledNotePicker: "이름 없는 탐색 선택기",
 	defaultNotePickerName: "기본",
 	notePickerSection: "탐색 선택기",
-	notePickerEnabledDesc: "이 탐색 선택기를 자체 명령과 \"노트로 이동\"에서 제공합니다.",
+	notePickerEnabledDesc: "이 탐색 선택기를 자체 명령과 \"탐색 선택기 선택\"에서 제공합니다.",
 	notePickerName: "이름",
-	notePickerNameDesc: "명령 팔레트와 \"노트로 이동\"에서 명령 이름으로 표시됩니다.",
+	notePickerNameDesc: "명령 팔레트와 \"탐색 선택기 선택\"에서 명령 이름으로 표시됩니다.",
 	notePickerLists: "목록",
 	notePickerFilter: "아래 모든 목록에 적용",
 	notePickerFilterDesc: "각 목록의 필터에 더해, 이 필터와 일치하는 노트만 표시됩니다.",

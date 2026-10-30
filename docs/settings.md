@@ -12,11 +12,11 @@ The main page opens with a short note on what each of its four pages holds, then
 
 | Item | What it holds |
 | --- | --- |
-| Navigation | Your [navigation pickers](jump-to-note.md#navigation-pickers), each offered in the command palette as "Navigation: <name>". |
+| Navigation | Your [navigation pickers](navigation.md#navigation-pickers), each offered in the command palette as "Navigation: <name>". |
 | Properties | The properties of the [Set properties](set-properties.md) picker, and "Checkbox behaviour". |
 | Forms | Your [forms](forms.md) and [custom fields](forms.md#custom-fields). |
 | Tasks | Your [task commands](task-commands.md), each offered under its name in the command palette. |
-| Integrations → Date notes source | Where date note formats come from, described in [Date notes](jump-to-note.md#date-notes). The pencil edits the custom formats. |
+| Integrations → Date notes source | Where date note formats come from, described in [Date notes](navigation.md#date-notes). The pencil edits the custom formats. |
 
 Click anywhere on one of the four rows to open its page, and use the back arrow at the top to return. A row's own page opens inside its section, so going back from a list's page lands on its navigation picker's page, and going back again lands on the Navigation page.
 
@@ -28,7 +28,7 @@ The Navigation page lists your navigation pickers with the same add, reorder, sw
 
 | Section | Setting | What it does |
 | --- | --- | --- |
-| Navigation picker | Enabled, Name | Offers the picker as "Navigation: <name>" in the command palette and in "Jump to note". |
+| Navigation picker | Enabled, Name | Offers the picker as "Navigation: <name>" in the command palette and in "Select navigation picker". |
 | Filter | Applies to every list below | A [filter](#filters) every note must match to show in this picker, on top of each list's own source and filter. Empty by default, so it hides nothing. |
 | Lists | List rows | The lists the picker shows, described under [Lists and property rows](#lists-and-property-rows) and [List pages](#list-pages). |
 
@@ -111,7 +111,7 @@ Adjacent dates and Current date notes add two settings below the source.
 | Show notes that don't exist yet | Off lists only the date notes that exist. On also lists the missing ones, as in `create next week`, and choosing one creates it. Off by default for adjacent dates, on for current date notes. |
 | Notes to list | One row per entry, all switched on by default: "Previous day" and "Next day" through "Previous year" and "Next year" for adjacent dates, "Today" to "This year" for current date notes. Drag a row's handle to change the order the picker shows them in, and switch a row off to leave it out. |
 
-A missing adjacent note is created through Periodic Notes, with its template, when that plugin is the date notes source, and as an empty note otherwise. Each source is described in [Jump to note](jump-to-note.md#lists).
+A missing adjacent note is created through Periodic Notes, with its template, when that plugin is the date notes source, and as an empty note otherwise. Each source is described in [Navigation](navigation.md#lists).
 
 ![The page of an Adjacent dates list, with Show notes that don't exist yet switched off, then Notes to list with Previous day, Next day, Previous week, Next week and the other periods, each with a switch and a drag handle](images/list-adjacent-dates.png)
 

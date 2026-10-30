@@ -1,7 +1,7 @@
 import type { Translation } from "./en.ts";
 
 export const es: Translation = {
-	jumpToNote: "Ir a una nota",
+	selectNavigationPicker: "Elegir selector de navegación",
 	setProperties: "Establecer propiedades",
 	createNote: "Crear nota",
 	noNotesToJumpTo: "No hay notas a las que ir.",
@@ -66,7 +66,7 @@ export const es: Translation = {
 	dateNotesSource: "Origen de las notas de fecha",
 	navigationSection: "Navegación",
 	navigationPickerCommand: "Navegación: {name}",
-	jumpToNoteSectionDesc: "Selectores de navegación con nombre, cada uno con su propio comando. Ir a una nota los ofrece todos.",
+	navigationSectionDesc: "Selectores de navegación con nombre, cada uno con su propio comando. Elegir selector de navegación los ofrece todos.",
 	propertiesSection: "Propiedades",
 	propertiesSectionDesc: "Las propiedades que edita Establecer propiedades y cómo se comportan las casillas.",
 	formsSectionDesc: "Los formularios con los que Rellenar formulario crea notas.",
@@ -79,9 +79,9 @@ export const es: Translation = {
 	untitledNotePicker: "Selector de navegación sin nombre",
 	defaultNotePickerName: "Predeterminado",
 	notePickerSection: "Selector de navegación",
-	notePickerEnabledDesc: "Ofrecer este selector de navegación como su propio comando y en Ir a una nota.",
+	notePickerEnabledDesc: "Ofrecer este selector de navegación como su propio comando y en Elegir selector de navegación.",
 	notePickerName: "Nombre",
-	notePickerNameDesc: "Se muestra como nombre del comando en la paleta de comandos y en Ir a una nota.",
+	notePickerNameDesc: "Se muestra como nombre del comando en la paleta de comandos y en Elegir selector de navegación.",
 	notePickerLists: "Listas",
 	notePickerFilter: "Se aplica a todas las listas de abajo",
 	notePickerFilterDesc: "Solo se muestran las notas que cumplen este filtro, además del filtro propio de cada lista.",

@@ -1,4 +1,4 @@
-# Jump to note
+# Navigation
 
 A navigation picker shows the notes related to the note in focus and the lists you define, so you can move to any of them in a few keystrokes. You can create several named navigation pickers, each with its own lists and its own command.
 
@@ -10,13 +10,13 @@ Each navigation picker you create under Settings → Note Compass → Navigation
 
 A picker's own filter, under Settings → Note Compass → Navigation → the picker, narrows all of its lists at once, such as leaving out notes in an `Archive` folder from every list. It applies to the date notes a list would create too, as if they were notes with no properties or tags.
 
-"Jump to note" asks "Open which navigation picker?" and lists every enabled picker, then opens the one you choose.
+"Select navigation picker" asks "Open which navigation picker?" and lists every enabled picker, then opens the one you choose.
 
 ## The picker
 
 The picker lets you choose a note to move to. Picking a row opens the note in the active tab, or in a new tab when none is open.
 
-![The Jump to note picker on a daily note, with the previous and next day, its outbound links, a note from the same day, this week, month and year, the active projects and the people](images/jump-to-note.png)
+![A navigation picker on a daily note, with the previous and next day, its outbound links, a note from the same day, this week, month and year, the active projects and the people](images/jump-to-note.png)
 
 A picker shows the lists you set up on its page in settings, in the order you set. To change them, see [Settings](settings.md#list-pages).
 

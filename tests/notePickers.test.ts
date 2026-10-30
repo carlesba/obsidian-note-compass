@@ -78,7 +78,7 @@ test("note picker names, switches and the lists inside any picker are edited thr
 	assert.ok(prefixRows(settings).some((row) => row.key === listKey(copy.lists[1].id, "prefix") && row.prefix === "➡️"));
 });
 
-test("Jump to note offers every picker by name and filters them by the typed text", () => {
+test("Select navigation picker offers every picker by name and filters them by the typed text", () => {
 	const settings = mergeSettings({
 		notePickers: [
 			{ id: "1", enabled: true, name: "Daily", lists: [] },

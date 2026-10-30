@@ -63,7 +63,7 @@ const SORTABLE_LIST_CLASS = "note-compass-sortable-list";
 
 const DATE_NOTE_FORMATS_PAGE_ID = "date-note-formats";
 
-const JUMP_TO_NOTE_PAGE_ID = "jump-to-note";
+const NAVIGATION_PAGE_ID = "jump-to-note";
 
 const PROPERTIES_PAGE_ID = "properties";
 
@@ -245,7 +245,7 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 			{
 				type: "group",
 				items: [
-					sectionPage(JUMP_TO_NOTE_PAGE_ID, t("navigationSection"), t("jumpToNoteSectionDesc"), [
+					sectionPage(NAVIGATION_PAGE_ID, t("navigationSection"), t("navigationSectionDesc"), [
 						notePickersList,
 						hiddenPages(notePickers.map((picker) => notePickerPage(picker, pickerContext))),
 					]),

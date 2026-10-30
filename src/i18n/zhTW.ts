@@ -1,7 +1,7 @@
 import type { Translation } from "./en.ts";
 
 export const zhTW: Translation = {
-	jumpToNote: "跳至筆記",
+	selectNavigationPicker: "選擇導覽選擇器",
 	setProperties: "設定屬性",
 	createNote: "建立筆記",
 	noNotesToJumpTo: "沒有可跳至的筆記。",
@@ -66,7 +66,7 @@ export const zhTW: Translation = {
 	dateNotesSource: "日期筆記來源",
 	navigationSection: "導覽",
 	navigationPickerCommand: "導覽：{name}",
-	jumpToNoteSectionDesc: "具名的導覽選擇器，各有自己的命令。「跳至筆記」會列出所有選擇器。",
+	navigationSectionDesc: "具名的導覽選擇器，各有自己的命令。「選擇導覽選擇器」會列出所有選擇器。",
 	propertiesSection: "屬性",
 	propertiesSectionDesc: "「設定屬性」編輯的屬性，以及核取方塊的行為。",
 	formsSectionDesc: "「填寫表單」用來建立筆記的表單。",
@@ -79,9 +79,9 @@ export const zhTW: Translation = {
 	untitledNotePicker: "未命名的導覽選擇器",
 	defaultNotePickerName: "預設",
 	notePickerSection: "導覽選擇器",
-	notePickerEnabledDesc: "將此導覽選擇器作為獨立命令提供，並顯示在「跳至筆記」中。",
+	notePickerEnabledDesc: "將此導覽選擇器作為獨立命令提供，並顯示在「選擇導覽選擇器」中。",
 	notePickerName: "名稱",
-	notePickerNameDesc: "作為命令名稱顯示在命令面板和「跳至筆記」中。",
+	notePickerNameDesc: "作為命令名稱顯示在命令面板和「選擇導覽選擇器」中。",
 	notePickerLists: "清單",
 	notePickerFilter: "套用至下方所有清單",
 	notePickerFilterDesc: "在每個清單本身的篩選之外，只顯示符合此篩選的筆記。",

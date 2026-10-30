@@ -1,7 +1,7 @@
 import type { Translation } from "./en.ts";
 
 export const ja: Translation = {
-	jumpToNote: "ノートへ移動",
+	selectNavigationPicker: "ナビゲーションピッカーを選択",
 	setProperties: "プロパティを設定",
 	createNote: "ノートを作成",
 	noNotesToJumpTo: "移動できるノートがありません。",
@@ -66,7 +66,7 @@ export const ja: Translation = {
 	dateNotesSource: "日付ノートの読み込み元",
 	navigationSection: "ナビゲーション",
 	navigationPickerCommand: "ナビゲーション: {name}",
-	jumpToNoteSectionDesc: "名前付きのナビゲーションピッカー。それぞれに専用のコマンドがあり、「ノートへ移動」ですべてを選べます。",
+	navigationSectionDesc: "名前付きのナビゲーションピッカー。それぞれに専用のコマンドがあり、「ナビゲーションピッカーを選択」ですべてを選べます。",
 	propertiesSection: "プロパティ",
 	propertiesSectionDesc: "「プロパティを設定」で編集するプロパティと、チェックボックスの動作。",
 	formsSectionDesc: "「フォームに入力」でノートを作成するためのフォーム。",
@@ -79,9 +79,9 @@ export const ja: Translation = {
 	untitledNotePicker: "無題のナビゲーションピッカー",
 	defaultNotePickerName: "デフォルト",
 	notePickerSection: "ナビゲーションピッカー",
-	notePickerEnabledDesc: "このナビゲーションピッカーを専用のコマンドとして、また「ノートへ移動」に表示します。",
+	notePickerEnabledDesc: "このナビゲーションピッカーを専用のコマンドとして、また「ナビゲーションピッカーを選択」に表示します。",
 	notePickerName: "名前",
-	notePickerNameDesc: "コマンドパレットと「ノートへ移動」にコマンド名として表示されます。",
+	notePickerNameDesc: "コマンドパレットと「ナビゲーションピッカーを選択」にコマンド名として表示されます。",
 	notePickerLists: "リスト",
 	notePickerFilter: "下のすべてのリストに適用",
 	notePickerFilterDesc: "各リストのフィルターに加えて、このフィルターに一致するノートだけが表示されます。",

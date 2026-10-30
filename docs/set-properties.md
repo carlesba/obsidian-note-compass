@@ -6,7 +6,7 @@
 
 ## The picker
 
-The picker gathers every property you set up under "Set properties" in settings, so you can change several at once. It only appears in the command palette when a markdown note has focus. You can also open it for another note from the [Jump to note](jump-to-note.md#editing-a-rows-properties) picker.
+The picker gathers every property you set up under "Set properties" in settings, so you can change several at once. It only appears in the command palette when a markdown note has focus. You can also open it for another note from a [navigation picker](navigation.md#editing-a-rows-properties).
 
 ![The Set properties picker, with Save & close and Cancel at the top, the note's current values marked with a check, and more values to add below](images/set-properties.png)
 

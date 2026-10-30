@@ -4,23 +4,23 @@
 
 Move between related notes, set properties, fill in forms and process tasks, all from keyboard pickers that work anywhere in Obsidian.
 
-![The Jump to note picker on a daily note, listing the previous and next day, the projects and people it links to, the notes linking back, notes from the same day and this week, month and year, each row with a coloured prefix chip](docs/images/hero.png)
+![A navigation picker on a daily note, listing the previous and next day, the projects and people it links to, the notes linking back, notes from the same day and this week, month and year, each row with a coloured prefix chip](docs/images/hero.png)
 
 ## What it does
 
 Note Compass adds keyboard pickers for navigation, properties, forms and your own task commands. Type a few letters and press Enter to choose.
 
-### Jump to note
+### Navigation
 
 Move to the notes related to the note in focus, or to any list you define. Group your lists into named navigation pickers, each with its own command.
 
-![The Jump to note picker on a daily note, with the previous and next day, its outbound links, a note from the same day, this week, month and year, the active projects and the people](docs/images/jump-to-note.png)
+![A navigation picker on a daily note, with the previous and next day, its outbound links, a note from the same day, this week, month and year, the active projects and the people](docs/images/jump-to-note.png)
 
 - See the adjacent date notes, outbound links, inbound links and notes from the same day in one list.
 - Add your own lists with filters on properties, folders, tags, links and dates.
 - Edit a row's properties without opening the note.
 
-[Read more about Jump to note](docs/jump-to-note.md)
+[Read more about Navigation](docs/navigation.md)
 
 ### Set properties
 
@@ -74,7 +74,7 @@ Note Compass needs Obsidian 1.13.0 or later and runs on both desktop and mobile.
 
 ## Quick start
 
-1. Open Settings → Hotkeys, search for "Note Compass", and assign keys to "Navigation: Default", "Set properties" and "Fill form". "Jump to note" lists every navigation picker you create. You can also run them from the command palette.
+1. Open Settings → Hotkeys, search for "Note Compass", and assign keys to "Navigation: Default", "Set properties" and "Fill form". "Select navigation picker" lists every navigation picker you create. You can also run them from the command palette.
 2. Open today's daily note and press the "Navigation: Default" hotkey to move to yesterday's note or to a note you linked from it.
 3. On a note you are working on, press the "Set properties" hotkey, type a few letters of a person's name, pick them, and choose "Save & close".
 4. Open Settings → Note Compass to switch off what you do not use, point the link properties at your own folders and notes, and add a form for the notes you create often, such as people.
@@ -84,7 +84,7 @@ The defaults give you the four relation lists in the "Default" navigation picker
 
 ## Manual
 
-- [Jump to note](docs/jump-to-note.md): lists, relation lists, date notes and filtering.
+- [Navigation](docs/navigation.md): lists, relation lists, date notes and filtering.
 - [Set properties](docs/set-properties.md): picker rows, value pickers, presets and checkboxes.
 - [Forms](docs/forms.md): running a form, form settings, fields, custom fields and placeholders.
 - [Task commands](docs/task-commands.md): status filters, actions, destinations and batch processing.

@@ -32,8 +32,8 @@ export default class NoteCompassPlugin extends Plugin {
 		this.addSettingTab(new NoteCompassSettingTab(this.app, this));
 
 		this.addCommand({
-			id: "jump-to-note",
-			name: t("jumpToNote"),
+			id: "select-navigation-picker",
+			name: t("selectNavigationPicker"),
 			icon: "compass",
 			callback: () => this.pickNotePicker(),
 		});
