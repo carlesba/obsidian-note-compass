@@ -34,8 +34,14 @@ export interface PickerChoice {
 const SAVE_MARK = "🏁";
 const CANCEL_MARK = "🛑";
 
-export function saveLabel(): string {
-	return rowLabel({ mark: SAVE_MARK, content: t("saveAndClose") });
+export type AfterSave = "close" | "backToList";
+
+export function saveLabel(afterSave: AfterSave = "close"): string {
+	return rowLabel({ mark: SAVE_MARK, content: saveContent(afterSave) });
+}
+
+function saveContent(afterSave: AfterSave): string {
+	return afterSave === "backToList" ? t("saveAndBackToList") : t("saveAndClose");
 }
 
 export function cancelLabel(): string {
@@ -70,11 +76,12 @@ export function pickerChoices(
 	query: string,
 	checkboxMode: CheckboxMode = "picker",
 	rows: readonly MultiRow[] = [],
+	afterSave: AfterSave = "close",
 ): PickerChoice[] {
 	const held = rows.filter((row) => rowHolds(row, state.values));
 	const unheld = rows.filter((row) => !rowHolds(row, state.values));
 	const choices = [
-		choice({ mark: SAVE_MARK, content: t("saveAndClose") }, { action: "save" }),
+		choice({ mark: SAVE_MARK, content: saveContent(afterSave) }, { action: "save" }),
 		choice({ mark: CANCEL_MARK, content: t("cancel") }, { action: "cancel" }),
 		...selectedChoices(entries, initial, state, checkboxMode),
 		...held.map((row) => heldRowChoice(row, initial, state)),

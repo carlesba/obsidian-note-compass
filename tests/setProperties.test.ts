@@ -371,3 +371,10 @@ test("a link entry offers notes marked archived like any other note its source h
 	const fakes = [...vaultNotes(), { path: "people/Old.md", mtime: HOURS_AGO(3), links: ["types/Person.md"], frontmatter: { archived: true } }];
 	assert.ok(labels(setup([entry("people", "links", { prefix: "👤" })], fakes).choicesFor()).includes("👤 Old"));
 });
+
+test("when saving returns to the navigation picker, the save row says so", () => {
+	const back = pickerChoices([], new Map(), pickerState(new Map()), "", "picker", [], "backToList");
+	assert.equal(back[0].label, saveLabel("backToList"));
+	assert.equal(back[0].parts.content, "Save & back to list");
+	assert.equal(pickerChoices([], new Map(), pickerState(new Map()), "")[0].parts.content, "Save & close");
+});

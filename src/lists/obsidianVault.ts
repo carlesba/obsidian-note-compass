@@ -40,7 +40,11 @@ export function createObsidianVault(app: App): JumpListVault & NewNoteVault & No
 		updateFrontmatter: async (path, update) => {
 			const file = app.vault.getFileByPath(path);
 			if (!file) throw new Error(`No note at ${path}`);
+			const reindexed = reindexOf(app, file);
+			const written = file.stat.mtime;
 			await app.fileManager.processFrontMatter(file, update);
+			if (file.stat.mtime !== written) await reindexed.done;
+			reindexed.stop();
 		},
 		linksFrom: (path) => Object.keys(app.metadataCache.resolvedLinks[path] ?? {}),
 		linksTo: (path) =>
@@ -119,6 +123,24 @@ function countValues(values: unknown[]): PropertyValueCount[] {
 		}
 	}
 	return Array.from(counts, ([value, count]) => ({ value, count }));
+}
+
+const REINDEX_TIMEOUT_MS = 2000;
+
+function reindexOf(app: App, file: TFile): { done: Promise<void>; stop: () => void } {
+	let stop = () => {};
+	const done = new Promise<void>((resolve) => {
+		const ref = app.metadataCache.on("resolve", (resolved) => {
+			if (resolved.path === file.path) stop();
+		});
+		const timer = window.setTimeout(() => stop(), REINDEX_TIMEOUT_MS);
+		stop = () => {
+			app.metadataCache.offref(ref);
+			window.clearTimeout(timer);
+			resolve();
+		};
+	});
+	return { done, stop };
 }
 
 function readSafely<T>(read: () => T): T | undefined {

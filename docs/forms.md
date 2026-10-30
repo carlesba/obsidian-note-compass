@@ -92,7 +92,7 @@ Each row shows the field's key, followed by small badges for how it is used, who
 
 Click the row or its chevron to edit the field right below it, and click again to close it. One field is open at a time, and a new field opens straight away.
 
-![The rating field of the Reading log form opened inline below its row, with Key, Used as, Filled by, Question, Field type, Optional, Store values as and its Choices](images/form-field-editor.png)
+![The rating field of the Reading log form opened inline below its row, with Key, Stored as, Filled by, Question, Field type, Optional, Store values as and its Choices](images/form-field-editor.png)
 
 ### Adding fields
 
@@ -119,8 +119,8 @@ Every field is a fixed value the form fills in, or a question it asks.
 | Setting | Options |
 | --- | --- |
 | Key | The property name or the variable's name, used as `{{key}}` in both cases. |
-| Used as | "Property", the default, writes the value to the new note's properties under its key. "Variable" only fills placeholders in the name and content and is never written. |
-| Filled by | "The form, with a fixed value" fills it in for you. "You, with a question" asks for it when the form runs, with the "Question" row as its prompt. |
+| Stored as | "Property", the default, writes the value to the new note's frontmatter under its key. "Variable" is never written and only fills `{{key}}` in the name and content. |
+| Filled by | "Fixed value" fills it in every time the form runs. "Question" asks for it when the form runs, with the "Question" row as its prompt. |
 | Field type | What kind of value the field holds, listed below. |
 
 ### Fixed values
@@ -276,7 +276,7 @@ Any other placeholder is left as it is.
 
 A "Reading log" form could have these fields:
 
-| Key | Used as | Filled by | Field type | Value |
+| Key | Stored as | Filled by | Field type | Value |
 | --- | --- | --- | --- | --- |
 | `book` | property | ask | select | The books Dune, The Hobbit and Middlemarch. |
 | `rating` | property | ask | select | Choices `1` to `5` with labels such as `5 · Great`, stored as numbers. |

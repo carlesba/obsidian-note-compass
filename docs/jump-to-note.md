@@ -85,7 +85,7 @@ You can edit a note's properties from the jump list without opening the note.
 2. Press ⌥↵ (Alt+Enter), or tap the sliders icon at the end of the row. The icon shows on the highlighted row on desktop and on every row on phones.
 3. "Set properties" opens for that note instead of the note in focus.
 
-Escape, `🛑 Cancel` and `🏁 Save & close` in that "Set properties" all bring you back to the jump list with what you had typed, so you can edit several notes in a row. Press Escape in the jump list when you are done. Rows that would create a missing date note have no icon.
+Escape, `🛑 Cancel` and `🏁 Save & back to list` in that "Set properties" all bring you back to the jump list with what you had typed, and the list already reflects the saved properties, so you can edit several notes in a row. Press Escape in the jump list when you are done. Rows that would create a missing date note have no icon.
 
 ## Date notes
 
