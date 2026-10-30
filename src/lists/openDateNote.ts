@@ -18,9 +18,13 @@ const PERIODIC_NOTES_COMMANDS: Record<Period, string> = {
 const DAILY_NOTES_COMMAND = "daily-notes";
 
 export async function createDateNote(app: App, entry: JumpListEntry, missing: MissingDateNote): Promise<void> {
-	const command = ownerCommand(missing);
-	if (command && (app as App & CommandRegistry).commands?.executeCommandById(command)) return;
-	await createObsidianVault(app).createNote(entry.file.path, "");
+	const vault = createObsidianVault(app);
+	if (missing.date) await vault.createPeriodNote(entry.file.path, missing.period, missing.date, missing.from);
+	else {
+		const command = ownerCommand(missing);
+		if (command && (app as App & CommandRegistry).commands?.executeCommandById(command)) return;
+		await vault.createNote(entry.file.path, "");
+	}
 	const file = app.vault.getFileByPath(entry.file.path);
 	if (file) await app.workspace.getLeaf(false).openFile(file);
 }

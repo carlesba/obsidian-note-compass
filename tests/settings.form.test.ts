@@ -342,14 +342,39 @@ test("a current date notes list keeps the dragged order and names its periods in
 	assert.deepEqual(sourceChoiceOrder(list.source), ["month", "day", "week", "quarter", "year"]);
 });
 
-test("an adjacent dates list shows both directions by default and switches each one off", () => {
+test("an adjacent dates list offers every period in both directions, all on, and switches each one off", () => {
 	const list: NoteList = { id: "list-1", enabled: true, prefix: "📅", source: { kind: "adjacentDates" } };
-	assert.deepEqual(sourceChoiceOrder(list.source), ["previous", "next"]);
-	assert.equal(readListField(list, "adjacentPrevious"), true);
-	writeListField(list, "adjacentPrevious", false);
-	assert.deepEqual(list.source, { kind: "adjacentDates", directions: ["next"] });
-	writeListField(list, "adjacentPrevious", true);
+	assert.deepEqual(sourceChoiceOrder(list.source), [
+		"previous-day",
+		"next-day",
+		"previous-week",
+		"next-week",
+		"previous-month",
+		"next-month",
+		"previous-quarter",
+		"next-quarter",
+		"previous-year",
+		"next-year",
+	]);
+	assert.equal(readListField(list, "adjacent-previous-week"), true);
+	writeListField(list, "adjacent-previous-week", false);
+	assert.equal(readListField(list, "adjacent-previous-week"), false);
+	assert.equal(list.source.kind === "adjacentDates" && list.source.entries?.includes("previous-week"), false);
+	writeListField(list, "adjacent-previous-week", true);
 	assert.deepEqual(list.source, { kind: "adjacentDates" });
-	moveSourceChoice(list.source, 1, 0);
-	assert.deepEqual(list.source, { kind: "adjacentDates", order: ["next", "previous"] });
+	moveSourceChoice(list.source, 9, 0);
+	assert.deepEqual(sourceChoiceOrder(list.source).slice(0, 3), ["next-year", "previous-day", "next-day"]);
+});
+
+test("date lists switch missing notes on and off, keeping each source's default unsaved", () => {
+	const adjacent: NoteList = { id: "list-1", enabled: true, prefix: "📅", source: { kind: "adjacentDates" } };
+	assert.equal(readListField(adjacent, "showsMissing"), false);
+	writeListField(adjacent, "showsMissing", true);
+	assert.deepEqual(adjacent.source, { kind: "adjacentDates", showsMissing: true });
+	writeListField(adjacent, "showsMissing", false);
+	assert.deepEqual(adjacent.source, { kind: "adjacentDates" });
+	const current: NoteList = { id: "list-2", enabled: true, prefix: "🗓️", source: { kind: "currentPeriods", periods: ["day"] } };
+	assert.equal(readListField(current, "showsMissing"), true);
+	writeListField(current, "showsMissing", false);
+	assert.deepEqual(current.source, { kind: "currentPeriods", periods: ["day"], showsMissing: false });
 });

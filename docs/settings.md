@@ -100,9 +100,16 @@ A list's page sets what one "Jump to note" list holds.
 | Prefix | The chip, described under [Prefixes](#prefixes). |
 | Source | What the list holds: adjacent dates, outbound links, inbound links, same day, a filter, notes linking to a note, notes in a folder, notes modified today, or current date notes. |
 
-Adjacent dates and Current date notes add a "Notes to list" section with one row per entry, all switched on by default: "Previous" and "Next" for adjacent dates, "Today" to "This year" for current date notes. Drag a row's handle to change the order the picker shows them in, and switch a row off to leave it out. Each source is described in [Jump to note](jump-to-note.md#lists).
+Adjacent dates and Current date notes add two settings below the source.
 
-![The page of a Current date notes list, with its Notes to list section showing Today, This week, This month, This quarter and This year, each with a switch and a drag handle](images/list-current-date-notes.png)
+| Setting | What it does |
+| --- | --- |
+| Show notes that don't exist yet | Off lists only the date notes that exist. On also lists the missing ones, as in `create next week`, and choosing one creates it. Off by default for adjacent dates, on for current date notes. |
+| Notes to list | One row per entry, all switched on by default: "Previous day" and "Next day" through "Previous year" and "Next year" for adjacent dates, "Today" to "This year" for current date notes. Drag a row's handle to change the order the picker shows them in, and switch a row off to leave it out. |
+
+A missing adjacent note is created through Periodic Notes, with its template, when that plugin is the date notes source, and as an empty note otherwise. Each source is described in [Jump to note](jump-to-note.md#lists).
+
+![The page of an Adjacent dates list, with Show notes that don't exist yet switched off, then Notes to list with Previous day, Next day, Previous week, Next week and the other periods, each with a switch and a drag handle](images/list-adjacent-dates.png)
 
 A list's row shows the filter's only condition, such as `status is active` or `Tagged project`, or counts its conditions, as in `All of 3 conditions`.
 

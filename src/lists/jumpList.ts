@@ -1,4 +1,4 @@
-import { adjacentDirections, currentPeriodsInOrder } from "../settings.ts";
+import { adjacentEntriesInOrder, currentPeriodsInOrder, showsMissingNotes } from "../settings.ts";
 import type { ListSource, NoteList } from "../settings";
 import { defaultDateNoteSettings, resolveDateNotes } from "./dateNotes.ts";
 import type { DateNoteSettings, ResolvedDateNotes } from "./dateNotes.ts";
@@ -74,11 +74,11 @@ function sourceNotes(source: ListSource, context: ListContext): ListedNote[] {
 	if (source.kind === "linksToNote") return notesLinkingTo(vault, source.note);
 	if (source.kind === "inFolder") return notesInFolder(vault, source.folder);
 	if (source.kind === "modifiedToday") return notesModifiedSince(vault, context.today.valueOf());
-	if (source.kind === "currentPeriods") return currentPeriodNotes(vault, currentPeriodsInOrder(source), dateNotes, context.today);
+	if (source.kind === "currentPeriods") return currentPeriodNotes(vault, currentPeriodsInOrder(source), dateNotes, context.today, showsMissingNotes(source));
 	if (!current) return [];
 	switch (source.kind) {
 		case "adjacentDates":
-			return adjacentDateNotes(vault, current, dateNotes, adjacentDirections(source));
+			return adjacentDateNotes(vault, current, dateNotes, adjacentEntriesInOrder(source), showsMissingNotes(source));
 		case "linksOut":
 			return outboundNotes(vault, current);
 		case "linksIn":
@@ -96,7 +96,10 @@ function toEntry(vault: JumpListVault, dateNotes: ResolvedDateNotes, list: Prefi
 	const entry: JumpListEntry = { file: listed.file, prefix: list.prefix, name };
 	if (list.prefixColor !== undefined) entry.prefixColor = list.prefixColor;
 	if (suffix) entry.suffix = suffix;
-	if (listed.missing) entry.missing = { period: listed.missing, from: dateNotes.from };
+	if (listed.missing) {
+		entry.missing = { period: listed.missing, from: dateNotes.from };
+		if (listed.missingDate) entry.missing.date = listed.missingDate;
+	}
 	return entry;
 }
 

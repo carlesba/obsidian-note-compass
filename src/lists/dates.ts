@@ -81,6 +81,25 @@ export function adjacentDatePaths(dateNote: DateNote): AdjacentDatePaths {
 	};
 }
 
+export interface AdjacentDatePath {
+	path: string;
+	label: string;
+	date: MomentDate;
+}
+
+export function adjacentDatePath(
+	dateNote: DateNote,
+	dateNotes: ResolvedDateNotes,
+	period: Period,
+	direction: "previous" | "next",
+): AdjacentDatePath | undefined {
+	const settings = dateNotes.periods[period];
+	if (!settings.enabled || PERIODS.indexOf(period) < PERIODS.indexOf(dateNote.period)) return undefined;
+	const date = dateNote.date.clone().add(direction === "previous" ? -1 : 1, period);
+	const label = t(direction === "previous" ? PREVIOUS_LABELS[period] : NEXT_LABELS[period]);
+	return { path: notePath(settings.folder, date.format(settings.format)), label, date };
+}
+
 export function currentDatePath(dateNotes: ResolvedDateNotes, period: Period, today: MomentDate): string | undefined {
 	const settings = dateNotes.periods[period];
 	if (!settings.enabled) return undefined;

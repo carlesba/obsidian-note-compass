@@ -19,16 +19,33 @@ export type AdjacentDirection = "previous" | "next";
 
 export const ADJACENT_DIRECTIONS: readonly AdjacentDirection[] = ["previous", "next"];
 
+export type AdjacentEntry = `${AdjacentDirection}-${Period}`;
+
+export const ADJACENT_ENTRIES: readonly AdjacentEntry[] = PERIODS.flatMap((period) =>
+	ADJACENT_DIRECTIONS.map((direction): AdjacentEntry => `${direction}-${period}`),
+);
+
+export function adjacentEntryParts(entry: AdjacentEntry): { direction: AdjacentDirection; period: Period } {
+	const [direction, period] = entry.split("-") as [AdjacentDirection, Period];
+	return { direction, period };
+}
+
 export interface AdjacentDatesSource {
 	kind: "adjacentDates";
-	directions?: AdjacentDirection[];
-	order?: AdjacentDirection[];
+	entries?: AdjacentEntry[];
+	order?: AdjacentEntry[];
+	showsMissing?: boolean;
 }
 
 export interface CurrentPeriodsSource {
 	kind: "currentPeriods";
 	periods: Period[];
 	order?: Period[];
+	showsMissing?: boolean;
+}
+
+export function showsMissingNotes(source: AdjacentDatesSource | CurrentPeriodsSource): boolean {
+	return source.showsMissing ?? source.kind === "currentPeriods";
 }
 
 export type ListSource =
@@ -403,6 +420,7 @@ function readSource(stored: unknown): ListSource | undefined {
 		const source: CurrentPeriodsSource = { kind: "currentPeriods", periods: PERIODS.filter((period) => periods.includes(period)) };
 		const order = readOrder(stored.order, PERIODS);
 		if (order) source.order = order;
+		if (typeof stored.showsMissing === "boolean") source.showsMissing = stored.showsMissing;
 		return source;
 	}
 	if (stored.kind === "linksToNote") return typeof stored.note === "string" ? { kind: "linksToNote", note: stored.note } : undefined;
@@ -418,18 +436,29 @@ function readSource(stored: unknown): ListSource | undefined {
 
 function readAdjacentDates(stored: Record<string, unknown>): AdjacentDatesSource {
 	const source: AdjacentDatesSource = { kind: "adjacentDates" };
-	if (Array.isArray(stored.directions)) {
+	if (Array.isArray(stored.entries)) {
+		const entries = stored.entries;
+		source.entries = ADJACENT_ENTRIES.filter((entry) => entries.includes(entry));
+	} else if (Array.isArray(stored.directions)) {
 		const directions = stored.directions;
-		source.directions = ADJACENT_DIRECTIONS.filter((direction) => directions.includes(direction));
+		source.entries = ADJACENT_ENTRIES.filter((entry) => directions.includes(adjacentEntryParts(entry).direction));
 	}
-	const order = readOrder(stored.order, ADJACENT_DIRECTIONS);
+	const order = readOrder(stored.order, ADJACENT_ENTRIES) ?? orderFromDirections(stored.order);
 	if (order) source.order = order;
+	if (typeof stored.showsMissing === "boolean") source.showsMissing = stored.showsMissing;
 	return source;
+}
+
+function orderFromDirections(stored: unknown): AdjacentEntry[] | undefined {
+	const directions = readOrder(stored, ADJACENT_DIRECTIONS);
+	if (!directions) return undefined;
+	return PERIODS.flatMap((period) => directions.map((direction): AdjacentEntry => `${direction}-${period}`));
 }
 
 function readOrder<T extends string>(stored: unknown, all: readonly T[]): T[] | undefined {
 	if (!Array.isArray(stored)) return undefined;
 	const known = stored.filter((item, index): item is T => all.includes(item as T) && stored.indexOf(item) === index);
+	if (known.length === 0 && stored.length > 0) return undefined;
 	return [...known, ...all.filter((item) => !known.includes(item))];
 }
 
@@ -437,9 +466,9 @@ export function orderedChoices<T extends string>(order: readonly T[] | undefined
 	return [...(order ?? all)];
 }
 
-export function adjacentDirections(source: AdjacentDatesSource): AdjacentDirection[] {
-	const enabled = source.directions ?? ADJACENT_DIRECTIONS;
-	return orderedChoices(source.order, ADJACENT_DIRECTIONS).filter((direction) => enabled.includes(direction));
+export function adjacentEntriesInOrder(source: AdjacentDatesSource): AdjacentEntry[] {
+	const enabled = source.entries ?? ADJACENT_ENTRIES;
+	return orderedChoices(source.order, ADJACENT_ENTRIES).filter((entry) => enabled.includes(entry));
 }
 
 export function currentPeriodsInOrder(source: CurrentPeriodsSource): Period[] {

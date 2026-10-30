@@ -3,6 +3,7 @@ import type { DateNoteSource, Period } from "./dateNotes";
 export interface MissingDateNote {
 	period: Period;
 	from: DateNoteSource;
+	date?: MomentDate;
 }
 
 export interface VaultNote {

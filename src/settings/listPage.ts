@@ -15,12 +15,12 @@ import { t, tCount } from "../i18n";
 import type { TranslationKey } from "../i18n";
 import type { Period } from "../lists/dateNotes";
 import { hasPresetValues, isLinkType, isMultiRow, isUnreadable } from "../settings";
-import type { AdjacentDirection, EditableProperty, ListSource, NoteList } from "../settings";
+import type { AdjacentEntry, EditableProperty, ListSource, NoteList } from "../settings";
 import { excludedFolderKey, listKey, mainMenuPresetKey, presetValueKey, propertyKey, propertySourceKey } from "./controlKeys";
 import {
-	ADJACENT_DIRECTION_FIELDS,
 	CURRENT_PERIOD_FIELDS,
-	adjacentDirectionName,
+	adjacentEntryField,
+	adjacentEntryName,
 	currentPeriodName,
 	moveSourceChoice,
 	sourceChoiceOrder,
@@ -76,11 +76,6 @@ export interface ListPageContext {
 type IdentifiedPage = SettingDefinitionPage & { id: string };
 
 const NEUTRAL_PREFIX_COLOR = "#888888";
-
-const ADJACENT_DIRECTION_DESCRIPTIONS: Record<AdjacentDirection, TranslationKey> = {
-	previous: "adjacentPreviousDesc",
-	next: "adjacentNextDesc",
-};
 
 const CURRENT_PERIOD_DESCRIPTIONS: Record<Period, TranslationKey> = {
 	day: "currentDayDesc",
@@ -357,7 +352,7 @@ function singlePropertyItems(
 				heading: t("offerNotesFrom"),
 				items: sourceItems(entry, context, (field) => propertySourceKey(entry.id, field)),
 			},
-			sourceChoicesList(entry.source, context, (field) => propertySourceKey(entry.id, field)),
+			...sourceChoices(entry.source, context, (field) => propertySourceKey(entry.id, field), false),
 			excludedFoldersList(entry, context),
 		);
 	}
@@ -419,28 +414,37 @@ export function listPageItems(list: NoteList, context: ListPageContext): Setting
 		{ name: t("enabled"), desc: t("showListInPickerDesc"), control: { type: "toggle", key: key("enabled") } },
 		prefixGroup(list, key("prefix"), t("listPrefixDesc"), context),
 		{ type: "group", heading: t("offerNotesFrom"), items: sourceItems(list, context, key) },
-		sourceChoicesList(list.source, context, key),
+		...sourceChoices(list.source, context, key, true),
 	];
 }
 
-function sourceChoicesList(source: ListSource, context: ListPageContext, key: (field: ListField) => string): SettingDefinitionList {
-	return {
+function sourceChoices(
+	source: ListSource,
+	context: ListPageContext,
+	key: (field: ListField) => string,
+	offersMissingNotes: boolean,
+): SettingDefinitionItem[] {
+	const hasChoices = source.kind === "currentPeriods" || source.kind === "adjacentDates";
+	const list: SettingDefinitionList = {
 		type: "list",
 		heading: t("notesToList"),
-		visible: source.kind === "currentPeriods" || source.kind === "adjacentDates",
+		visible: hasChoices,
 		items: sourceChoiceOrder(source).map((choice) => sourceChoiceItem(source, choice, key)),
 		onReorder: (from, to) => context.change(() => moveSourceChoice(source, from, to)),
 	};
+	if (!offersMissingNotes) return [list];
+	const missingNotes: SettingDefinitionGroup = {
+		type: "group",
+		visible: hasChoices,
+		items: [{ name: t("showMissingDateNotes"), desc: t("showMissingDateNotesDesc"), control: { type: "toggle", key: key("showsMissing") } }],
+	};
+	return [missingNotes, list];
 }
 
 function sourceChoiceItem(source: ListSource, choice: string, key: (field: ListField) => string): SettingGroupItem {
 	if (source.kind === "adjacentDates") {
-		const direction = choice as AdjacentDirection;
-		return {
-			name: adjacentDirectionName(direction),
-			desc: t(ADJACENT_DIRECTION_DESCRIPTIONS[direction]),
-			control: { type: "toggle", key: key(ADJACENT_DIRECTION_FIELDS[direction]) },
-		};
+		const entry = choice as AdjacentEntry;
+		return { name: adjacentEntryName(entry), control: { type: "toggle", key: key(adjacentEntryField(entry)) } };
 	}
 	const period = choice as Period;
 	return {

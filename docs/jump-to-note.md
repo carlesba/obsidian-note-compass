@@ -27,7 +27,7 @@ These four lists depend on the markdown note in focus. They are left out when an
 
 | List | What it holds |
 | --- | --- |
-| Adjacent dates | The previous and next note of the same period when the note in focus is a date note, as in `📅 day 2024-03-06 (next day - Wednesday)` or `📅 day 2024-W09 (prev week - week 9)`. Previous comes first unless you reorder them, and either can be switched off. |
+| Adjacent dates | The date notes just before and after the note in focus, for every period: the previous and next day, week, month, quarter and year, as in `📅 day 2024-03-06 (next day - Wednesday)` or `📅 day 2024-W09 (prev week - week 9)`. Periods shorter than the note in focus are skipped, so a week note lists no days. You choose which entries to list, in which order, and whether missing ones are offered, as described in [Settings](settings.md#list-pages). |
 | Outbound links | The notes the note in focus links to, links in properties included. |
 | Inbound links | The notes that link to the note in focus. |
 | Same day | The notes created on the same day as the note in focus. For a day note it uses the date in its name rather than when the file was created. |
@@ -48,7 +48,7 @@ These lists do not depend on the note in focus.
 
 - The rows keep the order set on the list's page, today to this year by default, instead of being sorted by name.
 - Each row says which period it is, such as `this week - week 10`.
-- A note that does not exist yet shows as `create this week`. Choosing it creates and opens it the way your date notes plugin does, with the same template: Periodic Notes, or core Daily notes for days.
+- A note that does not exist yet shows as `create this week`, unless "Show notes that don't exist yet" is off on the list's page. Choosing it creates and opens it the way your date notes plugin does, with the same template: Periodic Notes, or core Daily notes for days.
 - Periods that come from the Custom formats start as an empty note.
 - A link property in "Set properties" with this source only offers the notes that exist.
 

@@ -7,8 +7,8 @@ import { PERIODS } from "../lists/dateNotes.ts";
 import type { Period } from "../lists/dateNotes.ts";
 import { emptyFilter } from "../lists/filters.ts";
 import type { JumpListVault } from "../lists/vault.ts";
-import { ADJACENT_DIRECTIONS, RELATION_SOURCE_KINDS, currentPeriodsInOrder, newListId, orderedChoices, writePrefixColor } from "../settings.ts";
-import type { AdjacentDatesSource, AdjacentDirection, CurrentPeriodsSource, ListSource, NoteList } from "../settings.ts";
+import { ADJACENT_ENTRIES, RELATION_SOURCE_KINDS, showsMissingNotes, currentPeriodsInOrder, newListId, orderedChoices, writePrefixColor } from "../settings.ts";
+import type { AdjacentDatesSource, AdjacentEntry, CurrentPeriodsSource, ListSource, NoteList } from "../settings.ts";
 import { filterSummary, inapplicableFilter } from "./filterForm.ts";
 
 export type SourceChoice = Exclude<ListSource["kind"], "unreadable">;
@@ -55,20 +55,27 @@ export const CURRENT_PERIOD_FIELDS: Record<Period, CurrentPeriodField> = {
 	year: "currentYear",
 };
 
-export type AdjacentDirectionField = "adjacentPrevious" | "adjacentNext";
+export type AdjacentEntryField = `adjacent-${AdjacentEntry}`;
 
-export const ADJACENT_DIRECTION_FIELDS: Record<AdjacentDirection, AdjacentDirectionField> = {
-	previous: "adjacentPrevious",
-	next: "adjacentNext",
+export function adjacentEntryField(entry: AdjacentEntry): AdjacentEntryField {
+	return `adjacent-${entry}`;
+}
+
+const ADJACENT_ENTRY_KEYS: Record<AdjacentEntry, TranslationKey> = {
+	"previous-day": "adjacentPreviousDay",
+	"next-day": "adjacentNextDay",
+	"previous-week": "adjacentPreviousWeek",
+	"next-week": "adjacentNextWeek",
+	"previous-month": "adjacentPreviousMonth",
+	"next-month": "adjacentNextMonth",
+	"previous-quarter": "adjacentPreviousQuarter",
+	"next-quarter": "adjacentNextQuarter",
+	"previous-year": "adjacentPreviousYear",
+	"next-year": "adjacentNextYear",
 };
 
-const ADJACENT_DIRECTION_KEYS: Record<AdjacentDirection, TranslationKey> = {
-	previous: "adjacentPrevious",
-	next: "adjacentNext",
-};
-
-export function adjacentDirectionName(direction: AdjacentDirection): string {
-	return t(ADJACENT_DIRECTION_KEYS[direction]);
+export function adjacentEntryName(entry: AdjacentEntry): string {
+	return t(ADJACENT_ENTRY_KEYS[entry]);
 }
 
 export function dateModeOptions(): Record<"fixed" | "relative", string> {
@@ -87,7 +94,8 @@ export type ListField =
 	| "note"
 	| "folder"
 	| CurrentPeriodField
-	| AdjacentDirectionField;
+	| AdjacentEntryField
+	| "showsMissing";
 
 export type ValueShape = "none" | "text" | "number" | "date";
 
@@ -175,13 +183,14 @@ export function readListField(list: NoteList, field: ListField): unknown {
 	const { source } = list;
 	if (source.kind === "linksToNote") return field === "note" ? source.note : undefined;
 	if (source.kind === "inFolder") return field === "folder" ? source.folder : undefined;
+	if (field === "showsMissing") return source.kind === "adjacentDates" || source.kind === "currentPeriods" ? showsMissingNotes(source) : undefined;
 	if (source.kind === "currentPeriods") {
 		const period = currentPeriodOf(field);
 		return period === undefined ? undefined : source.periods.includes(period);
 	}
 	if (source.kind === "adjacentDates") {
-		const direction = directionOf(field);
-		return direction === undefined ? undefined : (source.directions ?? ADJACENT_DIRECTIONS).includes(direction);
+		const entry = entryOf(field);
+		return entry === undefined ? undefined : (source.entries ?? ADJACENT_ENTRIES).includes(entry);
 	}
 	return undefined;
 }
@@ -193,19 +202,23 @@ export function writeListField(list: NoteList, field: ListField, value: unknown)
 	else if (field === "source") list.source = sourceFor(value, list.source);
 	else if (field === "note" && list.source.kind === "linksToNote") list.source.note = typeof value === "string" ? value.trim() : "";
 	else if (field === "folder" && list.source.kind === "inFolder") list.source.folder = typeof value === "string" ? value.trim() : "";
-	else if (list.source.kind === "currentPeriods") writeCurrentPeriod(list.source, field, value);
-	else if (list.source.kind === "adjacentDates") writeAdjacentDirection(list.source, field, value);
+	else if (field === "showsMissing" && (list.source.kind === "currentPeriods" || list.source.kind === "adjacentDates")) {
+		const source = list.source;
+		if ((value === true) === (source.kind === "currentPeriods")) delete source.showsMissing;
+		else source.showsMissing = value === true;
+	} else if (list.source.kind === "currentPeriods") writeCurrentPeriod(list.source, field, value);
+	else if (list.source.kind === "adjacentDates") writeAdjacentEntry(list.source, field, value);
 }
 
 export function sourceChoiceOrder(source: ListSource): string[] {
 	if (source.kind === "currentPeriods") return orderedChoices(source.order, PERIODS);
-	if (source.kind === "adjacentDates") return orderedChoices(source.order, ADJACENT_DIRECTIONS);
+	if (source.kind === "adjacentDates") return orderedChoices(source.order, ADJACENT_ENTRIES);
 	return [];
 }
 
 export function moveSourceChoice(source: ListSource, from: number, to: number): void {
 	if (source.kind === "currentPeriods") source.order = moved(orderedChoices(source.order, PERIODS), from, to);
-	else if (source.kind === "adjacentDates") source.order = moved(orderedChoices(source.order, ADJACENT_DIRECTIONS), from, to);
+	else if (source.kind === "adjacentDates") source.order = moved(orderedChoices(source.order, ADJACENT_ENTRIES), from, to);
 }
 
 function moved<T>(items: T[], from: number, to: number): T[] {
@@ -214,17 +227,17 @@ function moved<T>(items: T[], from: number, to: number): T[] {
 	return copy;
 }
 
-function directionOf(field: ListField): AdjacentDirection | undefined {
-	return ADJACENT_DIRECTIONS.find((direction) => ADJACENT_DIRECTION_FIELDS[direction] === field);
+function entryOf(field: ListField): AdjacentEntry | undefined {
+	return ADJACENT_ENTRIES.find((entry) => adjacentEntryField(entry) === field);
 }
 
-function writeAdjacentDirection(source: AdjacentDatesSource, field: ListField, value: unknown): void {
-	const changed = directionOf(field);
+function writeAdjacentEntry(source: AdjacentDatesSource, field: ListField, value: unknown): void {
+	const changed = entryOf(field);
 	if (changed === undefined) return;
-	const enabled = source.directions ?? ADJACENT_DIRECTIONS;
-	const directions = ADJACENT_DIRECTIONS.filter((direction) => (direction === changed ? value === true : enabled.includes(direction)));
-	if (directions.length === ADJACENT_DIRECTIONS.length) delete source.directions;
-	else source.directions = directions;
+	const enabled = source.entries ?? ADJACENT_ENTRIES;
+	const entries = ADJACENT_ENTRIES.filter((entry) => (entry === changed ? value === true : enabled.includes(entry)));
+	if (entries.length === ADJACENT_ENTRIES.length) delete source.entries;
+	else source.entries = entries;
 }
 
 function currentPeriodOf(field: ListField): Period | undefined {

@@ -1,31 +1,39 @@
 import { t } from "../i18n/index.ts";
 import type { TranslationKey } from "../i18n/index.ts";
 import type { Period, ResolvedDateNotes } from "./dateNotes.ts";
-import { adjacentDatePaths, currentDatePath, isSameLocalDay, parseDateNote } from "./dates.ts";
+import { adjacentDatePath, currentDatePath, isSameLocalDay, parseDateNote } from "./dates.ts";
 import type { JumpListVault, MomentDate, VaultNote } from "./vault";
-import type { AdjacentDirection } from "../settings";
+import { ADJACENT_ENTRIES, adjacentEntryParts } from "../settings.ts";
+import type { AdjacentEntry } from "../settings";
 
 export interface ListedNote {
 	file: VaultNote;
 	direction?: string;
 	missing?: Period;
+	missingDate?: MomentDate;
 }
 
 export function adjacentDateNotes(
 	vault: JumpListVault,
 	current: VaultNote,
 	dateNotes: ResolvedDateNotes,
-	directions: readonly AdjacentDirection[] = ["previous", "next"],
+	entries: readonly AdjacentEntry[] = ADJACENT_ENTRIES,
+	listsMissing = false,
 ): ListedNote[] {
 	const dateNote = parseDateNote(current, dateNotes, vault.moment);
 	if (!dateNote) return [];
-	const adjacent = adjacentDatePaths(dateNote);
 	const notes = vault.notes();
 	const atPath = (path: string) => notes.find((note) => note.path === path);
 	const listed: ListedNote[] = [];
-	for (const direction of directions) {
-		const file = atPath(adjacent[direction]);
-		if (file) listed.push({ file, direction: direction === "next" ? adjacent.nextLabel : adjacent.previousLabel });
+	for (const entry of entries) {
+		const { direction, period } = adjacentEntryParts(entry);
+		const adjacent = adjacentDatePath(dateNote, dateNotes, period, direction);
+		if (!adjacent) continue;
+		const file = atPath(adjacent.path);
+		if (file) listed.push({ file, direction: adjacent.label });
+		else if (listsMissing) {
+			listed.push({ file: unsavedNote(adjacent.path), direction: t("createCurrentPeriod", { period: adjacent.label }), missing: period, missingDate: adjacent.date });
+		}
 	}
 	return listed;
 }
@@ -43,6 +51,7 @@ export function currentPeriodNotes(
 	periods: readonly Period[],
 	dateNotes: ResolvedDateNotes,
 	today: MomentDate,
+	listsMissing = true,
 ): ListedNote[] {
 	const notes = vault.notes();
 	const listed: ListedNote[] = [];
@@ -51,7 +60,7 @@ export function currentPeriodNotes(
 		if (path === undefined) continue;
 		const file = notes.find((note) => note.path === path);
 		if (file) listed.push({ file, direction: t(CURRENT_PERIOD_LABELS[period]) });
-		else listed.push({ file: unsavedNote(path), direction: t("createCurrentPeriod", { period: t(CURRENT_PERIOD_LABELS[period]) }), missing: period });
+		else if (listsMissing) listed.push({ file: unsavedNote(path), direction: t("createCurrentPeriod", { period: t(CURRENT_PERIOD_LABELS[period]) }), missing: period });
 	}
 	return listed;
 }

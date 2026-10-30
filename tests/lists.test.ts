@@ -84,7 +84,7 @@ test("adjacent days lists the previous and next date notes with direction and da
 	]);
 });
 
-test("adjacent days covers weeks and months and looks neighbours up only in the period's folder", () => {
+test("adjacent days covers weeks and months and looks neighbours up only in each period's folder", () => {
 	const vault = fakeVault([
 		{ path: "on/2024-W10.md" },
 		{ path: "on/2024-W11.md" },
@@ -95,6 +95,7 @@ test("adjacent days covers weeks and months and looks neighbours up only in the 
 	const lists = onlyList("adjacentDates");
 	assert.deepEqual(describe(buildJumpList(lists, vault, vault.note("on/2024-W10.md"))), [
 		"📅 day 2024-W11 | next week - week 11",
+		"📅 day 2024-02 | prev month - month - February",
 	]);
 	assert.deepEqual(describe(buildJumpList(lists, vault, vault.note("on/2024-03.md"))), [
 		"📅 day 2024-02 | prev month - month - February",
@@ -108,6 +109,7 @@ test("adjacent days covers quarters and years from the Custom formats", () => {
 	const lists = onlyList("adjacentDates");
 	assert.deepEqual(describe(buildJumpList(lists, vault, vault.note("on/2024-Q1.md"), dateNotes)), [
 		"📅 day 2023-Q4 | prev quarter - quarter 4",
+		"📅 day 2025 | next year - year",
 	]);
 	assert.deepEqual(describe(buildJumpList(lists, vault, vault.note("on/2024.md"), dateNotes)), [
 		"📅 day 2025 | next year - year",
@@ -406,16 +408,51 @@ test("current date notes lists the chosen periods' notes for today in period ord
 	assert.deepEqual(buildJumpList(chosen, vault, vault.note("on/2024-03.md")), []);
 });
 
-test("adjacent dates list only the switched-on directions, in their order", () => {
-	const vault = fakeVault([{ path: "on/2024-03-05.md" }, { path: "on/2024-03-04.md" }, { path: "on/2024-03-06.md" }]);
+test("adjacent dates list the neighbouring notes of every period, in the order set, and only the switched-on ones", () => {
+	const vault = fakeVault([
+		{ path: "on/2024-03-05.md" },
+		{ path: "on/2024-03-04.md" },
+		{ path: "on/2024-03-06.md" },
+		{ path: "on/2024-W09.md" },
+		{ path: "on/2024-W11.md" },
+		{ path: "on/2024-02.md" },
+		{ path: "on/2025.md" },
+	]);
 	const current = vault.note("on/2024-03-05.md");
-	assert.deepEqual(describe(buildJumpList(sourceList({ kind: "adjacentDates", order: ["next", "previous"] }), vault, current)), [
+	assert.deepEqual(describe(buildJumpList(sourceList({ kind: "adjacentDates" }), vault, current)), [
+		"src 2024-03-04 | prev day - Monday",
 		"src 2024-03-06 | next day - Wednesday",
-		"src 2024-03-04 | prev day - Monday",
+		"src 2024-W09 | prev week - week 9",
+		"src 2024-W11 | next week - week 11",
+		"src 2024-02 | prev month - month - February",
+		"src 2025 | next year - year",
 	]);
-	assert.deepEqual(describe(buildJumpList(sourceList({ kind: "adjacentDates", directions: ["previous"] }), vault, current)), [
-		"src 2024-03-04 | prev day - Monday",
+	const chosen = sourceList({ kind: "adjacentDates", entries: ["previous-day", "next-year"], order: ["next-year", "previous-day"] });
+	assert.deepEqual(describe(buildJumpList(chosen, vault, current)), ["src 2025 | next year - year", "src 2024-03-04 | prev day - Monday"]);
+});
+
+test("adjacent dates skip periods shorter than the note in focus", () => {
+	const vault = fakeVault([{ path: "on/2024-W10.md" }, { path: "on/2024-03-03.md" }, { path: "on/2024-03-11.md" }, { path: "on/2024-W11.md" }]);
+	assert.deepEqual(describe(buildJumpList(sourceList({ kind: "adjacentDates" }), vault, vault.note("on/2024-W10.md"))), [
+		"src 2024-W11 | next week - week 11",
 	]);
+});
+
+test("adjacent dates offer to create missing notes only when switched on", () => {
+	const vault = fakeVault([{ path: "on/2024-03-05.md" }]);
+	const current = vault.note("on/2024-03-05.md");
+	assert.deepEqual(buildJumpList(sourceList({ kind: "adjacentDates", entries: ["next-week"] }), vault, current), []);
+	const entries = buildJumpList(sourceList({ kind: "adjacentDates", entries: ["next-week"], showsMissing: true }), vault, current);
+	assert.deepEqual(describe(entries), ["src 2024-W11 | create next week - week 11"]);
+	assert.equal(entries[0].file.path, "on/2024-W11.md");
+	assert.equal(entries[0].missing?.period, "week");
+	assert.equal(entries[0].missing?.date?.format("YYYY-MM-DD"), "2024-03-12");
+});
+
+test("current date notes leave missing notes out when that is switched off", () => {
+	const vault = fakeVault([{ path: "on/2024-03-09.md" }]);
+	const list = sourceList({ kind: "currentPeriods", periods: ["day", "week"], showsMissing: false });
+	assert.deepEqual(describe(buildJumpList(list, vault)), ["src 2024-03-09 | today - Saturday"]);
 });
 
 test("current date notes follow the order the periods were dragged into", () => {
