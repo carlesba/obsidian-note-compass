@@ -33,6 +33,7 @@ export function setProperties(
 		} catch {
 			new Notice(t("couldNotSaveProperties"));
 		}
+		back?.();
 	};
 	const openMain = (state: PickerState, query: string): void => {
 		new ChoiceModal<PickerChoice>(app, t("setPropertiesPlaceholder"), (typed) => pickerChoices(entries, initial, state, typed, settings.showPrefixes, settings.setProperties.checkboxMode, rows), {
