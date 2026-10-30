@@ -8,7 +8,7 @@ Process the tasks in the active Markdown note with your own command-palette comm
 
 1. Open Settings → Note Compass → Tasks and choose `+` to add a command.
 2. Give it a name, then open a Markdown note with tasks and run that name from the command palette. You can also assign it a hotkey.
-3. Type to find a task. Enter runs the action chosen in "Enter runs"; ⚙ or Alt+Enter opens all actions.
+3. Type to find a task. Each key runs what "Keymap" binds to it; any other key, and ⚙, opens all actions.
 4. With "Batch mode" on, choose `🏁 Finish processing` to save, or `🛑 Cancel` to discard the staged changes.
 
 ![The task picker on a daily note, with ⚡ Apply to all 5 tasks first, the open tasks below it, then 🏁 Finish processing with its count of changes and 🛑 Cancel last](images/task-picker.png)
@@ -26,10 +26,12 @@ Each command has its own page under Settings → Note Compass → Tasks.
 | Tasks to skip | Status pills | Excludes these statuses even when listed above. Empty means none. |
 | Options | Select all | Adds `⚡ Apply to all N tasks` when more than one task matches the typed search. |
 | Options | Batch mode | Stages changes until you finish instead of writing immediately. |
-| Actions | Enter runs | An action, or "Show the actions menu". |
 | Actions | Action list | Add, drag to reorder, duplicate or delete actions; click a row to edit it inline. |
+| Keymap | Key, Runs | Binds Enter, Cmd+Enter (Ctrl+Enter on Windows and Linux), Alt+Enter or Shift+Enter to an action, "Show the actions menu" or, in batch mode, `🏁 Finish processing`. Add with `+`, remove with ×. |
 
 "Add status" offers Open `[ ]`, Completed `[x]`, Cancelled `[-]`, Migrated `[>]`, Scheduled `[<]`, In progress `[/]` and "Custom…". For a custom status, type one character and press Enter. Use a pill's × to remove it. Status characters are case-sensitive.
+
+Each key appears at most once in "Keymap". A key with no entry opens the actions menu, so an empty "Keymap" opens the menu on every key. An action row shows a badge for each key bound to it. Deleting an action removes its keys, and a key bound to `🏁 Finish processing` opens the menu while "Batch mode" is off, with a warning on its row.
 
 The main settings rows for commands and forms show only their name, with a second line only when there is a warning. An unreadable command is kept switched off with a warning until you remove it.
 
@@ -78,8 +80,8 @@ Type to filter task text; matching is case-insensitive and in order, like the ot
 
 | Key or row | Does |
 | --- | --- |
-| Enter on a task | Runs "Enter runs", or opens the actions menu. |
-| ⚙ or Alt+Enter | Opens the menu of all actions, including the Enter action. |
+| A key from "Keymap" on a task | Runs the bound action on that task, or `🏁 Finish processing` writes all staged changes. |
+| Any other key, or ⚙ | Opens the menu of all actions, including the bound ones. |
 | `⚡ Apply to all N tasks` | Uses the chosen action on every task matching the search, not every task in the note. |
 | `🏁 Finish processing` · N changes | Writes all staged changes and closes. |
 | `🛑 Cancel` or Escape in the task picker | Discards all staged changes. |
@@ -91,7 +93,7 @@ With "Batch mode" off, one choice writes immediately and closes the picker. Esca
 
 ## New-command defaults
 
-A new command starts with a Bullet Journal setup named "Process open tasks": enabled, listing only Open `[ ]`, skipping none, "Select all" off and "Batch mode" on. Enter runs "✅ Complete".
+A new command starts with a Bullet Journal setup named "Process open tasks": enabled, listing only Open `[ ]`, skipping none, "Select all" off and "Batch mode" on. Its "Keymap" binds Enter to "✅ Complete", so Alt+Enter, Cmd+Enter and Shift+Enter open the actions menu.
 
 | Action | Source status | Other settings |
 | --- | --- | --- |

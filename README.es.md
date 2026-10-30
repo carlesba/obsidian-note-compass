@@ -172,7 +172,7 @@ Añade un comando con `+` en Ajustes → Note Compass → Tareas y dale un nombr
 | Tareas que omitir | Se omiten aunque estén listadas. Déjalo vacío para no omitir ninguna. |
 | Seleccionar todas | Añade una primera fila que aplica una acción a todas las tareas listadas. |
 | Modo por lotes | Prepara las acciones sin guardar hasta que termines o no queden tareas. Cancelar o Escape descarta todos los cambios pendientes. |
-| Intro ejecuta | Elige qué hace Intro en una tarea. Abre el menú de acciones con el botón de ajustes o Alt+Intro. Una acción o "Mostrar el menú de acciones". |
+| Teclas | Asigna Intro, Cmd+Intro (Ctrl+Intro en Windows y Linux), Alt+Intro o Shift+Intro a una acción, a "Mostrar el menú de acciones" o, en modo por lotes, a `🏁 Terminar`. Añade con `+` y elimina con ×. Cada tecla aparece una sola vez; una tecla sin entrada abre el menú de acciones, así que con la lista vacía cualquier tecla lo abre. Al borrar una acción se quitan sus teclas. |
 
 "Añadir estado" ofrece Pendiente `[ ]`, Completada `[x]`, Cancelada `[-]`, Migrada `[>]`, Programada `[<]`, En curso `[/]` y "Personalizado…". Para uno personalizado, escribe un carácter y pulsa Intro. La × de una píldora lo elimina. Se distinguen mayúsculas y minúsculas; las exclusiones tienen prioridad.
 
@@ -213,7 +213,7 @@ Añade una tarea abierta `[ ]` al final de otra nota y cambia "Estado" en la ori
 
 ![El menú de acciones, ¿Qué acción aplicar?, con ✅ Completar, 🚫 Cancelar, ➡️ Migrar y 📅 Programar](docs/images/task-actions.png)
 
-- Escribe para filtrar el texto de las tareas, sin distinguir mayúsculas y con coincidencia en orden. Intro ejecuta "Intro ejecuta", o abre el menú; ⚙ o Alt+Intro abre todas las acciones, incluida la de Intro.
+- Escribe para filtrar el texto de las tareas, sin distinguir mayúsculas y con coincidencia en orden. Cada tecla de "Teclas" ejecuta lo que tiene asignado; cualquier otra tecla, o ⚙, abre todas las acciones.
 - "Seleccionar todas" añade `⚡ Aplicar a las N tareas` cuando coinciden más de una con la búsqueda. Solo aplica a esas tareas, no a toda la nota.
 - Con "Modo por lotes" activado, cada elección queda pendiente y el selector vuelve a abrirse con las tareas restantes y la búsqueda vacía. `🏁 Terminar` · N cambios guarda todo. `🛑 Cancelar` o Escape en el selector de tareas descarta todo. Escape en el selector de acciones o destinos solo vuelve atrás y conserva los cambios pendientes.
 - Procesar la última tarea termina automáticamente. Elegir `⚡ Aplicar a las N tareas` también termina de inmediato, aunque la búsqueda oculte otras tareas.
@@ -221,7 +221,7 @@ Añade una tarea abierta `[ ]` al final de otra nota y cambia "Estado" en la ori
 
 ### Valores de un comando nuevo
 
-Cada comando nuevo empieza con una configuración Bullet Journal llamada "Procesar tareas abiertas": activado, solo tareas Pendiente `[ ]`, sin exclusiones, "Seleccionar todas" desactivado y "Modo por lotes" activado. Intro ejecuta "✅ Completar".
+Cada comando nuevo empieza con una configuración Bullet Journal llamada "Procesar tareas abiertas": activado, solo tareas Pendiente `[ ]`, sin exclusiones, "Seleccionar todas" desactivado y "Modo por lotes" activado. "Teclas" asigna Intro a "✅ Completar", así que Alt+Intro, Cmd+Intro y Shift+Intro abren el menú de acciones.
 
 | Acción | Estado original | Otros ajustes |
 | --- | --- | --- |
@@ -357,7 +357,7 @@ Las traducciones están en `src/i18n/`, y este manual también está disponible 
 - Añade tu carpeta de plantillas a "Carpetas excluidas" en todas las propiedades de enlace, para que las notas de plantilla nunca se ofrezcan como valores.
 - Desactiva "Mostrar prefijos" para un aspecto minimalista cuando ya conozcas tus listas. Las filas de enlace muestran entonces el nombre de su propiedad.
 - En "Establecer propiedades", Escape en un selector de valores solo vuelve al selector principal. Los cambios que ya hiciste se conservan hasta que eliges "Guardar y cerrar" o "Cancelar".
-- En un comando de tareas, usa Alt+Intro o ⚙ para ver todas las acciones sin cambiar lo que hace Intro.
+- En un comando de tareas, asigna tus acciones más habituales en "Teclas" y deja una tecla libre: esa tecla y ⚙ siguen abriendo todas las acciones. Con "Modo por lotes" activado, asignar Cmd+Intro a `🏁 Terminar` guarda sin bajar hasta la última fila.
 
 ## Comportamiento conocido
 

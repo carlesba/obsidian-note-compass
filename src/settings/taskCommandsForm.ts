@@ -4,10 +4,12 @@ import { PERIODS } from "../lists/dateNotes.ts";
 import type { Period } from "../lists/dateNotes.ts";
 import type { VaultNote } from "../lists/vault";
 import { noteDestinationTarget, periodicDestinationName } from "../tasks/destinations.ts";
-import { actionName } from "../tasks/picker.ts";
+import { actionName, taskKeyLabel } from "../tasks/picker.ts";
 import {
 	ACTIONS_MENU,
 	COMPLETION_DATES,
+	FINISH_PROCESSING,
+	TASK_KEYS,
 	PERIOD_RELATIONS,
 	TASK_ACTION_KINDS,
 	isStatus,
@@ -15,12 +17,21 @@ import {
 	newStatusAction,
 	noteDestination,
 	periodicDestination,
-	primaryAction,
 	uniqueStatuses,
 } from "../tasks/taskCommand.ts";
-import type { CompletionDate, CopyAction, Destination, PeriodRelation, TaskAction, TaskActionKind, TaskCommand } from "../tasks/taskCommand.ts";
+import type {
+	CompletionDate,
+	CopyAction,
+	Destination,
+	PeriodRelation,
+	TaskAction,
+	TaskActionKind,
+	TaskCommand,
+	TaskKey,
+	TaskKeyBinding,
+} from "../tasks/taskCommand.ts";
 
-export type TaskCommandSetting = "enabled" | "name" | "statuses" | "skippedStatuses" | "selectAll" | "batch" | "primary";
+export type TaskCommandSetting = "enabled" | "name" | "statuses" | "skippedStatuses" | "selectAll" | "batch" | "bindingKey" | "bindingAction";
 
 export type TaskActionSetting =
 	| "prefix"
@@ -34,7 +45,7 @@ export type TaskActionSetting =
 	| "mentionDestination"
 	| "mentionSource";
 
-const TASK_COMMAND_SETTINGS: readonly TaskCommandSetting[] = ["enabled", "name", "statuses", "skippedStatuses", "selectAll", "batch", "primary"];
+const TASK_COMMAND_SETTINGS: readonly TaskCommandSetting[] = ["enabled", "name", "statuses", "skippedStatuses", "selectAll", "batch", "bindingKey", "bindingAction"];
 
 export const NOTE_DESTINATION_OPTION = "note";
 
@@ -92,8 +103,38 @@ export function destinationNoteWarning(path: string, notes: readonly VaultNote[]
 	return noteDestinationTarget(notes, path) ? undefined : t("taskDestinationNoteMissing");
 }
 
-export function primaryActionOptions(command: TaskCommand): [string, string][] {
-	return [[ACTIONS_MENU, t("showTaskActionsMenu")], ...command.actions.map((action): [string, string] => [action.id, actionName(action)])];
+export function keyBindingKeyOptions(command: TaskCommand, index: number, mac: boolean): [TaskKey, string][] {
+	const own = command.keymap[index]?.key;
+	return TASK_KEYS.filter((key) => key === own || !command.keymap.some((binding) => binding.key === key)).map((key) => [key, taskKeyLabel(key, mac)]);
+}
+
+export function keyBindingActionOptions(command: TaskCommand, index: number): [string, string][] {
+	const own = command.keymap[index]?.action;
+	const options: [string, string][] = [[ACTIONS_MENU, t("showTaskActionsMenu")], ...command.actions.map((action): [string, string] => [action.id, actionName(action)])];
+	if (command.batch || own === FINISH_PROCESSING) options.push([FINISH_PROCESSING, `🏁 ${t("finishProcessing")}`]);
+	if (own !== undefined && !options.some(([id]) => id === own)) options.push([own, t("taskKeyMissingActionOption")]);
+	return options;
+}
+
+export function keyBindingWarning(command: TaskCommand, index: number): string | undefined {
+	const binding = command.keymap[index];
+	if (!binding) return undefined;
+	if (command.keymap.findIndex((candidate) => candidate.key === binding.key) !== index) return t("taskKeyDuplicate");
+	if (binding.action === FINISH_PROCESSING) return command.batch ? undefined : t("taskKeyNeedsBatch");
+	if (binding.action === ACTIONS_MENU) return undefined;
+	return command.actions.some((action) => action.id === binding.action) ? undefined : t("taskKeyMissingAction");
+}
+
+export function addKeyBinding(command: TaskCommand): TaskKeyBinding | undefined {
+	const key = TASK_KEYS.find((candidate) => !command.keymap.some((binding) => binding.key === candidate));
+	if (!key) return undefined;
+	const binding = { key, action: command.actions[0]?.id ?? ACTIONS_MENU };
+	command.keymap.push(binding);
+	return binding;
+}
+
+export function deleteKeyBinding(command: TaskCommand, index: number): void {
+	command.keymap.splice(index, 1);
 }
 
 export function taskActionWarning(action: TaskAction): string | undefined {
@@ -105,6 +146,7 @@ export function taskCommandWarning(command: TaskCommand): string | undefined {
 	if (command.unreadable) return t("unreadableTaskCommandWarning");
 	if (command.actions.length === 0) return t("taskCommandNeedsAction");
 	if (command.actions.some((action) => taskActionWarning(action) !== undefined)) return t("taskActionsNeedAttention");
+	if (command.keymap.some((_binding, index) => keyBindingWarning(command, index) !== undefined)) return t("taskKeymapNeedsAttention");
 	return undefined;
 }
 
@@ -116,24 +158,39 @@ export function findTaskAction(command: TaskCommand, id: string): TaskAction | u
 	return command.actions.find((action) => action.id === id);
 }
 
-export function isPrimaryAction(command: TaskCommand, action: TaskAction): boolean {
-	return primaryAction(command) === action;
+function bindingAt(command: TaskCommand, index: string | undefined): TaskKeyBinding | undefined {
+	return index !== undefined && /^\d+$/.test(index) ? command.keymap[Number(index)] : undefined;
 }
 
-export function readTaskCommandSetting(command: TaskCommand, setting: TaskCommandSetting): unknown {
+export function readTaskCommandSetting(command: TaskCommand, setting: TaskCommandSetting, index?: string): unknown {
 	if (!TASK_COMMAND_SETTINGS.includes(setting)) return undefined;
-	return setting === "primary" ? (command.primary === ACTIONS_MENU ? ACTIONS_MENU : (primaryAction(command)?.id ?? "")) : command[setting];
+	if (setting === "bindingKey") return bindingAt(command, index)?.key;
+	if (setting === "bindingAction") return bindingAt(command, index)?.action;
+	return command[setting];
 }
 
-export function writeTaskCommandSetting(command: TaskCommand, setting: TaskCommandSetting, value: unknown): boolean {
+export function writeTaskCommandSetting(command: TaskCommand, setting: TaskCommandSetting, value: unknown, index?: string): boolean {
 	if (command.unreadable || !TASK_COMMAND_SETTINGS.includes(setting)) return false;
 	const text = typeof value === "string" ? value : "";
-	if (setting === "primary") {
-		if (value !== ACTIONS_MENU && !command.actions.some((action) => action.id === value)) return false;
-		command.primary = text;
-	} else if (setting === "name") command.name = text;
+	if (setting === "bindingKey" || setting === "bindingAction") return writeKeyBinding(command, setting, value, index);
+	if (setting === "name") command.name = text;
 	else if (setting === "statuses" || setting === "skippedStatuses") command[setting] = uniqueStatuses(text);
 	else command[setting] = value === true;
+	return true;
+}
+
+function writeKeyBinding(command: TaskCommand, setting: "bindingKey" | "bindingAction", value: unknown, index: string | undefined): boolean {
+	const binding = bindingAt(command, index);
+	if (!binding) return false;
+	if (setting === "bindingKey") {
+		const key = TASK_KEYS.find((candidate) => candidate === value);
+		if (!key || command.keymap.some((other) => other !== binding && other.key === key)) return false;
+		binding.key = key;
+		return true;
+	}
+	const known = value === ACTIONS_MENU || value === FINISH_PROCESSING || command.actions.some((action) => action.id === value);
+	if (!known || typeof value !== "string") return false;
+	binding.action = value;
 	return true;
 }
 
@@ -254,13 +311,12 @@ function changeKind(action: TaskAction, kind: TaskActionKind): void {
 export function addTaskAction(command: TaskCommand): TaskAction {
 	const action = newStatusAction(command.actions);
 	command.actions.push(action);
-	if (command.actions.length === 1 && command.primary !== ACTIONS_MENU) command.primary = action.id;
 	return action;
 }
 
 export function deleteTaskAction(command: TaskCommand, index: number): TaskAction | undefined {
 	const [removed] = command.actions.splice(index, 1);
-	if (removed && removed.id === command.primary) command.primary = command.actions[0]?.id ?? "";
+	if (removed) command.keymap = command.keymap.filter((binding) => binding.action !== removed.id);
 	return removed;
 }
 

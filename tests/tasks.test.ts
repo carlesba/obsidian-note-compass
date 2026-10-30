@@ -5,8 +5,8 @@ import { applyCopyAction, applyStatusAction, applyStagedChanges, cancelBatch, co
 import type { ApplyContext } from "../src/tasks/apply.ts";
 import { actionDestinations, fallbackLinkText } from "../src/tasks/destinations.ts";
 import type { DestinationContext } from "../src/tasks/destinations.ts";
-import { actionChoices, choiceTargets, destinationChoices, planAction, taskChoices, taskSelectionPlan } from "../src/tasks/picker.ts";
-import { newCopyAction, newStatusAction, newTaskCommand, noteDestination, periodicDestination, secondaryActions } from "../src/tasks/taskCommand.ts";
+import { actionChoices, choiceTargets, destinationChoices, keyInstructions, planAction, taskChoices } from "../src/tasks/picker.ts";
+import { newCopyAction, newStatusAction, newTaskCommand, noteDestination, periodicDestination } from "../src/tasks/taskCommand.ts";
 import type { CopyAction, Destination, StatusAction, TaskCommand } from "../src/tasks/taskCommand.ts";
 import {
 	appendLines,
@@ -213,7 +213,7 @@ test("copy actions run directly with one destination and ask with several", () =
 	assert.deepEqual(planAction(copyAction([]), two), { plan: "pick", destinations: two });
 	assert.deepEqual(destinationChoices([{ path: "x.md", label: "Tomorrow · x", missing: { period: "day", date: TODAY } }], "").map((choice) => choice.label), ["Tomorrow · x new note"]);
 	const defaults = newTaskCommand([]);
-	assert.deepEqual(actionChoices(secondaryActions(defaults), "mi").map((choice) => choice.label), ["➡️ Migrate"]);
+	assert.deepEqual(actionChoices(defaults.actions, "mi").map((choice) => choice.label), ["➡️ Migrate"]);
 });
 
 function applyContext(notes: FakeNote[], sourcePath: string): ApplyContext & { vault: ReturnType<typeof fakeVault> } {
@@ -265,16 +265,20 @@ test("a copy action skips tasks whose line changed and writes nothing when all c
 	assert.equal(context.vault.content("a.md"), "- [ ] Alpha\n");
 });
 
-test("Enter plans the full actions menu for task and apply-to-all rows when selected", () => {
-	const menuCommand = command({ primary: "menu", selectAll: true });
-	const choices = taskChoices(menuCommand, [task("- [ ] One", 0), task("- [ ] Two", 1)], "");
-	for (const choice of choices.filter((choice) => choice.action.action === "task" || choice.action.action === "all")) {
-		assert.ok(choiceTargets(choice.action).length > 0);
-		assert.deepEqual(taskSelectionPlan(menuCommand), { plan: "menu", actions: menuCommand.actions });
-	}
-	assert.deepEqual(taskSelectionPlan(command({ primary: "missing" })), { plan: "run", action: menuCommand.actions[0] });
-	assert.equal(secondaryActions(menuCommand).length, 4);
-	assert.equal(secondaryActions(command()).length, 3);
+test("the picker footer lists each bound key and one key that opens the actions menu", () => {
+	const defaults = newTaskCommand([]);
+	assert.deepEqual(keyInstructions(defaults, true), [
+		{ command: "↵", purpose: "to ✅ Complete" },
+		{ command: "⌥ ↵", purpose: "to show the actions menu" },
+	]);
+	defaults.keymap.push({ key: "mod-enter", action: "finish" });
+	assert.deepEqual(keyInstructions(defaults, false), [
+		{ command: "↵", purpose: "to ✅ Complete" },
+		{ command: "ctrl ↵", purpose: "to finish processing" },
+		{ command: "alt ↵", purpose: "to show the actions menu" },
+	]);
+	defaults.keymap = [];
+	assert.deepEqual(keyInstructions(defaults, true), [{ command: "↵", purpose: "to show the actions menu" }]);
 });
 
 test("timestamp completion uses the daily-note date format and core Templates time format", async () => {

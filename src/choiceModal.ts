@@ -1,5 +1,5 @@
 import { App, Platform, SuggestModal } from "obsidian";
-import type { Instruction } from "obsidian";
+import type { Instruction, Modifier } from "obsidian";
 import { MARK_COLUMN_CLASS, RESULTS_CLASS, renderRow } from "./render";
 import type { RowParts } from "./render";
 import { ROW_ACTION_ICON, renderRowAction, selectedRow } from "./rowAction";
@@ -10,11 +10,17 @@ export interface SecondaryChoice<Choice> {
 	open(choice: Choice, query: string): void;
 }
 
+export interface ChoiceShortcut<Choice> {
+	modifiers: Modifier[];
+	run(choice: Choice, query: string): void;
+}
+
 export interface ChoiceHandlers<Choice> {
 	choose(choice: Choice, query: string): void;
 	dismiss(): void;
 	save?: () => void;
 	secondary?: SecondaryChoice<Choice>;
+	shortcuts?: ChoiceShortcut<Choice>[];
 	instructions?: Instruction[];
 }
 
@@ -41,14 +47,13 @@ export class ChoiceModal<Choice extends { parts: RowParts }> extends SuggestModa
 				return false;
 			});
 		}
-		const { secondary } = handlers;
-		if (secondary) {
-			this.scope.register(["Alt"], "Enter", (evt) => {
+		for (const shortcut of handlers.shortcuts ?? []) {
+			this.scope.register(shortcut.modifiers, "Enter", (evt) => {
 				if (evt.isComposing) return;
 				evt.preventDefault();
 				const selected = selectedRow(this.resultContainerEl);
 				const choice = selected ? this.rowChoices.get(selected) : undefined;
-				if (choice && secondary.offers(choice)) this.openSecondary(secondary, choice);
+				if (choice) this.runShortcut(shortcut, choice);
 				return false;
 			});
 		}
@@ -86,6 +91,13 @@ export class ChoiceModal<Choice extends { parts: RowParts }> extends SuggestModa
 
 	onClose(): void {
 		if (!this.chosen) this.handlers.dismiss();
+	}
+
+	private runShortcut(shortcut: ChoiceShortcut<Choice>, choice: Choice): void {
+		const query = this.inputEl.value;
+		this.chosen = true;
+		this.close();
+		shortcut.run(choice, query);
 	}
 
 	private openSecondary(secondary: SecondaryChoice<Choice>, choice: Choice): void {

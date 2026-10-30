@@ -73,8 +73,9 @@ export function formFieldKey(formId: string, fieldId: string, setting: FieldSett
 	return index === undefined ? key : `${key}/${index}`;
 }
 
-export function taskCommandKey(id: string, setting: TaskCommandSetting): string {
-	return `taskCommand/${id}/${setting}`;
+export function taskCommandKey(id: string, setting: TaskCommandSetting, index?: number): string {
+	const key = `taskCommand/${id}/${setting}`;
+	return index === undefined ? key : `${key}/${index}`;
 }
 
 export function taskActionKey(commandId: string, actionId: string, setting: TaskActionSetting, index?: string): string {
@@ -195,7 +196,7 @@ function taskTarget(settings: JumpSettings, scope: string, name: string) {
 function readTaskControl(settings: JumpSettings, scope: string, name: string, setting: string, index: string | undefined): unknown {
 	const target = taskTarget(settings, scope, name);
 	if (!target) return undefined;
-	if (!target.action) return readTaskCommandSetting(target.command, setting as TaskCommandSetting);
+	if (!target.action) return readTaskCommandSetting(target.command, setting as TaskCommandSetting, index);
 	return readTaskActionSetting(target.command, target.action, setting as TaskActionSetting, index);
 }
 
@@ -209,6 +210,6 @@ function writeTaskControl(
 ): boolean {
 	const target = taskTarget(settings, scope, name);
 	if (!target) return false;
-	if (!target.action) return writeTaskCommandSetting(target.command, setting as TaskCommandSetting, value);
+	if (!target.action) return writeTaskCommandSetting(target.command, setting as TaskCommandSetting, value, index);
 	return writeTaskActionSetting(target.command, target.action, setting as TaskActionSetting, value, index);
 }

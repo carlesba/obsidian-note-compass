@@ -1,10 +1,10 @@
-import { DropdownComponent, ExtraButtonComponent, Menu, TextComponent } from "obsidian";
+import { DropdownComponent, ExtraButtonComponent, Menu, Notice, Platform, TextComponent } from "obsidian";
 import type { Setting, SettingDefinition, SettingDefinitionItem, SettingDefinitionList, SettingDefinitionPage } from "obsidian";
 import { t } from "../i18n";
 import type { TranslationKey } from "../i18n";
 import { createObsidianVault } from "../lists/obsidianVault";
-import { actionName } from "../tasks/picker";
-import { taskCommandName } from "../tasks/taskCommand";
+import { actionName, taskKeyLabel } from "../tasks/picker";
+import { TASK_KEYS, keysRunning, taskCommandName } from "../tasks/taskCommand";
 import type { TaskAction, TaskCommand } from "../tasks/taskCommand";
 import { taskActionKey, taskCommandKey } from "./controlKeys";
 import { duplicateEntry } from "./duplicate";
@@ -16,8 +16,13 @@ import { sortableRows } from "./sortable";
 import { NoteSuggest, warningDescription } from "./suggest";
 import {
 	NOTE_DESTINATION_OPTION,
+	addKeyBinding,
 	addStatus,
 	availableStatuses,
+	deleteKeyBinding,
+	keyBindingActionOptions,
+	keyBindingKeyOptions,
+	keyBindingWarning,
 	removeStatus,
 	statusLabel,
 	addTaskAction,
@@ -28,12 +33,9 @@ import {
 	destinationOption,
 	destinationOptions,
 	duplicatedActionId,
-	isPrimaryAction,
 	moveTaskAction,
 	moveTaskDestination,
-	primaryActionOptions,
 	readTaskActionSetting,
-	readTaskCommandSetting,
 	removeTaskDestination,
 	taskActionKindLabel,
 	taskActionKindOptions,
@@ -50,8 +52,6 @@ interface ActionEditor extends EditorBinding<TaskActionSetting> {
 	context: ExpandingPageContext;
 	changed: () => void;
 }
-
-const PRIMARY_ACTION_HEADER = "primary-action";
 
 export function taskCommandPageId(command: TaskCommand): string {
 	return `task-command-${command.id}`;
@@ -126,21 +126,22 @@ export function taskCommandPage(command: TaskCommand, context: ExpandingPageCont
 					heading: t("taskOptionsSection"),
 					items: [
 						{ name: t("taskSelectAll"), desc: t("taskSelectAllDesc"), control: { type: "toggle", key: key("selectAll") } },
-						{ name: t("taskBatchMode"), desc: t("taskBatchModeDesc"), control: { type: "toggle", key: key("batch") } },
-					],
-				},
-				{
-					type: "group",
-					heading: t("taskActions"),
-					items: [
 						{
-							name: t("taskPrimaryAction"),
-							desc: t("taskPrimaryActionDesc"),
-							render: (setting) => primaryActionInput(setting, command, context, headers),
+							name: t("taskBatchMode"),
+							desc: t("taskBatchModeDesc"),
+							render: (setting) => {
+								setting.addToggle((toggle) =>
+									toggle.setValue(command.batch).onChange((batch) => {
+										context.write(key("batch"), batch);
+										for (const showHeader of headers.values()) showHeader();
+									}),
+								);
+							},
 						},
 					],
 				},
 				actionList(command, context, headers),
+				keymapList(command, context, headers),
 			];
 	const page: IdentifiedPage = {
 		type: "page",
@@ -245,23 +246,68 @@ function statusPills(
 	return { update, customInput };
 }
 
-function primaryActionInput(setting: Setting, command: TaskCommand, context: ExpandingPageContext, headers: Map<string, () => void>): () => void {
-	const dropdown = new DropdownComponent(setting.controlEl);
-	const fill = () => {
-		dropdown.selectEl.empty();
-		for (const [id, label] of primaryActionOptions(command)) dropdown.addOption(id, label);
-		dropdown.setValue(String(readTaskCommandSetting(command, "primary")));
-		dropdown.setDisabled(command.actions.length === 0);
+function keymapList(command: TaskCommand, context: ExpandingPageContext, headers: Map<string, () => void>): SettingDefinitionList {
+	return {
+		type: "list",
+		heading: t("taskKeymap"),
+		cls: "note-compass-keymap-list",
+		emptyState: t("noTaskKeyBindings"),
+		items: command.keymap.map((binding, index) => ({
+			name: taskKeyLabel(binding.key, Platform.isMacOS),
+			searchable: false,
+			render: (setting: Setting) => keyBindingInputs(setting, command, index, context, headers),
+		})),
+		onDelete: (index) => context.change(() => deleteKeyBinding(command, index)),
+		addItem: {
+			name: t("addTaskKeyBinding"),
+			action: () => {
+				if (command.keymap.length >= TASK_KEYS.length) {
+					new Notice(t("allTaskKeysBound"));
+					return;
+				}
+				context.change(() => addKeyBinding(command));
+			},
+		},
 	};
-	fill();
-	headers.set(PRIMARY_ACTION_HEADER, fill);
-	dropdown.onChange((id) => {
-		context.write(taskCommandKey(command.id, "primary"), id);
+}
+
+function keyBindingInputs(setting: Setting, command: TaskCommand, index: number, context: ExpandingPageContext, headers: Map<string, () => void>): () => void {
+	const headerId = `key-binding-${index}`;
+	setting.setName("");
+	setting.settingEl.addClass("note-compass-key-binding");
+	const keyDropdown = new DropdownComponent(setting.controlEl);
+	keyDropdown.selectEl.setAttribute("aria-label", t("taskKeyBindingKey"));
+	const actionDropdown = new DropdownComponent(setting.controlEl);
+	actionDropdown.selectEl.setAttribute("aria-label", t("taskKeyBindingAction"));
+	const fill = () => {
+		const binding = command.keymap[index];
+		if (!binding) return;
+		keyDropdown.selectEl.empty();
+		for (const [key, label] of keyBindingKeyOptions(command, index, Platform.isMacOS)) keyDropdown.addOption(key, label);
+		keyDropdown.setValue(binding.key);
+		actionDropdown.selectEl.empty();
+		for (const [id, label] of keyBindingActionOptions(command, index)) actionDropdown.addOption(id, label);
+		actionDropdown.setValue(binding.action);
+		setting.setDesc("");
+		setting.descEl.removeClass("note-compass-warning");
+		const warning = keyBindingWarning(command, index);
+		if (warning) warningDescription(setting.descEl, warning);
+	};
+	const changed = () => {
 		for (const showHeader of headers.values()) showHeader();
+	};
+	keyDropdown.onChange((key) => {
+		context.write(taskCommandKey(command.id, "bindingKey", index), key);
+		changed();
 	});
+	actionDropdown.onChange((action) => {
+		context.write(taskCommandKey(command.id, "bindingAction", index), action);
+		changed();
+	});
+	fill();
+	headers.set(headerId, fill);
 	return () => {
-		if (headers.get(PRIMARY_ACTION_HEADER) === fill) headers.delete(PRIMARY_ACTION_HEADER);
-		dropdown.selectEl.remove();
+		if (headers.get(headerId) === fill) headers.delete(headerId);
 	};
 }
 
@@ -273,6 +319,7 @@ function actionList(command: TaskCommand, context: ExpandingPageContext, headers
 	const { expanded } = context.fieldEditor;
 	return {
 		type: "list",
+		heading: t("taskActions"),
 		cls: "note-compass-sortable-list note-compass-field-list",
 		emptyState: t("noTaskActionsYet"),
 		items: command.actions.map((action) => actionRow(command, action, context, headers, changed)),
@@ -337,7 +384,7 @@ function actionHeader(setting: Setting, command: TaskCommand, action: TaskAction
 	const title = createFragment();
 	const nameEl = title.createSpan({ cls: "note-compass-field-title" });
 	nameEl.createSpan({ cls: "note-compass-field-name", text: actionName(action) });
-	if (isPrimaryAction(command, action)) nameEl.createSpan({ cls: "note-compass-field-badge mod-property", text: t("taskActionPrimaryBadge") });
+	for (const key of keysRunning(command, action)) nameEl.createSpan({ cls: "note-compass-field-badge mod-property", text: taskKeyLabel(key, Platform.isMacOS) });
 	nameEl.createSpan({ cls: "note-compass-field-badge mod-mode", text: taskActionKindLabel(action.kind) });
 	nameEl.createSpan({ cls: "note-compass-field-badge mod-type", text: `[${action.status}]` });
 	setting.setName(title);

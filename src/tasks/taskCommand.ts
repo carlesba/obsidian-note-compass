@@ -14,6 +14,21 @@ export type TaskActionKind = "status" | "copy";
 
 export const TASK_ACTION_KINDS: readonly TaskActionKind[] = ["status", "copy"];
 
+export type TaskKey = "enter" | "mod-enter" | "alt-enter" | "shift-enter";
+
+export const TASK_KEYS: readonly TaskKey[] = ["enter", "mod-enter", "alt-enter", "shift-enter"];
+
+export const ACTIONS_MENU = "menu";
+
+export const FINISH_PROCESSING = "finish";
+
+export interface TaskKeyBinding {
+	key: TaskKey;
+	action: string;
+}
+
+export type TaskKeyBehavior = { behavior: "run"; action: TaskAction } | { behavior: "menu" } | { behavior: "finish" };
+
 export interface PeriodicDestination {
 	kind: "periodic";
 	period: Period;
@@ -57,12 +72,10 @@ export interface TaskCommand {
 	skippedStatuses: string;
 	selectAll: boolean;
 	batch: boolean;
-	primary: string;
+	keymap: TaskKeyBinding[];
 	actions: TaskAction[];
 	unreadable?: { stored: unknown };
 }
-
-export const ACTIONS_MENU = "menu";
 
 export const OPEN_STATUS = " ";
 
@@ -128,7 +141,7 @@ export function newTaskCommand(commands: readonly TaskCommand[]): TaskCommand {
 		skippedStatuses: "",
 		selectAll: false,
 		batch: true,
-		primary: actions[0].id,
+		keymap: [{ key: "enter", action: actions[0].id }],
 		actions,
 	};
 }
@@ -137,14 +150,18 @@ export function isRunnableTaskCommand(command: TaskCommand): boolean {
 	return command.enabled && command.unreadable === undefined && command.actions.length > 0;
 }
 
-export function primaryAction(command: TaskCommand): TaskAction | undefined {
-	if (command.primary === ACTIONS_MENU) return undefined;
-	return command.actions.find((action) => action.id === command.primary) ?? command.actions[0];
+export function keyBehavior(command: TaskCommand, key: TaskKey): TaskKeyBehavior {
+	const binding = command.keymap.find((candidate) => candidate.key === key);
+	if (binding?.action === FINISH_PROCESSING && command.batch) return { behavior: "finish" };
+	const action = command.actions.find((candidate) => candidate.id === binding?.action);
+	return action ? { behavior: "run", action } : { behavior: "menu" };
 }
 
-export function secondaryActions(command: TaskCommand): TaskAction[] {
-	const primary = primaryAction(command);
-	return command.actions.filter((action) => action !== primary);
+export function keysRunning(command: TaskCommand, action: TaskAction): TaskKey[] {
+	return TASK_KEYS.filter((key) => {
+		const behavior = keyBehavior(command, key);
+		return behavior.behavior === "run" && behavior.action === action;
+	});
 }
 
 export function periodicDestination(period: Period, relation: PeriodRelation): PeriodicDestination {
@@ -193,13 +210,27 @@ function readTaskCommand(entry: unknown, id: string): TaskCommand {
 		skippedStatuses: typeof data.skippedStatuses === "string" ? uniqueStatuses(data.skippedStatuses) : "",
 		selectAll: data.selectAll === true,
 		batch: typeof data.batch === "boolean" ? data.batch : true,
-		primary: typeof data.primary === "string" ? data.primary : "",
+		keymap: [],
 		actions: [],
 	};
 	const actions = readActions(data.actions);
 	if (!isRecord(entry) || actions === undefined) return { ...command, enabled: false, unreadable: { stored: entry } };
-	const primary = actions.find((action) => action.id === command.primary) ?? actions[0];
-	return { ...command, actions, primary: command.primary === ACTIONS_MENU ? ACTIONS_MENU : (primary?.id ?? "") };
+	const keymap = Array.isArray(data.keymap) ? readKeymap(data.keymap) : readLegacyPrimary(data.primary, actions);
+	return { ...command, actions, keymap };
+}
+
+function readKeymap(stored: readonly unknown[]): TaskKeyBinding[] {
+	return stored.flatMap((entry) => {
+		if (!isRecord(entry) || typeof entry.action !== "string") return [];
+		const key = TASK_KEYS.find((candidate) => candidate === entry.key);
+		return key ? [{ key, action: entry.action }] : [];
+	});
+}
+
+function readLegacyPrimary(stored: unknown, actions: readonly TaskAction[]): TaskKeyBinding[] {
+	if (stored === ACTIONS_MENU) return [];
+	const primary = actions.find((action) => action.id === stored) ?? actions[0];
+	return primary ? [{ key: "enter", action: primary.id }] : [];
 }
 
 function readActions(stored: unknown): TaskAction[] | undefined {

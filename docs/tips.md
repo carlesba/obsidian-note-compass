@@ -17,7 +17,7 @@ These tips keep the pickers fast and easy to read.
 - Turn "Show prefixes" off for a minimal look once you know your lists. Link rows then name their property instead.
 - In "Set properties", Escape in a value picker only steps back to the main picker. The changes you already made are kept until you choose "Save & close" or "Cancel".
 - Give the forms you use most a hotkey of their own, since each enabled form is a command named after it.
-- In a task command, use Alt+Enter or ⚙ for all actions without changing what Enter does.
+- In a task command, bind your most common actions in "Keymap" and leave one key unbound: it and ⚙ still open all actions. With "Batch mode" on, binding Cmd+Enter to `🏁 Finish processing` saves without scrolling to the last row.
 
 ## Known behaviour
 

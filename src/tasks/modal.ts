@@ -1,5 +1,5 @@
-import { Notice } from "obsidian";
-import type { App, Instruction } from "obsidian";
+import { Notice, Platform } from "obsidian";
+import type { App, Instruction, Modifier } from "obsidian";
 import { ChoiceModal } from "../choiceModal";
 import { createObsidianVault } from "../lists/obsidianVault";
 import { t, tCount } from "../i18n";
@@ -10,10 +10,17 @@ import { applyCopyAction, applyStatusAction, applyStagedChanges, cancelBatch, fi
 import type { ApplyContext, ApplyResult, TaskBatch } from "./apply";
 import { actionDestinations } from "./destinations";
 import type { ResolvedDestination } from "./destinations";
-import { actionChoices, actionName, choiceTargets, destinationChoices, planAction, taskChoices, taskSelectionPlan } from "./picker";
+import { actionChoices, choiceTargets, destinationChoices, keyInstructions, planAction, taskChoices } from "./picker";
 import type { ActionChoice, DestinationChoice, TaskChoice } from "./picker";
-import type { TaskAction, TaskCommand } from "./taskCommand";
+import { keyBehavior } from "./taskCommand";
+import type { TaskAction, TaskCommand, TaskKey } from "./taskCommand";
 import type { TaskLine } from "./taskLines";
+
+const MODIFIED_KEYS: readonly [Modifier[], TaskKey][] = [
+	[["Mod"], "mod-enter"],
+	[["Alt"], "alt-enter"],
+	[["Shift"], "shift-enter"],
+];
 
 export function runTaskCommand(
 	app: App,
@@ -24,8 +31,6 @@ export function runTaskCommand(
 ): void {
 	const lineNumbers = vault.taskLineNumbers(source.path);
 	const dateNotes = resolveDateNotes(settings.dateNotes, vault);
-	const selection = taskSelectionPlan(command);
-	const primary = selection.plan === "run" ? selection.action : undefined;
 	let batch: TaskBatch = { remaining: [], changes: [] };
 	if (command.actions.length === 0) return;
 	const today = () => vault.moment(vault.now()).startOf("day");
@@ -33,8 +38,7 @@ export function runTaskCommand(
 	const load = () => remainingTasks(vault, source, lineNumbers, command);
 
 	const instructions: Instruction[] = [
-		{ command: "↵", purpose: primary ? t("instructionApplyTaskAction", { action: actionName(primary) }) : t("instructionTaskActionsMenu") },
-		{ command: "⌥ ↵", purpose: t("instructionMoreTaskActions") },
+		...keyInstructions(command, Platform.isMacOS),
 		{ command: "esc", purpose: command.batch ? t("instructionCancelProcessing") : t("instructionDismiss") },
 	];
 
@@ -76,13 +80,17 @@ export function runTaskCommand(
 
 	const openTasks = (tasks: TaskLine[], query: string): void => {
 		const back = (typed: string) => () => openTasks(tasks, typed);
+		const press = (key: TaskKey) => ({ action }: TaskChoice, typed: string) => {
+			if (action.action === "finish") return applyBatch();
+			if (action.action === "cancel") return cancel();
+			const behavior = keyBehavior(command, key);
+			if (behavior.behavior === "finish") return applyBatch();
+			if (behavior.behavior === "run") runAction(behavior.action, choiceTargets(action), back(typed), action.action === "all");
+			else openActions(choiceTargets(action), back(typed), action.action === "all");
+		};
 		new ChoiceModal<TaskChoice>(app, t("pickATask"), (typed) => taskChoices(command, tasks, typed, batch.changes.length), {
-			choose: ({ action }, typed) => {
-				if (action.action === "finish") return applyBatch();
-				if (action.action === "cancel") return cancel();
-				if (primary) runAction(primary, choiceTargets(action), back(typed), action.action === "all");
-				else openActions(choiceTargets(action), back(typed), action.action === "all");
-			},
+			choose: press("enter"),
+			shortcuts: MODIFIED_KEYS.map(([modifiers, key]) => ({ modifiers, run: press(key) })),
 			dismiss: () => { if (command.batch) cancel(); },
 			secondary:
 				command.actions.length > 0

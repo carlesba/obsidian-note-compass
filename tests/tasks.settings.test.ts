@@ -3,22 +3,26 @@ import { strict as assert } from "node:assert";
 import { defaultSettings, mergeSettings, storedSettings } from "../src/settings.ts";
 import { readControl, taskActionKey, taskCommandKey, writeControl } from "../src/settings/controlKeys.ts";
 import {
+	addKeyBinding,
 	addTaskAction,
 	addStatus,
 	availableStatuses,
 	removeStatus,
 	statusLabel,
 	addTaskDestination,
+	deleteKeyBinding,
 	deleteTaskAction,
 	destinationNoteWarning,
 	destinationOptions,
 	moveTaskDestination,
-	primaryActionOptions,
+	keyBindingActionOptions,
+	keyBindingKeyOptions,
+	keyBindingWarning,
 	removeTaskDestination,
 	taskActionWarning,
 	taskCommandWarning,
 } from "../src/settings/taskCommandsForm.ts";
-import { isRunnableTaskCommand, newTaskCommand, noteDestination, periodicDestination, primaryAction, secondaryActions } from "../src/tasks/taskCommand.ts";
+import { isRunnableTaskCommand, keyBehavior, keysRunning, newTaskCommand, noteDestination, periodicDestination } from "../src/tasks/taskCommand.ts";
 import type { CopyAction } from "../src/tasks/taskCommand.ts";
 
 function settingsWithCommand() {
@@ -42,9 +46,11 @@ test("a new task command processes open tasks in batch with the Bullet Journal a
 	assert.equal(command.name, "Process open tasks");
 	assert.deepEqual([command.statuses, command.skippedStatuses, command.selectAll, command.batch, command.enabled], [" ", "", false, true, true]);
 	assert.equal(isRunnableTaskCommand(command), true);
-	const primary = primaryAction(command);
-	assert.deepEqual(primary, { id: "1", label: "✅ Complete", kind: "status", status: "x", completionDate: "off" });
-	const [cancel, migrate, schedule] = secondaryActions(command) as [unknown, CopyAction, CopyAction];
+	const [complete, cancel, migrate, schedule] = command.actions as [unknown, unknown, CopyAction, CopyAction];
+	assert.deepEqual(complete, { id: "1", label: "✅ Complete", kind: "status", status: "x", completionDate: "off" });
+	assert.deepEqual(command.keymap, [{ key: "enter", action: "1" }]);
+	assert.deepEqual(keyBehavior(command, "enter"), { behavior: "run", action: complete });
+	assert.deepEqual(keyBehavior(command, "alt-enter"), { behavior: "menu" });
 	assert.deepEqual(cancel, { id: "2", label: "🚫 Cancel", kind: "status", status: "-", completionDate: "off" });
 	assert.deepEqual([migrate.label, migrate.status, migrate.mentionSource], ["➡️ Migrate", ">", false]);
 	assert.deepEqual(migrate.destinations, [
@@ -81,7 +87,7 @@ test("task commands that can't be read are kept as saved and switched off", () =
 	assert.deepEqual(stored.taskCommands, [unreadable, notARecord]);
 });
 
-test("mistyped task command fields fall back and a missing primary becomes the first action", () => {
+test("mistyped task command fields fall back and a missing legacy primary binds Enter to the first action", () => {
 	const [command] = mergeSettings({
 		taskCommands: [
 			{
@@ -96,7 +102,7 @@ test("mistyped task command fields fall back and a missing primary becomes the f
 	}).taskCommands;
 	assert.equal(command.name, "");
 	assert.equal(command.statuses, " x/");
-	assert.equal(command.primary, "2");
+	assert.deepEqual(command.keymap, [{ key: "enter", action: "2" }]);
 	assert.equal(command.batch, true);
 	assert.equal(command.skippedStatuses, "");
 	const [action] = command.actions as [CopyAction];
@@ -179,31 +185,34 @@ test("task command settings are read and written through their control keys", ()
 	assert.deepEqual([command.name, command.statuses, command.skippedStatuses, command.selectAll], ["Review", " x", "-x", true]);
 	assert.equal(readControl(settings, taskCommandKey(command.id, "batch")), true);
 	const [complete, cancel] = command.actions;
-	assert.deepEqual(primaryActionOptions(command), [
+	assert.deepEqual(keyBindingActionOptions(command, 0), [
 		["menu", "Show the actions menu"],
 		["1", "✅ Complete"],
 		["2", "🚫 Cancel"],
 		["3", "➡️ Migrate"],
 		["4", "📅 Schedule"],
+		["finish", "🏁 Finish processing"],
 	]);
-	assert.equal(readControl(settings, taskCommandKey(command.id, "primary")), complete.id);
-	assert.equal(writeControl(settings, taskCommandKey(command.id, "primary"), cancel.id), true);
-	assert.equal(primaryAction(command), cancel);
-	assert.equal(readControl(settings, taskCommandKey(command.id, "primary")), cancel.id);
-	assert.equal(writeControl(settings, taskCommandKey(command.id, "primary"), "99"), false);
-	assert.equal(primaryAction(command), cancel);
+	const actionKey = taskCommandKey(command.id, "bindingAction", 0);
+	assert.equal(readControl(settings, actionKey), complete.id);
+	assert.equal(writeControl(settings, actionKey, cancel.id), true);
+	assert.deepEqual(keyBehavior(command, "enter"), { behavior: "run", action: cancel });
+	assert.equal(writeControl(settings, actionKey, "99"), false);
+	assert.equal(readControl(settings, actionKey), cancel.id);
+	assert.equal(writeControl(settings, taskCommandKey(command.id, "bindingAction", 5), cancel.id), false);
 	assert.equal(writeControl(settings, taskActionKey(command.id, complete.id, "status"), ""), false);
 	assert.equal(writeControl(settings, taskActionKey(command.id, complete.id, "completionDate"), "link"), true);
 	assert.equal(readControl(settings, taskActionKey(command.id, complete.id, "completionDate")), "link");
 });
 
-test("a primary action that is gone falls back to the first action", () => {
+test("a legacy primary that is gone binds Enter to the first action, and the legacy menu choice leaves the keymap empty", () => {
 	const { command } = settingsWithCommand();
-	command.primary = "99";
-	assert.equal(primaryAction(command)?.label, "✅ Complete");
-	assert.equal(secondaryActions(command).length, 3);
-	const [reloaded] = mergeSettings({ taskCommands: [{ ...command, primary: 7 }] }).taskCommands;
-	assert.equal(reloaded.primary, "1");
+	const legacy = { ...command, keymap: undefined };
+	const [missing] = mergeSettings({ taskCommands: [{ ...legacy, primary: 7 }] }).taskCommands;
+	assert.deepEqual(missing.keymap, [{ key: "enter", action: "1" }]);
+	const [menu] = mergeSettings({ taskCommands: [{ ...legacy, primary: "menu" }] }).taskCommands;
+	assert.deepEqual(menu.keymap, []);
+	for (const key of ["enter", "mod-enter", "alt-enter", "shift-enter"] as const) assert.deepEqual(keyBehavior(menu, key), { behavior: "menu" });
 });
 
 test("changing an action's kind swaps its fields and destinations are edited one entry at a time", () => {
@@ -260,31 +269,58 @@ test("destination options list each period's this and next, then a specific note
 	assert.equal(destinationNoteWarning("projects/Gone.md", notes), "This note doesn't exist, so it isn't offered. Choose another note or remove this destination.");
 });
 
-test("deleting the primary action makes the next one primary, and the first added action is primary", () => {
+test("deleting an action removes the keys bound to it, so those keys open the actions menu", () => {
 	const { command } = settingsWithCommand();
 	deleteTaskAction(command, 0);
-	assert.equal(primaryAction(command)?.label, "🚫 Cancel");
+	assert.deepEqual(command.keymap, []);
+	assert.deepEqual(keyBehavior(command, "enter"), { behavior: "menu" });
 	while (command.actions.length > 0) deleteTaskAction(command, 0);
-	assert.equal(command.primary, "");
 	assert.equal(taskCommandWarning(command), "Add an action so the command can run.");
 	assert.equal(isRunnableTaskCommand(command), false);
-	const added = addTaskAction(command);
-	assert.equal(command.primary, added.id);
+	addTaskAction(command);
+	assert.deepEqual(command.keymap, []);
 });
 
-test("the actions menu selection survives settings writes, reloads, additions and deletions", () => {
+test("the keymap binds each key at most once, survives reloads and falls back to the menu for unbound keys", () => {
 	const { settings, command } = settingsWithCommand();
-	const key = taskCommandKey(command.id, "primary");
-	assert.equal(writeControl(settings, key, "menu"), true);
-	assert.equal(readControl(settings, key), "menu");
-	assert.equal(primaryAction(command), undefined);
-	assert.deepEqual(secondaryActions(command), command.actions);
+	const [complete, , migrate] = command.actions;
+	assert.deepEqual(addKeyBinding(command), { key: "mod-enter", action: complete.id });
+	assert.deepEqual(keyBindingKeyOptions(command, 1, true).map(([key]) => key), ["mod-enter", "alt-enter", "shift-enter"]);
+	assert.deepEqual(keyBindingKeyOptions(command, 1, false).map(([, label]) => label), ["Ctrl+Enter", "Alt+Enter", "Shift+Enter"]);
+	assert.equal(writeControl(settings, taskCommandKey(command.id, "bindingKey", 1), "enter"), false);
+	assert.equal(writeControl(settings, taskCommandKey(command.id, "bindingKey", 1), "shift-enter"), true);
+	assert.equal(writeControl(settings, taskCommandKey(command.id, "bindingAction", 1), migrate.id), true);
+	assert.deepEqual(keysRunning(command, migrate), ["shift-enter"]);
+	assert.deepEqual(keyBehavior(command, "mod-enter"), { behavior: "menu" });
 	const reloaded = mergeSettings(JSON.parse(JSON.stringify(storedSettings(settings)))).taskCommands[0];
-	assert.equal(reloaded.primary, "menu");
-	assert.equal(primaryAction(reloaded), undefined);
-	while (command.actions.length) deleteTaskAction(command, 0);
-	addTaskAction(command);
-	assert.equal(command.primary, "menu");
+	assert.deepEqual(reloaded.keymap, [{ key: "enter", action: complete.id }, { key: "shift-enter", action: migrate.id }]);
+	assert.equal("primary" in reloaded, false);
+	addKeyBinding(command);
+	addKeyBinding(command);
+	assert.equal(addKeyBinding(command), undefined);
+	assert.equal(command.keymap.length, 4);
+	deleteKeyBinding(command, 0);
+	assert.deepEqual(keyBehavior(command, "enter"), { behavior: "menu" });
+});
+
+test("Finish processing is offered only in batch mode, and broken keys warn instead of running", () => {
+	const { settings, command } = settingsWithCommand();
+	assert.equal(writeControl(settings, taskCommandKey(command.id, "bindingAction", 0), "finish"), true);
+	assert.deepEqual(keyBehavior(command, "enter"), { behavior: "finish" });
+	assert.equal(keyBindingWarning(command, 0), undefined);
+	command.batch = false;
+	assert.deepEqual(keyBehavior(command, "enter"), { behavior: "menu" });
+	assert.equal(keyBindingWarning(command, 0), "Finish processing works only in batch mode, so this key opens the actions menu.");
+	assert.equal(taskCommandWarning(command), "Some keys need attention. Edit to see why.");
+	assert.equal(keyBindingActionOptions(command, 0).at(-1)?.[0], "finish");
+	command.keymap[0].action = command.actions[0].id;
+	assert.equal(keyBindingActionOptions(command, 0).some(([id]) => id === "finish"), false);
+	const [stored] = mergeSettings({ taskCommands: [{ ...command, keymap: [{ key: "enter", action: "9" }, { key: "enter", action: "1" }, { key: "tab", action: "1" }] }] }).taskCommands;
+	assert.equal(stored.keymap.length, 2);
+	assert.equal(keyBindingWarning(stored, 0), "This action no longer exists, so this key opens the actions menu.");
+	assert.equal(keyBindingWarning(stored, 1), "Another entry above already uses this key, so this one is ignored. Choose another key or remove it.");
+	assert.deepEqual(keyBehavior(stored, "enter"), { behavior: "menu" });
+	assert.deepEqual(keyBindingActionOptions(stored, 0).at(-1), ["9", "Missing action"]);
 });
 
 test("status pills add only valid distinct characters and remove one chosen status", () => {

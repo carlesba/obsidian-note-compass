@@ -2,8 +2,8 @@ import { t, tCount } from "../i18n/index.ts";
 import { matchesInOrder, rowLabel } from "../render.ts";
 import type { RowParts } from "../render";
 import type { ResolvedDestination } from "./destinations.ts";
-import { OPEN_STATUS, primaryAction, secondaryActions } from "./taskCommand.ts";
-import type { TaskAction, TaskCommand } from "./taskCommand.ts";
+import { OPEN_STATUS, TASK_KEYS, keyBehavior } from "./taskCommand.ts";
+import type { TaskAction, TaskCommand, TaskKey } from "./taskCommand.ts";
 import type { TaskLine } from "./taskLines.ts";
 
 export type TaskPickerAction = { action: "task"; task: TaskLine } | { action: "all"; tasks: TaskLine[] } | { action: "finish" } | { action: "cancel" };
@@ -95,7 +95,43 @@ function choice(parts: RowParts, action: TaskPickerAction): TaskChoice {
 	return { label: rowLabel(parts), parts, action };
 }
 
-export function taskSelectionPlan(command: TaskCommand): { plan: "run"; action: TaskAction } | { plan: "menu"; actions: TaskAction[] } {
-	const primary = primaryAction(command);
-	return primary ? { plan: "run", action: primary } : { plan: "menu", actions: secondaryActions(command) };
+export interface KeyInstruction {
+	command: string;
+	purpose: string;
 }
+
+export function keyInstructions(command: TaskCommand, mac: boolean): KeyInstruction[] {
+	const menuKey = MENU_HINT_ORDER.find((key) => keyBehavior(command, key).behavior === "menu");
+	return TASK_KEYS.flatMap((key): KeyInstruction[] => {
+		const behavior = keyBehavior(command, key);
+		const symbol = taskKeySymbol(key, mac);
+		if (behavior.behavior === "run") return [{ command: symbol, purpose: t("instructionApplyTaskAction", { action: actionName(behavior.action) }) }];
+		if (behavior.behavior === "finish") return [{ command: symbol, purpose: t("instructionFinishProcessing") }];
+		return key === menuKey ? [{ command: symbol, purpose: t("instructionTaskActionsMenu") }] : [];
+	});
+}
+
+const MENU_HINT_ORDER: readonly TaskKey[] = ["enter", "alt-enter", "mod-enter", "shift-enter"];
+
+const KEY_MODIFIERS: Record<TaskKey, { mac: string; other: string }> = {
+	enter: { mac: "", other: "" },
+	"mod-enter": { mac: "Cmd+", other: "Ctrl+" },
+	"alt-enter": { mac: "Alt+", other: "Alt+" },
+	"shift-enter": { mac: "Shift+", other: "Shift+" },
+};
+
+const KEY_SYMBOLS: Record<TaskKey, { mac: string; other: string }> = {
+	enter: { mac: "↵", other: "↵" },
+	"mod-enter": { mac: "⌘ ↵", other: "ctrl ↵" },
+	"alt-enter": { mac: "⌥ ↵", other: "alt ↵" },
+	"shift-enter": { mac: "⇧ ↵", other: "shift ↵" },
+};
+
+export function taskKeyLabel(key: TaskKey, mac: boolean): string {
+	return (mac ? KEY_MODIFIERS[key].mac : KEY_MODIFIERS[key].other) + t("keyEnter");
+}
+
+export function taskKeySymbol(key: TaskKey, mac: boolean): string {
+	return mac ? KEY_SYMBOLS[key].mac : KEY_SYMBOLS[key].other;
+}
+
