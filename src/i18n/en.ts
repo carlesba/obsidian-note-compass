@@ -57,8 +57,9 @@ export const en = {
 	currentYear: "this year",
 	createCurrentPeriod: "create {period}",
 
-	showPrefixes: "Show prefixes",
-	showPrefixesDesc: "Start each row in the pickers with its list's or property's prefix.",
+	settingsIntro: "How Note Compass is organised",
+	settingsIntroDesc: "Navigation opens related notes from pickers you define. Properties sets a note's properties without opening it. Forms create notes from a few questions. Tasks process the tasks of the note in focus.",
+	integrations: "Integrations",
 	dateNotesSource: "Date notes source",
 	navigationSection: "Navigation",
 	navigationPickerCommand: "Navigation: {name}",

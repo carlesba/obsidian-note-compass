@@ -68,7 +68,6 @@ export function pickerChoices(
 	initial: PropertyState,
 	state: PickerState,
 	query: string,
-	showPrefixes: boolean,
 	checkboxMode: CheckboxMode = "picker",
 	rows: readonly MultiRow[] = [],
 ): PickerChoice[] {
@@ -77,10 +76,10 @@ export function pickerChoices(
 	const choices = [
 		choice({ mark: SAVE_MARK, content: t("saveAndClose") }, { action: "save" }),
 		choice({ mark: CANCEL_MARK, content: t("cancel") }, { action: "cancel" }),
-		...selectedChoices(entries, initial, state, showPrefixes, checkboxMode),
-		...held.map((row) => heldRowChoice(row, initial, state, showPrefixes)),
-		...unheld.map((row) => unheldRowChoice(row, state, showPrefixes)),
-		...entryChoices(entries, state, query, showPrefixes, checkboxMode),
+		...selectedChoices(entries, initial, state, checkboxMode),
+		...held.map((row) => heldRowChoice(row, initial, state)),
+		...unheld.map((row) => unheldRowChoice(row, state)),
+		...entryChoices(entries, state, query, checkboxMode),
 	];
 	if (!query) return choices;
 	const matches = choices.filter((candidate) => !candidate.kept && matchesInOrder(query, candidate.label));
@@ -116,7 +115,6 @@ function selectedChoices(
 	entries: readonly OfferedEntry[],
 	initial: PropertyState,
 	state: PickerState,
-	showPrefixes: boolean,
 	checkboxMode: CheckboxMode,
 ): PickerChoice[] {
 	const choices: PickerChoice[] = [];
@@ -128,7 +126,7 @@ function selectedChoices(
 			if (isUnset(pending)) continue;
 			const parts = {
 				mark: selectedMark(!sameValue(pending, saved)),
-				...prefixPart(offered.entry, showPrefixes),
+				...prefixPart(offered.entry),
 				content: property,
 				value: formatPendingValue(offered.type, pending),
 			};
@@ -144,7 +142,7 @@ function selectedChoices(
 			const remaining = offered.type === "links" ? links.filter((other) => !sameValue(other, link)) : undefined;
 			const parts = {
 				mark: selectedMark(!asList(saved).some((other) => sameValue(other, link))),
-				...linkSourceParts(linkOwner(entries, property, link) ?? offered.entry, showPrefixes),
+				...prefixPart(linkOwner(entries, property, link) ?? offered.entry),
 				content: title,
 			};
 			choices.push(choice(parts, set(withValue(state, property, remaining))));
@@ -153,18 +151,18 @@ function selectedChoices(
 	return choices;
 }
 
-function heldRowChoice(row: MultiRow, initial: PropertyState, state: PickerState, showPrefixes: boolean): PickerChoice {
-	const parts = { mark: selectedMark(!rowHolds(row, initial)), ...multiRowParts(row, showPrefixes) };
+function heldRowChoice(row: MultiRow, initial: PropertyState, state: PickerState): PickerChoice {
+	const parts = { mark: selectedMark(!rowHolds(row, initial)), ...multiRowParts(row) };
 	return choice(parts, set(state));
 }
 
-function unheldRowChoice(row: MultiRow, state: PickerState, showPrefixes: boolean): PickerChoice {
-	return choice(multiRowParts(row, showPrefixes), set({ ...state, values: withRowApplied(row, state.values) }));
+function unheldRowChoice(row: MultiRow, state: PickerState): PickerChoice {
+	return choice(multiRowParts(row), set({ ...state, values: withRowApplied(row, state.values) }));
 }
 
-function multiRowParts(row: MultiRow, showPrefixes: boolean): RowParts {
+function multiRowParts(row: MultiRow): RowParts {
 	const segments = multiRowSegments(row.entry);
-	const parts: RowParts = { ...prefixPart(row.entry, showPrefixes), content: multiRowName(row.entry) };
+	const parts: RowParts = { ...prefixPart(row.entry), content: multiRowName(row.entry) };
 	if (segments) parts.contentSegments = segments;
 	return parts;
 }
@@ -175,22 +173,17 @@ function linkOwner(entries: readonly OfferedEntry[], property: string, link: unk
 	)?.entry;
 }
 
-function linkSourceParts(owner: EditableProperty, showPrefixes: boolean): Pick<RowParts, "prefix" | "prefixColor" | "value"> {
-	return showPrefixes ? prefixPart(owner, true) : { value: owner.property };
-}
-
-function prefixPart(entry: EditableProperty, showPrefixes: boolean): Pick<RowParts, "prefix" | "prefixColor"> {
-	return showPrefixes ? prefixParts(entry.prefix, entry.prefixColor) : {};
+function prefixPart(entry: EditableProperty): Pick<RowParts, "prefix" | "prefixColor"> {
+	return prefixParts(entry.prefix, entry.prefixColor);
 }
 
 function entryChoices(
 	entries: readonly OfferedEntry[],
 	state: PickerState,
 	query: string,
-	showPrefixes: boolean,
 	checkboxMode: CheckboxMode,
 ): PickerChoice[] {
-	const typedName = typedNameFor(entries, query, showPrefixes);
+	const typedName = typedNameFor(entries, query);
 	const offeredValues = new Set<string>();
 	const offer = (property: string, value: string) => {
 		const key = `${property}\u0000${value}`;
@@ -206,15 +199,15 @@ function entryChoices(
 			const notes = offered.notes.filter((note) => !isPicked(note, pending) && offer(property, note.path));
 			const rows = notes.map((note) =>
 				choice(
-					{ ...linkSourceParts(offered.entry, showPrefixes), content: note.name },
+					{ ...prefixPart(offered.entry), content: note.name },
 					set(withLink(state, offered, note.name)),
 				),
 			);
-			choices.push(...capped(offered, rows, query, showPrefixes));
+			choices.push(...capped(offered, rows, query));
 			continue;
 		}
 		if (isUnset(pending) && offer(property, "")) {
-			choices.push(choice({ ...prefixPart(offered.entry, showPrefixes), content: property }, scalarAction(offered, state, pending, checkboxMode)));
+			choices.push(choice({ ...prefixPart(offered.entry), content: property }, scalarAction(offered, state, pending, checkboxMode)));
 		}
 		const mainMenu = offered.entry.mainMenuPresets ?? [];
 		if (mainMenu.length > 0) {
@@ -223,11 +216,11 @@ function entryChoices(
 				.map((preset) => (offered.type === "number" ? Number(preset) : preset))
 				.filter((value) => !sameValue(value, pending) && offer(property, String(value)));
 			const rows = presets.map((value) =>
-				choice({ ...prefixPart(offered.entry, showPrefixes), content: property, value: String(value) }, set(withValue(state, property, value))),
+				choice({ ...prefixPart(offered.entry), content: property, value: String(value) }, set(withValue(state, property, value))),
 			);
-			choices.push(...capped(offered, rows, query, showPrefixes));
+			choices.push(...capped(offered, rows, query));
 		}
-		if (offered.type === "text") choices.push(...useChoices(offered, state, typedName(offered), showPrefixes));
+		if (offered.type === "text") choices.push(...useChoices(offered, state, typedName(offered)));
 	}
 	return choices;
 }
@@ -236,7 +229,6 @@ function useChoices(
 	offered: OfferedEntry,
 	state: PickerState,
 	name: string | undefined,
-	showPrefixes: boolean,
 ): PickerChoice[] {
 	if (name === undefined) return [];
 	const { property } = offered.entry;
@@ -245,26 +237,25 @@ function useChoices(
 	if (known.some((value) => value.toLowerCase() === wanted) || sameValue(state.values.get(property), name)) {
 		return [];
 	}
-	const parts = { mark: USE_MARK, ...prefixPart(offered.entry, showPrefixes), content: t("useTypedValue", { property, value: name }) };
+	const parts = { mark: USE_MARK, ...prefixPart(offered.entry), content: t("useTypedValue", { property, value: name }) };
 	return [{ ...choice(parts, set(withValue(state, property, name))), kept: true }];
 }
 
-function capped(offered: OfferedEntry, rows: PickerChoice[], query: string, showPrefixes: boolean): PickerChoice[] {
+function capped(offered: OfferedEntry, rows: PickerChoice[], query: string): PickerChoice[] {
 	if (query || rows.length <= UNFILTERED_ROWS_PER_ENTRY) return rows;
 	const { prefix, property } = offered.entry;
 	const content = t("moreRows", { count: rows.length - UNFILTERED_ROWS_PER_ENTRY });
-	const more = showPrefixes ? { ...prefixPart(offered.entry, showPrefixes), content } : { content, value: property };
-	const expandQuery = (showPrefixes && prefix.trim()) || property;
+	const more = { ...prefixPart(offered.entry), content };
+	const expandQuery = prefix.trim() || property;
 	return [...rows.slice(0, UNFILTERED_ROWS_PER_ENTRY), choice(more, { action: "expand", query: expandQuery })];
 }
 
 function typedNameFor(
 	entries: readonly OfferedEntry[],
 	query: string,
-	showPrefixes: boolean,
 ): (offered: OfferedEntry) => string | undefined {
 	const typed = query.trimStart();
-	const scope = (showPrefixes ? entries : [])
+	const scope = entries
 		.map((offered) => offered.entry.prefix.trim())
 		.filter((prefix) => prefix !== "" && typed.startsWith(prefix))
 		.sort((a, b) => b.length - a.length)[0];

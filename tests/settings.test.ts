@@ -59,7 +59,6 @@ const setPropertiesDefaults = (): SetPropertiesSettings => ({
 
 test("defaultSettings enables every relation list in picker order and reads date notes automatically", () => {
 	assert.deepEqual(defaultSettings(), {
-		showPrefixes: true,
 		notePickers: [{ id: "1", enabled: true, name: "Default", filter: { kind: "group", mode: "all", items: [] }, lists: relationLists() }],
 		dateNotes: defaultDateNoteSettings(),
 		setProperties: setPropertiesDefaults(),
@@ -222,7 +221,6 @@ test("mergeSettings migrates the old shape into lists in picker order with custo
 	});
 	assert.deepEqual(merged.notePickers.map(({ id, enabled, name }) => ({ id, enabled, name })), [{ id: "1", enabled: true, name: "Default" }]);
 	assert.deepEqual({ ...merged, notePickers: undefined, lists: merged.notePickers[0].lists }, {
-		showPrefixes: true,
 		notePickers: undefined,
 		lists: [
 			{ id: "list-1", enabled: true, prefix: "🗓️", source: { kind: "adjacentDates" } },
@@ -306,9 +304,13 @@ test("mergeSettings drops old custom lists it cannot read", () => {
 	assert.deepEqual(mergeSettings({ customLists: { prefix: "📚" } }).notePickers[0].lists, relationLists());
 });
 
+test("a saved showPrefixes setting is dropped, so prefixes always show", () => {
+	assert.equal("showPrefixes" in mergeSettings({ showPrefixes: false }), false);
+	assert.equal("showPrefixes" in (storedSettings(mergeSettings({ showPrefixes: false })) as object), false);
+});
+
 test("mergeSettings keeps saved lists in their order and round-trips its own output", () => {
 	const saved = {
-		showPrefixes: false,
 		lists: [
 			{
 				id: "list-9",
@@ -327,13 +329,6 @@ test("mergeSettings keeps saved lists in their order and round-trips its own out
 	const { lists, ...rest } = saved;
 	assert.deepEqual(merged, { ...rest, notePickers: [{ id: "1", enabled: true, name: "Default", filter: { kind: "group", mode: "all", items: [] }, lists }], setProperties: setPropertiesDefaults(), forms: [], taskCommands: [] });
 	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(storedSettings(merged)))), merged);
-});
-
-test("mergeSettings reads a saved showPrefixes boolean and shows prefixes otherwise", () => {
-	assert.equal(mergeSettings({ showPrefixes: false }).showPrefixes, false);
-	assert.equal(mergeSettings({ showPrefixes: true }).showPrefixes, true);
-	assert.equal(mergeSettings({ showPrefixes: "no" }).showPrefixes, true);
-	assert.equal(mergeSettings({}).showPrefixes, true);
 });
 
 test("mergeSettings keeps a list with a condition its property's type no longer offers", () => {

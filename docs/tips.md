@@ -14,7 +14,6 @@ These tips keep the pickers fast and easy to read.
 - Type a prefix tag to narrow a picker towards one list, such as `peop` for the people rows in "Set properties".
 - Use a "Links to note" source as a lightweight tag. Create a note such as `Person` and point the people property at "Links to note: Person". Put `[[Person]]` in the content of the form that creates people notes, so every new person shows up in the list without you tagging it by hand.
 - Add your templates folder to "Excluded folders" on every link property, so template notes are never offered as values.
-- Turn "Show prefixes" off for a minimal look once you know your lists. Link rows then name their property instead.
 - In "Set properties", Escape in a value picker only steps back to the main picker. The changes you already made are kept until you choose "Save & close" or "Cancel".
 - Give the forms you use most a hotkey of their own, since each enabled form is a command named after it.
 - In a task command, bind your most common actions in "Keymap" and leave one key unbound: it and ⚙ still open all actions. With "Batch mode" on, binding Cmd+Enter to `🏁 Finish processing` saves without scrolling to the last row.

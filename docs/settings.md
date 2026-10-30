@@ -6,18 +6,17 @@ Settings → Note Compass decides what each picker offers, how its rows look, an
 
 ## Overview
 
-The main page holds two options and opens four pages, followed by "Reset all settings". It fits a narrow window and works the same on mobile.
+The main page opens with a short note on what each of its four pages holds, then the four pages, an "Integrations" group with "Date notes source", and "Reset all settings" at the bottom. It fits a narrow window and works the same on mobile.
 
-![The main settings page, with Show prefixes and Date notes source at the top, then the Navigation, Properties, Forms and Tasks pages, and Reset all settings at the bottom](images/settings.png)
+![The main settings page, with a note on how Note Compass is organised at the top, then the Navigation, Properties, Forms and Tasks pages, Date notes source under Integrations, and Reset all settings at the bottom](images/settings.png)
 
 | Item | What it holds |
 | --- | --- |
-| Show prefixes | Whether rows carry their prefix chip, described under [Display](#display). |
-| Date notes source | Where date note formats come from, described in [Date notes](jump-to-note.md#date-notes). The pencil edits the custom formats. |
 | Navigation | Your [navigation pickers](jump-to-note.md#navigation-pickers), each offered in the command palette as "Navigation: <name>". |
 | Properties | The properties of the [Set properties](set-properties.md) picker, and "Checkbox behaviour". |
 | Forms | Your [forms](forms.md). |
 | Tasks | Your [task commands](task-commands.md), each offered under its name in the command palette. |
+| Integrations → Date notes source | Where date note formats come from, described in [Date notes](jump-to-note.md#date-notes). The pencil edits the custom formats. |
 
 Click anywhere on one of the four rows to open its page, and use the back arrow at the top to return. A row's own page opens inside its section, so going back from a list's page lands on its navigation picker's page, and going back again lands on the Navigation page.
 
@@ -40,12 +39,6 @@ These pages use the same add, reorder, switch, edit, copy and delete controls as
 - A form’s page defines its note and questions: see [Forms](forms.md#form-page).
 - A task command’s page sets Command, Tasks to list, Tasks to skip, Options and Actions: see [Task commands](task-commands.md#command-page).
 - New task commands start with Bullet Journal actions; no task commands exist until you add one.
-
-## Display
-
-"Show prefixes", at the top of the main page, decides whether rows carry their prefix chip. It is on by default.
-
-Turning it off removes the prefix from every row in all three pickers and leaves it out of what typing matches. Link rows in "Set properties" then show the property they write instead, as in `✓ Marta Vidal · people`. The settings hide the prefix chips and the prefix fields too, but your prefixes and colours stay saved, so turning the setting back on restores them.
 
 ## Lists and property rows
 

@@ -75,7 +75,7 @@ Each row shows the list it comes from and the note's name.
 
 Typing narrows the rows to the ones you are looking for. A row stays when the characters you typed appear in it in the same order, ignoring case, with anything in between.
 
-The prefix is part of the row, so typing part of a prefix narrows the picker to that list. When "Show prefixes" is off, the prefix is left out of what typing matches.
+The prefix is part of the row, so typing part of a prefix narrows the picker to that list.
 
 ## Editing a row's properties
 

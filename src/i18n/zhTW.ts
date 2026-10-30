@@ -59,8 +59,9 @@ export const zhTW: Translation = {
 	currentYear: "今年",
 	createCurrentPeriod: "建立{period}",
 
-	showPrefixes: "顯示前綴",
-	showPrefixesDesc: "在選擇器中，每一列開頭都顯示所屬清單或屬性的前綴。",
+	settingsIntro: "Note Compass 的結構",
+	settingsIntroDesc: "「導覽」從你定義的選擇器開啟相關筆記。「屬性」不必開啟筆記即可設定其屬性。「表單」透過幾個問題建立筆記。「任務」處理目前筆記中的任務。",
+	integrations: "整合",
 	dateNotesSource: "日期筆記來源",
 	navigationSection: "導覽",
 	navigationPickerCommand: "導覽：{name}",

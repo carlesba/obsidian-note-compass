@@ -140,7 +140,6 @@ export interface SetPropertiesSettings {
 }
 
 export interface JumpSettings {
-	showPrefixes: boolean;
 	notePickers: NotePicker[];
 	dateNotes: DateNoteSettings;
 	setProperties: SetPropertiesSettings;
@@ -253,7 +252,6 @@ export function newListId(lists: readonly { id: string }[]): string {
 export function mergeSettings(stored: unknown): JumpSettings {
 	const data = isRecord(stored) ? stored : {};
 	return {
-		showPrefixes: typeof data.showPrefixes === "boolean" ? data.showPrefixes : true,
 		notePickers: Array.isArray(data.notePickers) ? readNotePickers(data.notePickers) : [migratedNotePicker(data)],
 		dateNotes: readDateNotes(data.dateNotes),
 		setProperties: readSetProperties(data.setProperties),

@@ -9,19 +9,16 @@ export const SET_PROPERTIES_ICON = "sliders-horizontal";
 
 export class JumpModal extends SuggestModal<JumpListEntry> {
 	private readonly entries: JumpListEntry[];
-	private readonly showPrefixes: boolean;
 	private readonly editProperties: (note: VaultNote, query: string) => void;
 	private readonly rowEntries = new WeakMap<HTMLElement, JumpListEntry>();
 
 	constructor(
 		app: App,
 		entries: JumpListEntry[],
-		showPrefixes: boolean,
 		editProperties: (note: VaultNote, query: string) => void,
 	) {
 		super(app);
 		this.entries = entries;
-		this.showPrefixes = showPrefixes;
 		this.editProperties = editProperties;
 		this.limit = entries.length;
 		this.resultContainerEl.addClass(RESULTS_CLASS);
@@ -52,11 +49,11 @@ export class JumpModal extends SuggestModal<JumpListEntry> {
 
 	getSuggestions(query: string): JumpListEntry[] {
 		if (!query) return this.entries;
-		return this.entries.filter((entry) => matchesInOrder(query, entryLabel(entry, this.showPrefixes)));
+		return this.entries.filter((entry) => matchesInOrder(query, entryLabel(entry)));
 	}
 
 	renderSuggestion(entry: JumpListEntry, el: HTMLElement): void {
-		renderRow(el, entryParts(entry, this.showPrefixes));
+		renderRow(el, entryParts(entry));
 		this.rowEntries.set(el, entry);
 		if (entry.missing) return;
 		renderRowAction(el, SET_PROPERTIES_ICON, t("setProperties"), () => this.editPropertiesOf(entry));

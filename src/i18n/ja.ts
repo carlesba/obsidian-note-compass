@@ -59,8 +59,9 @@ export const ja: Translation = {
 	currentYear: "今年",
 	createCurrentPeriod: "{period}を作成",
 
-	showPrefixes: "プレフィックスを表示",
-	showPrefixesDesc: "ピッカーの各行の先頭に、リストまたはプロパティのプレフィックスを表示します。",
+	settingsIntro: "Note Compass の構成",
+	settingsIntroDesc: "「ナビゲーション」は定義したピッカーから関連ノートを開きます。「プロパティ」はノートを開かずにプロパティを設定します。「フォーム」はいくつかの質問からノートを作成します。「タスク」はフォーカス中のノートのタスクを処理します。",
+	integrations: "連携",
 	dateNotesSource: "日付ノートの読み込み元",
 	navigationSection: "ナビゲーション",
 	navigationPickerCommand: "ナビゲーション: {name}",

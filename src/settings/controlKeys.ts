@@ -37,7 +37,6 @@ import type { TaskActionSetting, TaskCommandSetting } from "./taskCommandsForm.t
 
 export const DATE_NOTE_SOURCE_KEY = "dateNotes/from";
 
-export const SHOW_PREFIXES_KEY = "display/showPrefixes";
 
 export const CHECKBOX_MODE_KEY = "setProperties/checkboxMode";
 
@@ -107,7 +106,6 @@ export function periodKey(period: Period, field: PeriodField): string {
 }
 
 export function readControl(settings: JumpSettings, key: string): unknown {
-	if (key === SHOW_PREFIXES_KEY) return settings.showPrefixes;
 	if (key === DATE_NOTE_SOURCE_KEY) return settings.dateNotes.from;
 	if (key === CHECKBOX_MODE_KEY) return settings.setProperties.checkboxMode;
 	const [scope, name, field, index] = key.split("/");
@@ -135,11 +133,6 @@ export function readControl(settings: JumpSettings, key: string): unknown {
 }
 
 export function writeControl(settings: JumpSettings, key: string, value: unknown): boolean {
-	if (key === SHOW_PREFIXES_KEY) {
-		if (typeof value !== "boolean") return false;
-		settings.showPrefixes = value;
-		return true;
-	}
 	if (key === DATE_NOTE_SOURCE_KEY) {
 		writeDateNoteSource(settings.dateNotes, value);
 		return true;

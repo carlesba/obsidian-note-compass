@@ -58,7 +58,7 @@ test("Traditional Chinese reads its own locale and never the Simplified one", ()
 
 test("after choosing Spanish, picker rows and source summaries are in Spanish", () => {
 	inLanguage("es", () => {
-		const [save, cancel] = pickerChoices([], new Map(), pickerState(new Map()), "", false);
+		const [save, cancel] = pickerChoices([], new Map(), pickerState(new Map()), "");
 		assert.equal(save.parts.content, es.saveAndClose);
 		assert.equal(cancel.parts.content, es.cancel);
 		assert.notEqual(save.parts.content, en.saveAndClose);

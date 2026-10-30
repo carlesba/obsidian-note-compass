@@ -138,7 +138,7 @@ export default class NoteCompassPlugin extends Plugin {
 			new Notice(t("noNotesToJumpTo"));
 			return;
 		}
-		new JumpModal(this.app, entries, this.settings.showPrefixes, (note, typed) =>
+		new JumpModal(this.app, entries, (note, typed) =>
 			setProperties(this.app, createObsidianVault(this.app), this.settings, note, () => this.openJumpModal(picker, typed)),
 		).openWithQuery(query);
 	}

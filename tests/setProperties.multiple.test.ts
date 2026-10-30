@@ -261,13 +261,13 @@ test("the picker offers a row that does not hold among the values to add, and ch
 	const rows = multiRows(settings, NOW);
 	const initial = initialPropertyState(settings, { status: "doing", active: true, topic: "x" });
 	assert.deepEqual(Object.fromEntries(initial), { status: "doing", archived: undefined, active: true });
-	const choices = pickerChoices([], initial, pickerState(initial), "", true, "picker", rows);
+	const choices = pickerChoices([], initial, pickerState(initial), "", "picker", rows);
 	assert.deepEqual(contents(choices), [["", "status done, archived ✓, active cleared"]]);
 	assert.equal(choices[2].parts.prefix, "🏁");
 	const action = choices[2].action;
 	assert.equal(action.action, "set");
 	if (action.action !== "set") return;
-	const next = pickerChoices([], initial, action.state, "", true, "picker", rows);
+	const next = pickerChoices([], initial, action.state, "", "picker", rows);
 	assert.deepEqual(contents(next), [["✓ •", "status done, archived ✓, active cleared"]]);
 });
 
@@ -275,9 +275,9 @@ test("a row that already holds shows as set with a tick, and choosing it changes
 	const settings = settingsWith([{ ...DONE_ROW, name: "Finish" }]);
 	const rows = multiRows(settings, NOW);
 	const state = stateOf({ status: "done", archived: true }, settings);
-	const choices = pickerChoices([], state.values, state, "", false, "picker", rows);
+	const choices = pickerChoices([], state.values, state, "", "picker", rows);
 	assert.deepEqual(contents(choices), [["✓", "Finish"]]);
-	assert.equal(choices[2].parts.prefix, undefined);
+	assert.equal(choices[2].parts.prefix, "🏁");
 	assert.deepEqual(choices[2].action, { action: "set", state });
 });
 

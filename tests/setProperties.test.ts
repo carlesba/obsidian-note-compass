@@ -55,7 +55,6 @@ function setup(
 	properties: EditableProperty[],
 	fakes: FakeNote[] = vaultNotes(),
 	propertyTypes: Record<string, string> = {},
-	showPrefixes = true,
 ) {
 	const settings = defaultSettings();
 	settings.setProperties.properties = properties;
@@ -63,7 +62,7 @@ function setup(
 	const target = vault.note("Today.md");
 	const initial = initialPropertyState(settings.setProperties, vault.frontmatter(target.path));
 	const entries = offeredEntries(settings, vault, target);
-	const choicesFor = (state: PickerState = pickerState(initial), query = "") => pickerChoices(entries, initial, state, query, showPrefixes);
+	const choicesFor = (state: PickerState = pickerState(initial), query = "") => pickerChoices(entries, initial, state, query);
 	const valueChoicesFor = (picked: EditableProperty, state: PickerState = pickerState(initial), query = "") =>
 		valueChoices(
 			valuePicker(vault, picked.property, propertyType(settings.setProperties, picked) as ScalarPropertyType, picked.presetValues),
@@ -124,63 +123,12 @@ test("a row splits into mark, prefix, content and value parts", () => {
 	assert.deepEqual([saveLabel(), cancelLabel()], ["🏁 Save & close", "🛑 Cancel"]);
 });
 
-test("rows carry their entry's prefix colour outside the label, and drop it with the prefix", () => {
+test("rows carry their entry's prefix colour outside the label", () => {
 	const properties = [entry("status", "text", { prefix: "📝", prefixColor: "#e0a030" }), entry("people", "links", { prefix: "👤", prefixColor: "#33aa66" })];
 	const choices = setup(properties).choicesFor();
 	assert.deepEqual(pick(choices, "✓ 📝 status doing").parts, { mark: "✓", prefix: "📝", prefixColor: "#e0a030", content: "status", value: "doing" });
 	assert.deepEqual(pick(choices, "👤 Bob").parts, { prefix: "👤", prefixColor: "#33aa66", content: "Bob" });
 	assert.deepEqual(pick(choices, saveLabel()).parts, { mark: "🏁", content: "Save & close" });
-	const hidden = setup(properties, vaultNotes(), {}, false).choicesFor();
-	assert.ok(hidden.every((choice) => choice.parts.prefixColor === undefined));
-});
-
-test("with prefixes hidden rows drop the prefix and link rows name the property they write", () => {
-	const { choicesFor } = setup(
-		[entry("status", "text", { prefix: "📝 stat" }), entry("people", "links", { prefix: "👤 peop" })],
-		vaultNotes(),
-		{},
-		false,
-	);
-	const choices = choicesFor();
-	assert.deepEqual(labels(choices).slice(2), [
-		"✓ status doing",
-		"✓ Ann people",
-		"✓ Stranger people",
-		"Bob people",
-		"Cy people",
-		"Today too people",
-	]);
-	assert.deepEqual(pick(choices, "✓ Ann people").parts, { mark: "✓", content: "Ann", value: "people" });
-	assert.deepEqual(pick(choices, "Bob people").parts, { content: "Bob", value: "people" });
-	assert.deepEqual(pick(choices, "✓ status doing").parts, { mark: "✓", content: "status", value: "doing" });
-	assert.deepEqual(labels(choicesFor(undefined, "peop")), [
-		"✓ Ann people",
-		"✓ Stranger people",
-		"Bob people",
-		"Cy people",
-		"Today too people",
-		'✏️ status: use "peop"',
-	]);
-	assert.deepEqual(labels(choicesFor(undefined, "👤")), ['✏️ status: use "👤"']);
-	assert.deepEqual(labels(choicesFor(undefined, "📝 stat Done")), ['✏️ status: use "📝 stat Done"']);
-});
-
-test("with prefixes hidden the see-more row names its property and expands to it", () => {
-	const many = Array.from({ length: 7 }, (_, index) => ({
-		path: `people/P${index}.md`,
-		mtime: HOURS_AGO(index + 1),
-		links: ["types/Person.md"],
-	}));
-	const { choicesFor } = setup(
-		[entry("people", "links", { prefix: "👤 peop" })],
-		[{ path: "Today.md" }, { path: "types/Person.md" }, ...many],
-		{},
-		false,
-	);
-	const rows = choicesFor();
-	assert.equal(labels(rows)[7], "… 2 more, type to filter people");
-	assert.deepEqual(rows[7].action, { action: "expand", query: "people" });
-	assert.equal(labels(choicesFor(undefined, "people")).length, 7);
 });
 
 test("a link entry leaves out notes inside any of its excluded folders", () => {
@@ -393,7 +341,7 @@ test("a checkbox can open its picker, toggle between true and not set, or cycle 
 	const next = (mode: CheckboxMode | undefined, row: string, frontmatter: Frontmatter) => {
 		const done = entry("done", "checkbox", { prefix: "☑️" });
 		const { initial, entries } = setup([done], [{ path: "Today.md", frontmatter }, { path: "types/Person.md" }]);
-		const action = pick(pickerChoices(entries, initial, pickerState(initial), "", true, mode), row).action;
+		const action = pick(pickerChoices(entries, initial, pickerState(initial), "", mode), row).action;
 		return action.action === "set" ? written(initial, action.state, { ...frontmatter }) : action.action;
 	};
 	assert.equal(next(undefined, "✓ ☑️ done true", { done: true }), "edit");

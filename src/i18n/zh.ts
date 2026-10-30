@@ -59,8 +59,9 @@ export const zh: Translation = {
 	currentYear: "今年",
 	createCurrentPeriod: "创建{period}",
 
-	showPrefixes: "显示前缀",
-	showPrefixesDesc: "在选择器的每一行开头显示其所属列表或属性的前缀。",
+	settingsIntro: "Note Compass 的结构",
+	settingsIntroDesc: "“导航”从你定义的选择器打开相关笔记。“属性”无需打开笔记即可设置其属性。“表单”通过几个问题创建笔记。“任务”处理当前笔记中的任务。",
+	integrations: "集成",
 	dateNotesSource: "日期笔记来源",
 	navigationSection: "导航",
 	navigationPickerCommand: "导航：{name}",

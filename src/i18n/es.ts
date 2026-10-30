@@ -59,8 +59,9 @@ export const es: Translation = {
 	currentYear: "este año",
 	createCurrentPeriod: "crear la nota de {period}",
 
-	showPrefixes: "Mostrar prefijos",
-	showPrefixesDesc: "Empieza cada fila de los selectores con el prefijo de su lista o propiedad.",
+	settingsIntro: "Cómo se organiza Note Compass",
+	settingsIntroDesc: "Navegación abre notas relacionadas desde los selectores que defines. Propiedades establece las propiedades de una nota sin abrirla. Formularios crea notas a partir de unas pocas preguntas. Tareas procesa las tareas de la nota activa.",
+	integrations: "Integraciones",
 	dateNotesSource: "Origen de las notas de fecha",
 	navigationSection: "Navegación",
 	navigationPickerCommand: "Navegación: {name}",

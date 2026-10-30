@@ -242,9 +242,9 @@ Estos destinos predeterminados solo se aplican a comandos nuevos; los guardados 
 
 ## Ajustes
 
-Los ajustes caben en una ventana estrecha y funcionan igual en móvil. La página principal tiene dos opciones, "Mostrar prefijos" y "Origen de las notas de fecha", y abre cuatro páginas, "Navegación", "Propiedades", "Formularios" y "Tareas", seguidas de "Restablecer todos los ajustes".
+Los ajustes caben en una ventana estrecha y funcionan igual en móvil. La página principal empieza con una breve nota sobre lo que contiene cada una de sus cuatro páginas, "Navegación", "Propiedades", "Formularios" y "Tareas", que vienen a continuación; después, el grupo "Integraciones" con "Origen de las notas de fecha", y al final "Restablecer todos los ajustes".
 
-![La página principal de los ajustes, con Mostrar prefijos y Origen de las notas de fecha arriba, después las páginas Navegación, Propiedades, Formularios y Tareas, y Restablecer todos los ajustes al final](docs/images/settings.png)
+![La página principal de los ajustes, con una nota sobre cómo se organiza Note Compass arriba, después las páginas Navegación, Propiedades, Formularios y Tareas, Origen de las notas de fecha en Integraciones, y Restablecer todos los ajustes al final](docs/images/settings.png)
 
 Haz clic en cualquier punto de una de las cuatro filas para abrir su página, y usa la flecha de vuelta de arriba para regresar. La página propia de una fila se abre dentro de su sección, así que al volver desde la página de una lista aterrizas en la página de su selector de navegación, y al volver otra vez, en la página Navegación. Esa página lista tus selectores de navegación con los mismos controles de añadir, reordenar, activar, editar, copiar y eliminar; cada uno tiene "Activado", "Nombre", un "Filtro" y sus listas. El filtro del selector se aplica a todas sus listas, además de la fuente y el filtro de cada una, así que solo aparecen las notas que lo cumplen; vacío, no oculta nada. Un selector nuevo empieza sin listas y con el filtro vacío, y el icono de copiar lo duplica con su filtro y todas sus listas.
 
@@ -255,10 +255,6 @@ Haz clic en cualquier punto de una de las cuatro filas para abrir su página, y 
 Usa los mismos controles para añadir, reordenar, activar, editar, duplicar y eliminar. La página de un comando contiene Comando, Tareas que listar, Tareas que omitir, Opciones y Acciones. No hay comandos de tareas hasta que añades uno; los nuevos empiezan con acciones Bullet Journal.
 
 Las filas de Formularios y Tareas muestran solo el nombre; la segunda línea aparece únicamente para avisos, no para un resumen de la configuración.
-
-### Visualización
-
-"Mostrar prefijos", en la parte superior de la página principal, está activado de forma predeterminada. Al desactivarlo se quita el prefijo de todas las filas de los tres selectores y deja de contar para la coincidencia al escribir. Las filas de enlace de "Establecer propiedades" muestran entonces la propiedad que escriben, como en `✓ Marta Vidal · people`. Los ajustes también ocultan los chips y los campos de prefijo, pero tus prefijos y colores siguen guardados, así que al volver a activar el ajuste se recuperan.
 
 ### Listas y propiedades
 
@@ -359,7 +355,6 @@ Las traducciones están en `src/i18n/`, y este manual también está disponible 
 - Escribe la abreviatura de un prefijo para reducir un selector a una lista, como `peop` para las filas de personas en "Establecer propiedades".
 - Usa un origen "Enlaza a una nota" como una etiqueta ligera. Crea una nota como `Person` y apunta la propiedad de personas a "Enlaza a una nota: Person". Pon `[[Person]]` en el contenido del formulario que crea las notas de personas, así cada persona nueva aparece en la lista sin que tengas que etiquetarla a mano.
 - Añade tu carpeta de plantillas a "Carpetas excluidas" en todas las propiedades de enlace, para que las notas de plantilla nunca se ofrezcan como valores.
-- Desactiva "Mostrar prefijos" para un aspecto minimalista cuando ya conozcas tus listas. Las filas de enlace muestran entonces el nombre de su propiedad.
 - En "Establecer propiedades", Escape en un selector de valores solo vuelve al selector principal. Los cambios que ya hiciste se conservan hasta que eliges "Guardar y cerrar" o "Cancelar".
 - En un comando de tareas, asigna tus acciones más habituales en "Teclas" y deja una tecla libre: esa tecla y ⚙ siguen abriendo todas las acciones. Con "Modo por lotes" activado, asignar Cmd+Intro a `🏁 Terminar` guarda sin bajar hasta la última fila.
 

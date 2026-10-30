@@ -36,7 +36,7 @@ export function setProperties(
 		back?.();
 	};
 	const openMain = (state: PickerState, query: string): void => {
-		new ChoiceModal<PickerChoice>(app, t("setPropertiesPlaceholder"), (typed) => pickerChoices(entries, initial, state, typed, settings.showPrefixes, settings.setProperties.checkboxMode, rows), {
+		new ChoiceModal<PickerChoice>(app, t("setPropertiesPlaceholder"), (typed) => pickerChoices(entries, initial, state, typed, settings.setProperties.checkboxMode, rows), {
 			choose: ({ action }, typed) => {
 				if (action.action === "set") openMain(action.state, "");
 				else if (action.action === "expand") openMain(state, action.query);

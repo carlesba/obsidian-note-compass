@@ -59,8 +59,9 @@ export const ko: Translation = {
 	currentYear: "올해",
 	createCurrentPeriod: "{period} 만들기",
 
-	showPrefixes: "접두사 표시",
-	showPrefixesDesc: "선택기의 각 행 앞에 해당 목록이나 속성의 접두사를 붙입니다.",
+	settingsIntro: "Note Compass의 구성",
+	settingsIntroDesc: "\"탐색\"은 직접 정의한 선택기에서 관련 노트를 엽니다. \"속성\"은 노트를 열지 않고 속성을 설정합니다. \"양식\"은 몇 가지 질문으로 노트를 만듭니다. \"작업\"은 포커스된 노트의 작업을 처리합니다.",
+	integrations: "연동",
 	dateNotesSource: "날짜 노트 원본",
 	navigationSection: "탐색",
 	navigationPickerCommand: "탐색: {name}",

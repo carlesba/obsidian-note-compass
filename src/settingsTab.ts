@@ -14,7 +14,6 @@ import { allLists, defaultSettings, duplicateNotePicker, newListId, newNotePicke
 import {
 	CHECKBOX_MODE_KEY,
 	DATE_NOTE_SOURCE_KEY,
-	SHOW_PREFIXES_KEY,
 	periodKey,
 	readControl,
 	writeControl,
@@ -126,7 +125,7 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 
 	getSettingDefinitions(): SettingDefinitionItem[] {
 		this.definitionsAreStale = false;
-		const { forms, notePickers, setProperties, showPrefixes, taskCommands } = this.plugin.settings;
+		const { forms, notePickers, setProperties, taskCommands } = this.plugin.settings;
 		const { properties } = setProperties;
 		const vault = createObsidianVault(this.app);
 		let suggestions: PropertySuggestion[] | undefined;
@@ -140,7 +139,7 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 			prefixes: this.prefixes,
 			prefixChanged: () => void this.savePrefixes(true),
 			prefixTyped: () => void this.savePrefixes(false),
-			showPrefixes,
+			showPrefixes: true,
 		};
 		const formContext: FormPageContext = {
 			...context,
@@ -232,11 +231,11 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 				type: "group",
 				items: [
 					{
-						name: t("showPrefixes"),
-						desc: t("showPrefixesDesc"),
-						control: { type: "toggle", key: SHOW_PREFIXES_KEY },
+						name: t("settingsIntro"),
+						desc: t("settingsIntroDesc"),
+						searchable: false,
+						render: (setting) => setting.settingEl.addClass("note-compass-settings-intro"),
 					},
-					this.dateNotesSource(vault, context),
 				],
 			},
 			{
@@ -267,6 +266,7 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 					]),
 				],
 			},
+			{ type: "group", heading: t("integrations"), items: [this.dateNotesSource(vault, context)] },
 			hiddenPages([this.dateNoteFormatsPage(vault)]),
 			{
 				type: "group",
