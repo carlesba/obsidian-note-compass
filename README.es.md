@@ -22,11 +22,11 @@ Note Compass necesita Obsidian 1.13.0 o posterior y funciona tanto en escritorio
 
 ## Primeros pasos
 
-Los comandos están pensados para usarse con el teclado, así que lo primero es asignar un atajo a cada uno. Abre Ajustes → Atajos de teclado, busca "Note Compass" y asigna teclas a "Ir a una nota", "Establecer propiedades" y "Rellenar formulario". También puedes ejecutarlos desde la paleta de comandos.
+Los comandos están pensados para usarse con el teclado, así que lo primero es asignar un atajo a cada uno. Abre Ajustes → Atajos de teclado, busca "Note Compass" y asigna teclas a "Navegación: Predeterminado", "Establecer propiedades" y "Rellenar formulario". También puedes ejecutarlos desde la paleta de comandos.
 
-Un uso típico sería este. Abres la nota diaria de hoy y pulsas el atajo de "Ir a una nota" para pasar a la nota de ayer o a una nota que enlazaste desde ella. En una nota en la que estás trabajando, pulsas el atajo de "Establecer propiedades", escribes unas letras del nombre de una persona, la eliges y pulsas "Guardar y cerrar". Para las notas que creas a menudo, como las personas, añade un formulario en Ajustes → Note Compass → Formularios.
+Un uso típico sería este. Abres la nota diaria de hoy y pulsas el atajo de "Navegación: Predeterminado" para pasar a la nota de ayer o a una nota que enlazaste desde ella. En una nota en la que estás trabajando, pulsas el atajo de "Establecer propiedades", escribes unas letras del nombre de una persona, la eliges y pulsas "Guardar y cerrar". Para las notas que creas a menudo, como las personas, añade un formulario en Ajustes → Note Compass → Formularios.
 
-La configuración predeterminada incluye las cuatro listas de relación en "Ir a una nota" y un conjunto de propiedades habituales de casilla de verificación y de enlace en "Establecer propiedades". Abre Ajustes → Note Compass para desactivar lo que no uses y para apuntar las propiedades de enlace a tus propias carpetas y notas.
+La configuración predeterminada incluye las cuatro listas de relación en el selector de navegación "Predeterminado" y un conjunto de propiedades habituales de casilla de verificación y de enlace en "Establecer propiedades". Abre Ajustes → Note Compass para desactivar lo que no uses y para apuntar las propiedades de enlace a tus propias carpetas y notas.
 
 Añade un comando en Ajustes → Note Compass → Tareas, abre una nota con tareas pendientes y ejecuta "Procesar tareas abiertas". Intro prepara la finalización y `🏁 Terminar` guarda.
 
@@ -34,9 +34,11 @@ Añade un comando en Ajustes → Note Compass → Tareas, abre una nota con tare
 
 "Ir a una nota" abre un selector con notas a las que moverte. Al elegir una fila, la nota se abre en la pestaña activa, o en una pestaña nueva si no hay ninguna abierta.
 
+Puedes crear varios selectores de navegación con nombre en Ajustes → Note Compass → Navegación, cada uno con sus propias listas. Cada uno aparece en la paleta de comandos como "Navegación: <nombre>", así que puedes darle su propio atajo. Una instalación nueva empieza con uno llamado "Predeterminado", y las listas guardadas antes de que existieran pasan a él sin cambios. "Ir a una nota" pregunta "¿Qué selector de navegación abrir?", muestra todos los selectores activados y abre el que elijas.
+
 ![El selector Ir a una nota sobre una nota diaria, con el día anterior y el siguiente, sus enlaces salientes, una nota del mismo día, esta semana, este mes y este año, los proyectos activos y las personas](docs/images/jump-to-note.png)
 
-El selector muestra las listas que configures en "Ir a una nota" dentro de los ajustes, en el orden que elijas. Cuatro de las listas disponibles dependen de la nota Markdown activa, y se omiten cuando el foco está en otra cosa o no hay ninguna pestaña abierta:
+Cada selector muestra las listas que configures en su página de los ajustes, en el orden que elijas. Cuatro de las listas disponibles dependen de la nota Markdown activa, y se omiten cuando el foco está en otra cosa o no hay ninguna pestaña abierta:
 
 - Fechas adyacentes muestra las notas de fecha justo antes y después de la nota activa, para cada periodo: el día, la semana, el mes, el trimestre y el año anterior y siguiente, como en `📅 day 2024-03-06 (día siguiente - miércoles)` o `📅 day 2024-W09 (semana anterior - semana 9)`. Los periodos más cortos que la nota activa se omiten, así que una nota semanal no muestra días. En la página de la lista eliges qué entradas mostrar, en qué orden y si se ofrecen las que faltan.
 - Enlaces salientes muestra las notas a las que enlaza la nota activa, incluidos los enlaces en propiedades.
@@ -238,13 +240,13 @@ Estos destinos predeterminados solo se aplican a comandos nuevos; los guardados 
 
 ## Ajustes
 
-Los ajustes caben en una ventana estrecha y funcionan igual en móvil. La página principal tiene dos opciones, "Mostrar prefijos" y "Origen de las notas de fecha", y abre cuatro páginas, "Ir a una nota", "Propiedades", "Formularios" y "Tareas", seguidas de "Restablecer todos los ajustes".
+Los ajustes caben en una ventana estrecha y funcionan igual en móvil. La página principal tiene dos opciones, "Mostrar prefijos" y "Origen de las notas de fecha", y abre cuatro páginas, "Navegación", "Propiedades", "Formularios" y "Tareas", seguidas de "Restablecer todos los ajustes".
 
-![La página principal de los ajustes, con Mostrar prefijos y Origen de las notas de fecha arriba, después las páginas Ir a una nota, Propiedades, Formularios y Tareas, y Restablecer todos los ajustes al final](docs/images/settings.png)
+![La página principal de los ajustes, con Mostrar prefijos y Origen de las notas de fecha arriba, después las páginas Navegación, Propiedades, Formularios y Tareas, y Restablecer todos los ajustes al final](docs/images/settings.png)
 
-Haz clic en cualquier punto de una de las cuatro filas para abrir su página, y usa la flecha de vuelta de arriba para regresar. La página propia de una fila se abre dentro de su sección, así que al volver desde la página de una lista aterrizas en la página Ir a una nota.
+Haz clic en cualquier punto de una de las cuatro filas para abrir su página, y usa la flecha de vuelta de arriba para regresar. La página propia de una fila se abre dentro de su sección, así que al volver desde la página de una lista aterrizas en la página de su selector de navegación, y al volver otra vez, en la página Navegación. Esa página lista tus selectores de navegación con los mismos controles de añadir, reordenar, activar, editar, copiar y eliminar; cada uno tiene "Activado", "Nombre" y sus listas. Un selector nuevo empieza sin listas, y el icono de copiar lo duplica con todas sus listas.
 
-![La página Ir a una nota, con cada lista como una fila con su chip de prefijo, un interruptor, un icono de copiar, un lápiz y un botón de eliminar](docs/images/settings-jump-to-note.png)
+![La página de un selector de navegación, con cada lista como una fila con su chip de prefijo, un interruptor, un icono de copiar, un lápiz y un botón de eliminar](docs/images/settings-jump-to-note.png)
 
 ### Formularios y Tareas
 
@@ -258,7 +260,7 @@ Las filas de Formularios y Tareas muestran solo el nombre; la segunda línea apa
 
 ### Listas y propiedades
 
-Las páginas Ir a una nota y Propiedades son listas de filas, y sus filas funcionan igual. Cada fila muestra su chip de prefijo y lo que muestra o escribe, como `status es active` o `people · enlaces`.
+La página de un selector de navegación y la de Propiedades son listas de filas, y sus filas funcionan igual. Cada fila muestra su chip de prefijo y lo que muestra o escribe, como `status es active` o `people · enlaces`.
 
 - Arrastra el asa de la izquierda para reordenar las filas. El orden es el del selector.
 - Usa el interruptor para mostrar u ocultar una fila en el selector sin perder su configuración.
@@ -268,7 +270,7 @@ Las páginas Ir a una nota y Propiedades son listas de filas, y sus filas funcio
 
 Una fila que esta versión de Note Compass no puede leer, por ejemplo una guardada por una versión más reciente, se queda en la lista con un aviso: "Esta versión de Note Compass no puede leer esta lista. Elimínala y crea una nueva." Su interruptor está desactivado y deshabilitado y no tiene lápiz, así que nunca añade notas a un selector, pero su configuración guardada se conserva tal cual hasta que la elimines.
 
-Haz clic en un chip de prefijo, tócalo, o ponle el foco y pulsa Intro para abrir su menú, que en un teléfono aparece como una hoja desde abajo. El menú muestra cada prefijo en uso en las páginas Ir a una nota y Propiedades, cada uno como su chip seguido de cuántas filas lo usan, como un chip `📅 due` con `· 3 filas`, primero los más usados. El prefijo propio de la fila aparece marcado. Elige uno para dar a esta fila su texto y su color, sin cambiar ninguna otra fila. "Editar prefijo…" abre la página de la fila con el cursor en "Prefijo", y "Sin prefijo", que aparece cuando la fila tiene uno, borra su texto y su color. Un prefijo vacío se muestra como un chip `prefijo` atenuado y nunca aparece en el menú.
+Haz clic en un chip de prefijo, tócalo, o ponle el foco y pulsa Intro para abrir su menú, que en un teléfono aparece como una hoja desde abajo. El menú muestra cada prefijo en uso en todos los selectores de navegación y en la página Propiedades, cada uno como su chip seguido de cuántas filas lo usan, como un chip `📅 due` con `· 3 filas`, primero los más usados. El prefijo propio de la fila aparece marcado. Elige uno para dar a esta fila su texto y su color, sin cambiar ninguna otra fila. "Editar prefijo…" abre la página de la fila con el cursor en "Prefijo", y "Sin prefijo", que aparece cuando la fila tiene uno, borra su texto y su color. Un prefijo vacío se muestra como un chip `prefijo` atenuado y nunca aparece en el menú.
 
 Dos filas comparten un prefijo cuando su texto y su color son iguales, así que `👤 peop` en rojo y `👤 peop` sin color son dos prefijos distintos.
 

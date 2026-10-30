@@ -10,7 +10,7 @@ import { t } from "./i18n";
 import { createObsidianVault } from "./lists/obsidianVault";
 import type { JumpListVault } from "./lists/vault";
 import type NoteCompassPlugin from "./main";
-import { defaultSettings, newListId } from "./settings";
+import { allLists, defaultSettings, duplicateNotePicker, newListId, newNotePicker } from "./settings";
 import {
 	CHECKBOX_MODE_KEY,
 	DATE_NOTE_SOURCE_KEY,
@@ -31,9 +31,10 @@ import { duplicateEntry, duplicateName } from "./settings/duplicate";
 import { formPage, formPageId, formRow } from "./settings/formPage";
 import type { FormPageContext } from "./settings/formPage";
 import type { FieldEditorState } from "./settings/fieldEditor";
-import { newList, propertySuggestions } from "./settings/listForm";
+import { propertySuggestions } from "./settings/listForm";
 import type { PropertySuggestion } from "./settings/listForm";
-import { listPage, listPageId, listRow, propertyPage, propertyPageId, propertyRow } from "./settings/listPage";
+import { propertyPage, propertyPageId, propertyRow } from "./settings/listPage";
+import { notePickerPage, notePickerPageId, notePickerRow } from "./settings/notePickerPage";
 import type { ListPageContext } from "./settings/listPage";
 import { PrefixPages } from "./settings/prefixLinks";
 import { ResetSettingsModal } from "./settings/resetModal";
@@ -125,7 +126,7 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 
 	getSettingDefinitions(): SettingDefinitionItem[] {
 		this.definitionsAreStale = false;
-		const { forms, lists, setProperties, showPrefixes, taskCommands } = this.plugin.settings;
+		const { forms, notePickers, setProperties, showPrefixes, taskCommands } = this.plugin.settings;
 		const { properties } = setProperties;
 		const vault = createObsidianVault(this.app);
 		let suggestions: PropertySuggestion[] | undefined;
@@ -151,18 +152,21 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 				void this.plugin.saveSettings();
 			},
 		};
-		const jumpToNoteList: SettingDefinitionList = {
+		const pickerContext = { ...context, allListIds: () => allLists(this.plugin.settings) };
+		const notePickersList: SettingDefinitionList = {
 			type: "list",
 			cls: SORTABLE_LIST_CLASS,
-			emptyState: t("noListsYet"),
-			items: lists.map((list) => listRow(list, context, () => this.changeLists(() => duplicateEntry(lists, list, newListId(lists))))),
-			...this.editableEntries(lists),
+			emptyState: t("noNotePickersYet"),
+			items: notePickers.map((picker) =>
+				notePickerRow(picker, context, () => this.changeLists(() => duplicateNotePicker(notePickers, picker, duplicateName(picker.name)))),
+			),
+			...this.editableEntries(notePickers),
 			addItem: {
-				name: t("addList"),
+				name: t("addNotePicker"),
 				action: () => {
-					const list = newList(lists);
-					this.changeLists(() => lists.push(list));
-					this.openPage(listPageId(list));
+					const picker = newNotePicker(notePickers);
+					this.changeLists(() => notePickers.push(picker));
+					this.openPage(notePickerPageId(picker));
 				},
 			},
 		};
@@ -238,9 +242,9 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 			{
 				type: "group",
 				items: [
-					sectionPage(JUMP_TO_NOTE_PAGE_ID, t("jumpToNote"), t("jumpToNoteSectionDesc"), [
-						jumpToNoteList,
-						hiddenPages(lists.map((list) => listPage(list, context))),
+					sectionPage(JUMP_TO_NOTE_PAGE_ID, t("navigationSection"), t("jumpToNoteSectionDesc"), [
+						notePickersList,
+						hiddenPages(notePickers.map((picker) => notePickerPage(picker, pickerContext))),
 					]),
 					sectionPage(PROPERTIES_PAGE_ID, t("propertiesSection"), t("propertiesSectionDesc"), [
 						propertiesList,

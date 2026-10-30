@@ -106,7 +106,7 @@ export interface PropertySuggestion {
 
 const FIXED_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
-export function newList(lists: readonly NoteList[]): NoteList {
+export function newList(lists: readonly { id: string }[]): NoteList {
 	return { id: newListId(lists), enabled: true, prefix: "", source: { kind: "filter", filter: emptyFilter() } };
 }
 

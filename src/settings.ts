@@ -1,3 +1,4 @@
+import { t } from "./i18n/index.ts";
 import { readCondition } from "./lists/conditions.ts";
 import type { Condition } from "./lists/conditions.ts";
 import { readFilter, singleRuleFilter } from "./lists/filters.ts";
@@ -71,6 +72,14 @@ export interface NoteList {
 	source: ListSource;
 }
 
+export interface NotePicker {
+	id: string;
+	enabled: boolean;
+	name: string;
+	lists: NoteList[];
+	unreadable?: { stored: unknown };
+}
+
 type LinkListMode = "multi" | "single";
 
 const LINK_LIST_MODES: readonly LinkListMode[] = ["multi", "single"];
@@ -131,7 +140,7 @@ export interface SetPropertiesSettings {
 
 export interface JumpSettings {
 	showPrefixes: boolean;
-	lists: NoteList[];
+	notePickers: NotePicker[];
 	dateNotes: DateNoteSettings;
 	setProperties: SetPropertiesSettings;
 	forms: Form[];
@@ -206,11 +215,18 @@ export function isUnreadable(source: ListSource | undefined): source is Unreadab
 export function storedSettings(settings: JumpSettings): unknown {
 	return {
 		...settings,
-		lists: settings.lists.map(withStoredSource),
+		notePickers: settings.notePickers.map(storedNotePicker),
 		setProperties: { ...settings.setProperties, properties: settings.setProperties.properties.map(withStoredSource) },
 		forms: storedForms(settings.forms),
 		taskCommands: storedTaskCommands(settings.taskCommands),
 	};
+}
+
+function storedNotePicker(picker: NotePicker): unknown {
+	if (picker.unreadable) return picker.unreadable.stored;
+	const stored: Partial<NotePicker> = { ...picker, lists: picker.lists.map(withStoredSource) as NoteList[] };
+	delete stored.unreadable;
+	return stored;
 }
 
 function withStoredSource(entry: { source?: ListSource }): object {
@@ -237,12 +253,86 @@ export function mergeSettings(stored: unknown): JumpSettings {
 	const data = isRecord(stored) ? stored : {};
 	return {
 		showPrefixes: typeof data.showPrefixes === "boolean" ? data.showPrefixes : true,
-		lists: Array.isArray(data.lists) ? readLists(data.lists, () => ({})) : migrateLegacyLists(data),
+		notePickers: Array.isArray(data.notePickers) ? readNotePickers(data.notePickers) : [migratedNotePicker(data)],
 		dateNotes: readDateNotes(data.dateNotes),
 		setProperties: readSetProperties(data.setProperties),
 		forms: readForms(data.forms),
 		taskCommands: readTaskCommands(data.taskCommands),
 	};
+}
+
+export function allLists(settings: Pick<JumpSettings, "notePickers">): NoteList[] {
+	return settings.notePickers.flatMap((picker) => picker.lists);
+}
+
+export function notePickerName(picker: NotePicker): string {
+	return picker.name.trim() || t("untitledNotePicker");
+}
+
+export function isRunnableNotePicker(picker: NotePicker): boolean {
+	return picker.enabled && picker.unreadable === undefined;
+}
+
+export function newNotePickerId(pickers: readonly { id: string }[]): string {
+	return String(Math.max(0, ...pickers.map((picker) => Number(picker.id.match(/^\d+$/)?.[0] ?? 0))) + 1);
+}
+
+export function newNotePicker(pickers: readonly NotePicker[]): NotePicker {
+	return { id: newNotePickerId(pickers), enabled: true, name: "", lists: [] };
+}
+
+export function duplicateNotePicker(pickers: NotePicker[], picker: NotePicker, name: string): NotePicker | undefined {
+	const index = pickers.indexOf(picker);
+	if (index < 0 || picker.unreadable) return undefined;
+	const taken: { id: string }[] = allLists({ notePickers: pickers });
+	const lists = picker.lists.map((list) => {
+		const copy: NoteList = { ...structuredClone(list), id: newListId(taken) };
+		taken.push(copy);
+		return copy;
+	});
+	const copy: NotePicker = { id: newNotePickerId(pickers), enabled: picker.enabled, name, lists };
+	pickers.splice(index + 1, 0, copy);
+	return copy;
+}
+
+function migratedNotePicker(data: Record<string, unknown>): NotePicker {
+	return {
+		id: "1",
+		enabled: true,
+		name: t("defaultNotePickerName"),
+		lists: Array.isArray(data.lists) ? readLists(data.lists, () => ({})) : migrateLegacyLists(data),
+	};
+}
+
+function readNotePickers(stored: unknown[]): NotePicker[] {
+	const storedIds = stored.filter(isRecord).map((entry) => ({ id: typeof entry.id === "string" ? entry.id : "" }));
+	const storedListIds = stored.flatMap((entry) =>
+		isRecord(entry) && Array.isArray(entry.lists) ? entry.lists.filter(isRecord).map((list) => ({ id: typeof list.id === "string" ? list.id : "" })) : [],
+	);
+	const pickers: NotePicker[] = [];
+	const taken: { id: string }[] = [];
+	for (const entry of stored) {
+		const id =
+			isRecord(entry) && typeof entry.id === "string" && /^\d+$/.test(entry.id) && !pickers.some((picker) => picker.id === entry.id)
+				? entry.id
+				: newNotePickerId([...storedIds, ...pickers]);
+		if (!isRecord(entry) || !Array.isArray(entry.lists)) {
+			pickers.push({ id, enabled: false, name: isRecord(entry) && typeof entry.name === "string" ? entry.name : "", lists: [], unreadable: { stored: entry } });
+			continue;
+		}
+		const lists = readLists(entry.lists, () => ({})).map((list) => {
+			const unique = taken.some((other) => other.id === list.id) ? { ...list, id: newListId([...storedListIds, ...taken]) } : list;
+			taken.push(unique);
+			return unique;
+		});
+		pickers.push({
+			id,
+			enabled: typeof entry.enabled === "boolean" ? entry.enabled : false,
+			name: typeof entry.name === "string" ? entry.name : "",
+			lists,
+		});
+	}
+	return pickers;
 }
 
 function readSetProperties(stored: unknown): SetPropertiesSettings {

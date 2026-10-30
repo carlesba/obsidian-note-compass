@@ -1,13 +1,17 @@
 import { MarkdownView, Notice, Plugin, getLanguage } from "obsidian";
+import { ChoiceModal } from "./choiceModal";
 import { fillForm, isRunnable, pickForm } from "./forms/modal";
 import { formName } from "./forms/questions";
 import { DEFAULT_LANGUAGE, setLanguage, t } from "./i18n";
 import { buildJumpList } from "./lists/jumpList";
+import { notePickerChoices } from "./lists/notePickers";
+import type { NotePickerChoice } from "./lists/notePickers";
 import { createObsidianVault } from "./lists/obsidianVault";
 import type { VaultNote } from "./lists/vault";
 import { JumpModal, SET_PROPERTIES_ICON } from "./modal";
 import { setProperties } from "./setProperties/modal";
-import { JumpSettings, defaultSettings, mergeSettings, storedSettings } from "./settings";
+import { JumpSettings, defaultSettings, isRunnableNotePicker, mergeSettings, notePickerName, storedSettings } from "./settings";
+import type { NotePicker } from "./settings";
 import { NoteCompassSettingTab } from "./settingsTab";
 import { runTaskCommand } from "./tasks/modal";
 import { isRunnableTaskCommand, taskCommandName } from "./tasks/taskCommand";
@@ -16,6 +20,7 @@ export default class NoteCompassPlugin extends Plugin {
 	settings: JumpSettings = defaultSettings();
 	private formCommandIds: string[] = [];
 	private taskCommandIds: string[] = [];
+	private notePickerCommandIds: string[] = [];
 
 	async onload(): Promise<void> {
 		try {
@@ -30,7 +35,7 @@ export default class NoteCompassPlugin extends Plugin {
 			id: "jump-to-note",
 			name: t("jumpToNote"),
 			icon: "compass",
-			callback: () => this.openJumpModal(),
+			callback: () => this.pickNotePicker(),
 		});
 
 		this.addCommand({
@@ -52,14 +57,38 @@ export default class NoteCompassPlugin extends Plugin {
 			callback: () => pickForm(this.app, createObsidianVault(this.app), this.settings.forms, this.currentNote()?.path),
 		});
 
+		this.registerNotePickerCommands();
 		this.registerFormCommands();
 		this.registerTaskCommands();
 	}
 
 	async saveSettings(): Promise<void> {
 		await this.saveData(storedSettings(this.settings));
+		this.registerNotePickerCommands();
 		this.registerFormCommands();
 		this.registerTaskCommands();
+	}
+
+	private registerNotePickerCommands(): void {
+		for (const id of this.notePickerCommandIds) this.removeCommand(id);
+		this.notePickerCommandIds = [];
+		for (const picker of this.settings.notePickers.filter(isRunnableNotePicker)) {
+			const id = `note-picker-${picker.id}`;
+			this.addCommand({ id, name: t("navigationPickerCommand", { name: notePickerName(picker) }), icon: "compass", callback: () => this.openJumpModal(picker) });
+			this.notePickerCommandIds.push(id);
+		}
+	}
+
+	private pickNotePicker(): void {
+		const pickers = this.settings.notePickers.filter(isRunnableNotePicker);
+		if (pickers.length === 0) {
+			new Notice(t("noNotePickers"));
+			return;
+		}
+		new ChoiceModal<NotePickerChoice>(this.app, t("pickANotePicker"), (query) => notePickerChoices(pickers, query), {
+			choose: ({ picker }) => this.openJumpModal(picker),
+			dismiss: () => undefined,
+		}).open();
 	}
 
 	private registerTaskCommands(): void {
@@ -97,9 +126,9 @@ export default class NoteCompassPlugin extends Plugin {
 		}
 	}
 
-	private openJumpModal(query = ""): void {
+	private openJumpModal(picker: NotePicker, query = ""): void {
 		const entries = buildJumpList(
-			this.settings.lists,
+			picker.lists,
 			createObsidianVault(this.app),
 			this.currentNote(),
 			this.settings.dateNotes,
@@ -109,7 +138,7 @@ export default class NoteCompassPlugin extends Plugin {
 			return;
 		}
 		new JumpModal(this.app, entries, this.settings.showPrefixes, (note, typed) =>
-			setProperties(this.app, createObsidianVault(this.app), this.settings, note, () => this.openJumpModal(typed)),
+			setProperties(this.app, createObsidianVault(this.app), this.settings, note, () => this.openJumpModal(picker, typed)),
 		).openWithQuery(query);
 	}
 

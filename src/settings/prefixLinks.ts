@@ -1,4 +1,4 @@
-import { writePrefixColor } from "../settings.ts";
+import { allLists, writePrefixColor } from "../settings.ts";
 import type { JumpSettings } from "../settings.ts";
 import { listKey, propertyKey } from "./controlKeys.ts";
 import { sourceSummary } from "./listForm.ts";
@@ -39,7 +39,7 @@ interface PrefixTarget {
 
 function prefixTargets(settings: JumpSettings): PrefixTarget[] {
 	return [
-		...settings.lists.map((list) => ({ key: listKey(list.id, "prefix"), label: sourceSummary(list.source), target: list })),
+		...allLists(settings).map((list) => ({ key: listKey(list.id, "prefix"), label: sourceSummary(list.source), target: list })),
 		...settings.setProperties.properties.map((entry) => ({
 			key: propertyKey(entry.id, "prefix"),
 			label: propertyLabel(entry),

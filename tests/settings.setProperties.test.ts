@@ -151,15 +151,15 @@ test("a property's prefix colour key reads blank until set and keeps only valid 
 	assert.equal(readControl(settings, key), "#33aa66");
 	writeControl(settings, key, "nope");
 	assert.equal("prefixColor" in settings.setProperties.properties[0], false);
-	assert.equal(settings.lists.some((list) => "prefixColor" in list), false);
+	assert.equal(settings.notePickers[0].lists.some((list) => "prefixColor" in list), false);
 });
 
 test("property keys never touch the jump list with the same id", () => {
 	const settings = defaultSettings();
-	const jumpLists = JSON.stringify(settings.lists);
+	const jumpLists = JSON.stringify(settings.notePickers[0].lists);
 	writeControl(settings, propertyKey("list-1", "prefix"), "x");
 	writeControl(settings, propertySourceKey("list-1", "source"), "inFolder");
-	assert.equal(JSON.stringify(settings.lists), jumpLists);
+	assert.equal(JSON.stringify(settings.notePickers[0].lists), jumpLists);
 });
 
 test("a link type gets a source and excluded folders, and other types drop them", () => {

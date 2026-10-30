@@ -38,7 +38,7 @@ const row = (key: string, prefix: string, prefixColor?: string): PrefixRow =>
 
 function settingsWith(lists: NoteList[], properties: EditableProperty[]): JumpSettings {
 	const settings = defaultSettings();
-	settings.lists = lists;
+	settings.notePickers[0].lists = lists;
 	settings.setProperties.properties = properties;
 	return settings;
 }
@@ -118,7 +118,7 @@ test("picking a prefix from the menu gives this row its text and colour, and lea
 		["🔗 out", "#00ff00"],
 		["📅 due", undefined],
 	]);
-	assert.equal("prefixColor" in settings.lists[0], false);
+	assert.equal("prefixColor" in settings.notePickers[0].lists[0], false);
 	assert.equal(assignPrefix(settings, propertyKey("status", "prefix"), { prefix: "🔗 out", color: "#00ff00" }), true);
 	assert.deepEqual(shown(settings)[2], ["🔗 out", "#00ff00"]);
 });
@@ -126,7 +126,7 @@ test("picking a prefix from the menu gives this row its text and colour, and lea
 test("picking the row's own prefix or an unknown row changes nothing", () => {
 	const settings = settingsWith([list("list-1", " 🔗 out", "#00ff00")], []);
 	assert.equal(assignPrefix(settings, listKey("list-1", "prefix"), { prefix: "🔗 out", color: "#00ff00" }), false);
-	assert.equal(settings.lists[0].prefix, " 🔗 out");
+	assert.equal(settings.notePickers[0].lists[0].prefix, " 🔗 out");
 	assert.equal(assignPrefix(settings, "list/missing/prefix", { prefix: "x" }), false);
 });
 
@@ -137,7 +137,7 @@ test("No prefix clears this row's text and colour only", () => {
 		["", undefined],
 		["🔗 out", "#00ff00"],
 	]);
-	assert.equal("prefixColor" in settings.lists[0], false);
+	assert.equal("prefixColor" in settings.notePickers[0].lists[0], false);
 });
 
 test("a change can set only the colour, and an empty colour removes it", () => {
@@ -149,13 +149,13 @@ test("a change can set only the colour, and an empty colour removes it", () => {
 		["👤 peop", "#00ff00"],
 	]);
 	applyPrefixChange(settings, keys, { color: "" });
-	assert.deepEqual(settings.lists.map((entry) => "prefixColor" in entry), [false, false]);
+	assert.deepEqual(settings.notePickers[0].lists.map((entry) => "prefixColor" in entry), [false, false]);
 });
 
 test("a change to unknown rows reports that nothing changed", () => {
 	const settings = settingsWith([list("list-1", "👤 peop")], []);
 	assert.equal(applyPrefixChange(settings, ["list/missing/prefix"], { prefix: "x" }), false);
-	assert.equal(settings.lists[0].prefix, "👤 peop");
+	assert.equal(settings.notePickers[0].lists[0].prefix, "👤 peop");
 });
 
 test("the rows sharing a prefix are named by their labels, cut after three", () => {

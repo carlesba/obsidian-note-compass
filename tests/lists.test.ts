@@ -52,7 +52,7 @@ function fakeVault(fakes: FakeNote[], plugins: FakePlugins = {}): JumpListVault 
 }
 
 function onlyList(kind: RelationSourceKind): NoteList[] {
-	return defaultSettings().lists.map((list) => ({ ...list, enabled: list.source.kind === kind }));
+	return defaultSettings().notePickers[0].lists.map((list) => ({ ...list, enabled: list.source.kind === kind }));
 }
 
 function propertyList(prefix: string, property: string, condition: Condition): NoteList {
@@ -209,7 +209,7 @@ test("without a current note only the property lists run", () => {
 		{ path: "on/2024-03-05.md", ctime: MARCH_5, links: ["linked.md"] },
 		{ path: "linked.md", ctime: MARCH_5, frontmatter: { tags: ["[[Work|work]]"] } },
 	]);
-	const lists = [...defaultSettings().lists, propertyList("💼 work", "tags", { operator: "has item", value: "Work" })];
+	const lists = [...defaultSettings().notePickers[0].lists, propertyList("💼 work", "tags", { operator: "has item", value: "Work" })];
 	assert.deepEqual(describe(buildJumpList(lists, vault)), ["💼 work linked"]);
 });
 
@@ -227,7 +227,7 @@ test("the lists run in order, a note appears in every list that holds it and the
 		{ propertyTypes: { active: "checkbox", area: "text" } },
 	);
 	const lists = [
-		...defaultSettings().lists,
+		...defaultSettings().notePickers[0].lists,
 		propertyList("📍 act", "active", { operator: "is true" }),
 		propertyList("🏠 home", "area", { operator: "is", value: "home" }),
 	];
@@ -255,7 +255,7 @@ test("disabled lists are skipped", () => {
 		{ path: "out.md", ctime: MARCH_5, links: ["current.md"] },
 		{ path: "in.md", links: ["current.md"] },
 	]);
-	const lists = defaultSettings().lists.map((list) => ({
+	const lists = defaultSettings().notePickers[0].lists.map((list) => ({
 		...list,
 		enabled: list.source.kind !== "linksOut" && list.source.kind !== "sameDay",
 	}));

@@ -12,7 +12,7 @@ Note Compass adds keyboard pickers for navigation, properties, forms and your ow
 
 ### Jump to note
 
-Move to the notes related to the note in focus, or to any list you define.
+Move to the notes related to the note in focus, or to any list you define. Group your lists into named navigation pickers, each with its own command.
 
 ![The Jump to note picker on a daily note, with the previous and next day, its outbound links, a note from the same day, this week, month and year, the active projects and the people](docs/images/jump-to-note.png)
 
@@ -74,13 +74,13 @@ Note Compass needs Obsidian 1.13.0 or later and runs on both desktop and mobile.
 
 ## Quick start
 
-1. Open Settings → Hotkeys, search for "Note Compass", and assign keys to "Jump to note", "Set properties" and "Fill form". You can also run them from the command palette.
-2. Open today's daily note and press the "Jump to note" hotkey to move to yesterday's note or to a note you linked from it.
+1. Open Settings → Hotkeys, search for "Note Compass", and assign keys to "Navigation: Default", "Set properties" and "Fill form". "Jump to note" lists every navigation picker you create. You can also run them from the command palette.
+2. Open today's daily note and press the "Navigation: Default" hotkey to move to yesterday's note or to a note you linked from it.
 3. On a note you are working on, press the "Set properties" hotkey, type a few letters of a person's name, pick them, and choose "Save & close".
 4. Open Settings → Note Compass to switch off what you do not use, point the link properties at your own folders and notes, and add a form for the notes you create often, such as people.
 5. Add a command in Settings → Note Compass → Tasks, open a note with unchecked tasks, and run "Process open tasks". Enter stages completion; `🏁 Finish processing` saves.
 
-The defaults give you the four relation lists in "Jump to note" and a set of common checkbox and link properties in "Set properties".
+The defaults give you the four relation lists in the "Default" navigation picker and a set of common checkbox and link properties in "Set properties".
 
 ## Manual
 
@@ -88,7 +88,7 @@ The defaults give you the four relation lists in "Jump to note" and a set of com
 - [Set properties](docs/set-properties.md): picker rows, value pickers, presets and checkboxes.
 - [Forms](docs/forms.md): running a form, form settings, fields and placeholders.
 - [Task commands](docs/task-commands.md): status filters, actions, destinations and batch processing.
-- [Settings](docs/settings.md): the main page and its Jump to note, Properties, Forms and Tasks pages, rows, prefixes, list filters and property pages.
+- [Settings](docs/settings.md): the main page and its Navigation, Properties, Forms and Tasks pages, rows, prefixes, list filters and property pages.
 - [Tips and known behaviour](docs/tips.md)
 - [Development](docs/development.md)
 

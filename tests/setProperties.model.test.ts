@@ -29,14 +29,14 @@ test("the test vault's v2 data migrates to properties and keeps its jump setting
 	const data = v2Data();
 	const merged = mergeSettings(data);
 	assert.deepEqual(
-		merged.lists.map((list) => list.prefix),
+		merged.notePickers[0].lists.map((list) => list.prefix),
 		["📅 day", "🔗 out", "🔗 in", "🔅 ctx", "⭐ fav", "📌 todo", "🗂 proj"],
 	);
 	assert.deepEqual(
-		merged.lists,
+		merged.notePickers[0].lists,
 		data.lists.map((list: { prefix: string; source: { kind: string } }, index: number) => ({
 			...list,
-			prefix: merged.lists[index].prefix,
+			prefix: merged.notePickers[0].lists[index].prefix,
 			source: asFilter(list.source),
 		})),
 	);

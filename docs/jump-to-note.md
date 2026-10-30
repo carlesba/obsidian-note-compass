@@ -1,8 +1,14 @@
 # Jump to note
 
-"Jump to note" opens one picker with the notes related to the note in focus and the lists you define, so you can move to any of them in a few keystrokes.
+A navigation picker shows the notes related to the note in focus and the lists you define, so you can move to any of them in a few keystrokes. You can create several named navigation pickers, each with its own lists and its own command.
 
 [← Back to the README](../README.md)
+
+## Navigation pickers
+
+Each navigation picker you create under Settings → Note Compass → Navigation is offered in the command palette as "Navigation: <name>", so you can give each one its own hotkey. A new install starts with one picker named "Default", and the lists saved before navigation pickers existed move into it unchanged.
+
+"Jump to note" asks "Open which navigation picker?" and lists every enabled picker, then opens the one you choose.
 
 ## The picker
 
@@ -10,7 +16,7 @@ The picker lets you choose a note to move to. Picking a row opens the note in th
 
 ![The Jump to note picker on a daily note, with the previous and next day, its outbound links, a note from the same day, this week, month and year, the active projects and the people](images/jump-to-note.png)
 
-The picker shows the lists you set up under "Jump to note" in settings, in the order you set. To change them, see [Settings](settings.md#list-pages).
+A picker shows the lists you set up on its page in settings, in the order you set. To change them, see [Settings](settings.md#list-pages).
 
 - A note appears under every list that holds it, in the order of your lists.
 - The note in focus is left out.

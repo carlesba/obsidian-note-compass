@@ -1,5 +1,5 @@
 import type { Period } from "../lists/dateNotes.ts";
-import { CHECKBOX_MODES } from "../settings.ts";
+import { CHECKBOX_MODES, allLists } from "../settings.ts";
 import type { JumpSettings } from "../settings.ts";
 import { isPeriod, readPeriodField, writeDateNoteSource, writePeriodField } from "./dateNotesForm.ts";
 import type { PeriodField } from "./dateNotesForm.ts";
@@ -34,6 +34,12 @@ export const CHECKBOX_MODE_KEY = "setProperties/checkboxMode";
 
 export function listKey(id: string, field: ListField): string {
 	return `list/${id}/${field}`;
+}
+
+export type NotePickerField = "enabled" | "name";
+
+export function notePickerKey(id: string, field: NotePickerField): string {
+	return `notePicker/${id}/${field}`;
 }
 
 export function propertyKey(id: string, field: PropertyField): string {
@@ -94,8 +100,12 @@ export function readControl(settings: JumpSettings, key: string): unknown {
 	const [scope, name, field, index] = key.split("/");
 	if (scope === "form" || scope === "formField") return readFormControl(settings, scope, name, field, index);
 	if (scope === "taskCommand" || scope === "taskAction") return readTaskControl(settings, scope, name, field, index);
+	if (scope === "notePicker") {
+		const picker = settings.notePickers.find((candidate) => candidate.id === name && !candidate.unreadable);
+		return picker && (field === "enabled" || field === "name") ? picker[field] : undefined;
+	}
 	if (scope === "list") {
-		const list = settings.lists.find((candidate) => candidate.id === name);
+		const list = allLists(settings).find((candidate) => candidate.id === name);
 		return list ? readListField(list, field as ListField) : undefined;
 	}
 	if (scope === "dateNotes" && isPeriod(name)) return readPeriodField(settings.dateNotes, name, field as PeriodField);
@@ -128,8 +138,16 @@ export function writeControl(settings: JumpSettings, key: string, value: unknown
 	const [scope, name, field, index] = key.split("/");
 	if (scope === "form" || scope === "formField") return writeFormControl(settings, scope, name, field, index, value);
 	if (scope === "taskCommand" || scope === "taskAction") return writeTaskControl(settings, scope, name, field, index, value);
+	if (scope === "notePicker") {
+		const picker = settings.notePickers.find((candidate) => candidate.id === name && !candidate.unreadable);
+		if (!picker) return false;
+		if (field === "enabled") picker.enabled = value === true;
+		else if (field === "name") picker.name = typeof value === "string" ? value : "";
+		else return false;
+		return true;
+	}
 	if (scope === "list") {
-		const list = settings.lists.find((candidate) => candidate.id === name);
+		const list = allLists(settings).find((candidate) => candidate.id === name);
 		if (list) writeListField(list, field as ListField, value);
 		return list !== undefined;
 	}

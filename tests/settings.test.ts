@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { defaultDateNoteSettings } from "../src/lists/dateNotes.ts";
-import { defaultSettings, mergeSettings, newListId } from "../src/settings.ts";
+import { defaultSettings, mergeSettings, newListId, storedSettings } from "../src/settings.ts";
 import type { Condition } from "../src/lists/conditions.ts";
 import type { EditableProperty, EditablePropertyType, ListSource, NoteList, SetPropertiesSettings } from "../src/settings.ts";
 
@@ -60,7 +60,7 @@ const setPropertiesDefaults = (): SetPropertiesSettings => ({
 test("defaultSettings enables every relation list in picker order and reads date notes automatically", () => {
 	assert.deepEqual(defaultSettings(), {
 		showPrefixes: true,
-		lists: relationLists(),
+		notePickers: [{ id: "1", enabled: true, name: "Default", lists: relationLists() }],
 		dateNotes: defaultDateNoteSettings(),
 		setProperties: setPropertiesDefaults(),
 		forms: [],
@@ -71,7 +71,7 @@ test("defaultSettings enables every relation list in picker order and reads date
 test("mergeSettings gives saved jump settings without set-properties data the default properties", () => {
 	const lists = [{ id: "list-1", enabled: true, prefix: "🔗", source: { kind: "linksIn" } }];
 	const merged = mergeSettings({ lists });
-	assert.deepEqual(merged.lists, lists);
+	assert.deepEqual(merged.notePickers[0].lists, lists);
 	assert.deepEqual(merged.setProperties, setPropertiesDefaults());
 });
 
@@ -189,9 +189,9 @@ test("mergeSettings keeps a prefix colour only when it is a #rgb or #rrggbb hex"
 	const colors = ["#e0a030", "#ABC", "e0a030", "#e0a03", "#e0a030ff", "red", 12, null];
 	const merged = mergeSettings({ lists: colors.map(list), setProperties: { properties: colors.map(property) } });
 	const kept = ["#e0a030", "#ABC", undefined, undefined, undefined, undefined, undefined, undefined];
-	assert.deepEqual(merged.lists.map((entry) => entry.prefixColor), kept);
+	assert.deepEqual(merged.notePickers[0].lists.map((entry) => entry.prefixColor), kept);
 	assert.deepEqual(merged.setProperties.properties.map((entry) => entry.prefixColor), kept);
-	assert.equal("prefixColor" in merged.lists[2], false);
+	assert.equal("prefixColor" in merged.notePickers[0].lists[2], false);
 	assert.equal("prefixColor" in merged.setProperties.properties[2], false);
 });
 
@@ -220,8 +220,10 @@ test("mergeSettings migrates the old shape into lists in picker order with custo
 			{ prefix: "📝", property: "summary", operator: "exists", value: "" },
 		],
 	});
-	assert.deepEqual(merged, {
+	assert.deepEqual(merged.notePickers.map(({ id, enabled, name }) => ({ id, enabled, name })), [{ id: "1", enabled: true, name: "Default" }]);
+	assert.deepEqual({ ...merged, notePickers: undefined, lists: merged.notePickers[0].lists }, {
 		showPrefixes: true,
+		notePickers: undefined,
 		lists: [
 			{ id: "list-1", enabled: true, prefix: "🗓️", source: { kind: "adjacentDates" } },
 			{ id: "list-2", enabled: true, prefix: "➡️", source: { kind: "linksOut" } },
@@ -253,7 +255,7 @@ test("mergeSettings fills partial or mistyped old built-in lists from the defaul
 	const merged = mergeSettings({ builtIns: { linksIn: { enabled: false }, sameDay: { prefix: "☀️" }, adjacentDays: { enabled: "yes", prefix: 7 } } });
 	const expected = relationLists([true, true, false, true]);
 	expected[3].prefix = "☀️";
-	assert.deepEqual(merged.lists, expected);
+	assert.deepEqual(merged.notePickers[0].lists, expected);
 });
 
 test("mergeSettings keeps an old empty prefix empty and trims old prefixes", () => {
@@ -261,8 +263,8 @@ test("mergeSettings keeps an old empty prefix empty and trims old prefixes", () 
 		builtIns: { linksOut: { prefix: " ➡️ " } },
 		customLists: [{ prefix: "", property: "done", operator: "is true" }],
 	});
-	assert.equal(merged.lists[1].prefix, "➡️");
-	assert.equal(merged.lists[4].prefix, "");
+	assert.equal(merged.notePickers[0].lists[1].prefix, "➡️");
+	assert.equal(merged.notePickers[0].lists[4].prefix, "");
 });
 
 test("mergeSettings drops the trailing bar from saved prefixes", () => {
@@ -273,7 +275,7 @@ test("mergeSettings drops the trailing bar from saved prefixes", () => {
 			{ id: "list-3", enabled: true, prefix: "|", source: { kind: "linksOut" } },
 			{ id: "list-4", enabled: true, prefix: "a | b", source: { kind: "sameDay" } },
 		],
-	}).lists;
+	}).notePickers[0].lists;
 	assert.deepEqual(lists.map((list) => list.prefix), ["🔗 in", "📅 day", "", "a | b"]);
 	const properties = mergeSettings({
 		setProperties: { properties: [{ id: "p-1", enabled: true, prefix: "👤 peop |", property: "people", type: "text" }] },
@@ -298,10 +300,10 @@ test("mergeSettings drops old custom lists it cannot read", () => {
 			{ prefix: "✅", property: "done", operator: "is true" },
 		],
 	});
-	assert.deepEqual(merged.lists.slice(4), [
+	assert.deepEqual(merged.notePickers[0].lists.slice(4), [
 		{ id: "list-5", enabled: true, prefix: "✅", source: propertyFilter("done", { operator: "is true" }) },
 	]);
-	assert.deepEqual(mergeSettings({ customLists: { prefix: "📚" } }).lists, relationLists());
+	assert.deepEqual(mergeSettings({ customLists: { prefix: "📚" } }).notePickers[0].lists, relationLists());
 });
 
 test("mergeSettings keeps saved lists in their order and round-trips its own output", () => {
@@ -322,8 +324,9 @@ test("mergeSettings keeps saved lists in their order and round-trips its own out
 		dateNotes: { from: "custom", custom: { ...defaultDateNoteSettings().custom, quarter: { enabled: true, folder: "q", format: "YYYY-[Q]Q" } } },
 	};
 	const merged = mergeSettings(saved);
-	assert.deepEqual(merged, { ...saved, setProperties: setPropertiesDefaults(), forms: [], taskCommands: [] });
-	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(merged))), merged);
+	const { lists, ...rest } = saved;
+	assert.deepEqual(merged, { ...rest, notePickers: [{ id: "1", enabled: true, name: "Default", lists }], setProperties: setPropertiesDefaults(), forms: [], taskCommands: [] });
+	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(storedSettings(merged)))), merged);
 });
 
 test("mergeSettings reads a saved showPrefixes boolean and shows prefixes otherwise", () => {
@@ -335,7 +338,7 @@ test("mergeSettings reads a saved showPrefixes boolean and shows prefixes otherw
 
 test("mergeSettings keeps a list with a condition its property's type no longer offers", () => {
 	const lists = [{ id: "list-1", enabled: true, prefix: "#", source: propertyFilter("n", { operator: "has item", value: "x" }) }];
-	assert.deepEqual(mergeSettings({ lists }).lists, lists);
+	assert.deepEqual(mergeSettings({ lists }).notePickers[0].lists, lists);
 });
 
 test("mergeSettings turns a saved property list into a filter with that one condition", () => {
@@ -348,7 +351,7 @@ test("mergeSettings turns a saved property list into a filter with that one cond
 			],
 		},
 	});
-	assert.deepEqual(merged.lists[0].source, propertyFilter("due", condition));
+	assert.deepEqual(merged.notePickers[0].lists[0].source, propertyFilter("due", condition));
 	assert.deepEqual(merged.setProperties.properties[0].source, isTrue("active"));
 	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(merged))), merged);
 });
@@ -365,7 +368,7 @@ test("mergeSettings keeps unreadable saved lists as broken and mints ids that ar
 			{ id: "list-9", source: { kind: "adjacentDates" } },
 		],
 	});
-	assert.deepEqual(merged.lists, [
+	assert.deepEqual(merged.notePickers[0].lists, [
 		{ id: "list-3", enabled: true, prefix: "a", source: { kind: "linksOut" } },
 		{ id: "list-10", enabled: true, prefix: "b", source: { kind: "sameDay" } },
 		{ id: "list-11", enabled: true, prefix: "c", source: { kind: "linksIn" } },
@@ -379,7 +382,7 @@ test("mergeSettings keeps unreadable saved lists as broken and mints ids that ar
 		},
 		{ id: "list-9", enabled: false, prefix: "", source: { kind: "adjacentDates" } },
 	]);
-	assert.deepEqual(mergeSettings({ lists: [] }).lists, []);
+	assert.deepEqual(mergeSettings({ lists: [] }).notePickers[0].lists, []);
 });
 
 test("mergeSettings reads saved date-note settings and replaces missing or mistyped parts with the defaults", () => {
@@ -393,7 +396,7 @@ test("mergeSettings reads saved date-note settings and replaces missing or misty
 
 test("mergeSettings returns fresh defaults that callers can change without affecting later merges", () => {
 	const first = mergeSettings(undefined);
-	first.lists[0].prefix = "changed";
+	first.notePickers[0].lists[0].prefix = "changed";
 	first.dateNotes.custom.day.folder = "changed";
 	first.setProperties.properties.push(checkbox("list-99", "changed"));
 	first.setProperties.properties[9].source = { kind: "linksOut" };
@@ -414,7 +417,7 @@ test("mergeSettings reads a current date notes list and keeps only known periods
 		],
 	});
 	assert.deepEqual(
-		merged.lists.map((list) => list.source),
+		merged.notePickers[0].lists.map((list) => list.source),
 		[
 			{ kind: "currentPeriods", periods: ["day", "year"] },
 			{ kind: "currentPeriods", periods: [] },
@@ -430,7 +433,7 @@ test("mergeSettings reads the order, entries and missing-notes switch of date li
 			{ id: "list-3", enabled: true, prefix: "📅", source: { kind: "adjacentDates" } },
 		],
 	});
-	const [current, adjacent, plain] = merged.lists.map((list) => list.source);
+	const [current, adjacent, plain] = merged.notePickers[0].lists.map((list) => list.source);
 	assert.deepEqual(current, { kind: "currentPeriods", periods: ["day", "year"], order: ["year", "week", "day", "month", "quarter"], showsMissing: false });
 	assert.equal(adjacent.kind, "adjacentDates");
 	if (adjacent.kind !== "adjacentDates") return;
@@ -445,7 +448,7 @@ test("mergeSettings turns the previous and next choices saved by 0.14.0 into per
 	const merged = mergeSettings({
 		lists: [{ id: "list-1", enabled: true, prefix: "📅", source: { kind: "adjacentDates", directions: ["next"], order: ["next", "previous"] } }],
 	});
-	const source = merged.lists[0].source;
+	const source = merged.notePickers[0].lists[0].source;
 	assert.equal(source.kind, "adjacentDates");
 	if (source.kind !== "adjacentDates") return;
 	assert.deepEqual(source.entries, ["next-day", "next-week", "next-month", "next-quarter", "next-year"]);

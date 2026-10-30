@@ -8,20 +8,29 @@ Settings → Note Compass decides what each picker offers, how its rows look, an
 
 The main page holds two options and opens four pages, followed by "Reset all settings". It fits a narrow window and works the same on mobile.
 
-![The main settings page, with Show prefixes and Date notes source at the top, then the Jump to note, Properties, Forms and Tasks pages, and Reset all settings at the bottom](images/settings.png)
+![The main settings page, with Show prefixes and Date notes source at the top, then the Navigation, Properties, Forms and Tasks pages, and Reset all settings at the bottom](images/settings.png)
 
 | Item | What it holds |
 | --- | --- |
 | Show prefixes | Whether rows carry their prefix chip, described under [Display](#display). |
 | Date notes source | Where date note formats come from, described in [Date notes](jump-to-note.md#date-notes). The pencil edits the custom formats. |
-| Jump to note | The lists of the [Jump to note](jump-to-note.md) picker. |
+| Navigation | Your [navigation pickers](jump-to-note.md#navigation-pickers), each offered in the command palette as "Navigation: <name>". |
 | Properties | The properties of the [Set properties](set-properties.md) picker, and "Checkbox behaviour". |
 | Forms | Your [forms](forms.md). |
 | Tasks | Your [task commands](task-commands.md), each offered under its name in the command palette. |
 
-Click anywhere on one of the four rows to open its page, and use the back arrow at the top to return. A row's own page opens inside its section, so going back from a list's page lands on the Jump to note page.
+Click anywhere on one of the four rows to open its page, and use the back arrow at the top to return. A row's own page opens inside its section, so going back from a list's page lands on its navigation picker's page, and going back again lands on the Navigation page.
 
-![The Jump to note page, listing each list as a row with its prefix chip, a switch, a copy icon, a pencil and a delete button](images/settings-jump-to-note.png)
+![A navigation picker's page, listing each list as a row with its prefix chip, a switch, a copy icon, a pencil and a delete button](images/settings-jump-to-note.png)
+
+## Navigation pickers
+
+The Navigation page lists your navigation pickers with the same add, reorder, switch, edit, copy and delete controls as the other settings lists. A new picker starts with no lists, and the copy icon duplicates a picker with all its lists.
+
+| Section | Setting | What it does |
+| --- | --- | --- |
+| Navigation picker | Enabled, Name | Offers the picker as "Navigation: <name>" in the command palette and in "Jump to note". |
+| Lists | List rows | The lists the picker shows, described under [Lists and property rows](#lists-and-property-rows) and [List pages](#list-pages). |
 
 ## Forms and Tasks
 
@@ -39,7 +48,7 @@ Turning it off removes the prefix from every row in all three pickers and leaves
 
 ## Lists and property rows
 
-The Jump to note and Properties pages are both lists of rows, and their rows work the same way. Each row shows its prefix chip and what it lists or writes, such as `status is active` or `people · links`.
+A navigation picker's page and the Properties page are both lists of rows, and their rows work the same way. Each row shows its prefix chip and what it lists or writes, such as `status is active` or `people · links`.
 
 | Control | Does |
 | --- | --- |
@@ -67,7 +76,7 @@ The prefix menu reuses a prefix you already have on another row.
 ![The prefix menu of a row, listing each prefix in use as its chip with how many rows use it, the row's own prefix ticked, then Edit prefix… and No prefix](images/prefix-menu.png)
 
 1. Click a prefix chip, tap it, or focus it and press Enter. A phone shows the menu as a sheet from the bottom.
-2. The menu lists every prefix in use across the Jump to note and Properties pages, each as its chip followed by how many rows use it, such as a `📅 due` chip with `· 3 rows`, most used first. The row's own prefix is ticked.
+2. The menu lists every prefix in use across every navigation picker and the Properties page, each as its chip followed by how many rows use it, such as a `📅 due` chip with `· 3 rows`, most used first. The row's own prefix is ticked.
 3. Pick one to give this row its text and its colour. No other row changes.
 
 | Menu item | Does |
@@ -92,7 +101,7 @@ The settings button opens the prefix menu.
 
 ## List pages
 
-A list's page sets what one "Jump to note" list holds.
+A list's page sets what one list in a navigation picker holds.
 
 | Setting | What it is |
 | --- | --- |

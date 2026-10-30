@@ -112,10 +112,10 @@ test("a filter with any node this version cannot read keeps the whole list as br
 		{ kind: "filter", filter: all({ kind: "tag", tag: 4 } as unknown as FilterRule) },
 		{ kind: "sorted", by: "name" },
 	];
-	const lists = mergeSettings({ lists: broken.map((source, index) => ({ id: `list-${index + 1}`, enabled: true, prefix: "x", source })) }).lists;
+	const lists = mergeSettings({ lists: broken.map((source, index) => ({ id: `list-${index + 1}`, enabled: true, prefix: "x", source })) }).notePickers[0].lists;
 	assert.deepEqual(lists.map((list) => list.source), broken.map((stored) => ({ kind: "unreadable", stored })));
 	const readable = mergeSettings({ lists: [{ id: "list-1", enabled: true, prefix: "", source: filter(all(all(any(isTrue("active"))))) }] });
-	assert.equal(readable.lists[0].source.kind, "filter");
+	assert.equal(readable.notePickers[0].lists[0].source.kind, "filter");
 });
 
 test("saving keeps a broken list's and a broken property's stored source exactly as it was", () => {
@@ -124,7 +124,7 @@ test("saving keeps a broken list's and a broken property's stored source exactly
 		setProperties: { properties: [{ id: "p-1", enabled: true, prefix: "", property: "related", type: "links", source: { kind: "nowhere", deep: [1] } }] },
 	};
 	const saved = JSON.parse(JSON.stringify(storedSettings(mergeSettings(stored))));
-	assert.deepEqual(saved.lists, stored.lists);
+	assert.deepEqual(saved.notePickers[0].lists, stored.lists);
 	assert.deepEqual(saved.setProperties.properties[0].source, stored.setProperties.properties[0].source);
 	assert.deepEqual(mergeSettings(saved), mergeSettings(stored));
 	assert.deepEqual(JSON.parse(JSON.stringify(storedSettings(defaultSettings()))), JSON.parse(JSON.stringify(defaultSettings())));
@@ -141,7 +141,7 @@ test("broken lists and properties never contribute notes", () => {
 		},
 	});
 	const vault = fakeVault(notes.map((fake) => ({ ...fake })), { propertyTypes: TYPES });
-	assert.deepEqual(buildJumpList(settings.lists, vault), []);
+	assert.deepEqual(buildJumpList(settings.notePickers[0].lists, vault), []);
 	const offered = offeredEntries(settings, vault, vault.note("Delta.md"));
 	assert.deepEqual(offered.map((entry) => entry.entry.property), ["seen"]);
 });
@@ -176,9 +176,9 @@ test("folder, tag and links conditions can be negated, and the negation is store
 	assert.deepEqual(listed(filter(all(property("status", { operator: "is not", value: "doing" })))), ["Beta", "Gamma", "Person"]);
 	const source = filter(all({ kind: "folder", folder: "projects", negated: true }));
 	const settings = defaultSettings();
-	settings.lists = [{ id: "list-1", enabled: true, prefix: "", source }];
+	settings.notePickers[0].lists = [{ id: "list-1", enabled: true, prefix: "", source }];
 	const reloaded = mergeSettings(JSON.parse(JSON.stringify(storedSettings(settings))));
-	assert.deepEqual(reloaded.lists[0].source, source);
+	assert.deepEqual(reloaded.notePickers[0].lists[0].source, source);
 	assert.equal(sourceSummary(source), "Not in projects");
 	assert.equal(sourceSummary(filter(all({ kind: "tag", tag: "work", negated: true }))), "Not tagged work");
 	assert.equal(sourceSummary(filter(all({ kind: "linksTo", note: "people/Person.md", negated: true }))), "Does not link to Person");

@@ -91,7 +91,7 @@ test("operator options keep a stored operator that the type does not offer", () 
 });
 
 test("a row is named by its prefix and a summary of its source, and says off when disabled", () => {
-	const lists = defaultSettings().lists;
+	const lists = defaultSettings().notePickers[0].lists;
 	assert.equal(listName(lists[0]), "📅 day Adjacent dates");
 	assert.equal(listName(propertyList("favorite", { operator: "is true" })), "⭐ favorite is true");
 	assert.equal(listName(propertyList("status", { operator: "is", value: "active" })), "⭐ status is active");
@@ -112,7 +112,7 @@ test("a row is named by its prefix and a summary of its source, and says off whe
 });
 
 test("a new list is an enabled filter list with no conditions, the next id and no prefix", () => {
-	assert.deepEqual(newList(defaultSettings().lists), {
+	assert.deepEqual(newList(defaultSettings().notePickers[0].lists), {
 		id: "list-5",
 		enabled: true,
 		prefix: "",
@@ -127,7 +127,7 @@ test("a condition that no longer fits the property's type is reported without be
 	assert.match(inapplicableCondition(propertyList("starred", { operator: "is true" }).source, types) ?? "", /text property/);
 	assert.equal(inapplicableCondition(propertyList("rating", { operator: ">", value: 3 }).source, types), undefined);
 	assert.equal(inapplicableCondition(propertyList("unknown", { operator: "contains", value: "x" }).source, {}), undefined);
-	assert.equal(inapplicableCondition(defaultSettings().lists[0].source, types), undefined);
+	assert.equal(inapplicableCondition(defaultSettings().notePickers[0].lists[0].source, types), undefined);
 
 	const rule = propertyRule("rating", { operator: "is", value: "3" });
 	writeRuleText(rule, "Starred");
@@ -224,10 +224,10 @@ test("property suggestions keep the vault's spelling and show each property's ty
 
 test("control keys read and write the list they name and ignore unknown ones", () => {
 	const settings = defaultSettings();
-	settings.lists.push({ id: "list-5", enabled: true, prefix: "", source: { kind: "inFolder", folder: "areas" } });
+	settings.notePickers[0].lists.push({ id: "list-5", enabled: true, prefix: "", source: { kind: "inFolder", folder: "areas" } });
 	assert.equal(readControl(settings, listKey("list-5", "folder")), "areas");
 	assert.equal(writeControl(settings, listKey("list-1", "enabled"), false), true);
-	assert.equal(settings.lists[0].enabled, false);
+	assert.equal(settings.notePickers[0].lists[0].enabled, false);
 	assert.equal(writeControl(settings, listKey("list-9", "enabled"), true), false);
 	assert.equal(writeControl(settings, "theme", "dark"), false);
 	assert.equal(writeControl(settings, DATE_NOTE_SOURCE_KEY, "custom"), true);
@@ -248,7 +248,7 @@ test("the show prefixes toggle reads and writes the display setting and refuses 
 	assert.equal(readControl(settings, SHOW_PREFIXES_KEY), false);
 	assert.equal(writeControl(settings, SHOW_PREFIXES_KEY, "yes"), false);
 	assert.equal(settings.showPrefixes, false);
-	assert.equal(settings.lists[0].prefix, "📅 day");
+	assert.equal(settings.notePickers[0].lists[0].prefix, "📅 day");
 });
 
 test("the date notes row says where each period comes from and which formats are editable", () => {
@@ -309,13 +309,13 @@ test("a list's prefix colour key reads blank until set, keeps valid hex and clea
 	assert.equal(prefixColorKey(listKey("list-2", "prefix")), key);
 	assert.equal(readControl(settings, key), "");
 	assert.equal(writeControl(settings, key, "#e0a030"), true);
-	assert.equal(settings.lists[1].prefixColor, "#e0a030");
+	assert.equal(settings.notePickers[0].lists[1].prefixColor, "#e0a030");
 	assert.equal(readControl(settings, key), "#e0a030");
 	writeControl(settings, key, "");
-	assert.equal("prefixColor" in settings.lists[1], false);
+	assert.equal("prefixColor" in settings.notePickers[0].lists[1], false);
 	writeControl(settings, key, "#abc");
 	writeControl(settings, key, "orange");
-	assert.equal("prefixColor" in settings.lists[1], false);
+	assert.equal("prefixColor" in settings.notePickers[0].lists[1], false);
 });
 
 test("a current date notes list toggles each period and names the chosen ones", () => {
