@@ -35,6 +35,7 @@ export interface ExpandableRow {
 	id: string;
 	name: string;
 	desc?: string;
+	cls?: string;
 	listId: string;
 	itemId: string;
 	context: ExpandingPageContext;
@@ -58,6 +59,7 @@ export function expandableRow(row: ExpandableRow): SettingDefinitionRender & { i
 			const { settingEl, controlEl } = setting;
 			const expanded = context.fieldEditor.expanded.get(listId) === itemId;
 			settingEl.addClass("note-compass-draggable-row", "note-compass-field-row", ROW_CONTROL_CLASS);
+			if (row.cls) settingEl.addClass(row.cls);
 			settingEl.toggleClass("is-expanded", expanded);
 			settingEl.setAttr("aria-expanded", String(expanded));
 			const showHeader = () => row.showHeader(setting);
@@ -97,6 +99,7 @@ export function expandableRow(row: ExpandableRow): SettingDefinitionRender & { i
 				settingEl.removeEventListener("click", onClick);
 				settingEl.removeEventListener("keydown", onKeydown);
 				settingEl.removeClass("is-expanded");
+				if (row.cls) settingEl.removeClass(row.cls);
 				settingEl.removeAttribute("aria-expanded");
 				editorEl?.remove();
 				if (headers.get(itemId) === showHeader) headers.delete(itemId);

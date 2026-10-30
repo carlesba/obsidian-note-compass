@@ -1,21 +1,32 @@
-import { ExtraButtonComponent, Menu, TextComponent, moment } from "obsidian";
-import type { Setting, SettingDefinition, SettingDefinitionItem, SettingDefinitionList, SettingDefinitionPage } from "obsidian";
-import { hasChoices, isDateType, newFormId } from "../forms/form";
+import { ExtraButtonComponent, DropdownComponent, Menu, TextComponent, moment } from "obsidian";
+import type { Setting, SettingDefinition, SettingDefinitionItem, SettingDefinitionList, SettingDefinitionPage, SettingDefinitionRender } from "obsidian";
+import { hasChoices, isDateType, newBlock, takesValue } from "../forms/form";
 import { SET_DATE_PLACEHOLDERS, typedTime } from "../forms/dateInput";
 import { FIELD_PRESETS, presetField, presetFormat } from "../forms/presets";
 import type { FieldPreset } from "../forms/presets";
-import { duplicateEntry } from "./duplicate";
-import type { DateFieldType, Form, FormField } from "../forms/form";
+import type { BlockCondition, DateFieldType, Form, FormBlock, FormField } from "../forms/form";
 import { t } from "../i18n";
-import { formFieldKey, formKey } from "./controlKeys";
+import { formBlockKey, formFieldKey, formKey } from "./controlKeys";
 import {
 	addChoice,
+	addCondition,
+	blockSummary,
+	blockWarning,
+	conditionField,
+	conditionKeyOptions,
+	conditionOperatorOptions,
+	conditionValueOptions,
 	dateFormatOptions,
 	dateSourceOptions,
 	deleteChoice,
+	deleteCondition,
+	deleteFieldRow,
+	duplicateBlock,
+	duplicateField,
 	fieldModeOptions,
 	fieldBadges,
 	fieldRowName,
+	fieldRows,
 	fieldSummary,
 	fieldTypeOptions,
 	fieldValueError,
@@ -23,14 +34,16 @@ import {
 	formRowName,
 	formWarning,
 	moveChoice,
+	moveFieldRow,
 	readFieldSetting,
 	saveAsOptions,
 	storeAsOptions,
 } from "./formsForm";
-import type { FieldSetting } from "./formsForm";
+import type { BlockSetting, FieldSetting } from "./formsForm";
 import { editableRow } from "./listPage";
 import type { EditableRow, ListPageContext } from "./listPage";
 import { sortableRows } from "./sortable";
+import { ROW_CONTROL_CLASS } from "./tabOrder";
 import { LinkSuggest, PropertySuggest, warningDescription } from "./suggest";
 import {
 	FOCUS_ATTRIBUTE,
@@ -58,6 +71,23 @@ interface FieldEditor extends EditorBinding<FieldSetting> {
 	context: FormPageContext;
 	changed: () => void;
 }
+
+interface BlockEditor {
+	form: Form;
+	block: FormBlock;
+	context: FormPageContext;
+	changed: () => void;
+}
+
+const BLOCK_ICON = "git-branch";
+
+const BLOCK_HEAD_CLASS = "note-compass-block-head";
+
+const BLOCK_MEMBER_CLASS = "note-compass-block-member";
+
+const BLOCK_FOOT_CLASS = "note-compass-block-foot";
+
+const BLOCK_FOOT_ADD_CLASS = "note-compass-block-foot-add";
 
 const PRESET_ICONS: Record<FieldPreset, string> = {
 	blank: "plus",
@@ -177,46 +207,76 @@ export function formPage(form: Form, context: FormPageContext): SettingDefinitio
 }
 
 function fieldList(form: Form, context: FormPageContext): SettingDefinitionList {
-	const fields = form.fields;
 	const headers = new Map<string, () => void>();
 	const changed = () => {
 		for (const showHeader of headers.values()) showHeader();
 	};
+	const rows = fieldRows(form);
 	return {
 		type: "list",
 		heading: t("formFields"),
 		cls: "note-compass-sortable-list note-compass-field-list",
 		emptyState: t("noFormFieldsYet"),
-		items: fields.map((field) => fieldRow(form, field, context, headers, changed)),
-		onReorder: (from, to) => context.change(() => fields.splice(to, 0, ...fields.splice(from, 1))),
+		items: rows.map((row) => {
+			if (row.kind === "head") return blockHeadRow(form, row.block, context, headers, changed);
+			if (row.kind === "foot") return blockFootRow(form, row.block, context);
+			return fieldRow(form, row.field, row.block, context, headers, changed);
+		}),
+		onReorder: (from, to) => context.change(() => moveFieldRow(form, from, to)),
 		onDelete: (index) =>
 			context.change(() => {
-				const [removed] = fields.splice(index, 1);
-				if (removed && context.fieldEditor.expanded.get(form.id) === removed.id) context.fieldEditor.expanded.delete(form.id);
+				const removed = deleteFieldRow(form, index);
+				if (removed !== undefined && context.fieldEditor.expanded.get(form.id) === removed) context.fieldEditor.expanded.delete(form.id);
 			}),
 		addItem: {
 			name: t("addFormField"),
 			action: (buttonEl) => {
-				const add = (preset: FieldPreset) => {
-					const field = presetField(form, preset);
-					context.fieldEditor.expanded.set(form.id, field.id);
-					context.fieldEditor.focusesKey = field.id;
-					context.change(() => fields.push(field));
-				};
-				const menu = new Menu();
-				for (const preset of FIELD_PRESETS) {
-					menu.addItem((item) => item.setTitle(presetTitle(preset)).setIcon(PRESET_ICONS[preset]).onClick(() => add(preset)));
-				}
-				const rect = buttonEl.getBoundingClientRect();
-				menu.showAtPosition({ x: rect.left, y: rect.bottom });
+				const menu = presetMenu(form, context, (field) => form.fields.push(field));
+				menu.addSeparator();
+				menu.addItem((item) =>
+					item
+						.setTitle(t("formBlock"))
+						.setIcon(BLOCK_ICON)
+						.onClick(() => {
+							const block = newBlock(form);
+							context.fieldEditor.expanded.set(form.id, block.id);
+							context.fieldEditor.focusesKey = block.id;
+							context.change(() => form.fields.push(block));
+						}),
+				);
+				showMenuBelow(menu, buttonEl);
 			},
 		},
 	};
 }
 
+function presetMenu(form: Form, context: FormPageContext, insert: (field: FormField) => void): Menu {
+	const menu = new Menu();
+	for (const preset of FIELD_PRESETS) {
+		menu.addItem((item) =>
+			item
+				.setTitle(presetTitle(preset))
+				.setIcon(PRESET_ICONS[preset])
+				.onClick(() => {
+					const field = presetField(form, preset);
+					context.fieldEditor.expanded.set(form.id, field.id);
+					context.fieldEditor.focusesKey = field.id;
+					context.change(() => insert(field));
+				}),
+		);
+	}
+	return menu;
+}
+
+function showMenuBelow(menu: Menu, buttonEl: HTMLElement): void {
+	const rect = buttonEl.getBoundingClientRect();
+	menu.showAtPosition({ x: rect.left, y: rect.bottom });
+}
+
 function fieldRow(
 	form: Form,
 	field: FormField,
+	block: FormBlock | undefined,
 	context: FormPageContext,
 	headers: Map<string, () => void>,
 	changed: () => void,
@@ -235,6 +295,7 @@ function fieldRow(
 		id: `field-${field.id}-row`,
 		name: fieldSummary(field),
 		desc: fieldWarning(form, field),
+		cls: block ? BLOCK_MEMBER_CLASS : undefined,
 		listId: form.id,
 		itemId: field.id,
 		context,
@@ -242,13 +303,148 @@ function fieldRow(
 		showHeader: (setting) => fieldHeader(setting, form, field),
 		duplicate: () =>
 			context.change(() => {
-				const copy = duplicateEntry(form.fields, field, newFormId(form.fields));
+				const copy = duplicateField(form, field);
 				if (copy) context.fieldEditor.expanded.set(form.id, copy.id);
 			}),
 		expandTooltip: t("editField"),
 		collapseTooltip: t("collapseField"),
 		renderEditor: (editorEl, takesFocus) => renderEditor(editorEl, (parentEl, draw) => fieldEditorRows(parentEl, editor, draw), takesFocus ? "key" : undefined),
 	});
+}
+
+function blockHeadRow(
+	form: Form,
+	block: FormBlock,
+	context: FormPageContext,
+	headers: Map<string, () => void>,
+	changed: () => void,
+): SettingDefinition {
+	const editor: BlockEditor = { form, block, context, changed };
+	return expandableRow({
+		id: `block-${block.id}-head`,
+		name: `${t("formBlockWhen")} ${blockSummary(form, block)}`,
+		desc: blockWarning(form, block),
+		cls: BLOCK_HEAD_CLASS,
+		listId: form.id,
+		itemId: block.id,
+		context,
+		headers,
+		showHeader: (setting) => blockHeader(setting, form, block),
+		duplicate: () =>
+			context.change(() => {
+				const copy = duplicateBlock(form, block);
+				if (copy) context.fieldEditor.expanded.set(form.id, copy.id);
+			}),
+		expandTooltip: t("editBlock"),
+		collapseTooltip: t("collapseBlock"),
+		renderEditor: (editorEl, takesFocus) =>
+			renderEditor(editorEl, (parentEl, draw) => blockEditorRows(parentEl, editor, draw), takesFocus ? conditionFocus("key", 0) : undefined),
+	});
+}
+
+function blockFootRow(form: Form, block: FormBlock, context: FormPageContext): SettingDefinition {
+	const row: SettingDefinitionRender & { id: string } = {
+		id: `block-${block.id}-foot`,
+		name: t("formBlockEnd"),
+		searchable: false,
+		render: (setting) => {
+			const { settingEl, controlEl } = setting;
+			settingEl.addClass(BLOCK_FOOT_CLASS, ROW_CONTROL_CLASS);
+			const add = new ExtraButtonComponent(controlEl).setIcon("plus").setTooltip(t("addFieldToBlock"));
+			add.extraSettingsEl.addClass(BLOCK_FOOT_ADD_CLASS);
+			add.onClick(() => showMenuBelow(presetMenu(form, context, (field) => block.fields.push(field)), add.extraSettingsEl));
+			return () => settingEl.removeClass(BLOCK_FOOT_CLASS);
+		},
+	};
+	return row;
+}
+
+function blockHeader(setting: Setting, form: Form, block: FormBlock): void {
+	const title = createFragment();
+	const nameEl = title.createSpan({ cls: "note-compass-field-title" });
+	nameEl.createSpan({ cls: "note-compass-field-badge mod-block", text: t("formBlockWhen") });
+	nameEl.createSpan({ cls: "note-compass-field-name", text: blockSummary(form, block) });
+	setting.setName(title);
+	setting.setDesc("");
+	setting.descEl.removeClass("note-compass-warning");
+	const warning = blockWarning(form, block);
+	if (warning) warningDescription(setting.descEl, warning);
+}
+
+function conditionFocus(setting: BlockSetting, index: number): string {
+	return `condition${setting}/${index}`;
+}
+
+function blockEditorRows(editorEl: HTMLElement, editor: BlockEditor, draw: Redraw): void {
+	const { block, context } = editor;
+	const sectionEl = editorEl.createDiv({ cls: "note-compass-field-choices" });
+	const headerEl = sectionEl.createDiv({ cls: "note-compass-field-choices-header" });
+	const infoEl = headerEl.createDiv({ cls: "note-compass-field-setting-info" });
+	infoEl.createDiv({ cls: "setting-item-name", text: t("formBlockConditions") });
+	infoEl.createDiv({ cls: "setting-item-description", text: t("formBlockConditionsDesc") });
+	const addButton = new ExtraButtonComponent(headerEl).setIcon("plus").setTooltip(t("addFormCondition"));
+	const listEl = sectionEl.createDiv({ cls: "note-compass-form-choice-list" });
+	const emptyEl = listEl.createDiv({ cls: "setting-item-description", text: t("formBlockNoConditions") });
+	emptyEl.toggle(block.conditions.length === 0);
+	block.conditions.forEach((condition, index) => conditionRow(listEl, editor, condition, index, draw));
+	addButton.onClick(() => {
+		context.saveQuietly(() => addCondition(block));
+		editor.changed();
+		draw(conditionFocus("key", block.conditions.length - 1));
+	});
+}
+
+function conditionRow(listEl: HTMLElement, editor: BlockEditor, condition: BlockCondition, index: number, draw: Redraw): void {
+	const { form, block, context } = editor;
+	const rowEl = listEl.createDiv({ cls: "note-compass-form-choice note-compass-block-condition" });
+	const inputsEl = rowEl.createDiv({ cls: "note-compass-form-choice-inputs" });
+	const writeCondition = (setting: BlockSetting, value: string) => {
+		context.write(formBlockKey(form.id, block.id, setting, index), value);
+		editor.changed();
+	};
+	const key = new DropdownComponent(inputsEl).addOptions(conditionKeyOptions(form, block, condition)).setValue(condition.key);
+	key.selectEl.setAttrs({ [FOCUS_ATTRIBUTE]: conditionFocus("key", index), "aria-label": t("formBlockField") });
+	key.onChange((value) => {
+		writeCondition("key", value);
+		draw(conditionFocus("operator", index));
+	});
+	const operator = new DropdownComponent(inputsEl).addOptions(conditionOperatorOptions(form, block, condition)).setValue(condition.operator);
+	operator.selectEl.setAttrs({ [FOCUS_ATTRIBUTE]: conditionFocus("operator", index), "aria-label": t("formBlockOperator") });
+	operator.onChange((value) => {
+		writeCondition("operator", value);
+		draw(conditionFocus("operator", index));
+	});
+	if (takesValue(condition.operator)) conditionValueControl(inputsEl, editor, condition, index, writeCondition);
+	new ExtraButtonComponent(rowEl)
+		.setIcon("x")
+		.setTooltip(t("formRemoveCondition"))
+		.onClick(() => {
+			context.saveQuietly(() => deleteCondition(block, index));
+			editor.changed();
+			draw();
+		});
+}
+
+function conditionValueControl(
+	parentEl: HTMLElement,
+	editor: BlockEditor,
+	condition: BlockCondition,
+	index: number,
+	writeCondition: (setting: BlockSetting, value: string) => void,
+): void {
+	const { form, block } = editor;
+	const focus = { [FOCUS_ATTRIBUTE]: conditionFocus("value", index), "aria-label": t("formValue") };
+	const choices = conditionValueOptions(form, block, condition);
+	if (choices) {
+		const dropdown = new DropdownComponent(parentEl).addOptions(choices).setValue(condition.value ?? "");
+		dropdown.selectEl.setAttrs(focus);
+		dropdown.onChange((value) => writeCondition("value", value));
+		return;
+	}
+	const text = new TextComponent(parentEl).setPlaceholder(t("formValue")).setValue(condition.value ?? "");
+	text.inputEl.setAttrs(focus);
+	if (conditionField(form, block, condition.key)?.type === "number") text.inputEl.setAttr("inputmode", "decimal");
+	text.onChange((value) => writeCondition("value", value));
 }
 
 function fieldHeader(setting: Setting, form: Form, field: FormField): void {

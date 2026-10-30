@@ -53,6 +53,27 @@ export interface FormField {
 	entryTime?: true;
 }
 
+export const BLOCK_OPERATORS = ["is", "is not", "has item", "does not have item", "=", "≠", "<", ">", "is true", "is false", "is set", "is not set"] as const;
+
+export type BlockOperator = (typeof BLOCK_OPERATORS)[number];
+
+export const VALUELESS_BLOCK_OPERATORS: readonly BlockOperator[] = ["is true", "is false", "is set", "is not set"];
+
+export interface BlockCondition {
+	key: string;
+	operator: BlockOperator;
+	value?: string;
+}
+
+export interface FormBlock {
+	id: string;
+	kind: "block";
+	conditions: BlockCondition[];
+	fields: FormField[];
+}
+
+export type FormItem = FormField | FormBlock;
+
 export interface Form {
 	id: string;
 	enabled: boolean;
@@ -61,7 +82,7 @@ export interface Form {
 	contentPattern: string;
 	folder: string;
 	opensNote: boolean;
-	fields: FormField[];
+	fields: FormItem[];
 	unreadable?: { stored: unknown };
 }
 
@@ -77,8 +98,36 @@ export function typesFor(mode: FieldMode): readonly FieldType[] {
 	return mode === "ask" ? ASK_FIELD_TYPES : STATIC_FIELD_TYPES;
 }
 
+export function isBlock(item: FormItem): item is FormBlock {
+	return "kind" in item && item.kind === "block";
+}
+
+export function formFields(form: Pick<Form, "fields">): FormField[] {
+	return form.fields.flatMap((item) => (isBlock(item) ? item.fields : [item]));
+}
+
+export function formIds(form: Pick<Form, "fields">): { id: string }[] {
+	return [...form.fields, ...form.fields.flatMap((item) => (isBlock(item) ? item.fields : []))];
+}
+
+export function blockOf(form: Pick<Form, "fields">, field: FormField): FormBlock | undefined {
+	return form.fields.find((item): item is FormBlock => isBlock(item) && item.fields.includes(field));
+}
+
 export function askedFields(form: Form): FormField[] {
-	return form.fields.filter((field) => field.mode === "ask");
+	return formFields(form).filter((field) => field.mode === "ask");
+}
+
+export function operatorsFor(type: FieldType): readonly BlockOperator[] {
+	if (type === "select" || type === "text") return ["is", "is not", "is set", "is not set"];
+	if (type === "multiselect" || type === "list") return ["has item", "does not have item", "is set", "is not set"];
+	if (type === "number") return ["=", "≠", "<", ">", "is set", "is not set"];
+	if (type === "checkbox") return ["is true", "is false"];
+	return ["is set", "is not set"];
+}
+
+export function takesValue(operator: BlockOperator): boolean {
+	return !VALUELESS_BLOCK_OPERATORS.includes(operator);
 }
 
 export function questionText(field: FormField): string {
@@ -103,7 +152,11 @@ export function newForm(forms: readonly Form[]): Form {
 }
 
 export function newField(form: Form): FormField {
-	return { id: newFormId(form.fields), key: "", saveAs: "property", mode: "ask", type: "text" };
+	return { id: newFormId(formIds(form)), key: "", saveAs: "property", mode: "ask", type: "text" };
+}
+
+export function newBlock(form: Form): FormBlock {
+	return { id: newFormId(formIds(form)), kind: "block", conditions: [{ key: "", operator: "is" }], fields: [] };
 }
 
 export function readForms(stored: unknown): Form[] {
@@ -144,7 +197,7 @@ function readForm(entry: unknown, id: string): Form {
 		opensNote: typeof data.opensNote === "boolean" ? data.opensNote : true,
 		fields: [],
 	};
-	const fields = readFields(storedFields(data));
+	const fields = readItems(storedFields(data));
 	if (!isRecord(entry) || fields === undefined) return { ...form, enabled: false, unreadable: { stored: entry } };
 	return { ...form, fields };
 }
@@ -161,27 +214,57 @@ function withSaveAs(stored: unknown, saveAs: SaveAs): unknown[] | undefined {
 	return stored.map((entry: unknown) => (isRecord(entry) ? { ...entry, saveAs } : entry));
 }
 
-function readFields(stored: unknown): FormField[] | undefined {
+function readItems(stored: unknown): FormItem[] | undefined {
 	if (stored === undefined) return [];
 	if (!Array.isArray(stored)) return undefined;
-	const fields: FormField[] = [];
+	const items: FormItem[] = [];
+	const known: { id: string }[] = [];
 	for (const entry of stored) {
-		const field = readField(entry, fields);
-		if (!field) return undefined;
-		fields.push(field);
+		const item = isRecord(entry) && entry.kind === "block" ? readBlock(entry, known) : readField(entry, known);
+		if (!item) return undefined;
+		items.push(item);
 	}
-	return fields;
+	return items;
 }
 
-function readField(entry: unknown, known: readonly FormField[]): FormField | undefined {
+function readBlock(entry: Record<string, unknown>, known: { id: string }[]): FormBlock | undefined {
+	if (!Array.isArray(entry.conditions) || !Array.isArray(entry.fields)) return undefined;
+	const conditions: BlockCondition[] = [];
+	for (const stored of entry.conditions) {
+		const condition = readCondition(stored);
+		if (!condition) return undefined;
+		conditions.push(condition);
+	}
+	const block: FormBlock = { id: knownId(entry.id, known), kind: "block", conditions, fields: [] };
+	for (const stored of entry.fields) {
+		const field = readField(stored, known);
+		if (!field) return undefined;
+		block.fields.push(field);
+	}
+	return block;
+}
+
+function readCondition(stored: unknown): BlockCondition | undefined {
+	if (!isRecord(stored) || typeof stored.key !== "string") return undefined;
+	const operator = BLOCK_OPERATORS.find((candidate) => candidate === stored.operator);
+	if (!operator) return undefined;
+	const condition: BlockCondition = { key: stored.key.trim(), operator };
+	if (takesValue(operator) && typeof stored.value === "string") condition.value = stored.value;
+	return condition;
+}
+
+function knownId(stored: unknown, known: { id: string }[]): string {
+	const id = typeof stored === "string" && /^\d+$/.test(stored) && !known.some((other) => other.id === stored) ? stored : newFormId(known);
+	known.push({ id });
+	return id;
+}
+
+function readField(entry: unknown, known: { id: string }[]): FormField | undefined {
 	if (!isRecord(entry) || typeof entry.key !== "string") return undefined;
 	const mode = FIELD_MODES.find((candidate) => candidate === entry.mode);
 	const type = mode && typesFor(mode).find((candidate) => candidate === entry.type);
 	if (!mode || !type) return undefined;
-	const id =
-		typeof entry.id === "string" && /^\d+$/.test(entry.id) && !known.some((field) => field.id === entry.id)
-			? entry.id
-			: newFormId(known);
+	const id = knownId(entry.id, known);
 	const saveAs = SAVE_AS.find((candidate) => candidate === entry.saveAs) ?? "property";
 	const field: FormField = { id, key: entry.key.trim(), saveAs, mode, type };
 	if (mode === "static") {

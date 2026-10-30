@@ -55,7 +55,7 @@ const TYPED_FIELDS = [
 	"rowName",
 ];
 
-const QUIETLY_SAVED_SCOPES = ["form", "formField", "fixedValue", "taskCommand", "taskAction"];
+const QUIETLY_SAVED_SCOPES = ["form", "formField", "formBlock", "fixedValue", "taskCommand", "taskAction"];
 
 const TYPING_PAUSE_MS = 800;
 

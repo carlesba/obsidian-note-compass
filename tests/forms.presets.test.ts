@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
-import { newForm } from "../src/forms/form.ts";
+import { newForm, formFields } from "../src/forms/form.ts";
 import { presetField } from "../src/forms/presets.ts";
 
 test("a blank preset is the same new field the + always added", () => {
@@ -20,7 +20,7 @@ test("a preset whose key is taken gets the next free numbered key", () => {
 	const form = newForm([]);
 	form.fields.push(presetField(form, "timestamp"));
 	form.fields.push(presetField(form, "timestamp"));
-	assert.deepEqual(form.fields.map((field) => field.key), ["timestamp", "timestamp-2"]);
+	assert.deepEqual(formFields(form).map((field) => field.key), ["timestamp", "timestamp-2"]);
 	assert.equal(presetField(form, "timestamp").key, "timestamp-3");
 });
 

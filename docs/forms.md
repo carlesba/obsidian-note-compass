@@ -107,6 +107,7 @@ The `+` in the "Fields" header offers a blank field and ready-made presets.
 | Time | A fixed field set at creation, keyed `time`, formatted `HH:mm`. |
 | Timestamp | A fixed field set at creation, keyed `timestamp`, formatted `YYYY-MM-DDTHH:mm`. |
 | ISO timestamp | A fixed field set at creation, keyed `iso-timestamp`, formatted as ISO 8601. |
+| Block | A [block](#blocks) of fields that are only used when its conditions hold. |
 | Confirm entry date / Confirm entry time | Asked variables `entry-date` / `entry-time` that change only the date / time. Both can be used in one form. See [Entry time](#entry-time). |
 
 Each item shows what it would write right now. A key already in use gets a number, as in `timestamp-2`.
@@ -201,11 +202,61 @@ Add "Confirm entry date" and/or "Confirm entry time" to confirm when the note is
 
 <details><summary>Warnings and unreadable forms</summary>
 
-- A field without a key, two fields with the same key, a select without choices, or a date taken from a field that is not a date warn on the field's row and on the form.
+- A field without a key, a select without choices, or a date taken from a field that is not a date warn on the field's row and on the form.
+- A block without conditions or fields, a condition without a field or value, a condition on a field that is not above the block, or a condition that does not apply to its field's type warn on the block's row and on the form.
 - A form this version of Note Compass cannot read stays in the list switched off, with a warning and no pencil, like an unreadable list. Its saved setup is kept until you delete it.
 - A duplicated form is named `<name> copy`.
 
 </details>
+
+## Blocks
+
+A block holds fields that the form only uses when an earlier answer matches, such as asking for the pages only when the note is about a book.
+
+```
+⋮⋮ kind          property  ask    select
+⋮⋮ When  kind is book
+│  ⋮⋮ pages       property  ask    number
+│  ⋮⋮ categories  property  fixed  list   [[Books]]
+└─ + Add field to this block
+⋮⋮ When  kind is article
+│  ⋮⋮ categories  property  fixed  list   [[Articles]]
+└─ + Add field to this block
+```
+
+### Adding and arranging blocks
+
+- "Block" in the `+` menu of the "Fields" header adds an empty block at the end of the list.
+- The `+` at the bottom of a block adds a field inside it, with the same menu.
+- Drag a field between a block's heading and its bottom row to move it in, and drag it out to move it back to the list.
+- Dragging a block's heading moves the whole block. A block cannot go inside another block.
+- Deleting a block keeps its fields, which stay in the list where the block was.
+- The copy icon on a block's heading copies the block with its fields right below it.
+
+### Conditions
+
+Click a block's heading to edit its conditions. Each condition picks a field, a check and, for most checks, a value. The block runs only when every condition holds.
+
+| Field type | Checks |
+| --- | --- |
+| Text, select | is, is not, is set, is not set |
+| Multiselect, list | has item, does not have item, is set, is not set |
+| Number | =, ≠, <, >, is set, is not set |
+| Checkbox | is true, is false |
+| Date, time, datetime | is set, is not set |
+
+A select or multiselect offers its choices as the value, and the other types take a typed value.
+
+A condition can only look at fields above its block, outside any block or in an earlier block that runs. Changing an answer from the summary checks the blocks again, and a required question that a block now asks comes next.
+
+### When a block does not run
+
+- Its questions are not asked, and its fields are left out of the summary.
+- Its fields are not written, and their placeholders are empty, as if they were skipped.
+
+### Repeated keys
+
+Several fields may share a key, such as a `categories` in each of two blocks. The last field with a value wins, and the property keeps the place of the first field with that key. A skipped field does not clear the value of an earlier one.
 
 ## Placeholders
 

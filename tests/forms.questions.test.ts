@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
-import { newForm, readForms, storedForms } from "../src/forms/form.ts";
+import { newForm, readForms, storedForms, formFields } from "../src/forms/form.ts";
 import { presetField } from "../src/forms/presets.ts";
 import type { FormField } from "../src/forms/form.ts";
 import { confirmChoices, formChoices, questionChoices, questionPlaceholder, toggledChoice } from "../src/forms/questions.ts";
@@ -115,7 +115,7 @@ test("date and time confirmations compose, survive saving, and can be edited fro
 		const clock = { now: moment("2028-10-30T09:15", "YYYY-MM-DDTHH:mm", true).valueOf(), moment, coreTemplatesOptions: undefined };
 		const answers = new Map();
 		const choose = (type: string, query: string, preview: string) => {
-			const field = form.fields.find((field) => field.type === type)!;
+			const field = formFields(form).find((field) => field.type === type)!;
 			const current = entryClock(form, answers, clock);
 			assert.equal(questionPlaceholder(field, current.now, moment), moment(current.now).format(type === "date" ? "YYYYMMDD" : "HHmm"));
 			const [choice] = questionChoices({ field, now: current.now, moment, vaultValues: [] }, answers.get(field.id), query);
@@ -138,7 +138,7 @@ test("date and time confirmations compose, survive saving, and can be edited fro
 		assert.equal(resolved.content, "2028-11-03 08:10");
 		assert.deepEqual(resolved.frontmatter, [["timestamp", "2028-11-03T08:10"]]);
 		assert.deepEqual(confirmChoices(resolved, "").filter((choice) => choice.action.action === "edit").map((choice) => choice.parts.value), ["2028-11-03 08:10", "2028-11-03 08:10"]);
-		const date = form.fields.find((field) => field.type === "date")!;
+		const date = formFields(form).find((field) => field.type === "date")!;
 		const current = entryClock(form, answers, clock);
 		assert.equal(questionChoices({ field: date, now: current.now, moment, vaultValues: [] }, undefined, "")[0].parts.value, "2028-11-03 08:10");
 	}

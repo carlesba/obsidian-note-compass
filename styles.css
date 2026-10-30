@@ -547,6 +547,49 @@
 	background: transparent;
 }
 
+.note-compass-field-badge.mod-block {
+	color: var(--text-normal);
+	background: color-mix(in srgb, var(--color-orange) 22%, var(--background-primary));
+	border-color: color-mix(in srgb, var(--color-orange) 45%, var(--background-modifier-border));
+}
+
+.note-compass-sortable-list .setting-items .setting-item.note-compass-block-head {
+	border-bottom: none;
+}
+
+.note-compass-sortable-list .setting-items .setting-item.note-compass-block-member,
+.note-compass-sortable-list .setting-items .setting-item.note-compass-block-foot {
+	margin-inline-start: var(--size-4-4);
+	border-inline-start: 2px solid color-mix(in srgb, var(--color-orange) 45%, var(--background-modifier-border));
+}
+
+.note-compass-sortable-list .setting-items .setting-item.note-compass-block-member {
+	border-top: none;
+}
+
+.note-compass-sortable-list .setting-items .setting-item.note-compass-block-foot {
+	padding-top: var(--size-4-1);
+	padding-bottom: var(--size-4-1);
+	padding-inline-start: var(--size-4-3);
+	border-top: none;
+	border-end-start-radius: var(--radius-s);
+}
+
+.note-compass-sortable-list .setting-items .setting-item.note-compass-block-foot .setting-item-name {
+	color: var(--text-faint);
+	font-size: var(--font-ui-smaller);
+}
+
+.note-compass-sortable-list .setting-items .setting-item.note-compass-block-foot > .setting-item-control > .extra-setting-button:not(.note-compass-block-foot-add) {
+	display: none;
+}
+
+.note-compass-block-condition .note-compass-form-choice-inputs select {
+	flex: 1 1 9em;
+	min-width: 0;
+	max-width: 100%;
+}
+
 .note-compass-destination {
 	display: flex;
 	flex-direction: column;

@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { createFormNote, freeNotePath } from "../src/forms/create.ts";
-import { readForms } from "../src/forms/form.ts";
+import { readForms, formFields } from "../src/forms/form.ts";
 import type { Form, FormField } from "../src/forms/form.ts";
 import { answered, resolveForm, skippedAnswer, unansweredQuestions } from "../src/forms/resolve.ts";
 import type { Answer, FormClock } from "../src/forms/resolve.ts";
@@ -83,7 +83,7 @@ test("readForms mints missing or repeated ids and fills date formats per type", 
 		{ id: "1" },
 	]);
 	assert.deepEqual(forms.map((saved) => saved.id), ["1", "2"]);
-	assert.deepEqual(forms[0].fields.map((saved) => [saved.id, saved.saveAs, saved.dateFormat]), [["1", "property", "HH:mm"], ["2", "property", "YYYY-MM-DD"]]);
+	assert.deepEqual(formFields(forms[0]).map((saved) => [saved.id, saved.saveAs, saved.dateFormat]), [["1", "property", "HH:mm"], ["2", "property", "YYYY-MM-DD"]]);
 	assert.deepEqual(forms[1].fields, []);
 });
 
@@ -125,7 +125,7 @@ test("the name and content fill creation dates, answers, field formats and leave
 
 test("a field taken from a skipped field is skipped too, and skipped fields are not written", () => {
 	const shape = readingLog();
-	shape.fields[2].optional = true;
+	formFields(shape)[2].optional = true;
 	const resolved = resolveForm(
 		shape,
 		answers({ "1": answered("Dune"), "2": answered("Frank Herbert"), "3": skippedAnswer(), "5": answered("2") }),
@@ -179,8 +179,8 @@ test("static numbers and checkboxes are written with their types", () => {
 
 test("every required question must be answered before creating, optional ones may be left out", () => {
 	const shape = readingLog();
-	shape.fields[2].optional = true;
-	const missing = unansweredQuestions(shape, answers({ "1": answered("Dune"), "2": answered("") }));
+	formFields(shape)[2].optional = true;
+	const missing = unansweredQuestions(shape, answers({ "1": answered("Dune"), "2": answered("") }), clock);
 	assert.deepEqual(missing.map((question) => question.key), ["author", "rating"]);
 });
 

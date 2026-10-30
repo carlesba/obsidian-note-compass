@@ -5,8 +5,17 @@ import { isPeriod, readPeriodField, writeDateNoteSource, writePeriodField } from
 import type { PeriodField } from "./dateNotesForm.ts";
 import { findFixedValue, readFixedValueSetting, writeFixedValueSetting } from "./fixedValuesForm.ts";
 import type { FixedValueSetting } from "./fixedValuesForm.ts";
-import { findField, readFieldSetting, readFormSetting, writeFieldSetting, writeFormSetting } from "./formsForm.ts";
-import type { FieldSetting, FormSetting } from "./formsForm.ts";
+import {
+	findBlock,
+	findField,
+	readBlockSetting,
+	readFieldSetting,
+	readFormSetting,
+	writeBlockSetting,
+	writeFieldSetting,
+	writeFormSetting,
+} from "./formsForm.ts";
+import type { BlockSetting, FieldSetting, FormSetting } from "./formsForm.ts";
 import { readListField, writeListField } from "./listForm.ts";
 import type { ListField } from "./listForm.ts";
 import {
@@ -79,6 +88,10 @@ export function formFieldKey(formId: string, fieldId: string, setting: FieldSett
 	return index === undefined ? key : `${key}/${index}`;
 }
 
+export function formBlockKey(formId: string, blockId: string, setting: BlockSetting, index: number): string {
+	return `formBlock/${formId}.${blockId}/${setting}/${index}`;
+}
+
 export function taskCommandKey(id: string, setting: TaskCommandSetting, index?: number): string {
 	const key = `taskCommand/${id}/${setting}`;
 	return index === undefined ? key : `${key}/${index}`;
@@ -99,6 +112,7 @@ export function readControl(settings: JumpSettings, key: string): unknown {
 	if (key === CHECKBOX_MODE_KEY) return settings.setProperties.checkboxMode;
 	const [scope, name, field, index] = key.split("/");
 	if (scope === "form" || scope === "formField") return readFormControl(settings, scope, name, field, index);
+	if (scope === "formBlock") return readBlockControl(settings, name, field, index);
 	if (scope === "taskCommand" || scope === "taskAction") return readTaskControl(settings, scope, name, field, index);
 	if (scope === "notePicker") {
 		const picker = settings.notePickers.find((candidate) => candidate.id === name && !candidate.unreadable);
@@ -137,6 +151,7 @@ export function writeControl(settings: JumpSettings, key: string, value: unknown
 	}
 	const [scope, name, field, index] = key.split("/");
 	if (scope === "form" || scope === "formField") return writeFormControl(settings, scope, name, field, index, value);
+	if (scope === "formBlock") return writeBlockControl(settings, name, field, index, value);
 	if (scope === "taskCommand" || scope === "taskAction") return writeTaskControl(settings, scope, name, field, index, value);
 	if (scope === "notePicker") {
 		const picker = settings.notePickers.find((candidate) => candidate.id === name && !candidate.unreadable);
@@ -200,6 +215,24 @@ function writeFormControl(
 	if (!target) return false;
 	if (!target.field) return writeFormSetting(target.form, setting as FormSetting, value);
 	return writeFieldSetting(target.field, setting as FieldSetting, value, index === undefined ? undefined : Number(index));
+}
+
+function blockTarget(settings: JumpSettings, name: string) {
+	const [formId, blockId] = name.split(".");
+	const form = settings.forms.find((candidate) => candidate.id === formId && !candidate.unreadable);
+	const block = form ? findBlock(form, blockId ?? "") : undefined;
+	return form && block ? { form, block } : undefined;
+}
+
+function readBlockControl(settings: JumpSettings, name: string, setting: string, index: string | undefined): unknown {
+	const target = blockTarget(settings, name);
+	return target ? readBlockSetting(target.block, setting as BlockSetting, index === undefined ? undefined : Number(index)) : undefined;
+}
+
+function writeBlockControl(settings: JumpSettings, name: string, setting: string, index: string | undefined, value: unknown): boolean {
+	const target = blockTarget(settings, name);
+	if (!target) return false;
+	return writeBlockSetting(target.form, target.block, setting as BlockSetting, value, index === undefined ? undefined : Number(index));
 }
 
 function taskTarget(settings: JumpSettings, scope: string, name: string) {

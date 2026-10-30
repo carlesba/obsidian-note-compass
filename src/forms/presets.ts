@@ -1,4 +1,4 @@
-import { newField } from "./form.ts";
+import { formFields, newField } from "./form.ts";
 import type { DateFieldType, DateFormat, Form, FormField } from "./form.ts";
 
 export type FieldPreset = "blank" | "date" | "time" | "timestamp" | "isoTimestamp" | "entryDate" | "entryTime";
@@ -30,7 +30,7 @@ export function presetField(form: Form, preset: FieldPreset): FormField {
 }
 
 function unusedKey(form: Form, key: string): string {
-	const taken = new Set(form.fields.map((field) => field.key.trim()));
+	const taken = new Set(formFields(form).map((field) => field.key.trim()));
 	if (!taken.has(key)) return key;
 	let index = 2;
 	while (taken.has(`${key}-${index}`)) index += 1;

@@ -1,20 +1,46 @@
 import { t, translatedLabels } from "../i18n/index.ts";
 import type { TranslationKey } from "../i18n/index.ts";
+import { operatorLabel } from "../i18n/labels.ts";
 import {
+	BLOCK_OPERATORS,
 	DATE_FORMATS,
 	DEFAULT_DATE_FORMATS,
 	FIELD_MODES,
 	SAVE_AS,
 	STORED_CHOICE_TYPES,
+	blockOf,
+	formFields,
+	formIds,
 	hasChoices,
+	isBlock,
 	isDateType,
+	newFormId,
+	operatorsFor,
+	takesValue,
 	typesFor,
 } from "../forms/form.ts";
-import type { DateFormat, FieldMode, FieldType, Form, FormField, SaveAs, StoredChoiceType } from "../forms/form.ts";
+import type {
+	BlockCondition,
+	BlockOperator,
+	DateFormat,
+	FieldMode,
+	FieldType,
+	Form,
+	FormBlock,
+	FormField,
+	FormItem,
+	SaveAs,
+	StoredChoiceType,
+} from "../forms/form.ts";
+import { duplicateEntry } from "./duplicate.ts";
 import { parseNumber } from "../setProperties/values.ts";
 import { SET_DATE_PLACEHOLDERS, readsAsDate } from "../forms/dateInput.ts";
 
 export type FormSetting = "enabled" | "name" | "namePattern" | "contentPattern" | "folder" | "opensNote";
+
+export type BlockSetting = "key" | "operator" | "value";
+
+export type FieldRow = { kind: "field"; field: FormField; block?: FormBlock } | { kind: "head"; block: FormBlock } | { kind: "foot"; block: FormBlock };
 
 export type FieldSetting =
 	| "saveAs"
@@ -107,7 +133,7 @@ export function dateFormatOptions(): Record<string, string> {
 
 export function dateSourceOptions(form: Form, field: FormField): Record<string, string> {
 	const options: Record<string, string> = { [AT_CREATION]: t("formAtCreation"), [SET_DATE]: t("formOnSetDate") };
-	for (const other of form.fields) {
+	for (const other of formFields(form)) {
 		if (other === field || other.key === "" || !isDateType(other.type)) continue;
 		options[other.key] = t("formFromField", { key: other.key });
 	}
@@ -146,22 +172,225 @@ export function fieldSummary(field: FormField): string {
 
 export function fieldWarning(form: Form, field: FormField): string | undefined {
 	if (field.key.trim() === "") return t("formFieldNeedsKey");
-	if (form.fields.some((other) => other !== field && other.key === field.key)) return t("formFieldKeyRepeated", { key: field.key });
-	if (field.mode === "static" && field.from !== undefined && !form.fields.some((other) => other !== field && other.key === field.from && isDateType(other.type))) {
+	if (field.mode === "static" && field.from !== undefined && !formFields(form).some((other) => other !== field && other.key === field.from && isDateType(other.type))) {
 		return t("formFromMissingField", { key: field.from });
 	}
 	if (field.mode === "static" && field.at !== undefined && isDateType(field.type) && !readsAsDate(field.type, field.at)) {
 		return t("formSetDateUnreadable", { format: SET_DATE_PLACEHOLDERS[field.type] });
 	}
-	if (field.entryTime && form.fields.some((other) => other !== field && other.entryTime && other.mode === "ask" && (other.type === field.type || other.type === "datetime" || field.type === "datetime"))) return t("formSecondEntryTime");
+	if (field.entryTime && formFields(form).some((other) => other !== field && other.entryTime && other.mode === "ask" && (other.type === field.type || other.type === "datetime" || field.type === "datetime"))) return t("formSecondEntryTime");
 	if (hasChoices(field.type) && field.mode === "ask" && !(field.choices ?? []).some((choice) => choice.value.trim() !== "")) return t("formNeedsChoices");
 	return undefined;
 }
 
 export function formWarning(form: Form): string | undefined {
 	if (form.unreadable) return t("unreadableFormWarning");
-	if (form.fields.some((field) => fieldWarning(form, field) !== undefined)) return t("formFieldsNeedAttention");
+	if (formFields(form).some((field) => fieldWarning(form, field) !== undefined)) return t("formFieldsNeedAttention");
+	if (form.fields.some((item) => isBlock(item) && blockWarning(form, item) !== undefined)) return t("formFieldsNeedAttention");
 	return undefined;
+}
+
+export function fieldRows(form: Pick<Form, "fields">): FieldRow[] {
+	const rows: FieldRow[] = [];
+	for (const item of form.fields) {
+		if (!isBlock(item)) {
+			rows.push({ kind: "field", field: item });
+			continue;
+		}
+		rows.push({ kind: "head", block: item });
+		for (const field of item.fields) rows.push({ kind: "field", field, block: item });
+		rows.push({ kind: "foot", block: item });
+	}
+	return rows;
+}
+
+export function moveFieldRow(form: Pick<Form, "fields">, from: number, to: number): boolean {
+	const rows = fieldRows(form);
+	const moved = rows[from];
+	if (!moved || moved.kind === "foot" || from === to || to < 0 || to >= rows.length) return false;
+	if (moved.kind === "head") {
+		const footIndex = rows.findIndex((row) => row.kind === "foot" && row.block === moved.block);
+		const segment = rows.splice(from, footIndex - from + 1);
+		rows.splice(to < from ? to : to - segment.length + 1, 0, ...segment);
+	} else {
+		rows.splice(to, 0, ...rows.splice(from, 1));
+	}
+	return replaceItems(form, rows);
+}
+
+export function deleteFieldRow(form: Pick<Form, "fields">, index: number): string | undefined {
+	const row = fieldRows(form)[index];
+	if (!row || row.kind === "foot") return undefined;
+	if (row.kind === "head") {
+		form.fields.splice(form.fields.indexOf(row.block), 1, ...row.block.fields);
+		return row.block.id;
+	}
+	const container: FormItem[] = row.block ? row.block.fields : form.fields;
+	container.splice(container.indexOf(row.field), 1);
+	return row.field.id;
+}
+
+function replaceItems(form: Pick<Form, "fields">, rows: readonly FieldRow[]): boolean {
+	const items: FormItem[] = [];
+	const members = new Map<FormBlock, FormField[]>();
+	let open: FormBlock | undefined;
+	for (const row of rows) {
+		if (row.kind === "head") {
+			if (open) return false;
+			open = row.block;
+			members.set(open, []);
+			items.push(open);
+		} else if (row.kind === "foot") {
+			if (open !== row.block) return false;
+			open = undefined;
+		} else if (open) {
+			members.get(open)?.push(row.field);
+		} else {
+			items.push(row.field);
+		}
+	}
+	if (open) return false;
+	for (const [block, fields] of members) block.fields.splice(0, block.fields.length, ...fields);
+	form.fields.splice(0, form.fields.length, ...items);
+	return true;
+}
+
+export function fieldsAbove(form: Pick<Form, "fields">, block: FormBlock): FormField[] {
+	const above: FormField[] = [];
+	for (const item of form.fields) {
+		if (item === block) return above;
+		if (isBlock(item)) above.push(...item.fields);
+		else above.push(item);
+	}
+	return above;
+}
+
+export function conditionField(form: Pick<Form, "fields">, block: FormBlock, key: string): FormField | undefined {
+	if (key === "") return undefined;
+	const above = fieldsAbove(form, block);
+	for (let index = above.length - 1; index >= 0; index--) if (above[index].key === key) return above[index];
+	return undefined;
+}
+
+export function conditionOperators(form: Pick<Form, "fields">, block: FormBlock, key: string): readonly BlockOperator[] {
+	return operatorsFor(conditionField(form, block, key)?.type ?? "text");
+}
+
+export function conditionKeyOptions(form: Pick<Form, "fields">, block: FormBlock, condition: BlockCondition): Record<string, string> {
+	const options: Record<string, string> = {};
+	if (condition.key === "") options[""] = t("formBlockChooseField");
+	for (const field of fieldsAbove(form, block)) if (field.key !== "") options[field.key] = field.key;
+	if (condition.key !== "" && !(condition.key in options)) options[condition.key] = t("formBlockMissingField", { key: condition.key });
+	return options;
+}
+
+export function conditionOperatorOptions(form: Pick<Form, "fields">, block: FormBlock, condition: BlockCondition): Record<string, string> {
+	const options: Record<string, string> = {};
+	for (const operator of conditionOperators(form, block, condition.key)) options[operator] = operatorLabel(operator);
+	if (!(condition.operator in options)) options[condition.operator] = t("operatorDoesNotApply", { operator: operatorLabel(condition.operator) });
+	return options;
+}
+
+export function conditionValueOptions(form: Pick<Form, "fields">, block: FormBlock, condition: BlockCondition): Record<string, string> | undefined {
+	const field = conditionField(form, block, condition.key);
+	if (!field || !hasChoices(field.type)) return undefined;
+	const options: Record<string, string> = {};
+	for (const choice of field.choices ?? []) if (choice.value !== "") options[choice.value] = choice.label ?? choice.value;
+	const value = condition.value ?? "";
+	if (!(value in options)) options[value] = value === "" ? t("formBlockChooseValue") : value;
+	return options;
+}
+
+export function conditionSummary(form: Pick<Form, "fields">, block: FormBlock, condition: BlockCondition): string {
+	const key = condition.key === "" ? t("formBlockChooseField") : condition.key;
+	const parts = [key, operatorLabel(condition.operator)];
+	if (takesValue(condition.operator)) {
+		const value = condition.value ?? "";
+		const choices = conditionValueOptions(form, block, condition);
+		parts.push(choices && value !== "" ? choices[value] : value === "" ? t("formBlockChooseValue") : value);
+	}
+	return parts.join(" ");
+}
+
+export function blockSummary(form: Pick<Form, "fields">, block: FormBlock): string {
+	if (block.conditions.length === 0) return t("formBlockNoConditions");
+	return block.conditions.map((condition) => conditionSummary(form, block, condition)).join(" · ");
+}
+
+export function blockWarning(form: Pick<Form, "fields">, block: FormBlock): string | undefined {
+	if (block.conditions.length === 0) return t("formBlockNeedsCondition");
+	for (const condition of block.conditions) {
+		if (condition.key === "") return t("formBlockConditionNeedsField");
+		const field = conditionField(form, block, condition.key);
+		if (!field) return t("formBlockMissingField", { key: condition.key });
+		if (!operatorsFor(field.type).includes(condition.operator)) {
+			return t("formBlockOperatorDoesNotApply", { operator: operatorLabel(condition.operator), type: fieldTypeLabel(field.type) });
+		}
+		if (takesValue(condition.operator) && (condition.value ?? "").trim() === "") return t("formBlockConditionNeedsValue");
+	}
+	if (block.fields.length === 0) return t("formBlockNeedsFields");
+	return undefined;
+}
+
+export function findBlock(form: Form, blockId: string): FormBlock | undefined {
+	return form.fields.find((item): item is FormBlock => isBlock(item) && item.id === blockId);
+}
+
+export function readBlockSetting(block: FormBlock, setting: BlockSetting, index?: number): unknown {
+	const condition = block.conditions[index ?? -1];
+	if (!condition) return undefined;
+	if (setting === "value") return condition.value ?? "";
+	return condition[setting];
+}
+
+export function writeBlockSetting(form: Form, block: FormBlock, setting: BlockSetting, value: unknown, index?: number): boolean {
+	const condition = block.conditions[index ?? -1];
+	if (!condition) return false;
+	const text = typeof value === "string" ? value.trim() : "";
+	if (setting === "key") {
+		condition.key = text;
+		const operators = conditionOperators(form, block, text);
+		if (!operators.includes(condition.operator)) condition.operator = operators[0];
+	} else if (setting === "operator") {
+		const operator = BLOCK_OPERATORS.find((candidate) => candidate === value);
+		if (!operator) return false;
+		condition.operator = operator;
+	} else {
+		condition.value = text;
+	}
+	if (!takesValue(condition.operator)) delete condition.value;
+	return true;
+}
+
+export function addCondition(block: FormBlock): void {
+	block.conditions.push({ key: "", operator: "is" });
+}
+
+export function deleteCondition(block: FormBlock, index: number): void {
+	block.conditions.splice(index, 1);
+}
+
+export function duplicateField(form: Form, field: FormField): FormField | undefined {
+	const id = newFormId(formIds(form));
+	const block = blockOf(form, field);
+	if (block) return duplicateEntry(block.fields, field, id);
+	const copy = duplicateEntry<FormItem>(form.fields, field, id);
+	return copy && !isBlock(copy) ? copy : undefined;
+}
+
+export function duplicateBlock(form: Form, block: FormBlock): FormBlock | undefined {
+	const index = form.fields.indexOf(block);
+	if (index === -1) return undefined;
+	const known = formIds(form);
+	const copy: FormBlock = { ...structuredClone(block), id: newFormId(known) };
+	known.push(copy);
+	copy.fields = copy.fields.map((field) => {
+		const minted = { ...field, id: newFormId(known) };
+		known.push(minted);
+		return minted;
+	});
+	form.fields.splice(index + 1, 0, copy);
+	return copy;
 }
 
 export function readFormSetting(form: Form, setting: FormSetting): unknown {
@@ -178,7 +407,7 @@ export function writeFormSetting(form: Form, setting: FormSetting, value: unknow
 }
 
 export function findField(form: Form, fieldId: string): FormField | undefined {
-	return form.fields.find((field) => field.id === fieldId);
+	return formFields(form).find((field) => field.id === fieldId);
 }
 
 export function readFieldSetting(field: FormField, setting: FieldSetting, index?: number): unknown {

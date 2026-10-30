@@ -162,7 +162,7 @@ export function toggledChoice(answer: Answer | undefined, value: string, field: 
 export function confirmChoices(resolved: ResolvedForm, query: string): ConfirmChoice[] {
 	const create = keptRow<ConfirmAction>(CREATE_MARK, resolved.name === "" ? t("createNote") : t("createNamed", { name: resolved.name }), { action: "create" });
 	const cancel = keptRow<ConfirmAction>(CANCEL_MARK, t("cancel"), { action: "cancel" });
-	const fields = resolved.fields.map((resolvedField) =>
+	const fields = resolved.fields.filter((resolvedField) => !resolvedField.inactive).map((resolvedField) =>
 		row<ConfirmAction>(
 			{ content: resolvedField.field.key || t("untitledField"), value: resolvedField.skipped ? t("skipped") : resolvedField.field.entryTime && resolvedField.date ? resolvedField.date.format(SHOWN_DATE_FORMATS.datetime) : resolvedField.text },
 			resolvedField.field.mode === "ask" ? { action: "edit", field: resolvedField.field } : { action: "stay" },
