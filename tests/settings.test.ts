@@ -65,6 +65,7 @@ test("defaultSettings enables every relation list in picker order and reads date
 		forms: [],
 		customFields: [],
 		taskCommands: [],
+		mention: { enabled: false, trigger: "@", pickerId: "1" },
 	});
 });
 
@@ -248,6 +249,7 @@ test("mergeSettings migrates the old shape into lists in picker order with custo
 		forms: [],
 		customFields: [],
 		taskCommands: [],
+		mention: { enabled: false, trigger: "@", pickerId: "1" },
 	});
 });
 
@@ -329,7 +331,7 @@ test("mergeSettings keeps saved lists in their order and round-trips its own out
 	};
 	const merged = mergeSettings(saved);
 	const { lists, ...rest } = saved;
-	assert.deepEqual(merged, { ...rest, notePickers: [{ id: "1", enabled: true, name: "Default", filter: { kind: "group", mode: "all", items: [] }, lists }], setProperties: setPropertiesDefaults(), forms: [], customFields: [], taskCommands: [] });
+	assert.deepEqual(merged, { ...rest, notePickers: [{ id: "1", enabled: true, name: "Default", filter: { kind: "group", mode: "all", items: [] }, lists }], setProperties: setPropertiesDefaults(), forms: [], customFields: [], taskCommands: [], mention: { enabled: false, trigger: "@", pickerId: "1" } });
 	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(storedSettings(merged)))), merged);
 });
 

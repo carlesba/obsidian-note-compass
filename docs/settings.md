@@ -32,6 +32,8 @@ The Navigation page lists your navigation pickers with the same add, reorder, sw
 | Filter | Applies to every list below | A [filter](#filters) every note must match to show in this picker, on top of each list's own source and filter. Empty by default, so it hides nothing. |
 | Lists | List rows | The lists the picker shows, described under [Lists and property rows](#lists-and-property-rows) and [List pages](#list-pages). |
 
+Below the pickers, "Insert links while typing" switches on the link list described in [Inserting links while typing](navigation.md#inserting-links-while-typing), with its "Trigger" and the "Navigation picker" it uses. When that picker is off or removed, or the trigger is empty, the picker setting shows a warning and typing the trigger does nothing.
+
 ## Forms and Tasks
 
 These pages use the same add, reorder, switch, edit, copy and delete controls as the other settings lists. Each row shows only its name; a second line appears only for warnings, not a configuration summary.

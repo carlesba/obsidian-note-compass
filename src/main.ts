@@ -8,6 +8,7 @@ import { notePickerChoices } from "./lists/notePickers";
 import type { NotePickerChoice } from "./lists/notePickers";
 import { createObsidianVault } from "./lists/obsidianVault";
 import type { VaultNote } from "./lists/vault";
+import { MentionSuggest } from "./mentions/suggest";
 import { JumpModal, SET_PROPERTIES_ICON } from "./modal";
 import { setProperties } from "./setProperties/modal";
 import { JumpSettings, defaultSettings, isRunnableNotePicker, mergeSettings, notePickerName, storedSettings } from "./settings";
@@ -57,6 +58,7 @@ export default class NoteCompassPlugin extends Plugin {
 			callback: () => pickForm(this.app, createObsidianVault(this.app), this.settings.forms, this.settings.dateNotes, this.currentNote()?.path),
 		});
 
+		this.registerEditorSuggest(new MentionSuggest(this.app, () => this.settings));
 		this.registerNotePickerCommands();
 		this.registerFormCommands();
 		this.registerTaskCommands();

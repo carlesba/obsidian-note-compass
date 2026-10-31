@@ -10,10 +10,14 @@ import { t } from "./i18n";
 import { createObsidianVault } from "./lists/obsidianVault";
 import type { JumpListVault } from "./lists/vault";
 import type NoteCompassPlugin from "./main";
-import { allLists, defaultSettings, duplicateNotePicker, newListId, newNotePicker } from "./settings";
+import { mentionPicker } from "./mentions/settings";
+import { allLists, defaultSettings, duplicateNotePicker, newListId, newNotePicker, notePickerName } from "./settings";
 import {
 	CHECKBOX_MODE_KEY,
 	DATE_NOTE_SOURCE_KEY,
+	MENTION_ENABLED_KEY,
+	MENTION_PICKER_KEY,
+	MENTION_TRIGGER_KEY,
 	periodKey,
 	readControl,
 	writeControl,
@@ -39,6 +43,7 @@ import type { ListPageContext } from "./settings/listPage";
 import { PrefixPages } from "./settings/prefixLinks";
 import { ResetSettingsModal } from "./settings/resetModal";
 import { checkboxModeOptions, newProperty } from "./settings/setPropertiesForm";
+import { warningDescription } from "./settings/suggest";
 import { tabPastRows } from "./settings/tabOrder";
 import { taskCommandPage, taskCommandPageId, taskCommandRow, taskDestinationsPages } from "./settings/taskCommandPage";
 import { newNumericId, newTaskCommand } from "./tasks/taskCommand";
@@ -247,6 +252,7 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 				items: [
 					sectionPage(NAVIGATION_PAGE_ID, t("navigationSection"), t("navigationSectionDesc"), [
 						notePickersList,
+						this.mentionGroup(),
 						hiddenPages(notePickers.map((picker) => notePickerPage(picker, pickerContext))),
 					]),
 					sectionPage(PROPERTIES_PAGE_ID, t("propertiesSection"), t("propertiesSectionDesc"), [
@@ -294,6 +300,34 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 				],
 			},
 		];
+	}
+
+	private mentionGroup(): SettingDefinitionGroup {
+		const { mention, notePickers } = this.plugin.settings;
+		const pickerWarning = !mention.trigger ? t("mentionTriggerEmpty") : mentionPicker(mention, notePickers) ? undefined : t("mentionPickerOff");
+		const pickerOptions = Object.fromEntries(
+			notePickers.filter((picker) => !picker.unreadable).map((picker) => [picker.id, notePickerName(picker)]),
+		);
+		const isOn = () => this.plugin.settings.mention.enabled;
+		return {
+			type: "group",
+			heading: t("mentionSection"),
+			items: [
+				{ name: t("enabled"), desc: t("mentionEnabledDesc"), control: { type: "toggle", key: MENTION_ENABLED_KEY } },
+				{
+					name: t("mentionTrigger"),
+					desc: t("mentionTriggerDesc"),
+					visible: isOn,
+					control: { type: "text", key: MENTION_TRIGGER_KEY, placeholder: "@" },
+				},
+				{
+					name: t("mentionPicker"),
+					desc: pickerWarning ? createFragment((fragment) => warningDescription(fragment.createDiv(), pickerWarning)) : t("mentionPickerDesc"),
+					visible: isOn,
+					control: { type: "dropdown", key: MENTION_PICKER_KEY, options: pickerOptions },
+				},
+			],
+		};
 	}
 
 	hide(): void {
@@ -355,7 +389,7 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 			this.refreshDomState();
 			return;
 		}
-		if (TYPED_FIELDS.includes(field)) {
+		if (TYPED_FIELDS.includes(field) || key === MENTION_TRIGGER_KEY) {
 			this.refreshAfterTyping();
 			return;
 		}

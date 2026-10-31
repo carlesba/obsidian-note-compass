@@ -61,6 +61,8 @@ Para editar las propiedades de una nota sin abrirla, pulsa ⌥↵ (Alt+Intro) so
 
 Al escribir, las filas se filtran por coincidencia en orden. Una fila se mantiene cuando los caracteres que escribiste aparecen en ella en el mismo orden, sin distinguir mayúsculas y con cualquier cosa entre medias. El prefijo forma parte de la fila, así que escribir parte de un prefijo reduce el selector a esa lista.
 
+Para insertar un enlace sin salir del editor, activa "Insertar enlaces al escribir" en Ajustes → Note Compass → Navegación y elige el selector de navegación que usa. Al escribir el activador, `@` por defecto, al principio de una línea o tras un espacio, las notas de ese selector aparecen en una lista bajo el cursor que se filtra igual que el selector. Intro, o tocar una fila, sustituye el activador y lo que escribiste por un enlace a la nota con el formato de enlace de Obsidian, y una nota de fecha que falta se crea antes. Espacio o Escape dejan el activador como texto. El activador puede tener varios caracteres, como `;;`, y la lista no se abre dentro de una palabra, como en una dirección de correo, ni dentro de código o del frontmatter.
+
 ### Notas de fecha
 
 Una nota es una nota de fecha cuando está directamente en la carpeta configurada para su periodo y su nombre coincide exactamente con el formato de ese periodo. Hay cinco periodos, día, semana, mes, trimestre y año, y cada uno tiene su propia carpeta, su formato y su interruptor.

@@ -87,6 +87,18 @@ You can edit a note's properties from the jump list without opening the note.
 
 Escape, `🛑 Cancel` and `🏁 Save & back to list` in that "Set properties" all bring you back to the jump list with what you had typed, and the list already reflects the saved properties, so you can edit several notes in a row. Press Escape in the jump list when you are done. Rows that would create a missing date note have no icon.
 
+## Inserting links while typing
+
+You can insert a link to any note a navigation picker lists without leaving the editor.
+
+1. Open Settings → Note Compass → Navigation, switch on "Insert links while typing", and choose the navigation picker it uses.
+2. In a note, type the trigger, `@` by default, at the start of a line or after a space.
+3. The picker's notes open in a list under the cursor. Type to filter them as you would in the picker, then press Enter or tap a row.
+
+The trigger and what you typed after it become a link to the note, written the way Obsidian's own link settings say. A date note that does not exist yet is created first.
+
+To keep the trigger as plain text, press Space or Escape. Escape keeps the list closed until you type a space or start another trigger. The trigger can be several characters, such as `;;`, and spaces in it are ignored. The list never opens inside a word, so an email address is safe, and never inside code or frontmatter. Rows in this list have no properties icon.
+
 ## Date notes
 
 Date notes are the notes Note Compass treats as a day, week, month, quarter or year, for the "Adjacent dates", "Same day" and "Current date notes" lists.

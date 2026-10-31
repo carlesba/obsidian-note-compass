@@ -19,6 +19,7 @@ Move to the notes related to the note in focus, or to any list you define. Group
 - See the adjacent date notes, outbound links, inbound links and notes from the same day in one list.
 - Add your own lists with filters on properties, folders, tags, links and dates.
 - Edit a row's properties without opening the note.
+- Type a trigger such as `@` while writing to insert a link to any note a picker lists.
 
 [Read more about Navigation](docs/navigation.md)
 

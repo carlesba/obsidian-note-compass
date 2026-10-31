@@ -1,4 +1,5 @@
 import type { Period } from "../lists/dateNotes.ts";
+import { withoutWhitespace } from "../mentions/settings.ts";
 import { CHECKBOX_MODES, allLists } from "../settings.ts";
 import type { JumpSettings } from "../settings.ts";
 import { isPeriod, readPeriodField, writeDateNoteSource, writePeriodField } from "./dateNotesForm.ts";
@@ -41,6 +42,12 @@ export const DATE_NOTE_SOURCE_KEY = "dateNotes/from";
 
 
 export const CHECKBOX_MODE_KEY = "setProperties/checkboxMode";
+
+export const MENTION_ENABLED_KEY = "mention/enabled";
+
+export const MENTION_TRIGGER_KEY = "mention/trigger";
+
+export const MENTION_PICKER_KEY = "mention/picker";
 
 export function listKey(id: string, field: ListField): string {
 	return `list/${id}/${field}`;
@@ -115,6 +122,9 @@ export function periodKey(period: Period, field: PeriodField): string {
 export function readControl(settings: JumpSettings, key: string): unknown {
 	if (key === DATE_NOTE_SOURCE_KEY) return settings.dateNotes.from;
 	if (key === CHECKBOX_MODE_KEY) return settings.setProperties.checkboxMode;
+	if (key === MENTION_ENABLED_KEY) return settings.mention.enabled;
+	if (key === MENTION_TRIGGER_KEY) return settings.mention.trigger;
+	if (key === MENTION_PICKER_KEY) return settings.mention.pickerId;
 	const [scope, name, field, index] = key.split("/");
 	if (scope === "form" || scope === "formField") return readFormControl(settings, scope, name, field, index);
 	if (scope === "formBlock") return readBlockControl(settings, name, field, index);
@@ -152,6 +162,19 @@ export function writeControl(settings: JumpSettings, key: string, value: unknown
 		const mode = CHECKBOX_MODES.find((candidate) => candidate === value);
 		if (mode) settings.setProperties.checkboxMode = mode;
 		return mode !== undefined;
+	}
+	if (key === MENTION_ENABLED_KEY) {
+		settings.mention.enabled = value === true;
+		return true;
+	}
+	if (key === MENTION_TRIGGER_KEY) {
+		settings.mention.trigger = typeof value === "string" ? withoutWhitespace(value) : "";
+		return true;
+	}
+	if (key === MENTION_PICKER_KEY) {
+		if (typeof value !== "string") return false;
+		settings.mention.pickerId = value;
+		return true;
 	}
 	const [scope, name, field, index] = key.split("/");
 	if (scope === "form" || scope === "formField") return writeFormControl(settings, scope, name, field, index, value);

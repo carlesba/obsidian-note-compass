@@ -11,6 +11,8 @@ import { readFixedValues } from "./setProperties/fixedValues.ts";
 import type { FixedValue } from "./setProperties/fixedValues.ts";
 import { readTaskCommands, storedTaskCommands } from "./tasks/taskCommand.ts";
 import type { TaskCommand } from "./tasks/taskCommand.ts";
+import { readMention } from "./mentions/settings.ts";
+import type { MentionSettings } from "./mentions/settings.ts";
 
 export type RelationSourceKind = "adjacentDates" | "linksOut" | "linksIn" | "sameDay";
 
@@ -146,6 +148,7 @@ export interface JumpSettings {
 	forms: Form[];
 	customFields: CustomField[];
 	taskCommands: TaskCommand[];
+	mention: MentionSettings;
 }
 
 const DEFAULT_PREFIXES: Record<RelationSourceKind, string> = {
@@ -253,13 +256,15 @@ export function newListId(lists: readonly { id: string }[]): string {
 
 export function mergeSettings(stored: unknown): JumpSettings {
 	const data = isRecord(stored) ? stored : {};
+	const notePickers = Array.isArray(data.notePickers) ? readNotePickers(data.notePickers) : [migratedNotePicker(data)];
 	return {
-		notePickers: Array.isArray(data.notePickers) ? readNotePickers(data.notePickers) : [migratedNotePicker(data)],
+		notePickers,
 		dateNotes: readDateNotes(data.dateNotes),
 		setProperties: readSetProperties(data.setProperties),
 		forms: readForms(data.forms),
 		customFields: readCustomFields(data.customFields),
 		taskCommands: readTaskCommands(data.taskCommands),
+		mention: readMention(data.mention, notePickers),
 	};
 }
 
