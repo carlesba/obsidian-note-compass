@@ -300,6 +300,46 @@
 	gap: var(--size-4-2);
 }
 
+.note-compass-filter {
+	container: note-compass-filter / inline-size;
+}
+
+@container note-compass-filter (max-width: 28em) {
+	.note-compass-filter .filter-expression {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+	}
+
+	.note-compass-filter .filter-expression input.filter-property-select {
+		grid-column: 1;
+		grid-row: 1;
+		width: 100%;
+	}
+
+	.note-compass-filter .filter-expression .filter-row-actions {
+		grid-column: 2;
+		grid-row: 1;
+	}
+
+	.note-compass-filter .filter-expression select.filter-operator {
+		grid-column: 1 / -1;
+		grid-row: 2;
+		width: 100%;
+		border-inline: none;
+		border-top: 1px solid var(--background-modifier-border);
+	}
+
+	.note-compass-filter .filter-expression .filter-rhs-container {
+		grid-column: 1 / -1;
+		grid-row: 3;
+		border-top: 1px solid var(--background-modifier-border);
+	}
+
+	.note-compass-filter .filter-expression .filter-rhs-container.is-empty {
+		display: none;
+	}
+}
+
 .setting-item.note-compass-preset-value:not(.has-error) .setting-item-info {
 	display: none;
 }
