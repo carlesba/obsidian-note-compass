@@ -177,7 +177,7 @@ export function fieldRowName(field: FormField): string {
 	return field.key.trim() || t("newField");
 }
 
-export type FieldBadgeKind = "property" | "variable" | "mode" | "type";
+export type FieldBadgeKind = "property" | "variable" | "fixed" | "ask" | "type";
 
 export interface FieldBadge {
 	kind: FieldBadgeKind;
@@ -188,7 +188,7 @@ export function fieldBadges(field: FormField): FieldBadge[] {
 	const mode = field.mode === "static" ? t("formSummaryFixed") : field.entryTime ? t("formSummaryEntryTime") : field.optional ? t("formSummaryAskOptional") : t("formSummaryAsk");
 	return [
 		field.saveAs === "property" ? { kind: "property", text: t("formSummaryProperty") } : { kind: "variable", text: t("formSummaryVariable") },
-		{ kind: "mode", text: mode },
+		{ kind: field.mode === "static" ? "fixed" : "ask", text: mode },
 		{ kind: "type", text: fieldTypeBadge(field) },
 	];
 }

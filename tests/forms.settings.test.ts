@@ -206,9 +206,11 @@ test("a field row shows its name apart from badges for where it is saved, its mo
 	field.saveAs = "variable";
 	assert.deepEqual(fieldBadges(field), [
 		{ kind: "variable", text: "variable" },
-		{ kind: "mode", text: "fixed" },
+		{ kind: "fixed", text: "fixed" },
 		{ kind: "type", text: "list" },
 	]);
+	field.mode = "ask";
+	assert.equal(fieldBadges(field)[1].kind, "ask");
 });
 
 
