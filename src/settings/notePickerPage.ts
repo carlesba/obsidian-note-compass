@@ -85,7 +85,9 @@ export function notePickerPage(picker: NotePicker, context: NotePickerPageContex
 	const page: IdentifiedPage = {
 		type: "page",
 		id: notePickerPageId(picker),
-		name: notePickerName(picker),
+		get name() {
+			return notePickerName(picker);
+		},
 		displayValue: () => (picker.enabled && !picker.unreadable ? "" : t("off")),
 		status: () => (notePickerWarning(picker) ? "warning" : null),
 		items,

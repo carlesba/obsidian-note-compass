@@ -171,7 +171,9 @@ export function formPage(form: Form, context: FormPageContext): SettingDefinitio
 	const page: IdentifiedPage = {
 		type: "page",
 		id: formPageId(form),
-		name: formRowName(form),
+		get name() {
+			return formRowName(form);
+		},
 		displayValue: () => (form.enabled && !form.unreadable ? "" : t("off")),
 		status: () => (formWarning(form) ? "warning" : null),
 		items,

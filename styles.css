@@ -451,7 +451,8 @@
 }
 
 .note-compass-field-setting-control > .note-compass-pill-input {
-	width: min(100%, 20em);
+	width: 20em;
+	max-width: 100%;
 }
 
 .note-compass-pill {
@@ -582,7 +583,8 @@
 	}
 
 	.note-compass-field-setting-control input[type="text"],
-	.note-compass-field-setting-control select {
+	.note-compass-field-setting-control select,
+	.note-compass-field-setting-control > .note-compass-pill-input {
 		width: 100%;
 	}
 }

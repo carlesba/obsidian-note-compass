@@ -112,7 +112,7 @@ export interface EditableRow {
 
 export function listPage(list: NoteList, context: ListPageContext): SettingDefinitionPage {
 	const items = isUnreadable(list.source) ? [unreadableItem()] : listPageItems(list, context);
-	return pageEntry(listPageId(list), listName(list), list, context, items);
+	return pageEntry(listPageId(list), () => listName(list), list, context, items);
 }
 
 function unreadableItem(): SettingDefinitionItem {
@@ -276,7 +276,9 @@ export function propertyPage(
 	const page: IdentifiedPage = {
 		type: "page",
 		id: propertyPageId(entry),
-		name: propertyRowName(entry),
+		get name() {
+			return propertyRowName(entry);
+		},
 		displayValue: entry.enabled && !isUnreadable(entry.source) ? "" : t("off"),
 		status: propertyWarning(entry, properties, context) ? "warning" : null,
 		items,
@@ -612,13 +614,22 @@ function sourceItems(
 
 function pageEntry(
 	id: string,
-	name: string,
+	name: () => string,
 	list: NoteList,
 	context: ListPageContext,
 	items: SettingDefinitionItem[],
 ): IdentifiedPage {
 	const status = sourceWarning(list.source, context) ? "warning" : null;
-	return { type: "page", id, name, displayValue: listDisplayValue(list), status, items };
+	return {
+		type: "page",
+		id,
+		get name() {
+			return name();
+		},
+		displayValue: listDisplayValue(list),
+		status,
+		items,
+	};
 }
 
 export function propertyInput(

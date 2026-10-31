@@ -146,7 +146,9 @@ export function taskCommandPage(command: TaskCommand, context: ExpandingPageCont
 	const page: IdentifiedPage = {
 		type: "page",
 		id: taskCommandPageId(command),
-		name: taskCommandName(command),
+		get name() {
+			return taskCommandName(command);
+		},
 		displayValue: () => (command.enabled && !command.unreadable ? "" : t("off")),
 		status: () => (taskCommandWarning(command) ? "warning" : null),
 		items,
@@ -505,7 +507,9 @@ export function taskDestinationsPages(command: TaskCommand, context: ExpandingPa
 	return command.actions.filter((action) => action.kind === "copy").map((action): IdentifiedPage => ({
 		type: "page",
 		id: taskDestinationsPageId(command, action),
-		name: `${actionName(action)} · ${t("taskDestinations")}`,
+		get name() {
+			return `${actionName(action)} · ${t("taskDestinations")}`;
+		},
 		items: [
 			{
 				name: taskCommandName(command),

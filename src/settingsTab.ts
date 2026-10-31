@@ -105,8 +105,31 @@ export function pagePath(items: readonly SettingDefinitionItem[], pageId: string
 	return undefined;
 }
 
+export function pageAt(items: readonly SettingDefinitionItem[], path: readonly string[]): SettingDefinitionPage | undefined {
+	const [pageId, ...rest] = path;
+	if (pageId === undefined) return undefined;
+	for (const item of items) {
+		if (!("type" in item)) continue;
+		if (item.type === "page") {
+			if (pageIdOf(item) !== pageId) continue;
+			if (rest.length === 0) return item;
+			return item.items ? pageAt(item.items, rest) : undefined;
+		}
+		const inGroup = item.items ? pageAt(item.items, path) : undefined;
+		if (inGroup) return inGroup;
+	}
+	return undefined;
+}
+
+interface OpenSettingPage {
+	pagePath?: unknown;
+	title?: string;
+}
+
 interface SettingModal {
 	openPagePath?: (tabId: string, path: string[]) => unknown;
+	pageStack?: { page?: OpenSettingPage }[];
+	updatePageTitle?: () => void;
 	activeTab?: unknown;
 	tabContentContainer?: unknown;
 	focusSidebar?: () => void;
@@ -369,6 +392,18 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 		modal.openPagePath(this.plugin.manifest.id, pagePath(this.settingItems, pageId) ?? [pageId]);
 	}
 
+	private refreshPageTitle(): void {
+		const modal = this.settingModal();
+		if (modal?.activeTab !== this || typeof modal.updatePageTitle !== "function") return;
+		const page = modal.pageStack?.at(-1)?.page;
+		const path = page?.pagePath;
+		if (!page || !Array.isArray(path) || !path.every((part) => typeof part === "string")) return;
+		const definition = pageAt(this.settingItems, path);
+		if (!definition || page.title === definition.name) return;
+		page.title = definition.name;
+		modal.updatePageTitle();
+	}
+
 	private editableEntries(entries: unknown[]): Pick<SettingDefinitionList, "onReorder" | "onDelete"> {
 		return {
 			onReorder: (from, to) => this.changeLists(() => entries.splice(to, 0, ...entries.splice(from, 1))),
@@ -382,6 +417,7 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 
 	async setControlValue(key: string, value: unknown): Promise<void> {
 		if (!writeControl(this.plugin.settings, key, value)) return;
+		this.refreshPageTitle();
 		const [scope = "", , field = ""] = key.split("/");
 		if (QUIETLY_SAVED_SCOPES.includes(scope)) this.definitionsAreStale = true;
 		await this.plugin.saveSettings();
