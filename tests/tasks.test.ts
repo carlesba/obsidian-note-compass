@@ -2,12 +2,14 @@ import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { defaultDateNoteSettings, resolveDateNotes } from "../src/lists/dateNotes.ts";
 import { applyCopyAction, applyStatusAction, applyStagedChanges, cancelBatch, completionSuffix, finishBatch, groupChanges, prepareChanges, remainingTasks, shouldFinishBatch, stageChanges } from "../src/tasks/apply.ts";
-import type { ApplyContext } from "../src/tasks/apply.ts";
+import type { ApplyContext, SourcedTask } from "../src/tasks/apply.ts";
+import type { VaultNote } from "../src/lists/vault.ts";
 import { actionDestinations, fallbackLinkText } from "../src/tasks/destinations.ts";
 import type { DestinationContext } from "../src/tasks/destinations.ts";
 import { actionChoices, choiceTargets, destinationChoices, keyInstructions, planAction, taskChoices } from "../src/tasks/picker.ts";
 import { newCopyAction, newStatusAction, newTaskCommand, noteDestination, periodicDestination } from "../src/tasks/taskCommand.ts";
-import type { CopyAction, Destination, StatusAction, TaskCommand } from "../src/tasks/taskCommand.ts";
+import type { CopyAction, Destination, StatusAction, TaskCommand, TaskSource } from "../src/tasks/taskCommand.ts";
+import { notesFromLists, readsCurrentNote } from "../src/lists/jumpList.ts";
 import {
 	appendLines,
 	applyLineEdits,
@@ -40,6 +42,10 @@ function dateNotes(enabledQuarter = true) {
 
 function copyAction(destinations: Destination[], changes: Partial<CopyAction> = {}): CopyAction {
 	return { ...newCopyAction([], "Migrate", ">", destinations), ...changes };
+}
+
+function sourced(text: string, line = 0, path = "a.md"): SourcedTask {
+	return { ...task(text, line), source: { path, basename: path.replace(/\.md$/, "").split("/").pop() ?? path, ctime: 0 } };
 }
 
 function listing(statuses: string, skippedStatuses = "") {
@@ -103,10 +109,10 @@ test("status changes keep the rest of the line, and suffixes go before a block i
 
 test("completion dates are written as text in the daily format or as a link to today's daily note", () => {
 	const vault = fakeVault([{ path: "on/2026-10-28.md" }, { path: "inbox/Plan.md" }]);
-	const context = { vault, source: vault.note("inbox/Plan.md"), today: TODAY, dateNotes: dateNotes() };
-	assert.equal(completionSuffix(statusAction(), context), "");
-	assert.equal(completionSuffix(statusAction({ completionDate: "text" }), context), " ✅ 2026-10-28");
-	assert.equal(completionSuffix(statusAction({ completionDate: "link" }), context), " ✅ [[2026-10-28]]");
+	const context = { vault, today: TODAY, dateNotes: dateNotes() };
+	assert.equal(completionSuffix(statusAction(), context, "inbox/Plan.md"), "");
+	assert.equal(completionSuffix(statusAction({ completionDate: "text" }), context, "inbox/Plan.md"), " ✅ 2026-10-28");
+	assert.equal(completionSuffix(statusAction({ completionDate: "link" }), context, "inbox/Plan.md"), " ✅ [[2026-10-28]]");
 });
 
 test("a copied task keeps its marker and body, drops indentation and blockquotes, and can link back", () => {
@@ -137,7 +143,7 @@ test("periodic destinations resolve this and next for every period from today", 
 	const vault = fakeVault([{ path: "inbox/Plan.md" }, { path: "on/2026-W44.md" }]);
 	const context: DestinationContext = { vault, dateNotes: dateNotes(), today: TODAY };
 	const every = (["day", "week", "month", "quarter", "year"] as const).flatMap((period) => [periodicDestination(period, "this"), periodicDestination(period, "next")]);
-	const { destinations } = actionDestinations(copyAction(every), "inbox/Plan.md", context);
+	const { destinations } = actionDestinations(copyAction(every), ["inbox/Plan.md"], context);
 	assert.deepEqual(
 		destinations.map((destination) => [destination.label, destination.path]),
 		[
@@ -170,15 +176,15 @@ test("destinations keep their order, skip disabled periods, the source note and 
 		noteDestination("projects/Gone.md"),
 		noteDestination(" "),
 	]);
-	const fromAlpha = actionDestinations(action, "projects/Alpha.md", context);
+	const fromAlpha = actionDestinations(action, ["projects/Alpha.md"], context);
 	assert.deepEqual(fromAlpha.destinations.map((destination) => [destination.label, destination.path]), [
 		["Beta", "projects/Beta.md"],
 		["Tomorrow · 2026-10-29", "on/2026-10-29.md"],
 	]);
 	assert.deepEqual(fromAlpha.missingNotes, ["projects/Gone.md"]);
-	const fromTomorrow = actionDestinations(action, "on/2026-10-29.md", context);
+	const fromTomorrow = actionDestinations(action, ["on/2026-10-29.md"], context);
 	assert.deepEqual(fromTomorrow.destinations.map((destination) => destination.path), ["projects/Beta.md", "projects/Alpha.md"]);
-	assert.deepEqual(actionDestinations(copyAction([]), "projects/Alpha.md", context), { destinations: [], missingNotes: [] });
+	assert.deepEqual(actionDestinations(copyAction([]), ["projects/Alpha.md"], context), { destinations: [], missingNotes: [] });
 	assert.equal(vault.createdPeriodNotes.length, 0);
 });
 
@@ -188,7 +194,7 @@ test("links use the note name unless another note shares it", () => {
 });
 
 test("the task picker adds an apply-to-all row first and a finish row last when asked", () => {
-	const tasks = [task("- [ ] Alpha", 1), task("- [ ] Beta", 2), task("- [x] Gamma", 3)];
+	const tasks = [sourced("- [ ] Alpha", 1), sourced("- [ ] Beta", 2), sourced("- [x] Gamma", 3)];
 	const plain = taskChoices(command({ selectAll: false, batch: false }), tasks, "");
 	assert.deepEqual(plain.map((choice) => choice.label), ["Alpha", "Beta", "Gamma [x]"]);
 	const full = taskChoices(command({ selectAll: true, batch: true }), tasks, "");
@@ -216,19 +222,19 @@ test("copy actions run directly with one destination and ask with several", () =
 	assert.deepEqual(actionChoices(defaults.actions, "mi").map((choice) => choice.label), ["➡️ Migrate"]);
 });
 
-function applyContext(notes: FakeNote[], sourcePath: string): ApplyContext & { vault: ReturnType<typeof fakeVault> } {
+function applyContext(notes: FakeNote[], sourcePath: string): ApplyContext & { vault: ReturnType<typeof fakeVault>; source: VaultNote } {
 	const vault = fakeVault(notes);
 	return { vault, source: vault.note(sourcePath), today: TODAY, dateNotes: dateNotes() };
 }
 
 test("a status action rewrites each chosen task in place and leaves changed lines alone", async () => {
 	const context = applyContext([{ path: "inbox/Plan.md", content: "# Plan\n- [ ] Alpha\n- [ ] Beta\n" }], "inbox/Plan.md");
-	const tasks = await remainingTasks(context.vault, context.source, context.vault.taskLineNumbers("inbox/Plan.md"), listing(" "));
+	const tasks = await remainingTasks(context.vault, [{ note: context.source, lineNumbers: context.vault.taskLineNumbers("inbox/Plan.md") }], listing(" "));
 	const stale = { ...tasks[1], text: "- [ ] Beta before" };
 	const result = await applyStatusAction(context, statusAction({ completionDate: "text" }), [tasks[0], stale]);
 	assert.deepEqual(result, { applied: 1, skipped: 1 });
 	assert.equal(context.vault.content("inbox/Plan.md"), "# Plan\n- [x] Alpha ✅ 2026-10-28\n- [ ] Beta\n");
-	const left = await remainingTasks(context.vault, context.source, [1, 2], listing(" "));
+	const left = await remainingTasks(context.vault, [{ note: context.source, lineNumbers: [1, 2] }], listing(" "));
 	assert.deepEqual(left.map((found) => found.body), ["Beta"]);
 });
 
@@ -240,9 +246,9 @@ test("a copy action appends to the destination, creates a missing periodic note 
 		],
 		"inbox/Plan.md",
 	);
-	const tasks = await remainingTasks(context.vault, context.source, [0, 1], listing(" "));
+	const tasks = await remainingTasks(context.vault, [{ note: context.source, lineNumbers: [0, 1] }], listing(" "));
 	const action = copyAction([periodicDestination("day", "next")], { mentionDestination: true, mentionSource: true });
-	const [tomorrow] = actionDestinations(action, "inbox/Plan.md", { vault: context.vault, dateNotes: context.dateNotes, today: TODAY }).destinations;
+	const [tomorrow] = actionDestinations(action, ["inbox/Plan.md"], { vault: context.vault, dateNotes: context.dateNotes, today: TODAY }).destinations;
 	const result = await applyCopyAction(context, action, tasks, tomorrow);
 	assert.deepEqual(result, { applied: 2, skipped: 0 });
 	assert.deepEqual(context.vault.createdPeriodNotes, ["on/2026-10-29.md"]);
@@ -250,7 +256,7 @@ test("a copy action appends to the destination, creates a missing periodic note 
 	assert.equal(context.vault.content("inbox/Plan.md"), "- [>] Alpha → [[2026-10-29]] ^a1\n  > - [>] Beta → [[2026-10-29]]\n");
 	const week = { path: "on/2026-W44.md", label: "This week · 2026-W44" };
 	const plain = copyAction([], { status: "<", mentionDestination: false });
-	const source = await remainingTasks(context.vault, context.source, [0, 1], listing(""));
+	const source = await remainingTasks(context.vault, [{ note: context.source, lineNumbers: [0, 1] }], listing(""));
 	await applyCopyAction(context, plain, [source[0]], week);
 	assert.equal(context.vault.content("on/2026-W44.md"), "# Week\n- [ ] Alpha → [[2026-10-29]] ^a1\n");
 	assert.equal(context.vault.content("inbox/Plan.md"), "- [<] Alpha → [[2026-10-29]] ^a1\n  > - [>] Beta → [[2026-10-29]]\n");
@@ -258,7 +264,7 @@ test("a copy action appends to the destination, creates a missing periodic note 
 
 test("a copy action skips tasks whose line changed and writes nothing when all changed", async () => {
 	const context = applyContext([{ path: "a.md", content: "- [ ] Alpha\n" }, { path: "b.md", content: "" }], "a.md");
-	const stale = task("- [ ] Old text", 0);
+	const stale = sourced("- [ ] Old text", 0);
 	const result = await applyCopyAction(context, copyAction([]), [stale], { path: "b.md", label: "b" });
 	assert.deepEqual(result, { applied: 0, skipped: 1 });
 	assert.equal(context.vault.content("b.md"), "");
@@ -286,17 +292,17 @@ test("timestamp completion uses the daily-note date format and core Templates ti
 	const vault = fakeVault([{ ...source, content: "- [ ] Work" }]);
 	const notes = dateNotes();
 	notes.periods.day.format = "DD.MM.YYYY";
-	const context: ApplyContext = { vault, source, today: TODAY, dateNotes: notes, now: moment("2026-10-28 17:43", "YYYY-MM-DD HH:mm", true), templatesOptions: { timeFormat: "h:mm A" } };
+	const context: ApplyContext = { vault, today: TODAY, dateNotes: notes, now: moment("2026-10-28 17:43", "YYYY-MM-DD HH:mm", true), templatesOptions: { timeFormat: "h:mm A" } };
 	const action = statusAction({ completionDate: "timestamp" });
-	assert.equal(completionSuffix(action, context), " ✅ 28.10.2026 5:43 PM");
-	assert.equal(completionSuffix(action, { ...context, templatesOptions: undefined }), " ✅ 28.10.2026 17:43");
-	await applyStatusAction(context, action, [task("- [ ] Work")]);
+	assert.equal(completionSuffix(action, context, source.path), " ✅ 28.10.2026 5:43 PM");
+	assert.equal(completionSuffix(action, { ...context, templatesOptions: undefined }, source.path), " ✅ 28.10.2026 17:43");
+	await applyStatusAction(context, action, [sourced("- [ ] Work", 0, source.path)]);
 	assert.equal(await vault.readNote(source.path), "- [x] Work ✅ 28.10.2026 5:43 PM");
 });
 
 test("batch staging defers writes, removes chosen tasks and supports finish, cancel and automatic finish", async () => {
 	const context = applyContext([{ path: "a.md", content: "- [ ] One\n- [ ] Two" }], "a.md");
-	const tasks = [task("- [ ] One"), task("- [ ] Two", 1)];
+	const tasks = [sourced("- [ ] One"), sourced("- [ ] Two", 1)];
 	const initial = { remaining: tasks, changes: [] };
 	const staged = stageChanges(initial, prepareChanges(context, statusAction(), [tasks[0]]));
 	assert.equal(context.vault.content("a.md"), "- [ ] One\n- [ ] Two");
@@ -316,7 +322,7 @@ test("batch staging defers writes, removes chosen tasks and supports finish, can
 
 test("batch select-all stages every matching task and finishes even with unmatched tasks left", () => {
 	const context = applyContext([{ path: "a.md", content: "" }], "a.md");
-	const tasks = [task("- [ ] Alpha"), task("- [ ] Alpine", 1), task("- [ ] Beta", 2)];
+	const tasks = [sourced("- [ ] Alpha"), sourced("- [ ] Alpine", 1), sourced("- [ ] Beta", 2)];
 	const all = taskChoices(command({ selectAll: true }), tasks, "a")[0];
 	assert.equal(all.action.action, "all");
 	const staged = stageChanges({ remaining: tasks, changes: [] }, prepareChanges(context, statusAction(), choiceTargets(all.action)));
@@ -335,12 +341,12 @@ test("batch applies once per file, preserving staging order and skipping changed
 	const missing = { path: "on/2026-10-29.md", label: "Tomorrow", missing: { period: "day" as const, date: TODAY.clone().add(1, "day") } };
 	const action = copyAction([], { mentionDestination: false });
 	const changes = [
-		...prepareChanges(context, action, [task("- [ ] Two", 1)], destination),
-		...prepareChanges(context, action, [task("- [ ] One")], destination),
-		...prepareChanges(context, action, [task("- [ ] Old", 2)], missing),
-		...prepareChanges(context, statusAction(), [task("- [ ] Four", 3)]),
+		...prepareChanges(context, action, [sourced("- [ ] Two", 1)], destination),
+		...prepareChanges(context, action, [sourced("- [ ] One")], destination),
+		...prepareChanges(context, action, [sourced("- [ ] Old", 2)], missing),
+		...prepareChanges(context, statusAction(), [sourced("- [ ] Four", 3)]),
 	];
-	const grouped = groupChanges("a.md", changes);
+	const grouped = groupChanges(changes);
 	assert.deepEqual(grouped.map((file) => file.path), ["a.md", "b.md", "on/2026-10-29.md"]);
 	assert.deepEqual(grouped[1].appends, ["- [ ] Two", "- [ ] One"]);
 	assert.equal(context.vault.createdPeriodNotes.length, 0);
@@ -359,8 +365,8 @@ test("batch applies once per file, preserving staging order and skipping changed
 test("batch creates periodic destinations only when applying and groups repeated copies", async () => {
 	const context = applyContext([{ path: "a.md", content: "- [ ] One\n- [ ] Two" }], "a.md");
 	const action = copyAction([periodicDestination("day", "next")]);
-	const destination = actionDestinations(action, "a.md", context).destinations[0];
-	const changes = prepareChanges(context, action, [task("- [ ] Two", 1), task("- [ ] One")], destination);
+	const destination = actionDestinations(action, ["a.md"], context).destinations[0];
+	const changes = prepareChanges(context, action, [sourced("- [ ] Two", 1), sourced("- [ ] One")], destination);
 	assert.deepEqual(context.vault.createdPeriodNotes, []);
 	await applyStagedChanges(context, changes);
 	assert.deepEqual(context.vault.createdPeriodNotes, ["on/2026-10-29.md"]);
@@ -379,7 +385,7 @@ test("literal affixes change only copied bodies in immediate and batch execution
 	for (const batch of [false, true]) {
 		const context = applyContext([{ path: "a.md", content: "> - [ ] Alpha ^a1" }, { path: "b.md", content: "" }], "a.md");
 		const action = copyAction([], { prefix: "pre ", suffix: " post", mentionSource: true, mentionDestination: false });
-		const tasks = [task("> - [ ] Alpha ^a1")];
+		const tasks = [sourced("> - [ ] Alpha ^a1")];
 		const destination = { path: "b.md", label: "B" };
 		if (batch) await applyStagedChanges(context, prepareChanges(context, action, tasks, destination));
 		else await applyCopyAction(context, action, tasks, destination);
@@ -387,4 +393,66 @@ test("literal affixes change only copied bodies in immediate and batch execution
 		assert.equal(context.vault.content("b.md"), "- [ ] pre Alpha post ← [[a]] ^a1\n");
 	}
 	assert.equal(copiedLine(task("- [ ] Alpha"), undefined, "(", ")"), "- [ ] (Alpha)");
+});
+
+test("task sources gather notes in source order, without repeats, and only read the current note when asked", () => {
+	const vault = fakeVault([{ path: "projects/Beta.md" }, { path: "projects/Alpha.md" }, { path: "Today.md" }]);
+	const current = vault.note("Today.md");
+	const sources: TaskSource[] = [
+		{ id: "1", enabled: true, prefix: "", source: { kind: "currentNote" } },
+		{ id: "2", enabled: true, prefix: "", source: { kind: "inFolder", folder: "projects" } },
+		{ id: "3", enabled: true, prefix: "", source: { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "name", operator: "starts with", value: "alp" }] } } },
+		{ id: "4", enabled: false, prefix: "", source: { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "folder", folder: "", negated: true }] } } },
+	];
+	assert.deepEqual(notesFromLists(sources, vault, current, defaultDateNoteSettings()).map((note) => note.path), ["Today.md", "projects/Alpha.md", "projects/Beta.md"]);
+	assert.deepEqual(notesFromLists(sources, vault, undefined, defaultDateNoteSettings()).map((note) => note.path), ["projects/Alpha.md", "projects/Beta.md"]);
+	assert.equal(readsCurrentNote(sources[0].source), true);
+	assert.equal(readsCurrentNote(sources[1].source), false);
+});
+
+test("tasks from several notes are listed with their note and each change is written to the note it came from", async () => {
+	const vault = fakeVault([
+		{ path: "a.md", content: "- [ ] One\n- [x] Done" },
+		{ path: "b.md", content: "# B\n- [ ] Two" },
+		{ path: "c.md", content: "no tasks" },
+	]);
+	const context: ApplyContext = { vault, today: TODAY, dateNotes: dateNotes() };
+	const notes = ["a.md", "b.md", "c.md"].map((path) => ({ note: vault.note(path), lineNumbers: vault.taskLineNumbers(path) }));
+	const tasks = await remainingTasks(vault, notes, listing(" "));
+	assert.deepEqual(tasks.map((found) => [found.source.path, found.body]), [["a.md", "One"], ["b.md", "Two"]]);
+	assert.deepEqual(taskChoices(command({ batch: false }), tasks, "").map((choice) => choice.label), ["One a", "Two b"]);
+	assert.deepEqual(taskChoices(command({ batch: false }), [tasks[0]], "").map((choice) => choice.label), ["One"]);
+	assert.deepEqual(await applyStatusAction(context, statusAction({ completionDate: "link" }), tasks), { applied: 2, skipped: 0 });
+	assert.equal(vault.content("a.md"), "- [x] One ✅ [[2026-10-28]]\n- [x] Done");
+	assert.equal(vault.content("b.md"), "# B\n- [x] Two ✅ [[2026-10-28]]");
+});
+
+test("copying tasks from several notes skips every source note as a destination and creates a missing one once", async () => {
+	const vault = fakeVault([{ path: "a.md", content: "- [ ] One" }, { path: "b.md", content: "- [ ] Two" }]);
+	const context: ApplyContext = { vault, today: TODAY, dateNotes: dateNotes() };
+	const action = copyAction([noteDestination("a.md"), noteDestination("b.md"), periodicDestination("day", "next")], { mentionSource: true });
+	const { destinations } = actionDestinations(action, ["a.md", "b.md"], { vault, dateNotes: context.dateNotes, today: TODAY });
+	assert.deepEqual(destinations.map((destination) => destination.path), ["on/2026-10-29.md"]);
+	const tasks = [sourced("- [ ] One", 0, "a.md"), sourced("- [ ] Two", 0, "b.md")];
+	assert.deepEqual(await applyCopyAction(context, action, tasks, destinations[0]), { applied: 2, skipped: 0 });
+	assert.deepEqual(vault.createdPeriodNotes, ["on/2026-10-29.md"]);
+	assert.equal(vault.content("on/2026-10-29.md"), "- [ ] One ← [[a]]\n- [ ] Two ← [[b]]\n");
+	assert.equal(vault.content("a.md"), "- [>] One → [[2026-10-29]]");
+	assert.equal(vault.content("b.md"), "- [>] Two → [[2026-10-29]]");
+});
+
+test("a batch across notes stages tasks per note and copies into a source note only once its own edits apply", async () => {
+	const vault = fakeVault([{ path: "a.md", content: "- [ ] One" }, { path: "b.md", content: "- [ ] One\n- [ ] Two" }]);
+	const context: ApplyContext = { vault, today: TODAY, dateNotes: dateNotes() };
+	const fromA = sourced("- [ ] One", 0, "a.md");
+	const fromB = [sourced("- [ ] One", 0, "b.md"), sourced("- [ ] Two", 1, "b.md")];
+	const action = copyAction([], { mentionDestination: false });
+	const staged = stageChanges({ remaining: [fromA, ...fromB], changes: [] }, prepareChanges(context, action, [fromA], { path: "b.md", label: "b" }));
+	assert.deepEqual(staged.remaining, fromB);
+	const last = stageChanges(staged, [...prepareChanges(context, action, [fromB[0]], { path: "a.md", label: "a" }), ...prepareChanges(context, statusAction(), [fromB[1]])]);
+	assert.deepEqual(last.remaining, []);
+	assert.deepEqual(groupChanges(last.changes).map((file) => [file.path, file.edits.length, file.appends.length]), [["a.md", 1, 1], ["b.md", 2, 1]]);
+	assert.deepEqual(await applyStagedChanges(context, finishBatch(last)), { applied: 3, skipped: 0 });
+	assert.equal(vault.content("a.md"), "- [>] One\n- [ ] One\n");
+	assert.equal(vault.content("b.md"), "- [>] One\n- [x] Two\n- [ ] One\n");
 });

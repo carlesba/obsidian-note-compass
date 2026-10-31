@@ -35,7 +35,7 @@ import type {
 import { duplicateEntry } from "./duplicate.ts";
 import { parseNumber } from "../setProperties/values.ts";
 import { SET_DATE_PLACEHOLDERS, readsAsDate } from "../forms/dateInput.ts";
-import { readListField, sourceOptions, writeListField } from "./listForm.ts";
+import { readListField, sourceLabels, writeListField } from "./listForm.ts";
 import type { SourceChoice } from "./listForm.ts";
 import { filterRules } from "../lists/filters.ts";
 import type { ListSource, NoteList } from "../settings.ts";
@@ -138,7 +138,7 @@ export function fieldSourceOptions(type: FieldType): Record<string, string> {
 }
 
 export function notesSourceOptions(field: FormField): Record<string, string> {
-	const all = sourceOptions();
+	const all = sourceLabels();
 	const options: Record<string, string> = {};
 	for (const choice of NOTES_SOURCE_CHOICES) options[choice] = all[choice];
 	const current = field.notesFrom?.kind;

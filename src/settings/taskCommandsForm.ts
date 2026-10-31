@@ -144,6 +144,7 @@ export function taskActionWarning(action: TaskAction): string | undefined {
 
 export function taskCommandWarning(command: TaskCommand): string | undefined {
 	if (command.unreadable) return t("unreadableTaskCommandWarning");
+	if (!command.sources.some((source) => source.enabled && source.source.kind !== "unreadable")) return t("taskCommandNeedsSource");
 	if (command.actions.length === 0) return t("taskCommandNeedsAction");
 	if (command.actions.some((action) => taskActionWarning(action) !== undefined)) return t("taskActionsNeedAttention");
 	if (command.keymap.some((_binding, index) => keyBindingWarning(command, index) !== undefined)) return t("taskKeymapNeedsAttention");

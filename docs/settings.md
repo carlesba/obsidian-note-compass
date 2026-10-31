@@ -125,7 +125,7 @@ A filter lists the notes that match a set of conditions. It works like the filte
 
 1. Choose how the group matches: "All the following are true", "Any of the following are true" or "None of the following are true". A note is listed when it matches every filter in the group, at least one, or none of them.
 2. Choose "Add filter" to add a row to the group.
-3. Start the row with what it tests: type a property name, or pick `folder`, `tags`, `links`, `created time` or `modified time` from the suggestions.
+3. Start the row with what it tests: type a property name, or pick `file name`, `file path`, `folder`, `tags`, `links`, `created time` or `modified time` from the suggestions.
 4. Choose the operator and the value, such as `folder is in projects`, `tags has tag client` or `modified time after 7 days ago`.
 5. Choose "Add filter group" to add a group inside it with its own choice.
 
@@ -134,6 +134,7 @@ Groups can sit inside groups up to three levels deep, counting the filter itself
 | Condition | Matches |
 | --- | --- |
 | Property | A property checked against a condition offered for its type, below. |
+| File name, File path | The note's name, or its path from the vault root, both without `.md`, that starts with, contains or ends with a text, or does not. Case does not matter, and a row with no text lists nothing. |
 | Folder | The notes in a folder and its subfolders with "is in", or every other note with "is not in". |
 | Tag | The notes with a tag in their properties or their text. "Does not have tag" matches the notes without it. |
 | Links to note | The notes that link to a chosen note, in their text or in a property. "Does not contain" matches the notes that do not. |

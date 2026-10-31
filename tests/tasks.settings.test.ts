@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { defaultSettings, mergeSettings, storedSettings } from "../src/settings.ts";
-import { readControl, taskActionKey, taskCommandKey, writeControl } from "../src/settings/controlKeys.ts";
+import { readControl, taskActionKey, taskCommandKey, taskSourceKey, writeControl } from "../src/settings/controlKeys.ts";
 import {
 	addKeyBinding,
 	addTaskAction,
@@ -348,4 +348,52 @@ test("old saved destinations stay unchanged and absent copy affixes default to e
 	assert.equal(readControl(reloaded, taskActionKey("1", "1", "prefix")), "before ");
 	assert.equal(readControl(reloaded, taskActionKey("1", "1", "suffix")), " after");
 	assert.deepEqual((reloaded.taskCommands[0].actions[0] as CopyAction).destinations, saved.actions[0].destinations);
+});
+
+test("task commands read the current note by default, and commands saved before sources existed keep doing so", () => {
+	const command = newTaskCommand([]);
+	assert.deepEqual(command.sources, [{ id: "1", enabled: true, prefix: "", source: { kind: "currentNote" } }]);
+	const legacy = mergeSettings({ taskCommands: [{ id: "1", enabled: true, name: "Old", actions: [] }] });
+	assert.deepEqual(legacy.taskCommands[0].sources, [{ id: "1", enabled: true, prefix: "", source: { kind: "currentNote" } }]);
+	const empty = mergeSettings({ taskCommands: [{ id: "1", enabled: true, name: "None", sources: [], actions: [{ id: "1", kind: "status", status: "x" }] }] });
+	assert.deepEqual(empty.taskCommands[0].sources, []);
+	assert.equal(taskCommandWarning(empty.taskCommands[0]), "Turn on a source so the command has notes to read tasks from.");
+});
+
+test("task sources round-trip, keep sources that can't be read as saved and mint missing ids", () => {
+	const future = { kind: "teleport" };
+	const settings = mergeSettings({
+		taskCommands: [
+			{
+				id: "1",
+				enabled: true,
+				name: "Projects",
+				sources: [
+					{ id: "2", enabled: true, source: { kind: "inFolder", folder: "projects" } },
+					{ id: "2", enabled: false, source: future },
+					{ enabled: true, source: { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "name", operator: "starts with", value: "Weekly" }] } } },
+				],
+				actions: [{ id: "1", kind: "status", status: "x" }],
+			},
+		],
+	});
+	const [command] = settings.taskCommands;
+	assert.deepEqual(command.sources.map((source) => [source.id, source.enabled, source.source.kind]), [["2", true, "inFolder"], ["3", false, "unreadable"], ["4", true, "filter"]]);
+	const stored = JSON.parse(JSON.stringify(storedSettings(settings)));
+	assert.deepEqual(stored.taskCommands[0].sources[1].source, future);
+	assert.deepEqual(mergeSettings(stored).taskCommands, settings.taskCommands);
+});
+
+test("task sources are edited through their own control keys", () => {
+	const { settings, command } = settingsWithCommand();
+	const [source] = command.sources;
+	const key = (field: "source" | "folder" | "enabled") => taskSourceKey(command.id, source.id, field);
+	assert.equal(readControl(settings, key("source")), "currentNote");
+	assert.equal(writeControl(settings, key("source"), "inFolder"), true);
+	assert.equal(writeControl(settings, key("folder"), " projects "), true);
+	assert.deepEqual(source.source, { kind: "inFolder", folder: "projects" });
+	assert.equal(writeControl(settings, key("enabled"), false), true);
+	assert.equal(taskCommandWarning(command), "Turn on a source so the command has notes to read tasks from.");
+	assert.equal(writeControl(settings, taskSourceKey(command.id, "99", "enabled"), true), false);
+	assert.equal(writeControl(settings, taskSourceKey("99", source.id, "enabled"), true), false);
 });

@@ -4,9 +4,10 @@ import type { RowParts } from "../render";
 import type { ResolvedDestination } from "./destinations.ts";
 import { OPEN_STATUS, TASK_KEYS, keyBehavior } from "./taskCommand.ts";
 import type { TaskAction, TaskCommand, TaskKey } from "./taskCommand.ts";
+import type { SourcedTask } from "./apply.ts";
 import type { TaskLine } from "./taskLines.ts";
 
-export type TaskPickerAction = { action: "task"; task: TaskLine } | { action: "all"; tasks: TaskLine[] } | { action: "finish" } | { action: "cancel" };
+export type TaskPickerAction = { action: "task"; task: SourcedTask } | { action: "all"; tasks: SourcedTask[] } | { action: "finish" } | { action: "cancel" };
 
 export interface TaskChoice {
 	label: string;
@@ -38,13 +39,13 @@ export function taskText(task: TaskLine): string {
 	return task.body.trim() || t("emptyTask");
 }
 
-export function taskChoices(command: TaskCommand, tasks: readonly TaskLine[], query: string, stagedCount = 0): TaskChoice[] {
+export function taskChoices(command: TaskCommand, tasks: readonly SourcedTask[], query: string, stagedCount = 0, showsNotes = spansNotes(tasks)): TaskChoice[] {
 	const matching = query ? tasks.filter((task) => matchesInOrder(query, taskText(task))) : [...tasks];
 	const choices: TaskChoice[] = [];
 	if (command.selectAll && matching.length > 1) {
 		choices.push(choice({ mark: ALL_MARK, content: t("applyToAllTasks", { count: matching.length }) }, { action: "all", tasks: matching }));
 	}
-	for (const task of matching) choices.push(choice(taskParts(task), { action: "task", task }));
+	for (const task of matching) choices.push(choice(taskParts(task, showsNotes), { action: "task", task }));
 	if (command.batch) {
 		choices.push(choice({ mark: FINISH_MARK, content: t("finishProcessing"), value: tCount("stagedChangeOne", "stagedChangeOther", stagedCount) }, { action: "finish" }));
 		choices.push(choice({ mark: CANCEL_MARK, content: t("cancelTaskProcessing") }, { action: "cancel" }));
@@ -52,7 +53,11 @@ export function taskChoices(command: TaskCommand, tasks: readonly TaskLine[], qu
 	return choices;
 }
 
-export function choiceTargets(action: TaskPickerAction): TaskLine[] {
+export function spansNotes(tasks: readonly SourcedTask[]): boolean {
+	return new Set(tasks.map((task) => task.source.path)).size > 1;
+}
+
+export function choiceTargets(action: TaskPickerAction): SourcedTask[] {
 	if (action.action === "task") return [action.task];
 	if (action.action === "all") return action.tasks;
 	return [];
@@ -85,9 +90,10 @@ export function destinationChoices(destinations: readonly ResolvedDestination[],
 	return query ? choices.filter((candidate) => matchesInOrder(query, candidate.label)) : choices;
 }
 
-function taskParts(task: TaskLine): RowParts {
+function taskParts(task: SourcedTask, showsNote: boolean): RowParts {
 	const parts: RowParts = { content: taskText(task) };
-	if (task.status !== OPEN_STATUS) parts.value = `[${task.status}]`;
+	const value = [task.status === OPEN_STATUS ? "" : `[${task.status}]`, showsNote ? task.source.basename : ""].filter((part) => part !== "").join(" · ");
+	if (value !== "") parts.value = value;
 	return parts;
 }
 

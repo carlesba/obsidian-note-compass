@@ -53,6 +53,10 @@ export function listKey(id: string, field: ListField): string {
 	return `list/${id}/${field}`;
 }
 
+export function taskSourceKey(commandId: string, sourceId: string, field: ListField): string {
+	return `taskSource/${commandId}.${sourceId}/${field}`;
+}
+
 export type NotePickerField = "enabled" | "name";
 
 export function notePickerKey(id: string, field: NotePickerField): string {
@@ -141,6 +145,10 @@ export function readControl(settings: JumpSettings, key: string): unknown {
 		const list = allLists(settings).find((candidate) => candidate.id === name);
 		return list ? readListField(list, field as ListField) : undefined;
 	}
+	if (scope === "taskSource") {
+		const source = taskSourceTarget(settings, name);
+		return source ? readListField(source, field as ListField) : undefined;
+	}
 	if (scope === "dateNotes" && isPeriod(name)) return readPeriodField(settings.dateNotes, name, field as PeriodField);
 	if (scope === "fixedValue") {
 		const fixed = fixedValueTarget(settings, name);
@@ -197,6 +205,11 @@ export function writeControl(settings: JumpSettings, key: string, value: unknown
 		if (list) writeListField(list, field as ListField, value);
 		return list !== undefined;
 	}
+	if (scope === "taskSource") {
+		const source = taskSourceTarget(settings, name);
+		if (source) writeListField(source, field as ListField, value);
+		return source !== undefined;
+	}
 	if (scope === "dateNotes" && isPeriod(name)) {
 		writePeriodField(settings.dateNotes, name, field as PeriodField, value);
 		return true;
@@ -210,6 +223,12 @@ export function writeControl(settings: JumpSettings, key: string, value: unknown
 	if (scope === "propertySource") return writePropertySourceField(entry, field as ListField, value);
 	if (scope !== "property") return false;
 	return writePropertyField(entry, field as PropertyField, value, index);
+}
+
+function taskSourceTarget(settings: JumpSettings, name: string) {
+	const [commandId, sourceId] = name.split(".");
+	const command = settings.taskCommands.find((candidate) => candidate.id === commandId && !candidate.unreadable);
+	return command?.sources.find((candidate) => candidate.id === sourceId);
 }
 
 function fixedValueTarget(settings: JumpSettings, name: string) {

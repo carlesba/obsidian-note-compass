@@ -1,6 +1,9 @@
 import { t } from "../i18n/index.ts";
 import { PERIODS } from "../lists/dateNotes.ts";
 import type { Period } from "../lists/dateNotes.ts";
+import { emptyFilter } from "../lists/filters.ts";
+import { readSourceOrKeep, withStoredSource, writePrefixColor } from "../settings.ts";
+import type { NoteList } from "../settings.ts";
 
 export type CompletionDate = "off" | "text" | "link" | "timestamp";
 
@@ -64,10 +67,13 @@ export interface CopyAction {
 
 export type TaskAction = StatusAction | CopyAction;
 
+export type TaskSource = NoteList;
+
 export interface TaskCommand {
 	id: string;
 	enabled: boolean;
 	name: string;
+	sources: TaskSource[];
 	statuses: string;
 	skippedStatuses: string;
 	selectAll: boolean;
@@ -107,6 +113,14 @@ export function newCopyAction(
 	};
 }
 
+export function currentNoteSource(sources: readonly TaskSource[] = []): TaskSource {
+	return { id: newNumericId(sources), enabled: true, prefix: "", source: { kind: "currentNote" } };
+}
+
+export function newTaskSource(sources: readonly TaskSource[]): TaskSource {
+	return { id: newNumericId(sources), enabled: true, prefix: "", source: { kind: "filter", filter: emptyFilter() } };
+}
+
 export function newTaskCommand(commands: readonly TaskCommand[]): TaskCommand {
 	const actions: TaskAction[] = [];
 	const add = (action: TaskAction) => actions.push(action);
@@ -137,6 +151,7 @@ export function newTaskCommand(commands: readonly TaskCommand[]): TaskCommand {
 		id: newNumericId(commands),
 		enabled: true,
 		name: t("defaultTaskCommandName"),
+		sources: [currentNoteSource()],
 		statuses: OPEN_STATUS,
 		skippedStatuses: "",
 		selectAll: false,
@@ -194,8 +209,8 @@ export function storedTaskCommands(commands: readonly TaskCommand[]): unknown[] 
 	return commands.map((command) => (command.unreadable ? command.unreadable.stored : withoutUnreadable(command)));
 }
 
-function withoutUnreadable(command: TaskCommand): TaskCommand {
-	const stored = { ...command };
+function withoutUnreadable(command: TaskCommand): unknown {
+	const stored: Partial<TaskCommand> = { ...command, sources: command.sources.map(withStoredSource) as TaskSource[] };
 	delete stored.unreadable;
 	return stored;
 }
@@ -206,6 +221,7 @@ function readTaskCommand(entry: unknown, id: string): TaskCommand {
 		id,
 		enabled: typeof data.enabled === "boolean" ? data.enabled : false,
 		name: typeof data.name === "string" ? data.name : "",
+		sources: Array.isArray(data.sources) ? readTaskSources(data.sources) : [currentNoteSource()],
 		statuses: typeof data.statuses === "string" ? uniqueStatuses(data.statuses) : OPEN_STATUS,
 		skippedStatuses: typeof data.skippedStatuses === "string" ? uniqueStatuses(data.skippedStatuses) : "",
 		selectAll: data.selectAll === true,
@@ -217,6 +233,23 @@ function readTaskCommand(entry: unknown, id: string): TaskCommand {
 	if (!isRecord(entry) || actions === undefined) return { ...command, enabled: false, unreadable: { stored: entry } };
 	const keymap = Array.isArray(data.keymap) ? readKeymap(data.keymap) : readLegacyPrimary(data.primary, actions);
 	return { ...command, actions, keymap };
+}
+
+function readTaskSources(stored: readonly unknown[]): TaskSource[] {
+	const sources: TaskSource[] = [];
+	for (const entry of stored) {
+		if (!isRecord(entry)) continue;
+		const id = typeof entry.id === "string" && /^\d+$/.test(entry.id) && !sources.some((source) => source.id === entry.id) ? entry.id : newNumericId(sources);
+		const source: TaskSource = {
+			id,
+			enabled: typeof entry.enabled === "boolean" ? entry.enabled : false,
+			prefix: typeof entry.prefix === "string" ? entry.prefix : "",
+			source: readSourceOrKeep(entry.source),
+		};
+		writePrefixColor(source, entry.prefixColor);
+		sources.push(source);
+	}
+	return sources;
 }
 
 function readKeymap(stored: readonly unknown[]): TaskKeyBinding[] {

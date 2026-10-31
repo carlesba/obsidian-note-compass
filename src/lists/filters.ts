@@ -25,10 +25,26 @@ export type FolderRule = { kind: "folder"; folder: string; negated?: true };
 export type TagRule = { kind: "tag"; tag: string; negated?: true };
 export type LinksToRule = { kind: "linksTo"; note: string; negated?: true };
 
+export const NAME_OPERATORS = ["starts with", "does not start with", "contains", "does not contain", "ends with", "does not end with"] as const;
+
+export type NameOperator = (typeof NAME_OPERATORS)[number];
+
+export type NameField = "name" | "path";
+
+export const NAME_FIELDS: readonly NameField[] = ["name", "path"];
+
+type NameRuleOf<Field extends NameField> = { kind: Field; operator: NameOperator; value: string };
+
+export type NameRule = NameRuleOf<"name"> | NameRuleOf<"path">;
+
+export function nameRule(kind: NameField, operator: NameOperator, value: string): NameRule {
+	return kind === "name" ? { kind, operator, value } : { kind, operator, value };
+}
+
 export type NegatableRule = FolderRule | TagRule | LinksToRule;
 export type FileDateRule = { kind: "file"; field: FileDateField; condition: DateCondition };
 
-export type FilterRule = PropertyRule | FolderRule | TagRule | LinksToRule | FileDateRule;
+export type FilterRule = PropertyRule | FolderRule | TagRule | LinksToRule | FileDateRule | NameRule;
 
 export type FilterNode = FilterGroup | FilterRule;
 
@@ -75,12 +91,36 @@ function compile(node: FilterNode, context: FilterContext): NotePredicate | unde
 }
 
 function compileRule(rule: FilterRule, context: FilterContext): NotePredicate {
+	if (rule.kind === "name" || rule.kind === "path") return compileNameRule(rule);
 	const matches = compilePositiveRule(rule, context);
 	if (rule.kind === "property" || rule.kind === "file" || rule.negated !== true) return matches;
 	return (note) => !matches(note);
 }
 
-function compilePositiveRule(rule: FilterRule, context: FilterContext): NotePredicate {
+const POSITIVE_NAME_OPERATORS: Record<NameOperator, { test: "starts with" | "contains" | "ends with"; negated: boolean }> = {
+	"starts with": { test: "starts with", negated: false },
+	"does not start with": { test: "starts with", negated: true },
+	contains: { test: "contains", negated: false },
+	"does not contain": { test: "contains", negated: true },
+	"ends with": { test: "ends with", negated: false },
+	"does not end with": { test: "ends with", negated: true },
+};
+
+function compileNameRule(rule: NameRule): NotePredicate {
+	const wanted = rule.value.trim().toLowerCase();
+	const { test, negated } = POSITIVE_NAME_OPERATORS[rule.operator];
+	const subject = rule.kind === "name" ? (note: VaultNote) => note.basename : (note: VaultNote) => note.path.replace(/\.md$/, "");
+	const matches = (note: VaultNote) => wanted !== "" && matchesText(subject(note).toLowerCase(), test, wanted);
+	return negated ? (note) => !matches(note) : matches;
+}
+
+function matchesText(text: string, test: "starts with" | "contains" | "ends with", wanted: string): boolean {
+	if (test === "starts with") return text.startsWith(wanted);
+	if (test === "ends with") return text.endsWith(wanted);
+	return text.includes(wanted);
+}
+
+function compilePositiveRule(rule: Exclude<FilterRule, NameRule>, context: FilterContext): NotePredicate {
 	const { vault, today } = context;
 	switch (rule.kind) {
 		case "property": {
@@ -149,6 +189,11 @@ function readRule(stored: unknown): FilterRule | undefined {
 			const field = FILE_DATE_FIELDS.find((candidate) => candidate === stored.field);
 			const condition = readDateCondition(stored.condition);
 			return field && condition ? { kind: "file", field, condition } : undefined;
+		}
+		case "name":
+		case "path": {
+			const operator = NAME_OPERATORS.find((candidate) => candidate === stored.operator);
+			return operator && typeof stored.value === "string" ? nameRule(stored.kind, operator, stored.value) : undefined;
 		}
 		default:
 			return undefined;

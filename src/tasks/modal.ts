@@ -4,17 +4,17 @@ import { ChoiceModal } from "../choiceModal";
 import { createObsidianVault } from "../lists/obsidianVault";
 import { t, tCount } from "../i18n";
 import { resolveDateNotes } from "../lists/dateNotes";
+import { notesFromLists } from "../lists/jumpList";
 import type { JumpListVault, NoteBodyVault, VaultNote } from "../lists/vault";
 import type { JumpSettings } from "../settings";
 import { applyCopyAction, applyStatusAction, applyStagedChanges, cancelBatch, finishBatch, prepareChanges, remainingTasks, shouldFinishBatch, stageChanges } from "./apply";
-import type { ApplyContext, ApplyResult, TaskBatch } from "./apply";
+import type { ApplyContext, ApplyResult, SourcedTask, TaskBatch } from "./apply";
 import { actionDestinations } from "./destinations";
 import type { ResolvedDestination } from "./destinations";
-import { actionChoices, choiceTargets, destinationChoices, keyInstructions, planAction, taskChoices } from "./picker";
+import { actionChoices, choiceTargets, destinationChoices, keyInstructions, planAction, spansNotes, taskChoices } from "./picker";
 import type { ActionChoice, DestinationChoice, TaskChoice } from "./picker";
 import { keyBehavior } from "./taskCommand";
 import type { TaskAction, TaskCommand, TaskKey } from "./taskCommand";
-import type { TaskLine } from "./taskLines";
 
 const MODIFIED_KEYS: readonly [Modifier[], TaskKey][] = [
 	[["Mod"], "mod-enter"],
@@ -27,15 +27,17 @@ export function runTaskCommand(
 	vault: JumpListVault & NoteBodyVault,
 	settings: JumpSettings,
 	command: TaskCommand,
-	source: VaultNote,
+	current: VaultNote | undefined,
 ): void {
-	const lineNumbers = vault.taskLineNumbers(source.path);
+	const notes = notesFromLists(command.sources, vault, current, settings.dateNotes).map((note) => ({ note, lineNumbers: vault.taskLineNumbers(note.path) }));
 	const dateNotes = resolveDateNotes(settings.dateNotes, vault);
 	let batch: TaskBatch = { remaining: [], changes: [] };
+	let showsNotes = false;
 	if (command.actions.length === 0) return;
 	const today = () => vault.moment(vault.now()).startOf("day");
-	const applyContext = (): ApplyContext => ({ vault, source, today: today(), dateNotes, now: vault.moment(vault.now()), templatesOptions: createObsidianVault(app).coreTemplatesOptions() });
-	const load = () => remainingTasks(vault, source, lineNumbers, command);
+	const applyContext = (): ApplyContext => ({ vault, today: today(), dateNotes, now: vault.moment(vault.now()), templatesOptions: createObsidianVault(app).coreTemplatesOptions() });
+	const load = () => remainingTasks(vault, notes, command);
+	const onlyCurrentNote = notes.length === 1 && notes[0].note.path === current?.path;
 
 	const instructions: Instruction[] = [
 		...keyInstructions(command, Platform.isMacOS),
@@ -57,16 +59,16 @@ export function runTaskCommand(
 		batch = cancelBatch(batch);
 		new Notice(t("noTaskChangesMade"));
 	};
-	const stage = (action: TaskAction, targets: TaskLine[], destination?: ResolvedDestination, selectedAll = false) => {
+	const stage = (action: TaskAction, targets: SourcedTask[], destination?: ResolvedDestination, selectedAll = false) => {
 		batch = stageChanges(batch, prepareChanges(applyContext(), action, targets, destination));
 		if (shouldFinishBatch(batch, selectedAll)) applyBatch();
 		else openTasks(batch.remaining, "");
 	};
 
-	const runAction = (action: TaskAction, targets: TaskLine[], back: () => void, selectedAll = false) => {
+	const runAction = (action: TaskAction, targets: SourcedTask[], back: () => void, selectedAll = false) => {
 		if (targets.length === 0) return back();
 		if (action.kind === "status") return command.batch ? stage(action, targets, undefined, selectedAll) : void finish(applyStatusAction(applyContext(), action, targets));
-		const { destinations, missingNotes } = actionDestinations(action, source.path, { vault, dateNotes, today: today() });
+		const { destinations, missingNotes } = actionDestinations(action, [...new Set(targets.map((target) => target.source.path))], { vault, dateNotes, today: today() });
 		for (const note of missingNotes) new Notice(t("taskDestinationSkipped", { note }));
 		const plan = planAction(action, destinations);
 		if (plan.plan === "none") {
@@ -78,7 +80,7 @@ export function runTaskCommand(
 		if (plan.destination) copyTo(plan.destination);
 	};
 
-	const openTasks = (tasks: TaskLine[], query: string): void => {
+	const openTasks = (tasks: SourcedTask[], query: string): void => {
 		const back = (typed: string) => () => openTasks(tasks, typed);
 		const press = (key: TaskKey) => ({ action }: TaskChoice, typed: string) => {
 			if (action.action === "finish") return applyBatch();
@@ -88,7 +90,7 @@ export function runTaskCommand(
 			if (behavior.behavior === "run") runAction(behavior.action, choiceTargets(action), back(typed), action.action === "all");
 			else openActions(choiceTargets(action), back(typed), action.action === "all");
 		};
-		new ChoiceModal<TaskChoice>(app, t("pickATask"), (typed) => taskChoices(command, tasks, typed, batch.changes.length), {
+		new ChoiceModal<TaskChoice>(app, t("pickATask"), (typed) => taskChoices(command, tasks, typed, batch.changes.length, showsNotes), {
 			choose: press("enter"),
 			shortcuts: MODIFIED_KEYS.map(([modifiers, key]) => ({ modifiers, run: press(key) })),
 			dismiss: () => { if (command.batch) cancel(); },
@@ -104,7 +106,7 @@ export function runTaskCommand(
 		}).openWithQuery(query);
 	};
 
-	const openActions = (targets: TaskLine[], back: () => void, selectedAll = false): void => {
+	const openActions = (targets: SourcedTask[], back: () => void, selectedAll = false): void => {
 		new ChoiceModal<ActionChoice>(app, t("pickATaskAction"), (typed) => actionChoices(command.actions, typed), {
 			choose: ({ action }) => runAction(action, targets, () => openActions(targets, back, selectedAll), selectedAll),
 			dismiss: back,
@@ -120,8 +122,9 @@ export function runTaskCommand(
 
 	load().then(
 		(tasks) => {
-			if (tasks.length === 0) new Notice(t("noTasksToProcess"));
+			if (tasks.length === 0) new Notice(t(onlyCurrentNote ? "noTasksToProcess" : "noTasksInSources"));
 			else {
+				showsNotes = spansNotes(tasks);
 				batch = { remaining: tasks, changes: [] };
 				openTasks(tasks, "");
 			}

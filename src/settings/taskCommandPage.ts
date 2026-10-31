@@ -4,14 +4,14 @@ import { t } from "../i18n";
 import type { TranslationKey } from "../i18n";
 import { createObsidianVault } from "../lists/obsidianVault";
 import { actionName, taskKeyLabel } from "../tasks/picker";
-import { TASK_KEYS, keysRunning, taskCommandName } from "../tasks/taskCommand";
-import type { TaskAction, TaskCommand } from "../tasks/taskCommand";
-import { taskActionKey, taskCommandKey } from "./controlKeys";
+import { TASK_KEYS, keysRunning, newNumericId, newTaskSource, taskCommandName } from "../tasks/taskCommand";
+import type { TaskAction, TaskCommand, TaskSource } from "../tasks/taskCommand";
+import { taskActionKey, taskCommandKey, taskSourceKey } from "./controlKeys";
 import { duplicateEntry } from "./duplicate";
 import { FOCUS_ATTRIBUTE, dropdownRow, editorRow, expandableRow, renderEditor, textRow, toggleRow } from "./fieldEditor";
 import type { EditorBinding, ExpandingPageContext, Redraw } from "./fieldEditor";
-import { editableRow } from "./listPage";
-import type { EditableRow, ListPageContext } from "./listPage";
+import { editableRow, listPage, listRow } from "./listPage";
+import type { EditableRow, ListPageContext, ListRole } from "./listPage";
 import { sortableRows } from "./sortable";
 import { NoteSuggest, warningDescription } from "./suggest";
 import {
@@ -55,6 +55,51 @@ interface ActionEditor extends EditorBinding<TaskActionSetting> {
 
 export function taskCommandPageId(command: TaskCommand): string {
 	return `task-command-${command.id}`;
+}
+
+export function taskSourcePageId(command: TaskCommand, source: TaskSource): string {
+	return `task-command-${command.id}-source-${source.id}`;
+}
+
+function taskSourceRole(command: TaskCommand, source: TaskSource): ListRole {
+	return {
+		key: (field) => taskSourceKey(command.id, source.id, field),
+		pageId: taskSourcePageId(command, source),
+		enabledTooltip: t("readTasksFromSource"),
+		enabledDesc: t("readTasksFromSourceDesc"),
+		sourceHeading: t("readTasksFrom"),
+		offersCurrentNote: true,
+		offersMissingNotes: false,
+	};
+}
+
+function sourceList(command: TaskCommand, context: ExpandingPageContext): SettingDefinitionList {
+	const { sources } = command;
+	const sourceContext: ListPageContext = { ...context, showPrefixes: false };
+	return {
+		type: "list",
+		heading: t("taskSources"),
+		cls: "note-compass-sortable-list",
+		emptyState: t("noTaskSourcesYet"),
+		items: sources.map((source) =>
+			listRow(source, sourceContext, () => context.change(() => duplicateEntry(sources, source, newNumericId(sources))), taskSourceRole(command, source)),
+		),
+		onReorder: (from, to) => context.change(() => sources.splice(to, 0, ...sources.splice(from, 1))),
+		onDelete: (index) => context.change(() => sources.splice(index, 1)),
+		addItem: {
+			name: t("addTaskSource"),
+			action: () => {
+				const source = newTaskSource(sources);
+				context.change(() => sources.push(source));
+				context.openPage(taskSourcePageId(command, source));
+			},
+		},
+	};
+}
+
+function sourcePages(command: TaskCommand, context: ExpandingPageContext): SettingDefinitionItem {
+	const sourceContext: ListPageContext = { ...context, showPrefixes: false };
+	return { type: "group", visible: false, items: command.sources.map((source) => listPage(source, sourceContext, taskSourceRole(command, source))) };
 }
 
 function expandedListId(command: TaskCommand): string {
@@ -119,6 +164,7 @@ export function taskCommandPage(command: TaskCommand, context: ExpandingPageCont
 						},
 					],
 				},
+				sourceList(command, context),
 				statusList(command, context, "statuses", t("taskStatuses"), t("taskStatusesDesc"), "taskAllStatuses"),
 				statusList(command, context, "skippedStatuses", t("taskSkippedStatuses"), t("taskSkippedStatusesDesc"), "noSkippedTasks"),
 				{
@@ -142,6 +188,7 @@ export function taskCommandPage(command: TaskCommand, context: ExpandingPageCont
 				},
 				actionList(command, context, headers),
 				keymapList(command, context, headers),
+				sourcePages(command, context),
 			];
 	const page: IdentifiedPage = {
 		type: "page",

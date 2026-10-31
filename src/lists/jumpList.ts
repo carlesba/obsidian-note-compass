@@ -49,7 +49,7 @@ export function buildJumpList(
 			prefix: list.prefix,
 			prefixColor: list.prefixColor,
 			notes: sourceNotes(list.source, context).filter((listed) => matchesPicker(listed.file)),
-			keepsOrder: list.source.kind === "currentPeriods" || list.source.kind === "adjacentDates",
+			keepsOrder: keepsOrder(list.source),
 		}));
 
 	const entries: JumpListEntry[] = [];
@@ -62,6 +62,32 @@ export function buildJumpList(
 		}
 	}
 	return entries;
+}
+
+export function notesFromLists(noteLists: readonly NoteList[], vault: JumpListVault, current: VaultNote | undefined, dateNoteSettings: DateNoteSettings): VaultNote[] {
+	const context = listContext(vault, current, dateNoteSettings);
+	const seen = new Set<string>();
+	const notes: VaultNote[] = [];
+	for (const list of noteLists) {
+		if (!list.enabled || list.source.kind === "unreadable") continue;
+		const listed = sourceNotes(list.source, context).filter((entry) => entry.missing === undefined);
+		for (const { file } of keepsOrder(list.source) ? listed : [...listed].sort(byName)) {
+			if (seen.has(file.path)) continue;
+			seen.add(file.path);
+			notes.push(file);
+		}
+	}
+	return notes;
+}
+
+const CURRENT_NOTE_SOURCES: ReadonlySet<ListSource["kind"]> = new Set(["currentNote", "adjacentDates", "linksOut", "linksIn", "sameDay"]);
+
+export function readsCurrentNote(source: ListSource): boolean {
+	return CURRENT_NOTE_SOURCES.has(source.kind);
+}
+
+function keepsOrder(source: ListSource): boolean {
+	return source.kind === "currentPeriods" || source.kind === "adjacentDates";
 }
 
 export function existingSourceNotes(source: ListSource, vault: JumpListVault, current: VaultNote | undefined, dateNoteSettings: DateNoteSettings): VaultNote[] {
@@ -90,6 +116,8 @@ function sourceNotes(source: ListSource, context: ListContext): ListedNote[] {
 	if (source.kind === "currentPeriods") return currentPeriodNotes(vault, currentPeriodsInOrder(source), dateNotes, context.today, showsMissingNotes(source));
 	if (!current) return [];
 	switch (source.kind) {
+		case "currentNote":
+			return [{ file: current }];
 		case "adjacentDates":
 			return adjacentDateNotes(vault, current, dateNotes, adjacentEntriesInOrder(source), showsMissingNotes(source));
 		case "linksOut":

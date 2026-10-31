@@ -3,7 +3,7 @@ import { ChoiceModal } from "./choiceModal";
 import { fillForm, isRunnable, pickForm } from "./forms/modal";
 import { formName } from "./forms/questions";
 import { DEFAULT_LANGUAGE, setLanguage, t } from "./i18n";
-import { buildJumpList } from "./lists/jumpList";
+import { buildJumpList, readsCurrentNote } from "./lists/jumpList";
 import { notePickerChoices } from "./lists/notePickers";
 import type { NotePickerChoice } from "./lists/notePickers";
 import { createObsidianVault } from "./lists/obsidianVault";
@@ -104,7 +104,7 @@ export default class NoteCompassPlugin extends Plugin {
 				icon: "list-checks",
 				checkCallback: (checking) => {
 					const target = this.currentNote();
-					if (!target) return false;
+					if (!target && command.sources.some((source) => source.enabled && readsCurrentNote(source.source))) return false;
 					if (!checking) runTaskCommand(this.app, createObsidianVault(this.app), this.settings, command, target);
 					return true;
 				},

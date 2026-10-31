@@ -4,7 +4,7 @@ import { t } from "../i18n";
 import type { TranslationKey } from "../i18n";
 import { typeLabel } from "../i18n/labels";
 import { propertyType } from "../lists/conditions";
-import type { FilterGroup, FilterNode, FilterRule, NegatableRule, PropertyRule } from "../lists/filters";
+import type { FilterGroup, FilterNode, FilterRule, NameRule, NegatableRule, PropertyRule } from "../lists/filters";
 import {
 	addCondition,
 	addGroup,
@@ -17,9 +17,11 @@ import {
 	fileDateOptions,
 	filterModeOptions,
 	fitRuleToProperty,
+	nameOperatorOptions,
 	ruleText,
 	writeConditionField,
 	writeMode,
+	writeNameOperator,
 	writeNegated,
 	writeRuleText,
 } from "./filterForm";
@@ -43,6 +45,8 @@ const TEXT_PLACEHOLDERS: Record<Exclude<FilterRule["kind"], "file">, Translation
 	folder: "folder",
 	tag: "tag",
 	linksTo: "note",
+	name: "value",
+	path: "value",
 };
 
 const SUGGESTIONS: Partial<Record<FilterRule["kind"], Suggestions>> = {
@@ -64,6 +68,11 @@ const SUGGESTIONS: Partial<Record<FilterRule["kind"], Suggestions>> = {
 			.getMarkdownFiles()
 			.map((file) => ({ value: file.path, label: file.basename, detail: file.path }))
 			.sort((a, b) => a.label.localeCompare(b.label)),
+	path: (app) =>
+		app.vault
+			.getAllFolders()
+			.map((folder) => ({ value: `${folder.path}/` }))
+			.sort((a, b) => a.value.localeCompare(b.value)),
 };
 
 const EDITOR_CLASS = "note-compass-filter";
@@ -71,6 +80,8 @@ const EDITOR_CLASS = "note-compass-filter";
 type FileField = Exclude<RuleField, "property">;
 
 const FIELD_KEYS: Record<FileField, TranslationKey> = {
+	name: "fieldFileName",
+	path: "fieldFilePath",
 	folder: "fieldFolder",
 	tag: "fieldTags",
 	linksTo: "fieldLinks",
@@ -237,6 +248,12 @@ function createRightSide(expressionEl: HTMLElement, statementEl: HTMLElement, ru
 		renderConditionValue(rightEl, statementEl, rule, editing);
 		return rightEl;
 	}
+	if (rule.kind === "name" || rule.kind === "path") {
+		operatorSelect(expressionEl, nameOperatorOptions(), rule.operator, false, (operator) => editing.change(() => writeNameOperator(rule, operator)));
+		const rightEl = expressionEl.createDiv({ cls: ["filter-rhs-container", "metadata-property-value"] });
+		renderRuleText(rightEl, rule, editing);
+		return rightEl;
+	}
 	const { matches, negated } = NEGATABLE_OPERATORS[rule.kind];
 	operatorSelect(expressionEl, { matches: t(matches), negated: t(negated) }, rule.negated ? "negated" : "matches", false, (operator) =>
 		editing.change(() => writeNegated(rule, operator === "negated")),
@@ -257,7 +274,7 @@ function operatorSelect(
 	dropdown.selectEl.addClass("filter-operator");
 }
 
-function renderRuleText(parentEl: HTMLElement, rule: NegatableRule, editing: FilterEditing): void {
+function renderRuleText(parentEl: HTMLElement, rule: NegatableRule | NameRule, editing: FilterEditing): void {
 	const commit = (value: string) => editing.change(() => writeRuleText(rule, value));
 	const text = textInput(parentEl, ruleText(rule), t(TEXT_PLACEHOLDERS[rule.kind]), { typing: (value) => writeRuleText(rule, value), commit });
 	const suggestions = SUGGESTIONS[rule.kind];

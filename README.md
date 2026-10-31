@@ -50,7 +50,7 @@ Answer a few questions and get one new note with its name, text and properties f
 
 ### Process tasks
 
-Complete, cancel, migrate or schedule tasks in the active note from a command you define.
+Complete, cancel, migrate or schedule tasks in the active note, or in the notes you choose, from a command you define.
 
 ![The task picker on a daily note, with ⚡ Apply to all 5 tasks first, the open tasks below it, then 🏁 Finish processing and 🛑 Cancel](docs/images/task-picker.png)
 

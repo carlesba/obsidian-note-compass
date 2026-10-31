@@ -1,4 +1,5 @@
 import type { ConditionOperator } from "../lists/conditions.ts";
+import type { NameOperator } from "../lists/filters.ts";
 import { t } from "./index.ts";
 import type { TranslationKey } from "./index.ts";
 
@@ -17,6 +18,15 @@ const OPERATOR_KEYS: Partial<Record<ConditionOperator, TranslationKey>> = {
 	"not on": "operatorNotOn",
 	before: "operatorBefore",
 	after: "operatorAfter",
+};
+
+const NAME_OPERATOR_KEYS: Record<NameOperator, TranslationKey> = {
+	"starts with": "operatorStartsWith",
+	"does not start with": "operatorDoesNotStartWith",
+	contains: "operatorContains",
+	"does not contain": "operatorDoesNotContain",
+	"ends with": "operatorEndsWith",
+	"does not end with": "operatorDoesNotEndWith",
 };
 
 const TYPE_KEYS: Record<string, TranslationKey> = {
@@ -40,4 +50,8 @@ export function operatorLabel(operator: ConditionOperator): string {
 export function typeLabel(type: string): string {
 	const key = Object.prototype.hasOwnProperty.call(TYPE_KEYS, type) ? TYPE_KEYS[type] : undefined;
 	return key === undefined ? type : t(key);
+}
+
+export function nameOperatorLabel(operator: NameOperator): string {
+	return t(NAME_OPERATOR_KEYS[operator]);
 }

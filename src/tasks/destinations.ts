@@ -50,12 +50,12 @@ export function periodNotePath(dateNotes: ResolvedDateNotes, period: Period, dat
 	return notePath(settings.folder, date.format(settings.format));
 }
 
-export function actionDestinations(action: CopyAction, sourcePath: string, context: DestinationContext): ActionDestinations {
+export function actionDestinations(action: CopyAction, sourcePaths: readonly string[], context: DestinationContext): ActionDestinations {
 	const notes = context.vault.notes();
 	const destinations: ResolvedDestination[] = [];
 	const missingNotes: string[] = [];
 	const add = (destination: ResolvedDestination | undefined) => {
-		if (!destination || destination.path === sourcePath || destinations.some((known) => known.path === destination.path)) return;
+		if (!destination || sourcePaths.includes(destination.path) || destinations.some((known) => known.path === destination.path)) return;
 		destinations.push(destination);
 	};
 	for (const destination of action.destinations) {

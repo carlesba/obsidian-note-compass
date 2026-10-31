@@ -58,6 +58,7 @@ export type ListSource =
 	| { kind: "linksToNote"; note: string }
 	| { kind: "inFolder"; folder: string }
 	| { kind: "modifiedToday" }
+	| { kind: "currentNote" }
 	| CurrentPeriodsSource
 	| UnreadableSource;
 
@@ -234,7 +235,7 @@ function storedNotePicker(picker: NotePicker): unknown {
 	return stored;
 }
 
-function withStoredSource(entry: { source?: ListSource }): object {
+export function withStoredSource(entry: { source?: ListSource }): object {
 	return isUnreadable(entry.source) ? { ...entry, source: entry.source.stored } : entry;
 }
 
@@ -505,7 +506,7 @@ function readLists<Fields extends object>(
 	return lists;
 }
 
-function readSourceOrKeep(stored: unknown): ListSource {
+export function readSourceOrKeep(stored: unknown): ListSource {
 	return readListSource(stored) ?? { kind: "unreadable", stored };
 }
 
@@ -515,6 +516,7 @@ export function readListSource(stored: unknown): ListSource | undefined {
 	const kind = RELATION_SOURCE_KINDS.find((relation) => relation === stored.kind);
 	if (kind && kind !== "adjacentDates") return { kind };
 	if (stored.kind === "modifiedToday") return { kind: "modifiedToday" };
+	if (stored.kind === "currentNote") return { kind: "currentNote" };
 	if (stored.kind === "currentPeriods") {
 		const periods = Array.isArray(stored.periods) ? stored.periods : [];
 		const source: CurrentPeriodsSource = { kind: "currentPeriods", periods: PERIODS.filter((period) => periods.includes(period)) };

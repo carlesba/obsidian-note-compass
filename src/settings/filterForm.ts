@@ -1,6 +1,6 @@
 import { t, tCount, translatedLabels } from "../i18n/index.ts";
 import type { TranslationKey } from "../i18n/index.ts";
-import { operatorLabel, typeLabel } from "../i18n/labels.ts";
+import { nameOperatorLabel, operatorLabel, typeLabel } from "../i18n/labels.ts";
 import {
 	CONDITIONS_BY_TYPE,
 	DATE_OPERATORS,
@@ -11,16 +11,16 @@ import {
 	propertyType,
 } from "../lists/conditions.ts";
 import type { Condition, DateCondition, DateValue } from "../lists/conditions.ts";
-import { FILTER_MODES, MAX_FILTER_DEPTH, filterRules } from "../lists/filters.ts";
-import type { FileDateRule, FilterGroup, FilterMode, FilterNode, FilterRule, NegatableRule, PropertyRule } from "../lists/filters.ts";
+import { FILTER_MODES, MAX_FILTER_DEPTH, NAME_OPERATORS, filterRules, nameRule } from "../lists/filters.ts";
+import type { FileDateRule, FilterGroup, FilterMode, FilterNode, FilterRule, NameField, NameRule, NegatableRule, PropertyRule } from "../lists/filters.ts";
 
-export type RuleField = "property" | "folder" | "tag" | "linksTo" | "created" | "modified";
+export type RuleField = "property" | "folder" | "tag" | "linksTo" | "created" | "modified" | NameField;
 
 export type ConditionField = "operator" | "text" | "number" | "dateMode" | "date" | "days" | "direction";
 
 export type ConditionRule = PropertyRule | FileDateRule;
 
-const RULE_FIELDS: readonly RuleField[] = ["property", "folder", "tag", "linksTo", "created", "modified"];
+const RULE_FIELDS: readonly RuleField[] = ["property", "name", "path", "folder", "tag", "linksTo", "created", "modified"];
 
 const FILTER_MODE_KEYS: Record<FilterMode, TranslationKey> = { all: "modeAll", any: "modeAny", none: "modeNone" };
 
@@ -32,12 +32,23 @@ const SUMMARY_KEYS: Record<FilterMode, { one: TranslationKey; other: Translation
 
 const FILE_DATE_KEYS: Record<FileDateRule["field"], TranslationKey> = { created: "createdCondition", modified: "modifiedCondition" };
 
+const NAME_FIELD_KEYS: Record<NameField, TranslationKey> = { name: "fieldFileName", path: "fieldFilePath" };
+
 export function filterModeOptions(): Record<FilterMode, string> {
 	return translatedLabels(FILTER_MODE_KEYS);
 }
 
 export function fileDateOptions(): Record<string, string> {
 	return Object.fromEntries(DATE_OPERATORS.map((operator) => [operator, operatorLabel(operator)]));
+}
+
+export function nameOperatorOptions(): Record<string, string> {
+	return Object.fromEntries(NAME_OPERATORS.map((operator) => [operator, nameOperatorLabel(operator)]));
+}
+
+export function writeNameOperator(rule: NameRule, chosen: string): void {
+	const operator = NAME_OPERATORS.find((candidate) => candidate === chosen);
+	if (operator) rule.operator = operator;
 }
 
 export function ruleField(rule: FilterRule): RuleField {
@@ -54,6 +65,9 @@ export function newRule(field: RuleField): FilterRule {
 			return { kind: "tag", tag: "" };
 		case "linksTo":
 			return { kind: "linksTo", note: "" };
+		case "name":
+		case "path":
+			return nameRule(field, "contains", "");
 		case "created":
 		case "modified":
 			return { kind: "file", field, condition: { operator: "after", value: { kind: "relative", days: -7 } } };
@@ -83,6 +97,10 @@ export function changeRuleField(group: FilterGroup, rule: FilterRule, chosen: st
 	if (field === undefined || index === -1 || ruleField(rule) === field) return;
 	const replacement = newRule(field);
 	if (rule.kind === "file" && replacement.kind === "file") replacement.condition = rule.condition;
+	if ((rule.kind === "name" || rule.kind === "path") && (replacement.kind === "name" || replacement.kind === "path")) {
+		replacement.operator = rule.operator;
+		replacement.value = rule.value;
+	}
 	group.items[index] = replacement;
 }
 
@@ -101,6 +119,9 @@ export function ruleText(rule: FilterRule): string {
 			return rule.tag;
 		case "linksTo":
 			return rule.note;
+		case "name":
+		case "path":
+			return rule.value;
 		case "file":
 			return "";
 	}
@@ -112,6 +133,7 @@ export function writeRuleText(rule: FilterRule, value: string): void {
 	else if (rule.kind === "folder") rule.folder = text;
 	else if (rule.kind === "tag") rule.tag = text.replace(/^#/, "");
 	else if (rule.kind === "linksTo") rule.note = text;
+	else if (rule.kind === "name" || rule.kind === "path") rule.value = text;
 }
 
 export function writeNegated(rule: NegatableRule, negated: boolean): void {
@@ -168,6 +190,11 @@ export function describeRule(rule: FilterRule): string {
 		}
 		case "file":
 			return t(FILE_DATE_KEYS[rule.field], { condition: describeCondition(rule.condition) });
+		case "name":
+		case "path": {
+			const value = rule.value.trim();
+			return `${t(NAME_FIELD_KEYS[rule.kind])} ${nameOperatorLabel(rule.operator)} ${value === "" ? "…" : value}`;
+		}
 	}
 }
 

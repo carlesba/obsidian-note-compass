@@ -23,6 +23,7 @@ const SOURCE_KEYS: Record<SourceChoice, TranslationKey> = {
 	inFolder: "sourceInFolder",
 	modifiedToday: "sourceModifiedToday",
 	currentPeriods: "sourceCurrentPeriods",
+	currentNote: "sourceCurrentNote",
 };
 
 const CURRENT_PERIOD_KEYS: Record<Period, TranslationKey> = {
@@ -37,8 +38,15 @@ export function unreadableListWarning(): string {
 	return t("unreadableListWarning");
 }
 
-export function sourceOptions(): Record<SourceChoice, string> {
+export function sourceLabels(): Record<SourceChoice, string> {
 	return translatedLabels(SOURCE_KEYS);
+}
+
+export function sourceOptions(offersCurrentNote = false): Record<string, string> {
+	const labels = sourceLabels();
+	const options: Record<string, string> = offersCurrentNote ? { currentNote: labels.currentNote } : {};
+	for (const choice of Object.keys(labels) as SourceChoice[]) if (choice !== "currentNote") options[choice] = labels[choice];
+	return options;
 }
 
 export function currentPeriodName(period: Period): string {
@@ -261,6 +269,7 @@ function sourceFor(kind: unknown, current: ListSource): ListSource {
 	if (kind === "linksToNote") return { kind, note: "" };
 	if (kind === "inFolder") return { kind, folder: "" };
 	if (kind === "modifiedToday") return { kind };
+	if (kind === "currentNote") return { kind };
 	if (kind === "currentPeriods") return { kind, periods: [...PERIODS] };
 	if (kind === "adjacentDates") return { kind };
 	const relation = RELATION_SOURCE_KINDS.find((choice) => choice === kind);

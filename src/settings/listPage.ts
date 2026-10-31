@@ -110,9 +110,31 @@ export interface EditableRow {
 	duplicate?: () => void;
 }
 
-export function listPage(list: NoteList, context: ListPageContext): SettingDefinitionPage {
-	const items = isUnreadable(list.source) ? [unreadableItem()] : listPageItems(list, context);
-	return pageEntry(listPageId(list), () => listName(list), list, context, items);
+export interface ListRole {
+	key: (field: ListField) => string;
+	pageId: string;
+	enabledTooltip: string;
+	enabledDesc: string;
+	sourceHeading: string;
+	offersCurrentNote: boolean;
+	offersMissingNotes: boolean;
+}
+
+export function navigationListRole(list: NoteList): ListRole {
+	return {
+		key: (field) => listKey(list.id, field),
+		pageId: listPageId(list),
+		enabledTooltip: t("showListInPicker"),
+		enabledDesc: t("showListInPickerDesc"),
+		sourceHeading: t("offerNotesFrom"),
+		offersCurrentNote: false,
+		offersMissingNotes: true,
+	};
+}
+
+export function listPage(list: NoteList, context: ListPageContext, role: ListRole = navigationListRole(list)): SettingDefinitionPage {
+	const items = isUnreadable(list.source) ? [unreadableItem()] : listPageItems(list, context, role);
+	return pageEntry(role.pageId, () => listName(list), list, context, items);
 }
 
 function unreadableItem(): SettingDefinitionItem {
@@ -129,20 +151,20 @@ function sourceWarning(source: ListSource, context: ListPageContext): string | u
 	return inapplicableCondition(source, context.propertyTypes) ? t("conditionDoesNotApply") : undefined;
 }
 
-export function listRow(list: NoteList, context: ListPageContext, duplicate?: () => void): SettingDefinition {
+export function listRow(list: NoteList, context: ListPageContext, duplicate?: () => void, role: ListRole = navigationListRole(list)): SettingDefinition {
 	return editableRow(
 		{
 			name: listName(list),
 			label: sourceSummary(list.source),
 			prefix: list.prefix,
 			prefixColor: list.prefixColor,
-			prefixKey: listKey(list.id, "prefix"),
+			prefixKey: role.key("prefix"),
 			warning: sourceWarning(list.source, context),
 			broken: isUnreadable(list.source),
 			enabled: list.enabled,
-			enabledKey: listKey(list.id, "enabled"),
-			enabledTooltip: t("showListInPicker"),
-			pageId: listPageId(list),
+			enabledKey: role.key("enabled"),
+			enabledTooltip: role.enabledTooltip,
+			pageId: role.pageId,
 			editTooltip: t("editList"),
 			duplicate,
 		},
@@ -410,13 +432,13 @@ function excludedFoldersList(entry: LinkProperty, context: ListPageContext): Set
 	};
 }
 
-export function listPageItems(list: NoteList, context: ListPageContext): SettingDefinitionItem[] {
-	const key = (field: ListField) => listKey(list.id, field);
+export function listPageItems(list: NoteList, context: ListPageContext, role: ListRole = navigationListRole(list)): SettingDefinitionItem[] {
+	const { key } = role;
 	return [
-		{ name: t("enabled"), desc: t("showListInPickerDesc"), control: { type: "toggle", key: key("enabled") } },
+		{ name: t("enabled"), desc: role.enabledDesc, control: { type: "toggle", key: key("enabled") } },
 		prefixGroup(list, key("prefix"), t("listPrefixDesc"), context),
-		{ type: "group", heading: t("offerNotesFrom"), items: sourceItems(list, context, key) },
-		...sourceChoices(list.source, context, key, true),
+		{ type: "group", heading: role.sourceHeading, items: sourceItems(list, context, key, role.offersCurrentNote) },
+		...sourceChoices(list.source, context, key, role.offersMissingNotes),
 	];
 }
 
@@ -586,10 +608,11 @@ function sourceItems(
 	list: NoteList,
 	context: ListPageContext,
 	key: (field: ListField) => string,
+	offersCurrentNote = false,
 ): SettingGroupItem[] {
 	const filter = list.source.kind === "filter" ? list.source.filter : undefined;
 	return [
-		{ name: t("source"), control: { type: "dropdown", key: key("source"), options: sourceOptions() } },
+		{ name: t("source"), control: { type: "dropdown", key: key("source"), options: sourceOptions(offersCurrentNote) } },
 		{
 			name: t("note"),
 			desc: t("noteDesc"),

@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import type { Condition } from "../src/lists/conditions.ts";
-import type { FilterGroup, FilterNode, FilterRule } from "../src/lists/filters.ts";
+import type { FilterGroup, FilterNode, FilterRule, NameOperator } from "../src/lists/filters.ts";
 import { buildJumpList } from "../src/lists/jumpList.ts";
 import { offeredEntries } from "../src/setProperties/offered.ts";
 import { defaultSettings, mergeSettings, storedSettings } from "../src/settings.ts";
@@ -207,4 +207,35 @@ test("a navigation picker's filter round-trips, defaults to empty, and an unread
 	assert.equal(picker.enabled, false);
 	assert.deepEqual(picker.unreadable, { stored: broken });
 	assert.deepEqual((storedSettings(mergeSettings({ notePickers: [broken] })) as { notePickers: unknown[] }).notePickers, [broken]);
+});
+
+test("file name and path conditions match the start, the middle or the end, ignoring case, and their negations match the rest", () => {
+	const named = (kind: "name" | "path", operator: NameOperator, value: string): ListSource => filter(all({ kind, operator, value }));
+	assert.deepEqual(listed(named("name", "starts with", "al")), ["Alpha"]);
+	assert.deepEqual(listed(named("name", "does not start with", "al")), ["Beta", "Delta", "Gamma", "Person"]);
+	assert.deepEqual(listed(named("name", "contains", "MM")), ["Gamma"]);
+	assert.deepEqual(listed(named("name", "does not contain", "a")), ["Person"]);
+	assert.deepEqual(listed(named("name", "ends with", "ta")), ["Beta", "Delta"]);
+	assert.deepEqual(listed(named("name", "does not end with", "ta")), ["Alpha", "Gamma", "Person"]);
+	assert.deepEqual(listed(named("path", "starts with", "projects/")), ["Alpha", "Beta"]);
+	assert.deepEqual(listed(named("path", "contains", "/sub/")), ["Beta"]);
+	assert.deepEqual(listed(named("path", "ends with", "sub/beta")), ["Beta"]);
+	assert.deepEqual(listed(named("path", "does not start with", "projects")), ["Delta", "Person"]);
+});
+
+test("a file name condition with no value lists nothing, and its negation lists every note", () => {
+	assert.deepEqual(listed(filter(all({ kind: "name", operator: "contains", value: " " }))), []);
+	assert.deepEqual(listed(filter(all({ kind: "name", operator: "does not contain", value: "" }))).length, notes.length);
+});
+
+test("file name and path conditions survive a reload and unknown operators make the filter unreadable", () => {
+	const settings = defaultSettings();
+	const list: NoteList = { id: "list-9", enabled: true, prefix: "", source: filter(all({ kind: "name", operator: "ends with", value: "ta" }, { kind: "path", operator: "does not start with", value: "people/" })) };
+	settings.notePickers[0].lists = [list];
+	const reloaded = mergeSettings(JSON.parse(JSON.stringify(storedSettings(settings))));
+	assert.deepEqual(reloaded.notePickers[0].lists[0], list);
+	const broken = mergeSettings({ notePickers: [{ id: "1", enabled: true, name: "", lists: [{ id: "list-1", enabled: true, prefix: "", source: { kind: "filter", filter: all({ kind: "name", operator: "matches", value: "x" } as unknown as FilterRule) } }] }] });
+	assert.equal(broken.notePickers[0].lists[0].source.kind, "unreadable");
+	assert.equal(sourceSummary(filter(all({ kind: "name", operator: "starts with", value: "Weekly" }))), "file name starts with Weekly");
+	assert.equal(sourceSummary(filter(all({ kind: "path", operator: "contains", value: "" }))), "file path contains …");
 });
