@@ -290,7 +290,7 @@ test("a saved source that does not fit its data type reads as typed input, and a
 			fields: [
 				{ id: "1", key: "pages", mode: "ask", type: "number", source: "notes", notesFrom: { kind: "modifiedToday" } },
 				{ id: "2", key: "read", mode: "ask", type: "checkbox", source: "options", choices: [{ value: "x" }] },
-				{ id: "3", key: "book", mode: "ask", type: "text", source: "notes", notesFrom: { kind: "inFolder", folder: "books" } },
+				{ id: "3", key: "book", mode: "ask", type: "text", source: "notes", notesFrom: { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "file", field: "file", condition: { operator: "in folder", value: "books" } }] } } },
 				{ id: "4", key: "people", mode: "ask", type: "list", source: "notes", notesFrom: { kind: "filter", filter: { kind: "group", mode: "all", items: [] } } },
 				{ id: "5", key: "kind", mode: "static", type: "text", source: "options", value: "book" },
 			],
@@ -299,7 +299,7 @@ test("a saved source that does not fit its data type reads as typed input, and a
 	assert.deepEqual(read.fields, [
 		field("1", "pages", { type: "number", source: "typed" }),
 		field("2", "read", { type: "checkbox" }),
-		field("3", "book", { source: "notes", notesFrom: { kind: "inFolder", folder: "books" } }),
+		field("3", "book", { source: "notes", notesFrom: { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "file", field: "file", condition: { operator: "in folder", value: "books" } }] } } }),
 		field("4", "people", { type: "list", source: "notes", notesFrom: { kind: "filter", filter: { kind: "group", mode: "all", items: [] } } }),
 		field("5", "kind", { mode: "static", value: "book" }),
 	]);
@@ -318,7 +318,7 @@ test("each data type and source combination writes its own shape: numbers from o
 		namePattern: "{{book}} by {{author}}",
 		contentPattern: "[[{{book}}]] with {{people}}",
 		fields: [
-			field("1", "book", { source: "notes", notesFrom: { kind: "inFolder", folder: "books" } }),
+			field("1", "book", { source: "notes", notesFrom: { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "file", field: "file", condition: { operator: "in folder", value: "books" } }] } } }),
 			field("2", "author", { source: "options", choices: [{ value: "Herbert", label: "Frank Herbert" }] }),
 			field("3", "rating", { type: "number", source: "options", choices: [{ value: "4", label: "4 · Great" }, { value: "n/a" }] }),
 			field("4", "pages", { type: "number", source: "typed" }),
@@ -388,7 +388,7 @@ test("the notes offered to a question come from its list source, most recently c
 	]);
 	const linkText = (path: string) => vault.linkText(path, "");
 	const dateNotes = defaultSettings().dateNotes;
-	const inFolder = offeredNotes({ kind: "inFolder", folder: "books" }, vault, undefined, dateNotes, linkText);
+	const inFolder = offeredNotes({ kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "file", field: "file", condition: { operator: "in folder", value: "books" } }] } }, vault, undefined, dateNotes, linkText);
 	assert.deepEqual(inFolder.map((note) => [note.name, note.link]), [["Dune", "[[Dune]]"], ["Emma", "[[books/old/Emma]]"], ["Emma", "[[books/Emma]]"]]);
 	const linking = offeredNotes({ kind: "linksToNote", note: "Dune" }, vault, undefined, dateNotes, linkText);
 	assert.deepEqual(linking.map((note) => note.path), ["people/Paul.md"]);

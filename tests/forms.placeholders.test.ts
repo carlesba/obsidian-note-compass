@@ -79,7 +79,7 @@ test("the @ menu lists relative days, every distinct field key including block f
 		fields: [
 			field("1", "book"),
 			field("2", "", { mode: "static", type: "text" }),
-			block("3", [{ key: "book", operator: "is set" }], [field("4", "pages", { type: "number" }), fixed("5", "book", "x")]),
+			block("3", [{ key: "book", operator: "is not empty" }], [field("4", "pages", { type: "number" }), fixed("5", "book", "x")]),
 			field("6", "rating", { saveAs: "variable" }),
 		],
 	});

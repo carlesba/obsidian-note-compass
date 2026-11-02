@@ -48,7 +48,7 @@ const setPropertiesDefaults = (): SetPropertiesSettings => ({
 		linked("list-1", "👤 peop", linksTo("Person 👤"), "people"),
 		linked("list-2", "📍 trak", linksTo("Tracker 📍"), "trackers"),
 		linked("list-3", "📚 coll", linksTo("Collection 📚"), "collections"),
-		linked("list-4", "📂 catg", { kind: "inFolder", folder: "categories" }, "category", "link"),
+		linked("list-4", "📂 catg", { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "file", field: "file", condition: { operator: "in folder", value: "categories" } }] } }, "category", "link"),
 		linked("list-5", "🏷️ ever", isTrue("evergreen"), "related"),
 		linked("list-6", "📍 actv", isTrue("active"), "related"),
 		linked("list-7", "🏢 comp", linksTo("Org 🏢"), "related"),
@@ -82,7 +82,7 @@ test("mergeSettings migrates saved flags and link lists into properties, flags f
 		flags: ["pinned"],
 		templatesFolder: "_templates",
 		linkLists: [
-			{ id: "list-4", enabled: false, prefix: "🧭", name: "Areas", source: { kind: "inFolder", folder: "areas" }, property: "area", mode: "single" },
+			{ id: "list-4", enabled: false, prefix: "🧭", name: "Areas", source: { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "file", field: "file", condition: { operator: "in folder", value: "areas" } }] } }, property: "area", mode: "single" },
 			{ id: "list-2", enabled: true, prefix: "👤", name: "People", source: linksTo("Person"), property: "related", mode: "multi" },
 			{ id: "list-7", enabled: true, prefix: "🏢", name: "Orgs", source: linksTo("Org"), property: "related", mode: "multi" },
 		],
@@ -91,7 +91,7 @@ test("mergeSettings migrates saved flags and link lists into properties, flags f
 	assert.deepEqual(merged.setProperties, {
 		properties: [
 			checkbox("list-8", "pinned", "⚑"),
-			{ ...linked("list-4", "🧭", { kind: "inFolder", folder: "areas" }, "area", "link", ["_templates"]), enabled: false },
+			{ ...linked("list-4", "🧭", { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "file", field: "file", condition: { operator: "in folder", value: "areas" } }] } }, "area", "link", ["_templates"]), enabled: false },
 			linked("list-2", "👤", linksTo("Person"), "related", "links", ["_templates"]),
 			linked("list-7", "🏢", linksTo("Org"), "related", "links", ["_templates"]),
 		],
@@ -324,7 +324,7 @@ test("mergeSettings keeps saved lists in their order and round-trips its own out
 			},
 			{ id: "list-2", enabled: true, prefix: "🔗", source: { kind: "linksIn" } },
 			{ id: "list-3", enabled: true, prefix: "👤", source: { kind: "linksToNote", note: "types/Person 👤.md" } },
-			{ id: "list-4", enabled: true, prefix: "📂", source: { kind: "inFolder", folder: "categories" } },
+			{ id: "list-4", enabled: true, prefix: "📂", source: { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "file", field: "file", condition: { operator: "in folder", value: "categories" } }] } } },
 			{ id: "list-5", enabled: false, prefix: "🔅", source: { kind: "modifiedToday" } },
 		],
 		dateNotes: { from: "custom", custom: { ...defaultDateNoteSettings().custom, quarter: { enabled: true, folder: "q", format: "YYYY-[Q]Q" } } },
@@ -452,4 +452,13 @@ test("mergeSettings turns the previous and next choices saved by 0.14.0 into per
 	if (source.kind !== "adjacentDates") return;
 	assert.deepEqual(source.entries, ["next-day", "next-week", "next-month", "next-quarter", "next-year"]);
 	assert.deepEqual(source.order?.slice(0, 4), ["next-day", "previous-day", "next-week", "previous-week"]);
+});
+
+test("an in folder source saved by earlier versions reads as a filter with file in folder", () => {
+	const stored = { id: "list-1", enabled: true, prefix: "📂", source: { kind: "inFolder", folder: "categories" } };
+	const [list] = mergeSettings({ lists: [stored] }).notePickers[0].lists;
+	assert.deepEqual(list.source, {
+		kind: "filter",
+		filter: { kind: "group", mode: "all", items: [{ kind: "file", field: "file", condition: { operator: "in folder", value: "categories" } }] },
+	});
 });

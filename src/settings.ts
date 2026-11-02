@@ -1,7 +1,7 @@
 import { t } from "./i18n/index.ts";
 import { readCondition } from "./lists/conditions.ts";
 import type { Condition } from "./lists/conditions.ts";
-import { emptyFilter, readFilter, singleRuleFilter } from "./lists/filters.ts";
+import { emptyFilter, fileRule, readFilter, singleRuleFilter } from "./lists/filters.ts";
 import type { FilterGroup } from "./lists/filters.ts";
 import { DEFAULT_CUSTOM_DATE_NOTES, PERIODS, defaultDateNoteSettings } from "./lists/dateNotes.ts";
 import type { DateNoteSettings, Period, PeriodFormat } from "./lists/dateNotes.ts";
@@ -56,7 +56,6 @@ export type ListSource =
 	| AdjacentDatesSource
 	| { kind: "filter"; filter: FilterGroup }
 	| { kind: "linksToNote"; note: string }
-	| { kind: "inFolder"; folder: string }
 	| { kind: "modifiedToday" }
 	| { kind: "currentNote" }
 	| CurrentPeriodsSource
@@ -192,7 +191,7 @@ function defaultLinkListFields(): Omit<LinkList, "id" | "enabled">[] {
 			property: "collections",
 			mode: "multi",
 		},
-		{ prefix: "📂 catg", source: { kind: "inFolder", folder: "categories" }, property: "category", mode: "single" },
+		{ prefix: "📂 catg", source: folderFilter("categories"), property: "category", mode: "single" },
 		{
 			prefix: "🏷️ ever",
 			source: propertyFilter("evergreen", { operator: "is", value: true }),
@@ -208,6 +207,10 @@ function defaultLinkListFields(): Omit<LinkList, "id" | "enabled">[] {
 		{ prefix: "🏢 comp", source: { kind: "linksToNote", note: "Org 🏢" }, property: "related", mode: "multi" },
 		{ prefix: "🔅 tday", source: { kind: "modifiedToday" }, property: "related", mode: "multi" },
 	];
+}
+
+function folderFilter(folder: string): ListSource {
+	return { kind: "filter", filter: singleRuleFilter(fileRule("file", { operator: "in folder", value: folder })) };
 }
 
 function propertyFilter(property: string, condition: Condition): ListSource {
@@ -533,7 +536,7 @@ export function readListSource(stored: unknown): ListSource | undefined {
 		return source;
 	}
 	if (stored.kind === "linksToNote") return typeof stored.note === "string" ? { kind: "linksToNote", note: stored.note } : undefined;
-	if (stored.kind === "inFolder") return typeof stored.folder === "string" ? { kind: "inFolder", folder: stored.folder } : undefined;
+	if (stored.kind === "inFolder") return typeof stored.folder === "string" ? folderFilter(stored.folder) : undefined;
 	if (stored.kind === "filter") {
 		const filter = readFilter(stored.filter);
 		return filter ? { kind: "filter", filter } : undefined;

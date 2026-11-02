@@ -2,8 +2,8 @@ import { DropdownComponent, TextComponent, getAllTags, setIcon } from "obsidian"
 import type { App } from "obsidian";
 import { t } from "../i18n";
 import { typeLabel } from "../i18n/labels";
-import { valueShape } from "../lists/conditions";
-import type { ValueShape } from "../lists/conditions";
+import { propertyType, valueShape } from "../lists/conditions";
+import type { PropertyType, ValueShape } from "../lists/conditions";
 import { FILE_FIELDS, ruleValueType } from "../lists/filters";
 import type { FileField, FilterGroup, FilterNode, FilterRule, PropertyRule } from "../lists/filters";
 import {
@@ -25,6 +25,8 @@ import {
 import type { ConditionField } from "./filterForm";
 import { dateModeOptions, directionOptions, fixedDateError } from "./listForm";
 import type { PropertySuggestion } from "./listForm";
+import { Combobox } from "./combobox";
+import type { ComboboxItem } from "./combobox";
 import { TextSuggest } from "./suggest";
 import type { TextSuggestion } from "./suggest";
 
@@ -92,6 +94,34 @@ const SHAPE_PLACEHOLDERS: Partial<Record<ValueShape, Parameters<typeof t>[0]>> =
 };
 
 const EDITOR_CLASS = "note-compass-filter";
+
+const PROPERTY_ICONS: Record<PropertyType, string> = {
+	text: "lucide-text",
+	multitext: "lucide-list",
+	tags: "lucide-tags",
+	aliases: "lucide-forward",
+	number: "lucide-binary",
+	checkbox: "lucide-check-square",
+	date: "lucide-calendar",
+	datetime: "lucide-clock",
+};
+
+const FILE_FIELD_ICONS: Record<FileField, string> = {
+	file: "lucide-file",
+	name: "lucide-text",
+	basename: "lucide-text",
+	fullname: "lucide-text",
+	path: "lucide-text",
+	folder: "lucide-folder",
+	ext: "lucide-text",
+	ctime: "lucide-clock",
+	mtime: "lucide-clock",
+	size: "lucide-binary",
+	links: "lucide-link",
+	backlinks: "lucide-link",
+	embeds: "lucide-link",
+	tags: "lucide-tags",
+};
 
 const FILE_FIELD_PREFIX = "file:";
 
@@ -167,43 +197,30 @@ function renderRule(parentEl: HTMLElement, rule: FilterRule, place: GroupPlace &
 }
 
 function renderLeftSide(expressionEl: HTMLElement, rule: FilterRule, group: FilterGroup, editing: FilterEditing): void {
-	const shown = leftLabel(rule);
-	const commit = (value: string) =>
-		editing.change(() => {
-			const typed = value.trim();
-			if (typed === shown) return;
-			const field = fieldNamed(typed);
-			if (field) {
-				changeRuleField(group, rule, field);
-				return;
-			}
-			const target: PropertyRule | undefined = rule.kind === "property" ? rule : replaceWithProperty(group, rule);
-			if (!target) return;
-			writeProperty(target, typed);
-			fitRuleToProperty(target, editing.propertyTypes);
-		});
-	const text = new TextComponent(expressionEl).setPlaceholder(t("property")).setValue(shown);
-	text.inputEl.addClass("filter-property-select");
-	text.inputEl.addEventListener("change", () => commit(text.getValue()));
-	const suggest = new TextSuggest(editing.app, text.inputEl, () => leftSuggestions(editing));
-	suggest.onSelect((suggestion) => {
-		suggest.close();
-		if (suggestion.value.startsWith(FILE_FIELD_PREFIX)) {
-			const field = suggestion.value.slice(FILE_FIELD_PREFIX.length);
-			editing.change(() => changeRuleField(group, rule, field));
-			return;
-		}
-		commit(suggestion.value.slice(PROPERTY_PREFIX.length));
+	const combobox = new Combobox(expressionEl, {
+		items: () => fieldItems(editing),
+		placeholder: t("property"),
+		searchPlaceholder: t("comboboxSearch"),
+		extraItem: (query, items) => (query === "" || items.some((item) => item.label === query) ? undefined : { value: PROPERTY_PREFIX + query, label: query, icon: PROPERTY_ICONS.text }),
+		onSelect: (item) =>
+			editing.change(() => {
+				if (item.value.startsWith(FILE_FIELD_PREFIX)) {
+					changeRuleField(group, rule, item.value.slice(FILE_FIELD_PREFIX.length));
+					return;
+				}
+				const target: PropertyRule | undefined = rule.kind === "property" ? rule : replaceWithProperty(group, rule);
+				if (!target) return;
+				writeProperty(target, item.value.slice(PROPERTY_PREFIX.length));
+				fitRuleToProperty(target, editing.propertyTypes);
+			}),
 	});
+	combobox.buttonEl.addClass("filter-property-select");
+	combobox.setValue(rule.kind === "property" && rule.property === "" ? undefined : selectedField(rule, editing));
 }
 
-function leftLabel(rule: FilterRule): string {
-	return rule.kind === "property" ? rule.property : fileFieldLabel(rule.field);
-}
-
-function fieldNamed(typed: string): FileField | undefined {
-	const wanted = typed.toLowerCase();
-	return FILE_FIELDS.find((field) => fileFieldLabel(field).toLowerCase() === wanted);
+function selectedField(rule: FilterRule, editing: FilterEditing): ComboboxItem {
+	if (rule.kind === "file") return fileFieldItem(rule.field);
+	return { value: PROPERTY_PREFIX + rule.property, label: rule.property, icon: PROPERTY_ICONS[propertyType(editing.propertyTypes, rule.property)] };
 }
 
 function replaceWithProperty(group: FilterGroup, rule: FilterRule): PropertyRule | undefined {
@@ -213,30 +230,32 @@ function replaceWithProperty(group: FilterGroup, rule: FilterRule): PropertyRule
 	return replacement?.kind === "property" ? replacement : undefined;
 }
 
-function leftSuggestions(editing: FilterEditing): TextSuggestion[] {
-	const fields = FILE_FIELDS.map((field) => ({
-		value: FILE_FIELD_PREFIX + field,
-		label: fileFieldLabel(field),
-		detail: t("fileField"),
-	}));
+function fileFieldItem(field: FileField): ComboboxItem {
+	return { value: FILE_FIELD_PREFIX + field, label: fileFieldLabel(field), icon: FILE_FIELD_ICONS[field], detail: `file.${field}` };
+}
+
+function fieldItems(editing: FilterEditing): ComboboxItem[] {
 	const properties = editing.propertySuggestions().map((suggestion) => ({
 		value: PROPERTY_PREFIX + suggestion.name,
 		label: suggestion.name,
-		detail: typeLabel(suggestion.type),
+		icon: PROPERTY_ICONS[suggestion.type],
 	}));
-	return [...fields, ...properties];
+	return [...FILE_FIELDS.map(fileFieldItem), ...properties];
 }
 
 function createRightSide(expressionEl: HTMLElement, statementEl: HTMLElement, rule: FilterRule, editing: FilterEditing): HTMLElement {
 	const unchosen = rule.kind === "property" && rule.property === "";
 	const type = ruleValueType(rule, editing.propertyTypes);
 	const { operator } = rule.condition;
-	const dropdown = new DropdownComponent(expressionEl)
-		.addOptions(operatorOptions(type, operator))
-		.setValue(operator)
-		.setDisabled(unchosen)
-		.onChange((chosen) => editing.change(() => writeConditionField(rule, "operator", chosen, editing.propertyTypes)));
-	dropdown.selectEl.addClass("filter-operator");
+	const operators = Object.entries(operatorOptions(type, operator)).map(([value, label]) => ({ value, label }));
+	const combobox = new Combobox(expressionEl, {
+		items: () => operators,
+		placeholder: "",
+		searchPlaceholder: t("comboboxSearch"),
+		onSelect: (item) => editing.change(() => writeConditionField(rule, "operator", item.value, editing.propertyTypes)),
+	});
+	combobox.buttonEl.addClass("filter-operator");
+	combobox.setValue(operators.find((item) => item.value === operator)).setDisabled(unchosen);
 	const rightEl = expressionEl.createDiv({ cls: ["filter-rhs-container", "metadata-property-value"] });
 	const shape = valueShape(type, operator);
 	if (!unchosen && shape !== undefined) renderConditionValue(rightEl, statementEl, rule, shape, editing);

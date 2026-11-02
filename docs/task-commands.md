@@ -32,7 +32,7 @@ Each command has its own page under Settings → Note Compass → Tasks.
 
 ### Sources
 
-A source offers the same choices as a navigation list, with "Current note" added: adjacent dates, links, same day, a [filter](settings.md#filters), notes linking to a note, a folder, notes modified today, current date notes, or the current note. Tasks are listed source by source, without repeating a note, and each note's tasks keep their order. When the tasks come from more than one note, each row shows its note's name.
+A source offers the same choices as a navigation list, with "Current note" added: adjacent dates, links, same day, a [filter](settings.md#filters), notes linking to a note, notes modified today, current date notes, or the current note. Tasks are listed source by source, without repeating a note, and each note's tasks keep their order. When the tasks come from more than one note, each row shows its note's name.
 
 A command whose sources need the note in focus, such as "Current note" or "Outbound links", is offered only while a Markdown note is open. A command with no switched-on source shows a warning. Copy destinations never include a note the chosen tasks come from, and changes are written to the note each task came from. Commands saved before sources existed read the current note, as before.
 

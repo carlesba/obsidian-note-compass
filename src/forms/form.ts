@@ -55,11 +55,18 @@ export interface FormField {
 	entryTime?: true;
 }
 
-export const BLOCK_OPERATORS = ["is", "is not", "has item", "does not have item", "=", "≠", "<", ">", "on", "not on", "before", "after", "is true", "is false", "is set", "is not set"] as const;
+export const BLOCK_OPERATORS = ["is", "is not", "contains", "does not contain", "=", "≠", "<", ">", "on", "not on", "before", "after", "is true", "is false", "is not empty", "is empty"] as const;
 
 export type BlockOperator = (typeof BLOCK_OPERATORS)[number];
 
-export const VALUELESS_BLOCK_OPERATORS: readonly BlockOperator[] = ["is true", "is false", "is set", "is not set"];
+export const VALUELESS_BLOCK_OPERATORS: readonly BlockOperator[] = ["is true", "is false", "is not empty", "is empty"];
+
+const LEGACY_BLOCK_OPERATORS: Record<string, BlockOperator> = {
+	"is set": "is not empty",
+	"is not set": "is empty",
+	"has item": "contains",
+	"does not have item": "does not contain",
+};
 
 export interface BlockCondition {
 	key: string;
@@ -137,11 +144,11 @@ export function askedFields(form: Form): FormField[] {
 }
 
 export function operatorsFor(type: FieldType): readonly BlockOperator[] {
-	if (type === "text") return ["is", "is not", "is set", "is not set"];
-	if (type === "list") return ["has item", "does not have item", "is set", "is not set"];
-	if (type === "number") return ["=", "≠", "<", ">", "is set", "is not set"];
+	if (type === "text") return ["is", "is not", "is empty", "is not empty"];
+	if (type === "list") return ["contains", "does not contain", "is empty", "is not empty"];
+	if (type === "number") return ["=", "≠", "<", ">", "is empty", "is not empty"];
 	if (type === "checkbox") return ["is true", "is false"];
-	return ["on", "not on", "before", "after", "is set", "is not set"];
+	return ["on", "not on", "before", "after", "is empty", "is not empty"];
 }
 
 export function takesValue(operator: BlockOperator): boolean {
@@ -296,7 +303,8 @@ function readBlock(entry: Record<string, unknown>, known: { id: string }[]): For
 
 function readCondition(stored: unknown): BlockCondition | undefined {
 	if (!isRecord(stored) || typeof stored.key !== "string") return undefined;
-	const operator = BLOCK_OPERATORS.find((candidate) => candidate === stored.operator);
+	const named = typeof stored.operator === "string" && Object.prototype.hasOwnProperty.call(LEGACY_BLOCK_OPERATORS, stored.operator) ? LEGACY_BLOCK_OPERATORS[stored.operator] : stored.operator;
+	const operator = BLOCK_OPERATORS.find((candidate) => candidate === named);
 	if (!operator) return undefined;
 	const condition: BlockCondition = { key: stored.key.trim(), operator };
 	if (takesValue(operator) && typeof stored.value === "string") condition.value = stored.value;

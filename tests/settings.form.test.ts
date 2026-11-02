@@ -105,8 +105,7 @@ test("a row is named by its prefix and a summary of its source, and says off whe
 	assert.equal(listName(propertyList("", { operator: "is not empty" })), "⭐ Property not chosen");
 	assert.equal(listName({ ...lists[0], prefix: "👤", source: { kind: "linksToNote", note: "types/Person 👤.md" } }), "👤 Links to Person 👤");
 	assert.equal(listName({ ...lists[0], prefix: "👤", source: { kind: "linksToNote", note: "" } }), "👤 Note not chosen");
-	assert.equal(listName({ ...lists[0], prefix: "📂", source: { kind: "inFolder", folder: "areas/categories" } }), "📂 In areas/categories");
-	assert.equal(listName({ ...lists[0], prefix: "📂", source: { kind: "inFolder", folder: "" } }), "📂 Folder not chosen");
+	assert.equal(listName({ ...lists[0], prefix: "📂", source: { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "file", field: "file", condition: { operator: "in folder", value: "areas/categories" } }] } } }), "📂 file in folder areas/categories");
 	assert.equal(listName({ ...lists[0], prefix: "🔅", source: { kind: "modifiedToday" } }), "🔅 Modified today");
 	assert.equal(listDisplayValue(propertyList("favorite", { operator: "is", value: true }, false)), "off");
 	assert.equal(listDisplayValue(lists[0]), "");
@@ -206,22 +205,17 @@ test("switching the source to a relation and back starts an empty filter", () =>
 	assert.equal(list.source.kind, "filter");
 });
 
-test("switching to a note or folder source starts it unchosen, and its field reads and writes only for that kind", () => {
+test("switching to a note source starts it unchosen, its field reads and writes only for that kind, and in folder is no longer a source", () => {
 	const list = propertyList("status", { operator: "is", value: "active" });
 	writeListField(list, "source", "linksToNote");
 	assert.deepEqual(list.source, { kind: "linksToNote", note: "" });
 	writeListField(list, "note", " types/Person 👤.md ");
-	writeListField(list, "folder", "categories");
 	assert.equal(readListField(list, "note"), "types/Person 👤.md");
-	assert.equal(readListField(list, "folder"), undefined);
 	writeListField(list, "source", "inFolder");
-	assert.deepEqual(list.source, { kind: "inFolder", folder: "" });
-	writeListField(list, "folder", "categories");
-	writeListField(list, "source", "inFolder");
-	assert.deepEqual(list.source, { kind: "inFolder", folder: "categories" });
+	assert.deepEqual(list.source, { kind: "linksToNote", note: "types/Person 👤.md" });
 	writeListField(list, "source", "modifiedToday");
 	assert.deepEqual(list.source, { kind: "modifiedToday" });
-	assert.equal(readListField(list, "folder"), undefined);
+	assert.equal(readListField(list, "note"), undefined);
 });
 
 test("property suggestions keep the vault's spelling and show each property's type", () => {
@@ -241,8 +235,6 @@ test("property suggestions keep the vault's spelling and show each property's ty
 
 test("control keys read and write the list they name and ignore unknown ones", () => {
 	const settings = defaultSettings();
-	settings.notePickers[0].lists.push({ id: "list-5", enabled: true, prefix: "", source: { kind: "inFolder", folder: "areas" } });
-	assert.equal(readControl(settings, listKey("list-5", "folder")), "areas");
 	assert.equal(writeControl(settings, listKey("list-1", "enabled"), false), true);
 	assert.equal(settings.notePickers[0].lists[0].enabled, false);
 	assert.equal(writeControl(settings, listKey("list-9", "enabled"), true), false);

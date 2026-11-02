@@ -4,10 +4,6 @@ import type { TranslationKey } from "./index.ts";
 const OPERATOR_KEYS: Record<string, TranslationKey> = {
 	"is true": "operatorIsTrue",
 	"is false": "operatorIsFalse",
-	"is set": "operatorIsSet",
-	"is not set": "operatorIsNotSet",
-	"has item": "operatorHasItem",
-	"does not have item": "operatorDoesNotHaveItem",
 	is: "operatorIs",
 	"is not": "operatorIsNot",
 	"is exactly": "operatorIsExactly",

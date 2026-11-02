@@ -1,5 +1,5 @@
 import { ExtraButtonComponent, DropdownComponent, TextComponent, moment } from "obsidian";
-import type { App, Setting, SettingDefinition, SettingDefinitionItem, SettingDefinitionList, SettingDefinitionPage, SettingDefinitionRender } from "obsidian";
+import type { Setting, SettingDefinition, SettingDefinitionItem, SettingDefinitionList, SettingDefinitionPage, SettingDefinitionRender } from "obsidian";
 import { fieldSource, hasSources, isBlock, isDateType, newBlock, newCustomField, newFormId, takesValue, templateField } from "../forms/form";
 import type { FormClock } from "../forms/resolve";
 import { SET_DATE_PLACEHOLDERS, typedTime } from "../forms/dateInput";
@@ -52,8 +52,7 @@ import { ROW_CONTROL_CLASS } from "./tabOrder";
 import { knownPlaceholderKeys, placeholderEntries, placeholderPreview } from "./placeholderMenu";
 import { pillInput, renderPillText } from "./pillInput";
 import type { PillInput, PillInputOptions } from "./pillInput";
-import { NoteSuggest, PropertySuggest, TextSuggest, warningDescription } from "./suggest";
-import type { TextSuggestion } from "./suggest";
+import { NoteSuggest, PropertySuggest, warningDescription } from "./suggest";
 import { renderFilter } from "./filterEditor";
 import { filterRules } from "../lists/filters";
 import {
@@ -612,14 +611,6 @@ function notesSourceRows(parentEl: HTMLElement, editor: FieldEditor, draw: Redra
 	if (source.kind === "linksToNote") {
 		const { text } = textRow(parentEl, editor, "notesNote", t("note"), t("noteDesc"), t("notePlaceholder"));
 		new NoteSuggest(context.app, text.inputEl, (file) => file.path);
-	} else if (source.kind === "inFolder") {
-		const { text } = textRow(parentEl, editor, "notesFolder", t("folder"), t("folderDesc"), "");
-		const suggest = new TextSuggest(context.app, text.inputEl, () => folderSuggestions(context.app));
-		suggest.onSelect((suggestion) => {
-			suggest.setValue(suggestion.value);
-			suggest.close();
-			write(editor, "notesFolder", suggestion.value);
-		});
 	} else if (source.kind === "filter") {
 		const { filter } = source;
 		const { rowEl } = editorRow(parentEl, t("filter"), filterRules(filter).length === 0 ? t("filterEmptyDesc") : t("filterDesc"), true);
@@ -631,13 +622,6 @@ function notesSourceRows(parentEl: HTMLElement, editor: FieldEditor, draw: Redra
 			},
 		});
 	}
-}
-
-function folderSuggestions(app: App): TextSuggestion[] {
-	return app.vault
-		.getAllFolders()
-		.map((folder) => ({ value: folder.path }))
-		.sort((a, b) => a.value.localeCompare(b.value));
 }
 
 function write(editor: FieldEditor, setting: FieldSetting, value: unknown, index?: number): void {

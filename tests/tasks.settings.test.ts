@@ -378,7 +378,7 @@ test("task sources round-trip, keep sources that can't be read as saved and mint
 		],
 	});
 	const [command] = settings.taskCommands;
-	assert.deepEqual(command.sources.map((source) => [source.id, source.enabled, source.source.kind]), [["2", true, "inFolder"], ["3", false, "unreadable"], ["4", true, "filter"]]);
+	assert.deepEqual(command.sources.map((source) => [source.id, source.enabled, source.source.kind]), [["2", true, "filter"], ["3", false, "unreadable"], ["4", true, "filter"]]);
 	const stored = JSON.parse(JSON.stringify(storedSettings(settings)));
 	assert.deepEqual(stored.taskCommands[0].sources[1].source, future);
 	assert.deepEqual(mergeSettings(stored).taskCommands, settings.taskCommands);
@@ -387,11 +387,11 @@ test("task sources round-trip, keep sources that can't be read as saved and mint
 test("task sources are edited through their own control keys", () => {
 	const { settings, command } = settingsWithCommand();
 	const [source] = command.sources;
-	const key = (field: "source" | "folder" | "enabled") => taskSourceKey(command.id, source.id, field);
+	const key = (field: "source" | "note" | "enabled") => taskSourceKey(command.id, source.id, field);
 	assert.equal(readControl(settings, key("source")), "currentNote");
-	assert.equal(writeControl(settings, key("source"), "inFolder"), true);
-	assert.equal(writeControl(settings, key("folder"), " projects "), true);
-	assert.deepEqual(source.source, { kind: "inFolder", folder: "projects" });
+	assert.equal(writeControl(settings, key("source"), "linksToNote"), true);
+	assert.equal(writeControl(settings, key("note"), " projects/Hub.md "), true);
+	assert.deepEqual(source.source, { kind: "linksToNote", note: "projects/Hub.md" });
 	assert.equal(writeControl(settings, key("enabled"), false), true);
 	assert.equal(taskCommandWarning(command), "Turn on a source so the command has notes to read tasks from.");
 	assert.equal(writeControl(settings, taskSourceKey(command.id, "99", "enabled"), true), false);

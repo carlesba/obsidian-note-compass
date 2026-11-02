@@ -400,7 +400,7 @@ test("task sources gather notes in source order, without repeats, and only read 
 	const current = vault.note("Today.md");
 	const sources: TaskSource[] = [
 		{ id: "1", enabled: true, prefix: "", source: { kind: "currentNote" } },
-		{ id: "2", enabled: true, prefix: "", source: { kind: "inFolder", folder: "projects" } },
+		{ id: "2", enabled: true, prefix: "", source: { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "file", field: "file", condition: { operator: "in folder", value: "projects" } }] } } },
 		{ id: "3", enabled: true, prefix: "", source: { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "file", field: "name", condition: { operator: "starts with", value: "Alp" } }] } } },
 		{ id: "4", enabled: false, prefix: "", source: { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "file", field: "file", condition: { operator: "is not in folder", value: "" } }] } } },
 	];

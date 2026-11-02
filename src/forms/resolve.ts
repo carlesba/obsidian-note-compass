@@ -157,9 +157,9 @@ function holds(condition: BlockCondition, resolved: ResolvedField | undefined, c
 	const value = resolved && !resolved.skipped ? resolved.value : undefined;
 	const expected = condition.value ?? "";
 	switch (condition.operator) {
-		case "is set":
+		case "is not empty":
 			return !isEmptyAnswer(value);
-		case "is not set":
+		case "is empty":
 			return isEmptyAnswer(value);
 		case "is true":
 			return value === true;
@@ -169,9 +169,9 @@ function holds(condition: BlockCondition, resolved: ResolvedField | undefined, c
 			return !isEmptyAnswer(value) && valueText(value) === expected;
 		case "is not":
 			return isEmptyAnswer(value) || valueText(value) !== expected;
-		case "has item":
+		case "contains":
 			return items(value).includes(expected);
-		case "does not have item":
+		case "does not contain":
 			return !items(value).includes(expected);
 		case "on":
 		case "not on":

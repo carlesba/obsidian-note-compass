@@ -104,7 +104,7 @@ A list's page sets what one list in a navigation picker holds.
 | --- | --- |
 | Enabled | Shows the list in the picker. |
 | Prefix | The chip, described under [Prefixes](#prefixes). |
-| Source | What the list holds: adjacent dates, outbound links, inbound links, same day, a filter, notes linking to a note, notes in a folder, notes modified today, or current date notes. |
+| Source | What the list holds: adjacent dates, outbound links, inbound links, same day, a filter, notes linking to a note, notes modified today, or current date notes. For the notes in a folder, use a filter with `file in folder`. |
 
 Adjacent dates and Current date notes add two settings below the source.
 
@@ -125,8 +125,8 @@ A filter lists the notes that match a set of conditions. It offers the same fiel
 
 1. Choose how the group matches: "All the following are true", "Any of the following are true" or "None of the following are true". A note is listed when it matches every filter in the group, at least one, or none of them.
 2. Choose "Add filter" to add a row to the group.
-3. Start the row with what it tests: type a property name, or pick one of the file fields below from the suggestions.
-4. Choose the operator and the value, such as `file in folder projects`, `file backlinks contains Weekly review` or `modified time after 7 days ago`.
+3. Choose what the row tests from its first selector, which lists the file fields below and then the vault's properties, each with its type's icon. Type in its search box to narrow the list, or to use a property no note has yet.
+4. Choose the operator from the second selector, which offers only the operators for that field's type, then the value, such as `file in folder projects`, `file backlinks contains Weekly review` or `modified time after 7 days ago`.
 5. Choose "Add filter group" to add a group inside it with its own choice.
 
 Groups can sit inside groups up to three levels deep, counting the filter itself. The trash button on a row or on an inner group removes it, and removing the last row of an inner group removes the group too. A new filter has no rows and lists nothing until you add one, and an empty group inside a filter is left out of the matching.
@@ -179,6 +179,7 @@ A property condition asks for the property, suggesting the vault's properties wi
 - Filters saved before the Bases operators open with the matching new operator, and they list the same notes: "is set" becomes "is not empty", "has item" becomes "contains", "is true" becomes "is" with the checkbox ticked, `folder is in` becomes `file in folder`, `tags has tag` becomes `file has tag`, and `links contains` becomes `file links to`.
 - File name and path rows now follow the Bases rules above, so "starts with" and "ends with" respect case, and a path includes `.md`. A saved path row that ended with a text gets `.md` added, so it still matches.
 - Lists saved by earlier versions as "Notes with a property" open as a filter with that one property condition.
+- Lists, property sources, "Notes from" and task sources saved with the "In folder" source open as a filter with the single row `file in folder <folder>`, and they list the same notes.
 - If a property changes type, a condition on it keeps its old operator and matches nothing until you pick a new one. The condition, its list's row and its page say that the condition no longer applies.
 
 </details>

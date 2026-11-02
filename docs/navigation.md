@@ -48,7 +48,6 @@ These lists do not depend on the note in focus.
 | --- | --- |
 | Filter | The notes that match a set of conditions, such as `status is active`, notes tagged `#project`, notes linked from your weekly review, or notes in `work` modified in the last week. It uses the fields and operators of Obsidian Bases, and conditions can be grouped, as described in [Settings](settings.md#filters). |
 | Links to note | The notes that link to a chosen note, in their text or in a property. |
-| In folder | The notes in a folder and its subfolders. |
 | Modified today | The notes changed since midnight. |
 | Current date notes | The date notes for today, this week, this month, this quarter and this year, each one you switch on, in the order you set. |
 

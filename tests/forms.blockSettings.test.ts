@@ -105,7 +105,7 @@ test("a condition only sees the fields above its block and offers the operators 
 	const second = form.fields[3] as FormBlock;
 	assert.deepEqual(fieldsAbove(form, second).map((above) => above.id), ["1", "3", "4", "5"]);
 	assert.deepEqual(conditionKeyOptions(form, second, second.conditions[0]), { kind: "kind", pages: "pages", author: "author", rating: "rating" });
-	assert.deepEqual(Object.keys(conditionOperatorOptions(form, second, second.conditions[0])), ["=", "≠", "<", ">", "is set", "is not set"]);
+	assert.deepEqual(Object.keys(conditionOperatorOptions(form, second, second.conditions[0])), ["=", "≠", "<", ">", "is empty", "is not empty"]);
 	assert.deepEqual(conditionKeyOptions(form, second, { key: "", operator: "is" }), {
 		"": "choose a field",
 		kind: "kind",
@@ -113,7 +113,7 @@ test("a condition only sees the fields above its block and offers the operators 
 		author: "author",
 		rating: "rating",
 	});
-	assert.deepEqual(conditionKeyOptions(form, second, { key: "favourite", operator: "is set" }).favourite, "Field favourite is not above this block.");
+	assert.deepEqual(conditionKeyOptions(form, second, { key: "favourite", operator: "is not empty" }).favourite, "Field favourite is not above this block.");
 	assert.deepEqual(conditionOperatorOptions(form, second, { key: "rating", operator: "is" }).is, "is (does not apply)");
 });
 
@@ -130,8 +130,8 @@ test("the head summary reads each condition in words", () => {
 	const form = readingLog();
 	assert.equal(blockSummary(form, form.fields[1] as FormBlock), "kind is Book");
 	const second = form.fields[3] as FormBlock;
-	second.conditions.push({ key: "author", operator: "is set" }, { key: "", operator: "is" }, { key: "kind", operator: "is not" });
-	assert.equal(blockSummary(form, second), "rating > 3 · author is set · choose a field is choose a value · kind is not choose a value");
+	second.conditions.push({ key: "author", operator: "is not empty" }, { key: "", operator: "is" }, { key: "kind", operator: "is not" });
+	assert.equal(blockSummary(form, second), "rating > 3 · author is not empty · choose a field is choose a value · kind is not choose a value");
 	assert.equal(blockSummary(form, block("9", [], [])), "no conditions yet");
 });
 
@@ -142,7 +142,7 @@ test("block warnings cover missing conditions, fields, keys, values, operators a
 	assert.equal(formWarning(form), undefined);
 	assert.equal(blockWarning(form, block("9", [], [field("10", "x")])), "Add at least one condition.");
 	assert.equal(blockWarning(form, block("9", [{ key: "", operator: "is" }], [])), "Choose a field for each condition.");
-	form.fields.unshift(block("9", [{ key: "rating", operator: "is set" }], []));
+	form.fields.unshift(block("9", [{ key: "rating", operator: "is not empty" }], []));
 	assert.equal(blockWarning(form, form.fields[0] as FormBlock), "Field rating is not above this block.");
 	form.fields.shift();
 	form.fields.push(block("9", [{ key: "kind", operator: "is" }], [field("10", "x")]));
@@ -165,8 +165,8 @@ test("conditions are read and written through formBlock control keys, resetting 
 	assert.equal(readControl(settings, key("operator")), "is");
 	assert.equal(readControl(settings, key("value")), "book");
 	assert.equal(readControl(settings, key("value", 3)), undefined);
-	assert.equal(writeControl(settings, key("operator"), "is not set"), true);
-	assert.deepEqual(first.conditions[0], { key: "kind", operator: "is not set" });
+	assert.equal(writeControl(settings, key("operator"), "is empty"), true);
+	assert.deepEqual(first.conditions[0], { key: "kind", operator: "is empty" });
 	assert.equal(writeControl(settings, key("operator"), "contains"), false);
 	assert.equal(writeControl(settings, key("operator"), "is not"), true);
 	assert.equal(writeControl(settings, key("value"), " article "), true);
@@ -175,7 +175,7 @@ test("conditions are read and written through formBlock control keys, resetting 
 	const second = form.fields[3] as FormBlock;
 	const secondKey = formBlockKey(form.id, second.id, "key", 0);
 	assert.equal(writeControl(settings, secondKey, "tags"), true);
-	assert.deepEqual(second.conditions[0], { key: "tags", operator: "has item", value: "3" });
+	assert.deepEqual(second.conditions[0], { key: "tags", operator: "contains", value: "3" });
 	assert.equal(writeControl(settings, formBlockKey(form.id, second.id, "key", 0), "favourite"), true);
 	assert.deepEqual(second.conditions[0], { key: "favourite", operator: "is", value: "3" });
 	assert.equal(writeControl(settings, formBlockKey(form.id, second.id, "key", 0), ""), true);

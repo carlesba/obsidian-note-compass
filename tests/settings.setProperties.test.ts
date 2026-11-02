@@ -192,10 +192,9 @@ test("a link type gets a source and excluded folders, and other types drop them"
 test("source keys edit a link property's source with the jump list's form", () => {
 	const settings = defaultSettings();
 	const key = (field: Parameters<typeof propertySourceKey>[1]) => propertySourceKey("list-4", field);
-	assert.equal(readControl(settings, key("source")), "inFolder");
-	assert.equal(readControl(settings, key("folder")), "categories");
-	writeControl(settings, key("source"), "filter");
-	assert.deepEqual(settings.setProperties.properties[8].source, { kind: "filter", filter: { kind: "group", mode: "all", items: [] } });
+	assert.equal(readControl(settings, key("source")), "filter");
+	writeControl(settings, key("source"), "linksToNote");
+	assert.deepEqual(settings.setProperties.properties[8].source, { kind: "linksToNote", note: "" });
 	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(settings))).setProperties, settings.setProperties);
 });
 

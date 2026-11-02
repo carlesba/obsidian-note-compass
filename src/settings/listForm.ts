@@ -19,7 +19,6 @@ const SOURCE_KEYS: Record<SourceChoice, TranslationKey> = {
 	sameDay: "sourceSameDay",
 	filter: "filter",
 	linksToNote: "sourceLinksToNote",
-	inFolder: "sourceInFolder",
 	modifiedToday: "sourceModifiedToday",
 	currentPeriods: "sourceCurrentPeriods",
 	currentNote: "sourceCurrentNote",
@@ -99,7 +98,6 @@ export type ListField =
 	| "prefixColor"
 	| "source"
 	| "note"
-	| "folder"
 	| CurrentPeriodField
 	| AdjacentEntryField
 	| "showsMissing";
@@ -124,7 +122,6 @@ export function sourceSummary(source: ListSource): string {
 		const name = source.note.split("/").pop()?.replace(/\.md$/, "") ?? "";
 		return name === "" ? t("noteNotChosen") : t("linksTo", { name });
 	}
-	if (source.kind === "inFolder") return source.folder === "" ? t("folderNotChosen") : t("inFolder", { folder: source.folder });
 	if (source.kind === "currentPeriods") {
 		if (source.periods.length === 0) return t("noDateNotesChosen");
 		return currentPeriodsInOrder(source)
@@ -170,7 +167,6 @@ export function readListField(list: NoteList, field: ListField): unknown {
 	if (field === "source") return list.source.kind;
 	const { source } = list;
 	if (source.kind === "linksToNote") return field === "note" ? source.note : undefined;
-	if (source.kind === "inFolder") return field === "folder" ? source.folder : undefined;
 	if (field === "showsMissing") return source.kind === "adjacentDates" || source.kind === "currentPeriods" ? showsMissingNotes(source) : undefined;
 	if (source.kind === "currentPeriods") {
 		const period = currentPeriodOf(field);
@@ -189,7 +185,6 @@ export function writeListField(list: NoteList, field: ListField, value: unknown)
 	else if (field === "prefixColor") writePrefixColor(list, value);
 	else if (field === "source") list.source = sourceFor(value, list.source);
 	else if (field === "note" && list.source.kind === "linksToNote") list.source.note = typeof value === "string" ? value.trim() : "";
-	else if (field === "folder" && list.source.kind === "inFolder") list.source.folder = typeof value === "string" ? value.trim() : "";
 	else if (field === "showsMissing" && (list.source.kind === "currentPeriods" || list.source.kind === "adjacentDates")) {
 		const source = list.source;
 		if ((value === true) === (source.kind === "currentPeriods")) delete source.showsMissing;
@@ -247,7 +242,6 @@ function sourceFor(kind: unknown, current: ListSource): ListSource {
 	if (kind === current.kind) return current;
 	if (kind === "filter") return { kind, filter: emptyFilter() };
 	if (kind === "linksToNote") return { kind, note: "" };
-	if (kind === "inFolder") return { kind, folder: "" };
 	if (kind === "modifiedToday") return { kind };
 	if (kind === "currentNote") return { kind };
 	if (kind === "currentPeriods") return { kind, periods: [...PERIODS] };

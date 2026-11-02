@@ -91,12 +91,12 @@ test("each data type offers the sources that fit it, and a type change resets a 
 	assert.equal(readControl(settings, key("source")), undefined);
 });
 
-test("the notes source of a field is edited like a list's source and warns until it names its note or folder", () => {
+test("the notes source of a field is edited like a list's source and warns until it names its note", () => {
 	const { settings, form, field } = settingsWithForm();
 	const key = (setting: Parameters<typeof formFieldKey>[2]) => formFieldKey(form.id, field.id, setting);
 	writeControl(settings, key("key"), "book");
 	writeControl(settings, key("source"), "notes");
-	assert.deepEqual(Object.keys(notesSourceOptions(field)), ["filter", "linksToNote", "inFolder", "modifiedToday", "linksOut", "linksIn", "sameDay"]);
+	assert.deepEqual(Object.keys(notesSourceOptions(field)), ["filter", "linksToNote", "modifiedToday", "linksOut", "linksIn", "sameDay"]);
 	assert.equal(writeControl(settings, key("notesSource"), "adjacentDates"), false);
 	assert.equal(writeControl(settings, key("notesSource"), "linksToNote"), true);
 	assert.deepEqual(field.notesFrom, { kind: "linksToNote", note: "" });
@@ -104,10 +104,7 @@ test("the notes source of a field is edited like a list's source and warns until
 	writeControl(settings, key("notesNote"), " Books/Book 📚.md ");
 	assert.equal(readControl(settings, key("notesNote")), "Books/Book 📚.md");
 	assert.equal(fieldWarning(form, field), undefined);
-	writeControl(settings, key("notesSource"), "inFolder");
-	assert.equal(fieldWarning(form, field), "Folder not chosen");
-	writeControl(settings, key("notesFolder"), "books");
-	assert.deepEqual(field.notesFrom, { kind: "inFolder", folder: "books" });
+	assert.equal(writeControl(settings, key("notesSource"), "inFolder"), false);
 	writeControl(settings, key("notesSource"), "filter");
 	assert.equal(fieldWarning(form, field), "Add a condition to list notes.");
 	writeControl(settings, key("source"), "typed");

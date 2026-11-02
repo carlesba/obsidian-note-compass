@@ -620,12 +620,6 @@ function sourceItems(
 			control: { type: "file", key: key("note"), placeholder: t("notePlaceholder"), filter: (file) => file.extension === "md" },
 		},
 		{
-			name: t("folder"),
-			desc: t("folderDesc"),
-			visible: () => list.source.kind === "inFolder",
-			control: { type: "folder", key: key("folder") },
-		},
-		{
 			name: t("filter"),
 			desc: filter && filterRules(filter).length === 0 ? t("filterEmptyDesc") : t("filterDesc"),
 			searchable: false,

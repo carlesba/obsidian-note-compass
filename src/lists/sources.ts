@@ -95,15 +95,6 @@ export function notesLinkingTo(vault: JumpListVault, note: string): ListedNote[]
 	return target ? notesAtPaths(vault, vault.linksTo(target.path)) : [];
 }
 
-export function notesInFolder(vault: JumpListVault, folder: string): ListedNote[] {
-	const trimmed = folder.replace(/^\/+|\/+$/g, "");
-	if (trimmed === "") return [];
-	return vault
-		.notes()
-		.filter((note) => note.path.startsWith(`${trimmed}/`))
-		.map((file) => ({ file }));
-}
-
 export function notesModifiedSince(vault: JumpListVault, since: number): ListedNote[] {
 	return vault
 		.notes()

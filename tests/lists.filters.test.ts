@@ -255,7 +255,7 @@ test("broken lists and properties never contribute notes", () => {
 		setProperties: {
 			properties: [
 				{ id: "p-1", enabled: true, prefix: "", property: "related", type: "links", source: unreadableFilter },
-				{ id: "p-2", enabled: true, prefix: "", property: "seen", type: "links", source: { kind: "inFolder", folder: "projects" } },
+				{ id: "p-2", enabled: true, prefix: "", property: "seen", type: "links", source: { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "file", field: "file", condition: { operator: "in folder", value: "projects" } }] } } },
 			],
 		},
 	});
@@ -310,7 +310,7 @@ test("a navigation picker's filter narrows every list on top of each list's own 
 	const vault = fakeVault(notes.map((fake) => ({ ...fake })), { propertyTypes: TYPES });
 	const lists: NoteList[] = [
 		{ id: "list-1", enabled: true, prefix: "a", source: filter(all(property("status", { operator: "is", value: "doing" }))) },
-		{ id: "list-2", enabled: true, prefix: "b", source: { kind: "inFolder", folder: "projects" } },
+		{ id: "list-2", enabled: true, prefix: "b", source: { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "file", field: "file", condition: { operator: "in folder", value: "projects" } }] } } },
 	];
 	const names = (pickerFilter?: FilterGroup) => buildJumpList(lists, vault, undefined, undefined, pickerFilter).map((entry) => `${entry.prefix} ${entry.name}`);
 	assert.deepEqual(names(), ["a Alpha", "a Delta", "b Alpha", "b Beta"]);

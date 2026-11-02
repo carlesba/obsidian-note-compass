@@ -175,7 +175,7 @@ A source is where the answer to a text, number or list question comes from. Chec
 - The question shows the label, or the value when there is none, and the note gets the value. A number field writes the value as a number, so the option `4` with the label `4 · Great` writes the number 4. A list writes the picked values as items.
 - A value may hold [placeholders](#placeholders), typed with `@` as in a fixed value, such as `[[{{today}}]]`. They are filled when the form runs, and an option that ends up empty is skipped.
 
-**Notes** offers notes from a "Notes from" source, chosen as a navigation picker list is: a filter, notes that link to a note, notes in a folder, notes modified today, or the notes linked from, linking to or sharing the day of the note in focus. The question lists the notes most recently changed first, and the note gets the note's `[[link]]`, with the folder only when two notes share the name. A text field writes one link, and a list writes the links of every picked note. In the note name and content, `{{key}}` becomes the note's name without brackets, so it can name the new note, and `[[{{key}}]]` links it.
+**Notes** offers notes from a "Notes from" source, chosen as a navigation picker list is: a filter, notes that link to a note, notes modified today, or the notes linked from, linking to or sharing the day of the note in focus. The question lists the notes most recently changed first, and the note gets the note's `[[link]]`, with the folder only when two notes share the name. A text field writes one link, and a list writes the links of every picked note. In the note name and content, `{{key}}` becomes the note's name without brackets, so it can name the new note, and `[[{{key}}]]` links it.
 
 ### Dates and times
 
@@ -255,11 +255,13 @@ Click a block's heading to edit its conditions. Each condition picks a field, a 
 
 | Data type | Checks |
 | --- | --- |
-| Text | is, is not, is set, is not set |
-| List | has item, does not have item, is set, is not set |
-| Number | =, ≠, <, >, is set, is not set |
+| Text | is, is not, is empty, is not empty |
+| List | contains, does not contain, is empty, is not empty |
+| Number | =, ≠, <, >, is empty, is not empty |
 | Checkbox | is true, is false |
-| Date, time, datetime | on, not on, before, after, is set, is not set |
+| Date, time, datetime | on, not on, before, after, is empty, is not empty |
+
+These use the same words as [filters](settings.md#filters). Conditions saved by earlier versions with "is set", "is not set", "has item" or "does not have item" open with "is not empty", "is empty", "contains" or "does not contain", and they work as before.
 
 A field with fixed options offers them as the value, and the other fields take a typed value. A field answered from notes holds links, so its value is typed as `[[Dune]]`. A date, time or datetime is typed like a [set date](#dates-and-times), as `YYYYMMDD`, `HHmm` or `YYYYMMDDHHmm`, and a datetime compared with a date alone is compared by day.
 

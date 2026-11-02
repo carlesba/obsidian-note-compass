@@ -9,7 +9,6 @@ import {
 	adjacentDateNotes,
 	currentPeriodNotes,
 	inboundNotes,
-	notesInFolder,
 	notesLinkingTo,
 	notesModifiedSince,
 	outboundNotes,
@@ -114,7 +113,6 @@ function sourceNotes(source: ListSource, context: ListContext): ListedNote[] {
 	if (source.kind === "filter") return filterNotes(source.filter, context).map((file) => ({ file }));
 	if (source.kind === "unreadable") return [];
 	if (source.kind === "linksToNote") return notesLinkingTo(vault, source.note);
-	if (source.kind === "inFolder") return notesInFolder(vault, source.folder);
 	if (source.kind === "modifiedToday") return notesModifiedSince(vault, context.today.valueOf());
 	if (source.kind === "currentPeriods") return currentPeriodNotes(vault, currentPeriodsInOrder(source), dateNotes, context.today, showsMissingNotes(source));
 	if (!current) return [];

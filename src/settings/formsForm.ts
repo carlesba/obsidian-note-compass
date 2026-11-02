@@ -2,7 +2,6 @@ import { t, translatedLabels } from "../i18n/index.ts";
 import type { TranslationKey } from "../i18n/index.ts";
 import { operatorLabel } from "../i18n/labels.ts";
 import {
-	BLOCK_OPERATORS,
 	DATE_FORMATS,
 	DEFAULT_DATE_FORMATS,
 	FIELD_MODES,
@@ -61,7 +60,6 @@ export type FieldSetting =
 	| "source"
 	| "notesSource"
 	| "notesNote"
-	| "notesFolder"
 	| "dateFormat"
 	| "customFormat"
 	| "from"
@@ -106,7 +104,7 @@ const SOURCE_BADGE_KEYS: Record<Exclude<FieldSource, "typed">, TranslationKey> =
 	notes: "formSummaryNotes",
 };
 
-const NOTES_SOURCE_CHOICES: readonly SourceChoice[] = ["filter", "linksToNote", "inFolder", "modifiedToday", "linksOut", "linksIn", "sameDay"];
+const NOTES_SOURCE_CHOICES: readonly SourceChoice[] = ["filter", "linksToNote", "modifiedToday", "linksOut", "linksIn", "sameDay"];
 
 const DATE_FORMAT_KEYS: Partial<Record<DateFormat, TranslationKey>> = {
 	iso: "formFormatIso",
@@ -222,7 +220,6 @@ export function fieldWarning(form: Form, field: FormField): string | undefined {
 function notesSourceWarning(source: ListSource | undefined): string | undefined {
 	if (!source || source.kind === "unreadable") return t("unreadableListWarning");
 	if (source.kind === "linksToNote" && source.note.trim() === "") return t("noteNotChosen");
-	if (source.kind === "inFolder" && source.folder.trim() === "") return t("folderNotChosen");
 	if (source.kind === "filter" && filterRules(source.filter).length === 0) return t("filterEmptyDesc");
 	return undefined;
 }
@@ -399,7 +396,7 @@ export function writeBlockSetting(form: Form, block: FormBlock, setting: BlockSe
 		const operators = conditionOperators(form, block, text);
 		if (!operators.includes(condition.operator)) condition.operator = operators[0];
 	} else if (setting === "operator") {
-		const operator = BLOCK_OPERATORS.find((candidate) => candidate === value);
+		const operator = conditionOperators(form, block, condition.key).find((candidate) => candidate === value);
 		if (!operator) return false;
 		condition.operator = operator;
 	} else {
@@ -491,8 +488,6 @@ export function readFieldSetting(field: FormField, setting: FieldSetting, index?
 			return field.notesFrom?.kind;
 		case "notesNote":
 			return field.notesFrom ? readListField(notesList(field, field.notesFrom), "note") : undefined;
-		case "notesFolder":
-			return field.notesFrom ? readListField(notesList(field, field.notesFrom), "folder") : undefined;
 		default:
 			return field[setting];
 	}
@@ -533,7 +528,6 @@ export function writeFieldSetting(field: FormField, setting: FieldSetting, value
 		}
 		case "notesSource":
 		case "notesNote":
-		case "notesFolder":
 			return writeNotesSource(field, setting, value);
 		case "text":
 			field.value = text;
@@ -652,11 +646,11 @@ function notesList(field: FormField, source: ListSource): NoteList {
 	return { id: field.id, enabled: true, prefix: "", source };
 }
 
-function writeNotesSource(field: FormField, setting: "notesSource" | "notesNote" | "notesFolder", value: unknown): boolean {
+function writeNotesSource(field: FormField, setting: "notesSource" | "notesNote", value: unknown): boolean {
 	if (fieldSource(field) !== "notes" || !field.notesFrom) return false;
 	const list = notesList(field, field.notesFrom);
 	if (setting === "notesSource" && !NOTES_SOURCE_CHOICES.includes(value as SourceChoice)) return false;
-	writeListField(list, setting === "notesSource" ? "source" : setting === "notesNote" ? "note" : "folder", value);
+	writeListField(list, setting === "notesSource" ? "source" : "note", value);
 	field.notesFrom = list.source;
 	return true;
 }

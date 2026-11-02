@@ -317,26 +317,6 @@ test("links to note lists nothing for a note that does not exist or is not chose
 	assert.deepEqual(buildJumpList(sourceList({ kind: "linksToNote", note: "" }), vault), []);
 });
 
-test("in folder lists the notes under the folder, subfolders included, but not the current note", () => {
-	const vault = fakeVault([
-		{ path: "categories/Work.md" },
-		{ path: "categories/home/Garden.md" },
-		{ path: "categories-old/Leisure.md" },
-		{ path: "Work.md" },
-	]);
-	assert.deepEqual(describe(buildJumpList(sourceList({ kind: "inFolder", folder: "categories" }), vault, vault.note("categories/Work.md"))), [
-		"src Garden",
-	]);
-	assert.deepEqual(describe(buildJumpList(sourceList({ kind: "inFolder", folder: "/categories/home/" }), vault)), ["src Garden"]);
-});
-
-test("in folder lists nothing for a missing, empty or unchosen folder", () => {
-	const vault = fakeVault([{ path: "notes/A.md" }]);
-	for (const folder of ["missing", "", "/"]) {
-		assert.deepEqual(buildJumpList(sourceList({ kind: "inFolder", folder }), vault), []);
-	}
-});
-
 test("modified today lists notes changed since local midnight of the vault's clock", () => {
 	const now = new Date(2024, 2, 9, 10).getTime();
 	const vault = fakeVault(

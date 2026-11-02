@@ -271,12 +271,12 @@
 	font-size: var(--font-ui-small);
 }
 
-.note-compass-filter .filter-expression input.filter-property-select {
+.note-compass-filter .filter-expression .filter-property-select {
 	flex: 0 1 12em;
 	min-width: 6em;
 }
 
-.note-compass-filter .filter-expression select.filter-operator {
+.note-compass-filter .filter-expression .filter-operator {
 	border-inline: 1px solid var(--background-modifier-border);
 }
 
@@ -310,7 +310,7 @@
 		grid-template-columns: minmax(0, 1fr) auto;
 	}
 
-	.note-compass-filter .filter-expression input.filter-property-select {
+	.note-compass-filter .filter-expression .filter-property-select {
 		grid-column: 1;
 		grid-row: 1;
 		width: 100%;
@@ -321,7 +321,7 @@
 		grid-row: 1;
 	}
 
-	.note-compass-filter .filter-expression select.filter-operator {
+	.note-compass-filter .filter-expression .filter-operator {
 		grid-column: 1 / -1;
 		grid-row: 2;
 		width: 100%;
