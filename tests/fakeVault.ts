@@ -10,6 +10,8 @@ export interface FakeNote {
 	frontmatter?: Frontmatter;
 	tags?: string[];
 	links?: string[];
+	embeds?: string[];
+	size?: number;
 	content?: string;
 	taskLines?: number[];
 }
@@ -56,6 +58,8 @@ export function fakeVault(fakes: FakeNote[], options: FakeVaultOptions = {}): Fa
 		},
 		linksFrom: (path) => byPath(path)?.links ?? [],
 		linksTo: (path) => fakes.filter((fake) => fake.links?.includes(path)).map((fake) => fake.path),
+		embeds: (path) => byPath(path)?.embeds ?? [],
+		size: (path) => byPath(path)?.size ?? 0,
 		mtime: (path) => byPath(path)?.mtime ?? HOURS_AGO(48),
 		periodicNotesSettings: () => undefined,
 		dailyNotesOptions: () => undefined,

@@ -1,4 +1,4 @@
-import { getAllTags, moment } from "obsidian";
+import { getAllTags, getLinkpath, moment } from "obsidian";
 import type { App, TFile } from "obsidian";
 import { fallbackLinkText } from "../tasks/destinations";
 import type { Period } from "./dateNotes";
@@ -51,6 +51,12 @@ export function createObsidianVault(app: App): JumpListVault & NewNoteVault & No
 			Object.entries(app.metadataCache.resolvedLinks)
 				.filter(([, targets]) => path in targets)
 				.map(([source]) => source),
+		embeds: (path) => {
+			const file = app.vault.getFileByPath(path);
+			const embeds = file ? app.metadataCache.getFileCache(file)?.embeds ?? [] : [];
+			return embeds.flatMap((embed) => app.metadataCache.getFirstLinkpathDest(getLinkpath(embed.link), path)?.path ?? []);
+		},
+		size: (path) => app.vault.getFileByPath(path)?.stat.size ?? 0,
 		mtime: (path) => app.vault.getFileByPath(path)?.stat.mtime ?? 0,
 		periodicNotesSettings: () => readSafely(() => registries.plugins?.getPlugin("periodic-notes")?.settings),
 		dailyNotesOptions: () =>

@@ -8,7 +8,7 @@ A navigation picker shows the notes related to the note in focus and the lists y
 
 Each navigation picker you create under Settings → Note Compass → Navigation is offered in the command palette as "Navigation: <name>", so you can give each one its own hotkey. A new install starts with one picker named "Default", and the lists saved before navigation pickers existed move into it unchanged.
 
-A picker's own filter, under Settings → Note Compass → Navigation → the picker, narrows all of its lists at once, such as leaving out notes in an `Archive` folder from every list. It applies to the date notes a list would create too, as if they were notes with no properties or tags.
+A picker's main filter, under Settings → Note Compass → Navigation → the picker, narrows all of its lists at once, such as leaving out notes in an `Archive` folder from every list. It applies to the date notes a list would create too, as if they were notes with no properties or tags.
 
 "Select navigation picker" asks "Open which navigation picker?" and lists every enabled picker, then opens the one you choose.
 
@@ -21,7 +21,7 @@ The picker lets you choose a note to move to. Picking a row opens the note in th
 A picker shows the lists you set up on its page in settings, in the order you set. To change them, see [Settings](settings.md#list-pages).
 
 - A note appears under every list that holds it, in the order of your lists.
-- The note in focus is left out.
+- The note in focus shows too, under every list that holds it, marked with ➡️ before its name, as in `🔅 ctx ➡️ 2024-03-05`. Inserting links while typing and "Set properties" still leave it out, since a note never links to itself.
 - Within a list the notes are sorted by name.
 - When no list has any note, the command says "No notes to jump to." instead of opening an empty picker.
 
@@ -46,7 +46,7 @@ These lists do not depend on the note in focus.
 
 | List | What it holds |
 | --- | --- |
-| Filter | The notes that match a set of conditions, such as `status is active`, notes tagged `#project`, or notes in `work` modified in the last week. Conditions can be grouped, as described in [Settings](settings.md#filters). |
+| Filter | The notes that match a set of conditions, such as `status is active`, notes tagged `#project`, notes linked from your weekly review, or notes in `work` modified in the last week. It uses the fields and operators of Obsidian Bases, and conditions can be grouped, as described in [Settings](settings.md#filters). |
 | Links to note | The notes that link to a chosen note, in their text or in a property. |
 | In folder | The notes in a folder and its subfolders. |
 | Modified today | The notes changed since midnight. |

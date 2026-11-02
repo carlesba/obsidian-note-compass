@@ -32,6 +32,8 @@ function fakeVault(frontmatter: Record<string, Frontmatter>, propertyTypes: Reco
 		updateFrontmatter: async () => {},
 		linksFrom: () => [],
 		linksTo: () => [],
+		embeds: () => [],
+		size: () => 0,
 		mtime: () => 0,
 		periodicNotesSettings: () => undefined,
 		dailyNotesOptions: () => undefined,

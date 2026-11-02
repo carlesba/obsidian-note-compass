@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { readFileSync } from "node:fs";
+import { readCondition } from "../src/lists/conditions.ts";
 import { EDITABLE_PROPERTY_TYPES, defaultSettings, mergeSettings } from "../src/settings.ts";
 import type { EditableProperty } from "../src/settings.ts";
 import { propertyRowName } from "../src/settings/setPropertiesForm.ts";
@@ -8,7 +9,7 @@ import { decidedPropertyType, mixedTypeProperties } from "../src/setProperties/p
 
 const asFilter = (source: { kind: string; property?: string; condition?: unknown }) =>
 	source.kind === "frontmatter"
-		? { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "property", property: source.property, condition: source.condition }] } }
+		? { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "property", property: source.property, condition: readCondition(source.condition) }] } }
 		: source;
 
 const v2Data = () => JSON.parse(readFileSync(new URL("./fixtures/data.v2.json", import.meta.url), "utf8"));

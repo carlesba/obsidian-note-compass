@@ -1,8 +1,7 @@
 import { t, translatedLabels } from "../i18n/index.ts";
 import type { TranslationKey } from "../i18n/index.ts";
-import { operatorLabel } from "../i18n/labels.ts";
-import { CONDITIONS_BY_TYPE, DATE_OPERATORS, NUMBER_OPERATORS, TEXT_OPERATORS, conditionAppliesTo, propertyType } from "../lists/conditions.ts";
-import type { ConditionOperator, PropertyType } from "../lists/conditions.ts";
+import { propertyType } from "../lists/conditions.ts";
+import type { PropertyType } from "../lists/conditions.ts";
 import { PERIODS } from "../lists/dateNotes.ts";
 import type { Period } from "../lists/dateNotes.ts";
 import { emptyFilter } from "../lists/filters.ts";
@@ -105,8 +104,6 @@ export type ListField =
 	| AdjacentEntryField
 	| "showsMissing";
 
-export type ValueShape = "none" | "text" | "number" | "date";
-
 export interface PropertySuggestion {
 	name: string;
 	type: PropertyType;
@@ -145,23 +142,6 @@ export function listDisplayValue(list: NoteList): string {
 
 export function inapplicableCondition(source: ListSource, types: Record<string, string>): string | undefined {
 	return source.kind === "filter" ? inapplicableFilter(source.filter, types) : undefined;
-}
-
-export function operatorOptions(type: PropertyType, current?: ConditionOperator): Record<string, string> {
-	const options: Record<string, string> = {};
-	for (const operator of CONDITIONS_BY_TYPE[type]) options[operator] = operatorLabel(operator);
-	if (current !== undefined && !(current in options)) {
-		const label = operatorLabel(current);
-		options[current] = conditionAppliesTo(current, type) ? label : t("operatorDoesNotApply", { operator: label });
-	}
-	return options;
-}
-
-export function valueShape(operator: ConditionOperator): ValueShape {
-	if (includes(TEXT_OPERATORS, operator)) return "text";
-	if (includes(NUMBER_OPERATORS, operator)) return "number";
-	if (includes(DATE_OPERATORS, operator)) return "date";
-	return "none";
 }
 
 export function propertySuggestions(vault: Pick<JumpListVault, "notes" | "frontmatter" | "propertyTypes">): PropertySuggestion[] {
@@ -274,8 +254,4 @@ function sourceFor(kind: unknown, current: ListSource): ListSource {
 	if (kind === "adjacentDates") return { kind };
 	const relation = RELATION_SOURCE_KINDS.find((choice) => choice === kind);
 	return relation && relation !== "adjacentDates" ? { kind: relation } : current;
-}
-
-function includes<T extends string>(values: readonly T[], value: string): value is T {
-	return (values as readonly string[]).includes(value);
 }

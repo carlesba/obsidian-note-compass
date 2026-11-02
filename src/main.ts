@@ -135,6 +135,7 @@ export default class NoteCompassPlugin extends Plugin {
 			this.currentNote(),
 			this.settings.dateNotes,
 			picker.filter,
+			"marked",
 		);
 		if (!entries.length) {
 			new Notice(t("noNotesToJumpTo"));

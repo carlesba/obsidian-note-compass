@@ -12,7 +12,7 @@ const relationLists = (enabled = [true, true, true, true]): NoteList[] => [
 	{ id: "list-4", enabled: enabled[3], prefix: "🔅 ctx", source: { kind: "sameDay" } },
 ];
 
-const isTrue = (property: string) => propertyFilter(property, { operator: "is true" });
+const isTrue = (property: string) => propertyFilter(property, { operator: "is", value: true });
 
 const propertyFilter = (property: string, condition: Condition): ListSource => ({
 	kind: "filter",
@@ -229,7 +229,7 @@ test("mergeSettings migrates the old shape into lists in picker order with custo
 			{ id: "list-2", enabled: true, prefix: "➡️", source: { kind: "linksOut" } },
 			{ id: "list-3", enabled: false, prefix: "⬅️", source: { kind: "linksIn" } },
 			{ id: "list-4", enabled: false, prefix: "☀️", source: { kind: "sameDay" } },
-			{ id: "list-5", enabled: true, prefix: "⭐", source: propertyFilter("starred", { operator: "is true" }) },
+			{ id: "list-5", enabled: true, prefix: "⭐", source: propertyFilter("starred", { operator: "is", value: true }) },
 			{
 				id: "list-6",
 				enabled: true,
@@ -240,9 +240,9 @@ test("mergeSettings migrates the old shape into lists in picker order with custo
 				id: "list-7",
 				enabled: true,
 				prefix: "💼",
-				source: propertyFilter("tags", { operator: "has item", value: "work" }),
+				source: propertyFilter("tags", { operator: "contains", value: "work" }),
 			},
-			{ id: "list-8", enabled: true, prefix: "📝", source: propertyFilter("summary", { operator: "is set" }) },
+			{ id: "list-8", enabled: true, prefix: "📝", source: propertyFilter("summary", { operator: "is not empty" }) },
 		],
 		dateNotes: defaultDateNoteSettings(),
 		setProperties: setPropertiesDefaults(),
@@ -303,7 +303,7 @@ test("mergeSettings drops old custom lists it cannot read", () => {
 		],
 	});
 	assert.deepEqual(merged.notePickers[0].lists.slice(4), [
-		{ id: "list-5", enabled: true, prefix: "✅", source: propertyFilter("done", { operator: "is true" }) },
+		{ id: "list-5", enabled: true, prefix: "✅", source: propertyFilter("done", { operator: "is", value: true }) },
 	]);
 	assert.deepEqual(mergeSettings({ customLists: { prefix: "📚" } }).notePickers[0].lists, relationLists());
 });
@@ -336,7 +336,7 @@ test("mergeSettings keeps saved lists in their order and round-trips its own out
 });
 
 test("mergeSettings keeps a list with a condition its property's type no longer offers", () => {
-	const lists = [{ id: "list-1", enabled: true, prefix: "#", source: propertyFilter("n", { operator: "has item", value: "x" }) }];
+	const lists = [{ id: "list-1", enabled: true, prefix: "#", source: propertyFilter("n", { operator: "contains", value: "x" }) }];
 	assert.deepEqual(mergeSettings({ lists }).notePickers[0].lists, lists);
 });
 
@@ -346,7 +346,7 @@ test("mergeSettings turns a saved property list into a filter with that one cond
 		lists: [{ id: "list-1", enabled: true, prefix: "⏰", source: { kind: "frontmatter", property: "due", condition } }],
 		setProperties: {
 			properties: [
-				{ id: "p", enabled: true, prefix: "", property: "related", type: "links", source: { kind: "frontmatter", property: "active", condition: { operator: "is true" } } },
+				{ id: "p", enabled: true, prefix: "", property: "related", type: "links", source: { kind: "frontmatter", property: "active", condition: { operator: "is", value: true } } },
 			],
 		},
 	});

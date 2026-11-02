@@ -1,6 +1,13 @@
-import { FIXED_DATE_FORMAT, conditionAppliesTo, positiveCondition } from "./conditions.ts";
-import type { Condition, DateCondition, DateValue, PropertyType } from "./conditions.ts";
+import { FIXED_DATE_FORMAT, conditionFits, positiveOperator, propertyValueType } from "./conditions.ts";
+import type { Condition, DateValue, PropertyType } from "./conditions.ts";
 import type { Frontmatter, MomentDate } from "./vault";
+
+export type Subject =
+	| { type: "text"; value: string | undefined }
+	| { type: "list"; items: string[] | undefined; normalize: (text: string) => string }
+	| { type: "number"; value: number | undefined }
+	| { type: "date"; day: string | undefined }
+	| { type: "boolean"; value: boolean | undefined };
 
 export interface PropertyCheck {
 	property: string;
@@ -10,64 +17,143 @@ export interface PropertyCheck {
 }
 
 export function matchesCondition(frontmatter: Frontmatter | undefined, check: PropertyCheck): boolean {
-	const { condition, type } = check;
-	if (!conditionAppliesTo(condition.operator, type)) return false;
-	const positive = positiveCondition(condition);
-	if (positive) return !matchesCondition(frontmatter, { ...check, condition: positive });
 	const present = frontmatter !== undefined && check.property in frontmatter;
 	const property = present ? frontmatter[check.property] : undefined;
-	if (condition.operator === "is not set") return !present || isEmpty(property);
-	if (!present) return false;
-	switch (condition.operator) {
-		case "is true":
-			return property === true || property === "true";
-		case "is false":
-			return property === false;
-		case "is set":
-			return !isEmpty(property);
-		case "is":
-			return scalarText(property) === condition.value;
-		case "contains":
-			return typeof property === "string" && property.includes(condition.value);
-		case "has item":
-			return containsValue(property, linkText(condition.value));
+	return matchesSubject(propertySubject(property, check.type), check.condition, check.today);
+}
+
+export function matchesSubject(subject: Subject, condition: Condition, today: MomentDate): boolean {
+	if (!conditionFits(condition, subject.type)) return false;
+	const positive = positiveOperator(condition.operator);
+	if (positive) return !matchesSubject(subject, { ...condition, operator: positive }, today);
+	if (condition.operator === "is empty") return isEmptySubject(subject);
+	const { value } = condition;
+	switch (subject.type) {
+		case "text":
+			return subject.value !== undefined && matchesText(subject.value, condition.operator, value);
+		case "list":
+			return subject.items !== undefined && matchesList(subject.items, subject.normalize, condition.operator, value);
+		case "number":
+			return subject.value !== undefined && typeof value === "number" && compareNumber(subject.value, condition.operator, value);
+		case "date":
+			return subject.day !== undefined && isDate(value) && compareDay(subject.day, condition.operator, targetDay(value, today));
+		case "boolean":
+			return subject.value !== undefined && subject.value === value;
+	}
+}
+
+export function matchesDay(day: string, condition: Condition, today: MomentDate): boolean {
+	return matchesSubject({ type: "date", day }, condition, today);
+}
+
+function propertySubject(property: unknown, type: PropertyType): Subject {
+	const valueType = propertyValueType(type);
+	if (valueType === "text" && Array.isArray(property)) return { type: "list", items: listItems(property), normalize: linkText };
+	switch (valueType) {
+		case "list":
+			return { type: "list", items: listItems(property), normalize: linkText };
+		case "number":
+			return { type: "number", value: numberValue(property) };
+		case "date":
+			return { type: "date", day: typeof property === "string" ? property.match(/^\d{4}-\d{2}-\d{2}/)?.[0] : undefined };
+		case "boolean":
+			return { type: "boolean", value: property === true || property === "true" ? true : property === false || property === "false" ? false : undefined };
+		default:
+			return { type: "text", value: scalarText(property) };
+	}
+}
+
+function isEmptySubject(subject: Subject): boolean {
+	switch (subject.type) {
+		case "text":
+			return subject.value === undefined || subject.value.trim() === "";
+		case "list":
+			return subject.items === undefined || subject.items.length === 0;
+		case "date":
+			return subject.day === undefined;
+		default:
+			return subject.value === undefined;
+	}
+}
+
+function matchesText(text: string, operator: Condition["operator"], value: Condition["value"]): boolean {
+	if (Array.isArray(value)) {
+		const wanted = value.map((item) => item.trim().toLowerCase()).filter((item) => item !== "");
+		const lower = text.toLowerCase();
+		if (wanted.length === 0) return false;
+		return operator === "contains all of" ? wanted.every((item) => lower.includes(item)) : wanted.some((item) => lower.includes(item));
+	}
+	if (typeof value !== "string") return false;
+	if (operator === "is") return text === value;
+	if (value === "") return false;
+	if (operator === "starts with") return text.startsWith(value);
+	if (operator === "ends with") return text.endsWith(value);
+	return text.toLowerCase().includes(value.toLowerCase());
+}
+
+function matchesList(items: string[], normalize: (text: string) => string, operator: Condition["operator"], value: Condition["value"]): boolean {
+	const normalized = items.map(normalize);
+	if (typeof value === "string") {
+		const wanted = normalize(value.trim());
+		return wanted !== "" && normalized.includes(wanted);
+	}
+	if (!Array.isArray(value)) return false;
+	const wanted = value.map((item) => normalize(item.trim())).filter((item) => item !== "");
+	if (operator === "is exactly") return wanted.length === normalized.length && wanted.every((item, index) => normalized[index] === item);
+	if (wanted.length === 0) return false;
+	return operator === "contains all of" ? wanted.every((item) => normalized.includes(item)) : wanted.some((item) => normalized.includes(item));
+}
+
+function listItems(property: unknown): string[] | undefined {
+	if (property === null || property === undefined) return undefined;
+	if (Array.isArray(property)) return property.map(scalarText).filter((item): item is string => item !== undefined);
+	const text = scalarText(property);
+	if (text === undefined) return undefined;
+	return text.trim() === "" ? [] : [text];
+}
+
+function numberValue(property: unknown): number | undefined {
+	const number = typeof property === "number" ? property : typeof property === "string" && property.trim() !== "" ? Number(property) : NaN;
+	return Number.isFinite(number) ? number : undefined;
+}
+
+function compareNumber(number: number, operator: Condition["operator"], value: number): boolean {
+	switch (operator) {
 		case "=":
+			return number === value;
 		case "<":
+			return number < value;
+		case "≤":
+			return number <= value;
 		case ">":
-			return compareNumber(property, condition.operator, condition.value);
-		case "on":
-		case "before":
-		case "after":
-			return compareDay(property, condition.operator, targetDay(condition.value, check.today));
+			return number > value;
+		case "≥":
+			return number >= value;
 		default:
 			return false;
 	}
 }
 
-export function matchesDay(day: string, condition: DateCondition, today: MomentDate): boolean {
-	const target = targetDay(condition.value, today);
-	if (condition.operator === "not on") return !compareDay(day, "on", target);
-	return compareDay(day, condition.operator, target);
+function compareDay(day: string, operator: Condition["operator"], target: string | undefined): boolean {
+	if (!target) return false;
+	switch (operator) {
+		case "on":
+			return day === target;
+		case "before":
+			return day < target;
+		case "on or before":
+			return day <= target;
+		case "after":
+			return day > target;
+		case "on or after":
+			return day >= target;
+		default:
+			return false;
+	}
 }
 
-function isEmpty(property: unknown): boolean {
-	if (property === null || property === undefined) return true;
-	if (typeof property === "string") return property.trim() === "";
-	return Array.isArray(property) && property.length === 0;
-}
-
-function compareNumber(property: unknown, operator: "=" | "<" | ">", value: number): boolean {
-	const number = typeof property === "number" ? property : typeof property === "string" && property.trim() !== "" ? Number(property) : NaN;
-	if (!Number.isFinite(number)) return false;
-	if (operator === "=") return number === value;
-	return operator === "<" ? number < value : number > value;
-}
-
-function compareDay(property: unknown, operator: "on" | "before" | "after", target: string | undefined): boolean {
-	const day = typeof property === "string" ? property.match(/^\d{4}-\d{2}-\d{2}/)?.[0] : undefined;
-	if (!day || !target) return false;
-	if (operator === "on") return day === target;
-	return operator === "before" ? day < target : day > target;
+function isDate(value: Condition["value"]): value is DateValue {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function targetDay(value: DateValue, today: MomentDate): string | undefined {
@@ -75,18 +161,7 @@ function targetDay(value: DateValue, today: MomentDate): string | undefined {
 	return /^\d{4}-\d{2}-\d{2}$/.test(value.date) ? value.date : undefined;
 }
 
-function containsValue(property: unknown, value: string): boolean {
-	if (Array.isArray(property)) {
-		return property.some((element) => {
-			const text = scalarText(element);
-			return text !== undefined && linkText(text) === value;
-		});
-	}
-	if (typeof property === "string") return property.includes(value) || linkText(property) === value;
-	return false;
-}
-
-function linkText(value: string): string {
+export function linkText(value: string): string {
 	const wikiLink = value.trim().match(/^\[\[([^\]|]*)(?:\|[^\]]*)?\]\]$/);
 	return wikiLink ? wikiLink[1].trim() : value;
 }

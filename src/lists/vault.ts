@@ -45,6 +45,8 @@ export interface JumpListVault {
 	updateFrontmatter(path: string, update: (frontmatter: Frontmatter) => void): Promise<void>;
 	linksFrom(path: string): string[];
 	linksTo(path: string): string[];
+	embeds(path: string): string[];
+	size(path: string): number;
 	mtime(path: string): number;
 	periodicNotesSettings(): unknown;
 	dailyNotesOptions(): unknown;
@@ -75,4 +77,5 @@ export interface JumpListEntry {
 	name: string;
 	suffix?: string;
 	missing?: MissingDateNote;
+	current?: true;
 }

@@ -1,32 +1,29 @@
 import { DropdownComponent, TextComponent, getAllTags, setIcon } from "obsidian";
 import type { App } from "obsidian";
 import { t } from "../i18n";
-import type { TranslationKey } from "../i18n";
 import { typeLabel } from "../i18n/labels";
-import { propertyType } from "../lists/conditions";
-import type { FilterGroup, FilterNode, FilterRule, NameRule, NegatableRule, PropertyRule } from "../lists/filters";
+import { valueShape } from "../lists/conditions";
+import type { ValueShape } from "../lists/conditions";
+import { FILE_FIELDS, ruleValueType } from "../lists/filters";
+import type { FileField, FilterGroup, FilterNode, FilterRule, PropertyRule } from "../lists/filters";
 import {
 	addCondition,
 	addGroup,
 	canAddGroup,
 	changeRuleField,
-	inapplicableRule,
-	readConditionField,
-	removeNode,
-	ruleField,
-	fileDateOptions,
+	fileFieldLabel,
 	filterModeOptions,
 	fitRuleToProperty,
-	nameOperatorOptions,
-	ruleText,
+	inapplicableRule,
+	operatorOptions,
+	readConditionField,
+	removeNode,
 	writeConditionField,
 	writeMode,
-	writeNameOperator,
-	writeNegated,
-	writeRuleText,
+	writeProperty,
 } from "./filterForm";
-import type { ConditionField, ConditionRule, RuleField } from "./filterForm";
-import { dateModeOptions, directionOptions, fixedDateError, operatorOptions, valueShape } from "./listForm";
+import type { ConditionField } from "./filterForm";
+import { dateModeOptions, directionOptions, fixedDateError } from "./listForm";
 import type { PropertySuggestion } from "./listForm";
 import { TextSuggest } from "./suggest";
 import type { TextSuggestion } from "./suggest";
@@ -38,62 +35,63 @@ export interface FilterEditing {
 	change: (change: () => unknown) => void;
 }
 
-type Suggestions = (app: App) => TextSuggestion[];
+type Suggestions = (editing: FilterEditing) => TextSuggestion[];
 
-const TEXT_PLACEHOLDERS: Record<Exclude<FilterRule["kind"], "file">, TranslationKey> = {
-	property: "property",
-	folder: "folder",
-	tag: "tag",
-	linksTo: "note",
-	name: "value",
-	path: "value",
+const folderSuggestions: Suggestions = ({ app }) =>
+	app.vault
+		.getAllFolders()
+		.map((folder) => ({ value: folder.path }))
+		.sort((a, b) => a.value.localeCompare(b.value));
+
+const tagSuggestions: Suggestions = ({ app }) => {
+	const tags = new Set<string>();
+	for (const file of app.vault.getMarkdownFiles()) {
+		const cache = app.metadataCache.getFileCache(file);
+		for (const tag of cache ? getAllTags(cache) ?? [] : []) tags.add(tag.replace(/^#/, ""));
+	}
+	return [...tags].sort((a, b) => a.localeCompare(b)).map((value) => ({ value }));
 };
 
-const SUGGESTIONS: Partial<Record<FilterRule["kind"], Suggestions>> = {
-	folder: (app) =>
-		app.vault
-			.getAllFolders()
-			.map((folder) => ({ value: folder.path }))
-			.sort((a, b) => a.value.localeCompare(b.value)),
-	tag: (app) => {
-		const tags = new Set<string>();
-		for (const file of app.vault.getMarkdownFiles()) {
-			const cache = app.metadataCache.getFileCache(file);
-			for (const tag of cache ? getAllTags(cache) ?? [] : []) tags.add(tag.replace(/^#/, ""));
-		}
-		return [...tags].sort((a, b) => a.localeCompare(b)).map((value) => ({ value }));
-	},
-	linksTo: (app) =>
-		app.vault
-			.getMarkdownFiles()
-			.map((file) => ({ value: file.path, label: file.basename, detail: file.path }))
-			.sort((a, b) => a.label.localeCompare(b.label)),
-	path: (app) =>
-		app.vault
-			.getAllFolders()
-			.map((folder) => ({ value: `${folder.path}/` }))
-			.sort((a, b) => a.value.localeCompare(b.value)),
+const noteSuggestions: Suggestions = ({ app }) =>
+	app.vault
+		.getMarkdownFiles()
+		.map((file) => ({ value: file.path, label: file.basename, detail: file.path }))
+		.sort((a, b) => a.label.localeCompare(b.label));
+
+const pathSuggestions: Suggestions = ({ app }) =>
+	app.vault
+		.getAllFolders()
+		.map((folder) => ({ value: `${folder.path}/` }))
+		.sort((a, b) => a.value.localeCompare(b.value));
+
+const propertyNameSuggestions: Suggestions = (editing) =>
+	editing.propertySuggestions().map((suggestion) => ({ value: suggestion.name, detail: typeLabel(suggestion.type) }));
+
+const SHAPE_SUGGESTIONS: Partial<Record<ValueShape, Suggestions>> = {
+	note: noteSuggestions,
+	folder: folderSuggestions,
+	tag: tagSuggestions,
+	property: propertyNameSuggestions,
+};
+
+const FIELD_SUGGESTIONS: Partial<Record<FileField, Suggestions>> = {
+	folder: folderSuggestions,
+	path: pathSuggestions,
+	links: noteSuggestions,
+	backlinks: noteSuggestions,
+	embeds: noteSuggestions,
+	tags: tagSuggestions,
+};
+
+const SHAPE_PLACEHOLDERS: Partial<Record<ValueShape, Parameters<typeof t>[0]>> = {
+	note: "note",
+	folder: "folder",
+	tag: "tag",
+	property: "property",
+	texts: "valuesPlaceholder",
 };
 
 const EDITOR_CLASS = "note-compass-filter";
-
-type FileField = Exclude<RuleField, "property">;
-
-const FIELD_KEYS: Record<FileField, TranslationKey> = {
-	name: "fieldFileName",
-	path: "fieldFilePath",
-	folder: "fieldFolder",
-	tag: "fieldTags",
-	linksTo: "fieldLinks",
-	created: "fieldCreatedTime",
-	modified: "fieldModifiedTime",
-};
-
-const NEGATABLE_OPERATORS: Record<NegatableRule["kind"], { matches: TranslationKey; negated: TranslationKey }> = {
-	folder: { matches: "operatorIsIn", negated: "operatorIsNotIn" },
-	tag: { matches: "operatorHasTag", negated: "operatorDoesNotHaveTag" },
-	linksTo: { matches: "operatorContains", negated: "operatorDoesNotContain" },
-};
 
 const FILE_FIELD_PREFIX = "file:";
 
@@ -181,7 +179,7 @@ function renderLeftSide(expressionEl: HTMLElement, rule: FilterRule, group: Filt
 			}
 			const target: PropertyRule | undefined = rule.kind === "property" ? rule : replaceWithProperty(group, rule);
 			if (!target) return;
-			writeRuleText(target, typed);
+			writeProperty(target, typed);
 			fitRuleToProperty(target, editing.propertyTypes);
 		});
 	const text = new TextComponent(expressionEl).setPlaceholder(t("property")).setValue(shown);
@@ -200,12 +198,12 @@ function renderLeftSide(expressionEl: HTMLElement, rule: FilterRule, group: Filt
 }
 
 function leftLabel(rule: FilterRule): string {
-	return rule.kind === "property" ? rule.property : t(FIELD_KEYS[ruleField(rule) as FileField]);
+	return rule.kind === "property" ? rule.property : fileFieldLabel(rule.field);
 }
 
-function fieldNamed(typed: string): RuleField | undefined {
+function fieldNamed(typed: string): FileField | undefined {
 	const wanted = typed.toLowerCase();
-	return (Object.keys(FIELD_KEYS) as FileField[]).find((field) => t(FIELD_KEYS[field]).toLowerCase() === wanted);
+	return FILE_FIELDS.find((field) => fileFieldLabel(field).toLowerCase() === wanted);
 }
 
 function replaceWithProperty(group: FilterGroup, rule: FilterRule): PropertyRule | undefined {
@@ -216,9 +214,9 @@ function replaceWithProperty(group: FilterGroup, rule: FilterRule): PropertyRule
 }
 
 function leftSuggestions(editing: FilterEditing): TextSuggestion[] {
-	const fields = (Object.keys(FIELD_KEYS) as FileField[]).map((field) => ({
+	const fields = FILE_FIELDS.map((field) => ({
 		value: FILE_FIELD_PREFIX + field,
-		label: t(FIELD_KEYS[field]),
+		label: fileFieldLabel(field),
 		detail: t("fileField"),
 	}));
 	const properties = editing.propertySuggestions().map((suggestion) => ({
@@ -230,67 +228,29 @@ function leftSuggestions(editing: FilterEditing): TextSuggestion[] {
 }
 
 function createRightSide(expressionEl: HTMLElement, statementEl: HTMLElement, rule: FilterRule, editing: FilterEditing): HTMLElement {
-	if (rule.kind === "property") {
-		const chosen = rule.property !== "";
-		const type = propertyType(editing.propertyTypes, rule.property);
-		operatorSelect(expressionEl, operatorOptions(type, rule.condition.operator), rule.condition.operator, !chosen, (operator) =>
-			editing.change(() => writeConditionField(rule, "operator", operator)),
-		);
-		const rightEl = expressionEl.createDiv({ cls: ["filter-rhs-container", "metadata-property-value"] });
-		if (chosen) renderConditionValue(rightEl, statementEl, rule, editing);
-		return rightEl;
-	}
-	if (rule.kind === "file") {
-		operatorSelect(expressionEl, fileDateOptions(), rule.condition.operator, false, (operator) =>
-			editing.change(() => writeConditionField(rule, "operator", operator)),
-		);
-		const rightEl = expressionEl.createDiv({ cls: ["filter-rhs-container", "metadata-property-value"] });
-		renderConditionValue(rightEl, statementEl, rule, editing);
-		return rightEl;
-	}
-	if (rule.kind === "name" || rule.kind === "path") {
-		operatorSelect(expressionEl, nameOperatorOptions(), rule.operator, false, (operator) => editing.change(() => writeNameOperator(rule, operator)));
-		const rightEl = expressionEl.createDiv({ cls: ["filter-rhs-container", "metadata-property-value"] });
-		renderRuleText(rightEl, rule, editing);
-		return rightEl;
-	}
-	const { matches, negated } = NEGATABLE_OPERATORS[rule.kind];
-	operatorSelect(expressionEl, { matches: t(matches), negated: t(negated) }, rule.negated ? "negated" : "matches", false, (operator) =>
-		editing.change(() => writeNegated(rule, operator === "negated")),
-	);
+	const unchosen = rule.kind === "property" && rule.property === "";
+	const type = ruleValueType(rule, editing.propertyTypes);
+	const { operator } = rule.condition;
+	const dropdown = new DropdownComponent(expressionEl)
+		.addOptions(operatorOptions(type, operator))
+		.setValue(operator)
+		.setDisabled(unchosen)
+		.onChange((chosen) => editing.change(() => writeConditionField(rule, "operator", chosen, editing.propertyTypes)));
+	dropdown.selectEl.addClass("filter-operator");
 	const rightEl = expressionEl.createDiv({ cls: ["filter-rhs-container", "metadata-property-value"] });
-	renderRuleText(rightEl, rule, editing);
+	const shape = valueShape(type, operator);
+	if (!unchosen && shape !== undefined) renderConditionValue(rightEl, statementEl, rule, shape, editing);
 	return rightEl;
 }
 
-function operatorSelect(
-	parentEl: HTMLElement,
-	options: Record<string, string>,
-	value: string,
-	disabled: boolean,
-	onChange: (operator: string) => void,
-): void {
-	const dropdown = new DropdownComponent(parentEl).addOptions(options).setValue(value).setDisabled(disabled).onChange(onChange);
-	dropdown.selectEl.addClass("filter-operator");
+function valueSuggestions(rule: FilterRule, shape: ValueShape): Suggestions | undefined {
+	if (shape !== "text") return SHAPE_SUGGESTIONS[shape];
+	return rule.kind === "file" ? FIELD_SUGGESTIONS[rule.field] : undefined;
 }
 
-function renderRuleText(parentEl: HTMLElement, rule: NegatableRule | NameRule, editing: FilterEditing): void {
-	const commit = (value: string) => editing.change(() => writeRuleText(rule, value));
-	const text = textInput(parentEl, ruleText(rule), t(TEXT_PLACEHOLDERS[rule.kind]), { typing: (value) => writeRuleText(rule, value), commit });
-	const suggestions = SUGGESTIONS[rule.kind];
-	if (!suggestions) return;
-	let cached: TextSuggestion[] | undefined;
-	const suggest = new TextSuggest(editing.app, text.inputEl, () => (cached = cached ?? suggestions(editing.app)));
-	suggest.onSelect((suggestion) => {
-		suggest.setValue(suggestion.value);
-		suggest.close();
-		commit(suggestion.value);
-	});
-}
-
-function renderConditionValue(rowEl: HTMLElement, statementEl: HTMLElement, rule: ConditionRule, editing: FilterEditing): void {
-	const draft = (field: ConditionField, value: unknown) => writeConditionField(rule, field, value);
-	const write = (field: ConditionField, value: unknown) => editing.change(() => writeConditionField(rule, field, value));
+function renderConditionValue(rowEl: HTMLElement, statementEl: HTMLElement, rule: FilterRule, shape: ValueShape, editing: FilterEditing): void {
+	const draft = (field: ConditionField, value: unknown) => writeConditionField(rule, field, value, editing.propertyTypes);
+	const write = (field: ConditionField, value: unknown) => editing.change(() => writeConditionField(rule, field, value, editing.propertyTypes));
 	const edit = (field: ConditionField): TextEdit => ({ typing: (value) => draft(field, value), commit: (value) => write(field, value) });
 	const numberEdit = (field: ConditionField): TextEdit => ({
 		typing: (value) => {
@@ -309,16 +269,35 @@ function renderConditionValue(rowEl: HTMLElement, statementEl: HTMLElement, rule
 		const value = read(field);
 		return typeof value === "number" ? value : 0;
 	};
-	const shape = valueShape(rule.condition.operator);
-	if (shape === "text") {
-		textInput(rowEl, readText("text"), t("value"), edit("text"));
-		return;
-	}
+	if (shape === "none") return;
 	if (shape === "number") {
 		numberInput(rowEl, readNumber("number"), numberEdit("number"));
 		return;
 	}
-	if (shape !== "date") return;
+	if (shape === "boolean") {
+		const checkboxEl = rowEl.createEl("input", { type: "checkbox", cls: "metadata-input-checkbox" });
+		checkboxEl.checked = read("boolean") === true;
+		checkboxEl.addEventListener("change", () => write("boolean", checkboxEl.checked));
+		return;
+	}
+	if (shape === "texts") {
+		textInput(rowEl, readText("texts"), t("valuesPlaceholder"), edit("texts"));
+		return;
+	}
+	if (shape !== "date") {
+		const placeholder = SHAPE_PLACEHOLDERS[shape];
+		const text = textInput(rowEl, readText("text"), t(placeholder ?? "value"), edit("text"));
+		const suggestions = valueSuggestions(rule, shape);
+		if (!suggestions) return;
+		let cached: TextSuggestion[] | undefined;
+		const suggest = new TextSuggest(editing.app, text.inputEl, () => (cached = cached ?? suggestions(editing)));
+		suggest.onSelect((suggestion) => {
+			suggest.setValue(suggestion.value);
+			suggest.close();
+			write("text", suggestion.value);
+		});
+		return;
+	}
 	new DropdownComponent(rowEl)
 		.addOptions(dateModeOptions())
 		.setValue(readText("dateMode"))

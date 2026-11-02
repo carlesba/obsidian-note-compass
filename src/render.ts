@@ -14,6 +14,8 @@ export interface ContentSegment {
 	muted?: boolean;
 }
 
+export const CURRENT_NOTE_MARK = "➡️";
+
 const LABEL_PARTS = ["mark", "prefix", "content", "value"] as const;
 
 export const RESULTS_CLASS = "note-compass-results";
@@ -60,7 +62,8 @@ function renderSegments(contentEl: HTMLElement, segments: readonly ContentSegmen
 }
 
 export function entryParts(entry: JumpListEntry): RowParts {
-	const parts: RowParts = { ...prefixParts(entry.prefix, entry.prefixColor), content: entry.name };
+	const content = entry.current ? `${CURRENT_NOTE_MARK} ${entry.name}` : entry.name;
+	const parts: RowParts = { ...prefixParts(entry.prefix, entry.prefixColor), content };
 	if (entry.suffix) parts.value = `(${entry.suffix})`;
 	return parts;
 }

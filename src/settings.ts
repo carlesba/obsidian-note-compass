@@ -168,10 +168,10 @@ const LEGACY_BUILT_IN_KEYS: Record<RelationSourceKind, string> = {
 };
 
 const LEGACY_OPERATORS: Record<string, (value: string) => Condition> = {
-	"is true": () => ({ operator: "is true" }),
+	"is true": () => ({ operator: "is", value: true }),
 	equals: (value) => ({ operator: "is", value }),
-	contains: (value) => ({ operator: "has item", value }),
-	exists: () => ({ operator: "is set" }),
+	contains: (value) => ({ operator: "contains", value }),
+	exists: () => ({ operator: "is not empty" }),
 };
 
 const DATE_NOTE_SOURCES: readonly DateNoteSettings["from"][] = ["auto", "periodicNotes", "dailyNotes", "custom"];
@@ -195,13 +195,13 @@ function defaultLinkListFields(): Omit<LinkList, "id" | "enabled">[] {
 		{ prefix: "📂 catg", source: { kind: "inFolder", folder: "categories" }, property: "category", mode: "single" },
 		{
 			prefix: "🏷️ ever",
-			source: propertyFilter("evergreen", { operator: "is true" }),
+			source: propertyFilter("evergreen", { operator: "is", value: true }),
 			property: "related",
 			mode: "multi",
 		},
 		{
 			prefix: "📍 actv",
-			source: propertyFilter("active", { operator: "is true" }),
+			source: propertyFilter("active", { operator: "is", value: true }),
 			property: "related",
 			mode: "multi",
 		},

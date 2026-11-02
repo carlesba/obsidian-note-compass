@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
-import { CONDITIONS_BY_TYPE, PROPERTY_TYPES } from "../src/lists/conditions.ts";
+import { OPERATORS_BY_TYPE, PROPERTY_TYPES, propertyValueType, valueShape } from "../src/lists/conditions.ts";
 import type { Condition } from "../src/lists/conditions.ts";
 import { defaultDateNoteSettings } from "../src/lists/dateNotes.ts";
 import type { Frontmatter, JumpListVault } from "../src/lists/vault.ts";
@@ -15,7 +15,7 @@ import {
 	writeControl,
 } from "../src/settings/controlKeys.ts";
 import { customPeriods, dateNoteSourceDescription, formatError, writePeriodField } from "../src/settings/dateNotesForm.ts";
-import { fitRuleToProperty, newRule, readConditionField, writeConditionField, writeRuleText } from "../src/settings/filterForm.ts";
+import { fitRuleToProperty, newRule, operatorOptions, readConditionField, writeConditionField, writeProperty } from "../src/settings/filterForm.ts";
 import type { ConditionField } from "../src/settings/filterForm.ts";
 import type { PropertyRule } from "../src/lists/filters.ts";
 import {
@@ -26,12 +26,10 @@ import {
 	matchingSuggestions,
 	moveSourceChoice,
 	newList,
-	operatorOptions,
 	propertySuggestions,
 	readListField,
 	sourceChoiceOrder,
 	sourceSummary,
-	valueShape,
 	writeListField,
 } from "../src/settings/listForm.ts";
 import { prefixChip } from "../src/settings/prefixChip.ts";
@@ -53,6 +51,8 @@ function fakeVault(fakes: FakeVault = {}): JumpListVault {
 		updateFrontmatter: async () => {},
 		linksFrom: () => [],
 		linksTo: () => [],
+		embeds: () => [],
+		size: () => 0,
 		mtime: () => 0,
 		periodicNotesSettings: () => fakes.periodicNotes,
 		dailyNotesOptions: () => fakes.dailyNotes,
@@ -72,7 +72,7 @@ function propertyRule(property: string, condition: Condition): PropertyRule {
 }
 
 test("operator options follow the conditions table for every property type", () => {
-	for (const type of PROPERTY_TYPES) assert.deepEqual(Object.keys(operatorOptions(type)), CONDITIONS_BY_TYPE[type]);
+	for (const type of PROPERTY_TYPES) assert.deepEqual(Object.keys(operatorOptions(propertyValueType(type))), OPERATORS_BY_TYPE[propertyValueType(type)]);
 });
 
 test("operator options keep a stored operator that the type does not offer", () => {
@@ -80,19 +80,21 @@ test("operator options keep a stored operator that the type does not offer", () 
 		"=": "=",
 		"≠": "≠",
 		"<": "<",
+		"≤": "≤",
 		">": ">",
-		"is set": "is set",
-		"is not set": "is not set",
+		"≥": "≥",
+		"is empty": "is empty",
+		"is not empty": "is not empty",
 		is: "is (does not apply)",
 	});
-	assert.equal(operatorOptions("text", "has item")["has item"], "has item");
-	assert.equal(Object.keys(operatorOptions("checkbox", "is true")).length, 4);
+	assert.equal(operatorOptions("list", "contains").contains, "contains");
+	assert.equal(Object.keys(operatorOptions("boolean", "is")).length, 2);
 });
 
 test("a row is named by its prefix and a summary of its source, and says off when disabled", () => {
 	const lists = defaultSettings().notePickers[0].lists;
 	assert.equal(listName(lists[0]), "📅 day Adjacent dates");
-	assert.equal(listName(propertyList("favorite", { operator: "is true" })), "⭐ favorite is true");
+	assert.equal(listName(propertyList("favorite", { operator: "is", value: true })), "⭐ favorite is true");
 	assert.equal(listName(propertyList("status", { operator: "is", value: "active" })), "⭐ status is active");
 	assert.equal(listName(propertyList("rating", { operator: ">", value: 3 })), "⭐ rating > 3");
 	assert.equal(listName(propertyList("due", { operator: "on", value: { kind: "fixed", date: "2024-03-05" } })), "⭐ due on 2024-03-05");
@@ -100,13 +102,13 @@ test("a row is named by its prefix and a summary of its source, and says off whe
 	assert.equal(listName(propertyList("due", { operator: "after", value: { kind: "relative", days: 1 } })), "⭐ due after 1 day from now");
 	assert.equal(listName(propertyList("due", { operator: "on", value: { kind: "relative", days: 0 } })), "⭐ due on today");
 	assert.equal(listName({ ...newList(lists), prefix: "" }), "No conditions yet");
-	assert.equal(listName(propertyList("", { operator: "is set" })), "⭐ Property not chosen");
+	assert.equal(listName(propertyList("", { operator: "is not empty" })), "⭐ Property not chosen");
 	assert.equal(listName({ ...lists[0], prefix: "👤", source: { kind: "linksToNote", note: "types/Person 👤.md" } }), "👤 Links to Person 👤");
 	assert.equal(listName({ ...lists[0], prefix: "👤", source: { kind: "linksToNote", note: "" } }), "👤 Note not chosen");
 	assert.equal(listName({ ...lists[0], prefix: "📂", source: { kind: "inFolder", folder: "areas/categories" } }), "📂 In areas/categories");
 	assert.equal(listName({ ...lists[0], prefix: "📂", source: { kind: "inFolder", folder: "" } }), "📂 Folder not chosen");
 	assert.equal(listName({ ...lists[0], prefix: "🔅", source: { kind: "modifiedToday" } }), "🔅 Modified today");
-	assert.equal(listDisplayValue(propertyList("favorite", { operator: "is true" }, false)), "off");
+	assert.equal(listDisplayValue(propertyList("favorite", { operator: "is", value: true }, false)), "off");
 	assert.equal(listDisplayValue(lists[0]), "");
 });
 
@@ -123,55 +125,71 @@ test("a condition that no longer fits the property's type is reported without be
 	const migratedEquals = propertyList("rating", { operator: "is", value: "3" });
 	const types = { rating: "number", starred: "text" };
 	assert.match(inapplicableCondition(migratedEquals.source, types) ?? "", /"is" does not apply to a number property/);
-	assert.match(inapplicableCondition(propertyList("starred", { operator: "is true" }).source, types) ?? "", /text property/);
+	assert.match(inapplicableCondition(propertyList("starred", { operator: "is", value: true }).source, types) ?? "", /text property/);
 	assert.equal(inapplicableCondition(propertyList("rating", { operator: ">", value: 3 }).source, types), undefined);
 	assert.equal(inapplicableCondition(propertyList("unknown", { operator: "contains", value: "x" }).source, {}), undefined);
 	assert.equal(inapplicableCondition(defaultSettings().notePickers[0].lists[0].source, types), undefined);
 
 	const rule = propertyRule("rating", { operator: "is", value: "3" });
-	writeRuleText(rule, "Starred");
+	writeProperty(rule, "Starred");
 	assert.deepEqual(rule, propertyRule("Starred", { operator: "is", value: "3" }));
 });
 
 test("the value control follows the operator", () => {
-	assert.equal(valueShape("is set"), "none");
-	assert.equal(valueShape("contains"), "text");
-	assert.equal(valueShape("<"), "number");
-	assert.equal(valueShape("after"), "date");
+	assert.equal(valueShape("text", "is empty"), "none");
+	assert.equal(valueShape("text", "contains"), "text");
+	assert.equal(valueShape("text", "contains all of"), "texts");
+	assert.equal(valueShape("list", "is exactly"), "texts");
+	assert.equal(valueShape("number", "<"), "number");
+	assert.equal(valueShape("date", "after"), "date");
+	assert.equal(valueShape("boolean", "is"), "boolean");
+	assert.equal(valueShape("file", "links to"), "note");
+	assert.equal(valueShape("file", "in folder"), "folder");
+	assert.equal(valueShape("file", "has property"), "property");
+	assert.equal(valueShape("number", "contains"), undefined);
 });
 
-test("changing the operator keeps a value of the same shape and starts others empty", () => {
+test("changing the operator keeps a value of the same shape and converts or drops the rest", () => {
+	const types = { rating: "number" };
 	const rule = propertyRule("status", { operator: "is", value: "active" });
-	writeConditionField(rule, "operator", "contains");
-	assert.deepEqual(readConditionField(rule, "text"), "active");
-	writeConditionField(rule, "operator", "=");
-	assert.equal(readConditionField(rule, "number"), 0);
-	writeConditionField(rule, "number", 4);
-	writeConditionField(rule, "operator", "on");
-	assert.deepEqual(rule, propertyRule("status", { operator: "on", value: { kind: "relative", days: 0 } }));
-	writeConditionField(rule, "operator", "is not set");
-	assert.deepEqual(rule, propertyRule("status", { operator: "is not set" }));
-	writeConditionField(rule, "operator", "nonsense");
-	assert.equal(readConditionField(rule, "operator"), "is not set");
+	writeConditionField(rule, "operator", "contains", types);
+	assert.equal(readConditionField(rule, "text"), "active");
+	writeConditionField(rule, "operator", "contains any of", types);
+	assert.deepEqual(rule.condition, { operator: "contains any of", value: ["active"] });
+	writeConditionField(rule, "texts", "a, b ,, c", types);
+	assert.deepEqual(rule.condition, { operator: "contains any of", value: ["a", "b", "c"] });
+	assert.equal(readConditionField(rule, "texts"), "a, b, c");
+	writeConditionField(rule, "operator", "is empty", types);
+	assert.deepEqual(rule.condition, { operator: "is empty" });
+	writeConditionField(rule, "operator", "=", types);
+	assert.deepEqual(rule.condition, { operator: "is empty" });
+	const rating = propertyRule("rating", { operator: "=", value: 4 });
+	writeConditionField(rating, "operator", "≥", types);
+	assert.deepEqual(rating.condition, { operator: "≥", value: 4 });
+	writeConditionField(rating, "operator", "on or after", types);
+	assert.deepEqual(rating.condition, { operator: "≥", value: 4 });
+	writeConditionField(rating, "operator", "nonsense", types);
+	assert.equal(readConditionField(rating, "operator"), "≥");
 });
 
 test("date values map onto a mode, a date, a number of days and a direction", () => {
+	const DUE_DATE = { due: "date" };
 	const rule = propertyRule("due", { operator: "before", value: { kind: "relative", days: -3 } });
 	const read = (fields: ConditionField[]) => fields.map((field) => readConditionField(rule, field));
 	assert.deepEqual(read(["dateMode", "days", "direction"]), ["relative", 3, "ago"]);
-	writeConditionField(rule, "direction", "fromNow");
+	writeConditionField(rule, "direction", "fromNow", DUE_DATE);
 	assert.equal(readConditionField(rule, "direction"), "fromNow");
-	writeConditionField(rule, "days", 5);
-	writeConditionField(rule, "days", 0);
+	writeConditionField(rule, "days", 5, DUE_DATE);
+	writeConditionField(rule, "days", 0, DUE_DATE);
 	assert.deepEqual(readConditionField(rule, "days"), 5);
-	writeConditionField(rule, "direction", "today");
+	writeConditionField(rule, "direction", "today", DUE_DATE);
 	assert.deepEqual(read(["direction", "days"]), ["today", 0]);
-	writeConditionField(rule, "direction", "ago");
+	writeConditionField(rule, "direction", "ago", DUE_DATE);
 	assert.deepEqual(rule.condition, { operator: "before", value: { kind: "relative", days: -1 } });
-	writeConditionField(rule, "days", 5);
+	writeConditionField(rule, "days", 5, DUE_DATE);
 	assert.deepEqual(rule.condition, { operator: "before", value: { kind: "relative", days: -5 } });
-	writeConditionField(rule, "dateMode", "fixed");
-	writeConditionField(rule, "date", " 2024-03-05 ");
+	writeConditionField(rule, "dateMode", "fixed", DUE_DATE);
+	writeConditionField(rule, "date", " 2024-03-05 ", DUE_DATE);
 	assert.deepEqual(rule.condition, { operator: "before", value: { kind: "fixed", date: "2024-03-05" } });
 	assert.equal(readConditionField(rule, "dateMode"), "fixed");
 	assert.equal(fixedDateError("2024-03-05"), undefined);
@@ -267,21 +285,21 @@ test("choosing a property switches the condition to one its type offers, and kee
 	const types = { done: "checkbox", status: "text" };
 	const rule = propertyRule("done", { operator: "is", value: "x" });
 	fitRuleToProperty(rule, types);
-	assert.deepEqual(rule, propertyRule("done", { operator: "is true" }));
+	assert.deepEqual(rule, propertyRule("done", { operator: "is", value: true }));
 	const status = propertyRule("", { operator: "is", value: "x" });
-	writeRuleText(status, " done ");
+	writeProperty(status, " done ");
 	assert.deepEqual(status, propertyRule("done", { operator: "is", value: "x" }));
 	fitRuleToProperty(status, types);
-	assert.deepEqual(status, propertyRule("done", { operator: "is true" }));
-	const kept = propertyRule("status", { operator: "is set" });
+	assert.deepEqual(status, propertyRule("done", { operator: "is", value: true }));
+	const kept = propertyRule("status", { operator: "is not empty" });
 	fitRuleToProperty(kept, types);
-	assert.deepEqual(kept, propertyRule("status", { operator: "is set" }));
+	assert.deepEqual(kept, propertyRule("status", { operator: "is not empty" }));
 });
 
 test("a list row's label leaves the prefix to its chip", () => {
 	assert.equal(sourceSummary({ kind: "linksOut" }), "Outbound links");
-	assert.equal(sourceSummary(propertyList("favorite", { operator: "is set" }).source), "favorite is set");
-	assert.equal(listName({ ...propertyList("favorite", { operator: "is set" }), prefix: "⭐ fav" }), "⭐ fav favorite is set");
+	assert.equal(sourceSummary(propertyList("favorite", { operator: "is not empty" }).source), "favorite is not empty");
+	assert.equal(listName({ ...propertyList("favorite", { operator: "is not empty" }), prefix: "⭐ fav" }), "⭐ fav favorite is not empty");
 });
 
 test("the prefix chip shows the trimmed prefix, or a placeholder when blank", () => {
@@ -367,11 +385,14 @@ test("date lists switch missing notes on and off, keeping each source's default 
 	assert.deepEqual(current.source, { kind: "currentPeriods", periods: ["day"], showsMissing: false });
 });
 
-test("a new property rule starts with contains, and picking a list property switches it to has item", () => {
+test("a new property rule starts with contains, and picking a list property keeps contains", () => {
 	const rule = newRule("property");
 	assert.deepEqual(rule, { kind: "property", property: "", condition: { operator: "contains", value: "" } });
 	if (rule.kind !== "property") return;
 	rule.property = "tags";
 	fitRuleToProperty(rule, { tags: "tags" });
-	assert.equal(rule.condition.operator, "has item");
+	assert.equal(rule.condition.operator, "contains");
+	rule.property = "rating";
+	fitRuleToProperty(rule, { rating: "number" });
+	assert.deepEqual(rule.condition, { operator: "=", value: 0 });
 });

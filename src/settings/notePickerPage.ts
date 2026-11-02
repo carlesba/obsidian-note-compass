@@ -84,6 +84,11 @@ export function notePickerPage(picker: NotePicker, context: NotePickerPageContex
 						},
 					],
 				},
+				{
+					type: "group",
+					heading: t("notePickerLists"),
+					items: [{ name: t("notePickerListsInfo"), desc: t("notePickerListsInfoDesc"), searchable: false }],
+				},
 				notePickerLists(picker, context),
 				{ type: "group", visible: false, items: picker.lists.map((list) => listPage(list, context)) },
 			];
@@ -104,7 +109,6 @@ function notePickerLists(picker: NotePicker, context: NotePickerPageContext): Se
 	const { lists } = picker;
 	return {
 		type: "list",
-		heading: t("notePickerLists"),
 		cls: "note-compass-sortable-list",
 		emptyState: t("noListsYet"),
 		items: lists.map((list) => listRow(list, context, () => context.change(() => duplicateEntry(lists, list, newListId(context.allListIds()))))),

@@ -127,3 +127,10 @@ test("a row draws content segments with the muted ones apart", () => {
 	const row = drawRow({ content: "status done", contentSegments: [{ text: "status" }, { text: " done", muted: true }] });
 	assert.deepEqual(texts(row), ["note-compass-row-segment: status", "note-compass-row-muted:  done"]);
 });
+
+test("the current note's row starts with the arrow mark, so typing still matches its name", () => {
+	const entry = { file: { path: "Project.md", basename: "Project", ctime: 0 }, prefix: "🔗 out", name: "Project", current: true as const };
+	assert.equal(entryLabel(entry), "🔗 out ➡️ Project");
+	assert.equal(matchesInOrder("proj", entryLabel(entry)), true);
+	assert.equal(entryParts({ ...entry, current: undefined }).content, "Project");
+});

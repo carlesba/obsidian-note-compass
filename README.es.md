@@ -47,13 +47,13 @@ Cada selector muestra las listas que configures en su página de los ajustes, en
 
 Las demás listas no dependen de la nota activa:
 
-- Filtro muestra las notas que cumplen un conjunto de condiciones, como `status es active`, las notas con la etiqueta `#project` o las notas de `work` modificadas en la última semana. Las condiciones se pueden agrupar, como se explica en "Páginas de lista".
+- Filtro muestra las notas que cumplen un conjunto de condiciones, como `status es active`, las notas con la etiqueta `#project`, las notas enlazadas desde tu revisión semanal o las notas de `work` modificadas en la última semana. Usa los campos y los operadores de Obsidian Bases, y las condiciones se pueden agrupar, como se explica en "Páginas de lista".
 - Enlaza a una nota muestra las notas que enlazan a una nota elegida, en su texto o en una propiedad.
 - En una carpeta muestra las notas de una carpeta y sus subcarpetas.
 - Modificadas hoy muestra las notas cambiadas desde medianoche.
 - Notas de fecha actuales muestra las notas de fecha de hoy, esta semana, este mes, este trimestre y este año, cada una de las que actives. Siguen el orden de la página de la lista, de hoy a este año si no lo cambias, en lugar de ordenarse por nombre, y cada fila indica de qué periodo se trata, como `esta semana - semana 10`. Una nota que todavía no existe aparece como `crear la nota de esta semana`, salvo que desactives "Mostrar notas que aún no existen", y al elegirla se crea y se abre como lo haría tu complemento de notas de fecha, con la misma plantilla: Periodic Notes, o el complemento principal Notas diarias para los días. Los periodos que vienen de los formatos personalizados empiezan como una nota vacía. Una propiedad de enlace con este origen solo ofrece las notas que existen.
 
-Una nota aparece en cada lista que la contiene, en el orden de tus listas, y la nota activa se omite. Dentro de cada lista, las notas se ordenan por nombre. Si ninguna lista tiene notas, el comando muestra "No hay notas a las que ir." en lugar de abrir un selector vacío.
+Una nota aparece en cada lista que la contiene, en el orden de tus listas. La nota activa también aparece, en cada lista que la contiene, con ➡️ delante de su nombre, como en `🔅 ctx ➡️ 2024-03-05`; insertar enlaces al escribir y "Establecer propiedades" la siguen omitiendo, porque una nota nunca se enlaza a sí misma. Dentro de cada lista, las notas se ordenan por nombre. Si ninguna lista tiene notas, el comando muestra "No hay notas a las que ir." en lugar de abrir un selector vacío.
 
 Cada fila empieza con el prefijo de su lista, que se muestra como un pequeño chip para que se distinga del nombre. Todos los chips de un selector comparten el ancho del más ancho, hasta unos doce caracteres, para que los nombres queden alineados, y una lista con color de prefijo tiñe sus chips. Una nota de fecha añade su periodo después del nombre: el día de la semana para una nota diaria, `semana N` para una nota semanal, `mes - <mes>` para una nota mensual y `año` para una nota anual.
 
@@ -254,7 +254,7 @@ Los ajustes caben en una ventana estrecha y funcionan igual en móvil. La págin
 
 ![La página principal de los ajustes, con una nota sobre cómo se organiza Note Compass arriba, después las páginas Navegación, Propiedades, Formularios y Tareas, Origen de las notas de fecha en Integraciones, y Restablecer todos los ajustes al final](docs/images/settings.png)
 
-Haz clic en cualquier punto de una de las cuatro filas para abrir su página, y usa la flecha de vuelta de arriba para regresar. La página propia de una fila se abre dentro de su sección, así que al volver desde la página de una lista aterrizas en la página de su selector de navegación, y al volver otra vez, en la página Navegación. Esa página lista tus selectores de navegación con los mismos controles de añadir, reordenar, activar, editar, copiar y eliminar; cada uno tiene "Activado", "Nombre", un "Filtro" y sus listas. El filtro del selector se aplica a todas sus listas, además de la fuente y el filtro de cada una, así que solo aparecen las notas que lo cumplen; vacío, no oculta nada. Un selector nuevo empieza sin listas y con el filtro vacío, y el icono de copiar lo duplica con su filtro y todas sus listas.
+Haz clic en cualquier punto de una de las cuatro filas para abrir su página, y usa la flecha de vuelta de arriba para regresar. La página propia de una fila se abre dentro de su sección, así que al volver desde la página de una lista aterrizas en la página de su selector de navegación, y al volver otra vez, en la página Navegación. Esa página lista tus selectores de navegación con los mismos controles de añadir, reordenar, activar, editar, copiar y eliminar; cada uno tiene "Activado", "Nombre", un "Filtro principal" y sus listas. El filtro principal se aplica a todas sus listas, además de la fuente y el filtro de cada una, así que solo aparecen las notas que lo cumplen; vacío, no oculta nada. Cada lista ofrece las notas de una fuente, como una carpeta, las notas que enlazan a una nota o un filtro, y las muestra con su propio prefijo; el selector muestra todas las listas activas en orden, así que una nota puede aparecer en más de una lista. Un selector nuevo empieza sin listas y con el filtro principal vacío, y el icono de copiar lo duplica con su filtro y todas sus listas.
 
 ![La página de un selector de navegación, con cada lista como una fila con su chip de prefijo, un interruptor, un icono de copiar, un lápiz y un botón de eliminar](docs/images/settings-jump-to-note.png)
 
@@ -290,29 +290,47 @@ En la página de una lista o de una propiedad, "Prefijo" muestra el botón de aj
 
 El botón de ajustes, "Elegir un prefijo", abre el menú de prefijos. Elegir un prefijo da a esta fila su texto y su color sin cambiar ninguna otra fila. "Nuevo prefijo…", que aparece cuando la fila tiene un prefijo, lo vacía, así que lo que escribes y eliges después solo cambia esta fila. "Sin prefijo", que aparece cuando la fila tiene uno, borra su texto y su color.
 
-Un filtro funciona como los filtros de Obsidian Bases y tiene el mismo aspecto. Es un grupo que empieza con "Todos los siguientes son verdaderos", "Cualquiera de los siguientes son verdaderos" o "Ninguno de los siguientes son verdaderos", de modo que una nota aparece cuando cumple todos los filtros del grupo, al menos uno o ninguno. Cada fila de filtro empieza por lo que comprueba: escribe el nombre de una propiedad, o elige `carpeta`, `etiquetas`, `enlaces`, `creado` o `modificado` entre las sugerencias. Después elige el operador y el valor, como `carpeta está en projects`, `etiquetas tiene la etiqueta client` o `modificado después de hace 7 días`. "Añadir filtro" añade una fila al grupo, y "Añadir grupo de filtros" añade dentro un grupo con su propia elección. Los grupos pueden anidarse hasta tres niveles de profundidad, contando el propio filtro. El botón de la papelera de una fila o de un grupo interior lo elimina, y al eliminar la última fila de un grupo interior se elimina también el grupo. Un filtro nuevo no tiene filas y no muestra nada hasta que añadas una, y un grupo vacío dentro de un filtro no cuenta para la coincidencia.
+Un filtro muestra las notas que cumplen un conjunto de condiciones. Ofrece los mismos campos, operadores y grupos que los filtros de Obsidian Bases y tiene el mismo aspecto. Es un grupo que empieza con "Todos los siguientes son verdaderos", "Cualquiera de los siguientes son verdaderos" o "Ninguno de los siguientes son verdaderos", de modo que una nota aparece cuando cumple todos los filtros del grupo, al menos uno o ninguno. Cada fila de filtro empieza por lo que comprueba: escribe el nombre de una propiedad, o elige uno de los campos de archivo de abajo entre las sugerencias. Después elige el operador y el valor, como `archivo en la carpeta projects`, `enlaces de retorno del archivo contiene Weekly review` o `modificado después de hace 7 días`. "Añadir filtro" añade una fila al grupo, y "Añadir grupo de filtros" añade dentro un grupo con su propia elección. Los grupos pueden anidarse hasta tres niveles de profundidad, contando el propio filtro. El botón de la papelera de una fila o de un grupo interior lo elimina, y al eliminar la última fila de un grupo interior se elimina también el grupo. Un filtro nuevo no tiene filas y no muestra nada hasta que añadas una, y un grupo vacío dentro de un filtro no cuenta para la coincidencia.
 
-Cada condición empieza eligiendo qué examina:
+Los campos de archivo son estos:
 
-- Propiedad compara una propiedad con una condición disponible para su tipo, como se describe más abajo.
-- Carpeta coincide con las notas de una carpeta y sus subcarpetas con "está en", o con todas las demás notas con "no está en".
-- Etiqueta coincide con las notas que tienen una etiqueta en sus propiedades o en su texto. Una etiqueta coincide también con sus subetiquetas, así que `project` coincide con `#project/website`, y no importan ni las mayúsculas ni un `#` inicial. "No tiene la etiqueta" coincide con las notas que no la tienen.
-- Enlaza a una nota coincide con las notas que enlazan a una nota elegida, en su texto o en una propiedad, y "no contiene" coincide con las que no la enlazan.
-- Creado y Modificado comparan el día en que se creó o se cambió por última vez la nota con una fecha fija o relativa a hoy, usando en, no en, antes de o después de.
+- `archivo` es la propia nota, con los operadores es, enlaza a, en la carpeta, tiene la etiqueta y tiene la propiedad, y sus negaciones.
+- `nombre de archivo` y `nombre de archivo base` son el nombre de la nota sin `.md`, y `nombre de archivo completo` es el nombre con `.md`. Usan los operadores de texto.
+- `ruta del archivo` es la ruta de la nota desde la raíz de la bóveda, con `.md`; `carpeta` es la carpeta en la que está la nota, o `/` en la raíz de la bóveda; y `extensión` es `md`. Usan los operadores de texto.
+- `creado` y `modificado` son el día en que se creó o se cambió por última vez la nota, con los operadores de fecha.
+- `tamaño de archivo` es el tamaño de la nota en bytes, con los operadores de número.
+- `enlaces de archivo` son las notas a las que enlaza la nota, `enlaces de retorno del archivo` las notas que enlazan a ella, y `adjuntos del archivo` las notas y archivos que incrusta, nombrados por su ruta, o por su nombre en el caso de las notas. Usan los operadores de lista.
+- `etiquetas del archivo` son las etiquetas de la nota, de sus propiedades y de su texto, sin `#`, con los operadores de lista.
 
-La fila de una lista muestra la única condición del filtro, como `status es active` o `Con la etiqueta project`, o cuenta sus condiciones, como en `Cumple las 3 condiciones`.
+Los operadores dependen del tipo del valor, en el orden en que los ofrece Bases:
 
-Las listas guardadas por versiones anteriores como "Notas con una propiedad" se abren como un filtro con esa única condición de propiedad, y muestran las mismas notas que antes.
+- Texto: es, no es, empieza por, termina en, está vacío, contiene, contiene alguno de, contiene todos, y sus negaciones.
+- Lista: es exactamente, no es exactamente, está vacío, contiene, contiene alguno de, contiene todos, y sus negaciones.
+- Número: =, ≠, <, ≤, >, ≥, está vacío, no está vacío.
+- Fecha: en, no en, antes de, en o antes de, después de, en o después de, está vacío, no está vacío. Una fecha es un día fijo, hoy, o un número de días atrás o desde hoy, que se calcula cada vez que se abre el selector.
+- Casilla de verificación: es, no es, con una casilla para verdadero o falso.
 
-Una condición de propiedad pide la propiedad, sugiriendo las propiedades de la bóveda con sus tipos, y después una condición disponible para ese tipo:
+"Enlaza a una nota" se escribe como `archivo enlaza a <nota>`, y "enlazada desde una nota" como `enlaces de retorno del archivo contiene <nota>`. Para "contiene alguno de" y "contiene todos", escribe los valores separados por comas.
 
-- Las propiedades de casilla de verificación pueden ser verdaderas, falsas, tener valor o no tenerlo. "Es falso" necesita un `false` explícito.
-- Las propiedades de texto pueden ser iguales o distintas de un valor, contenerlo o no contenerlo, tener valor o no tenerlo.
-- Las propiedades de lista, etiquetas y alias pueden tener o no tener un elemento igual al valor, tener valor o no tenerlo. Los wikienlaces se comparan por el texto del enlace, así que `[[Project]]` coincide con el valor `Project`.
-- Las propiedades de número pueden ser iguales, distintas, menores o mayores que un número, tener valor o no tenerlo.
-- Las propiedades de fecha pueden ser en, no en, antes de o después de una fecha fija, hoy, o un número de días atrás o desde hoy, tener valor o no tenerlo. Una fecha relativa se calcula cada vez que se abre el selector.
+Algunos detalles de la coincidencia:
 
-"No tiene valor" también coincide con una propiedad que se dejó en blanco. Las condiciones negadas, como "no es" o "no contiene", coinciden con todas las notas con las que no coincide la condición positiva, incluidas las notas que no tienen la propiedad.
+- Como en Bases, en los textos "contiene", "contiene alguno de" y "contiene todos" no distinguen mayúsculas, mientras que "es", "empieza por" y "termina en" sí las distinguen.
+- En las listas, "contiene" compara elementos completos. Los wikienlaces se comparan por el texto del enlace, así que `[[Project]]` coincide con el valor `Project`, y las notas de `enlaces de archivo`, `enlaces de retorno del archivo` y `adjuntos del archivo` pueden nombrarse por su nombre o por su ruta.
+- `archivo tiene la etiqueta` coincide también con las subetiquetas, así que `project` coincide con `#project/website`, y no importan ni las mayúsculas ni un `#` inicial. `etiquetas del archivo contiene` compara etiquetas completas.
+- `archivo en la carpeta` incluye las subcarpetas de la carpeta.
+- Una fila sin valor no muestra nada, y su negación muestra todas las notas.
+- "Está vacío" coincide también con una propiedad que se dejó en blanco o que falta.
+- Los operadores negados, como "no es" o "no contiene", coinciden con todas las notas con las que no coincide el operador positivo, incluidas las notas que no tienen la propiedad.
+
+La fila de una lista muestra la única condición del filtro, como `status es active` o `archivo tiene la etiqueta project`, o cuenta sus condiciones, como en `Cumple las 3 condiciones`.
+
+Una condición de propiedad pide la propiedad, sugiriendo las propiedades de la bóveda con sus tipos, y después ofrece los operadores de ese tipo: los de texto para los textos, los de lista para las listas, las etiquetas y los alias, los de número, los de fecha para las fechas y las fechas con hora, y los de casilla de verificación.
+
+Los filtros guardados por versiones anteriores siguen funcionando:
+
+- Los filtros guardados antes de los operadores de Bases se abren con el operador nuevo equivalente y muestran las mismas notas: "tiene valor" pasa a "no está vacío", "tiene el elemento" a "contiene", "es verdadero" a "es" con la casilla marcada, `carpeta está en` a `archivo en la carpeta`, `etiquetas tiene la etiqueta` a `archivo tiene la etiqueta` y `enlaces contiene` a `archivo enlaza a`.
+- Las filas de nombre de archivo y de ruta siguen ahora las reglas de Bases de arriba, así que "empieza por" y "termina en" distinguen mayúsculas, y una ruta incluye `.md`. A una fila de ruta guardada que terminaba en un texto se le añade `.md`, así que sigue coincidiendo.
+- Las listas guardadas por versiones anteriores como "Notas con una propiedad" se abren como un filtro con esa única condición de propiedad.
 
 ### Páginas de propiedad
 
@@ -370,7 +388,7 @@ Las traducciones están en `src/i18n/`, y este manual también está disponible 
 
 - Un formato de día que contiene `/`, como `YYYY/MM/DD`, nunca coincide, porque el nombre de una nota se compara sin sus carpetas.
 - Con los formatos predeterminados, las notas con el nombre de un año en la carpeta de notas de fecha, como `on/2024`, cuentan como notas anuales. Desactiva el periodo de año en los formatos personalizados si guardas otras notas con ese tipo de nombre en esa carpeta.
-- Si una propiedad cambia de tipo, una condición de filtro sobre ella conserva su condición anterior y no coincide con nada hasta que elijas una nueva. La condición, la fila de su lista y su página indican que la condición ya no se aplica.
+- Si una propiedad cambia de tipo, una condición de filtro sobre ella conserva su operador anterior y no coincide con nada hasta que elijas uno nuevo. La condición, la fila de su lista y su página indican que la condición ya no se aplica.
 - Las escrituras en varias notas no son atómicas: un fallo puede dejar algunas actualizadas y otras sin cambiar.
 - La copia conserva el texto de la línea, incluidos sufijos existentes e identificadores de bloque; estos se duplican, no se regeneran.
 

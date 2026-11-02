@@ -1,32 +1,43 @@
-import type { ConditionOperator } from "../lists/conditions.ts";
-import type { NameOperator } from "../lists/filters.ts";
 import { t } from "./index.ts";
 import type { TranslationKey } from "./index.ts";
 
-const OPERATOR_KEYS: Partial<Record<ConditionOperator, TranslationKey>> = {
+const OPERATOR_KEYS: Record<string, TranslationKey> = {
 	"is true": "operatorIsTrue",
 	"is false": "operatorIsFalse",
 	"is set": "operatorIsSet",
 	"is not set": "operatorIsNotSet",
-	is: "operatorIs",
-	"is not": "operatorIsNot",
-	contains: "operatorContains",
-	"does not contain": "operatorDoesNotContain",
 	"has item": "operatorHasItem",
 	"does not have item": "operatorDoesNotHaveItem",
+	is: "operatorIs",
+	"is not": "operatorIsNot",
+	"is exactly": "operatorIsExactly",
+	"is not exactly": "operatorIsNotExactly",
 	on: "operatorOn",
 	"not on": "operatorNotOn",
 	before: "operatorBefore",
+	"on or before": "operatorOnOrBefore",
 	after: "operatorAfter",
-};
-
-const NAME_OPERATOR_KEYS: Record<NameOperator, TranslationKey> = {
+	"on or after": "operatorOnOrAfter",
 	"starts with": "operatorStartsWith",
 	"does not start with": "operatorDoesNotStartWith",
-	contains: "operatorContains",
-	"does not contain": "operatorDoesNotContain",
 	"ends with": "operatorEndsWith",
 	"does not end with": "operatorDoesNotEndWith",
+	"is empty": "operatorIsEmpty",
+	"is not empty": "operatorIsNotEmpty",
+	contains: "operatorContains",
+	"does not contain": "operatorDoesNotContain",
+	"contains any of": "operatorContainsAnyOf",
+	"does not contain any of": "operatorDoesNotContainAnyOf",
+	"contains all of": "operatorContainsAllOf",
+	"does not contain all of": "operatorDoesNotContainAllOf",
+	"links to": "operatorLinksTo",
+	"does not link to": "operatorDoesNotLinkTo",
+	"in folder": "operatorInFolder",
+	"is not in folder": "operatorIsNotInFolder",
+	"has tag": "operatorHasTag",
+	"does not have tag": "operatorDoesNotHaveTag",
+	"has property": "operatorHasProperty",
+	"does not have property": "operatorDoesNotHaveProperty",
 };
 
 const TYPE_KEYS: Record<string, TranslationKey> = {
@@ -42,16 +53,12 @@ const TYPE_KEYS: Record<string, TranslationKey> = {
 	links: "typeLinks",
 };
 
-export function operatorLabel(operator: ConditionOperator): string {
-	const key = OPERATOR_KEYS[operator];
+export function operatorLabel(operator: string): string {
+	const key = Object.prototype.hasOwnProperty.call(OPERATOR_KEYS, operator) ? OPERATOR_KEYS[operator] : undefined;
 	return key === undefined ? operator : t(key);
 }
 
 export function typeLabel(type: string): string {
 	const key = Object.prototype.hasOwnProperty.call(TYPE_KEYS, type) ? TYPE_KEYS[type] : undefined;
 	return key === undefined ? type : t(key);
-}
-
-export function nameOperatorLabel(operator: NameOperator): string {
-	return t(NAME_OPERATOR_KEYS[operator]);
 }

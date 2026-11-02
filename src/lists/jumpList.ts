@@ -39,6 +39,7 @@ export function buildJumpList(
 	current?: VaultNote,
 	dateNoteSettings: DateNoteSettings = defaultDateNoteSettings(),
 	pickerFilter: FilterGroup = emptyFilter(),
+	currentNote: "hidden" | "marked" = "hidden",
 ): JumpListEntry[] {
 	const context = listContext(vault, current, dateNoteSettings);
 	const { dateNotes } = context;
@@ -54,11 +55,13 @@ export function buildJumpList(
 
 	const entries: JumpListEntry[] = [];
 	for (const list of lists) {
-		const seen = new Set<string>(current ? [current.path] : []);
+		const seen = new Set<string>(current && currentNote === "hidden" ? [current.path] : []);
 		for (const listed of list.keepsOrder ? list.notes : [...list.notes].sort(byName)) {
 			if (seen.has(listed.file.path)) continue;
 			seen.add(listed.file.path);
-			entries.push(toEntry(vault, dateNotes, list, listed));
+			const entry = toEntry(vault, dateNotes, list, listed);
+			if (listed.file.path === current?.path) entry.current = true;
+			entries.push(entry);
 		}
 	}
 	return entries;

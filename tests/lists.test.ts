@@ -40,6 +40,8 @@ function fakeVault(fakes: FakeNote[], plugins: FakePlugins = {}): JumpListVault 
 		updateFrontmatter: async () => {},
 		linksFrom: (path) => byPath.get(path)?.links ?? [],
 		linksTo: (path) => fakes.filter((fake) => fake.links?.includes(path)).map((fake) => fake.path),
+		embeds: () => [],
+		size: () => 0,
 		mtime: (path) => byPath.get(path)?.mtime ?? MARCH_5,
 		periodicNotesSettings: () => plugins.periodicNotes,
 		dailyNotesOptions: () => plugins.dailyNotes,
@@ -199,7 +201,7 @@ test("property lists match every note whether or not there is a current note", (
 		],
 		{ propertyTypes: { active: "checkbox" } },
 	);
-	const lists = [propertyList("📍 act", "active", { operator: "is true" })];
+	const lists = [propertyList("📍 act", "active", { operator: "is", value: true })];
 	assert.deepEqual(describe(buildJumpList(lists, vault)), ["📍 act a", "📍 act b"]);
 	assert.deepEqual(describe(buildJumpList(lists, vault, vault.note("d.md"))), ["📍 act a", "📍 act b"]);
 });
@@ -209,7 +211,7 @@ test("without a current note only the property lists run", () => {
 		{ path: "on/2024-03-05.md", ctime: MARCH_5, links: ["linked.md"] },
 		{ path: "linked.md", ctime: MARCH_5, frontmatter: { tags: ["[[Work|work]]"] } },
 	]);
-	const lists = [...defaultSettings().notePickers[0].lists, propertyList("💼 work", "tags", { operator: "has item", value: "Work" })];
+	const lists = [...defaultSettings().notePickers[0].lists, propertyList("💼 work", "tags", { operator: "contains", value: "Work" })];
 	assert.deepEqual(describe(buildJumpList(lists, vault)), ["💼 work linked"]);
 });
 
@@ -228,7 +230,7 @@ test("the lists run in order, a note appears in every list that holds it and the
 	);
 	const lists = [
 		...defaultSettings().notePickers[0].lists,
-		propertyList("📍 act", "active", { operator: "is true" }),
+		propertyList("📍 act", "active", { operator: "is", value: true }),
 		propertyList("🏠 home", "area", { operator: "is", value: "home" }),
 	];
 	const entries = buildJumpList(lists, vault, vault.note("on/2024-03-05.md"));
@@ -259,7 +261,7 @@ test("disabled lists are skipped", () => {
 		...list,
 		enabled: list.source.kind !== "linksOut" && list.source.kind !== "sameDay",
 	}));
-	lists.push({ ...propertyList("🏠 home", "area", { operator: "is set" }), enabled: false });
+	lists.push({ ...propertyList("🏠 home", "area", { operator: "is not empty" }), enabled: false });
 	assert.deepEqual(describe(buildJumpList(lists, vault, vault.note("current.md"))), ["🔗 in in", "🔗 in out"]);
 });
 
@@ -463,4 +465,20 @@ test("current date notes follow the order the periods were dragged into", () => 
 		"src 2024-03-09 | today - Saturday",
 		"src 2024-W10 | this week - week 10",
 	]);
+});
+
+test("a picker that marks the current note lists it in every list that holds it, and only those rows are marked", () => {
+	const vault = fakeVault(
+		[
+			{ path: "current.md", ctime: MARCH_5, links: ["out.md"], frontmatter: { area: "home" } },
+			{ path: "out.md", ctime: MARCH_5, links: ["current.md"], frontmatter: { area: "home" } },
+		],
+		{ propertyTypes: { area: "text" } },
+	);
+	const lists = [propertyList("🏠 home", "area", { operator: "is", value: "home" })];
+	const current = vault.note("current.md");
+	assert.deepEqual(describe(buildJumpList(lists, vault, current)), ["🏠 home out"]);
+	const marked = buildJumpList(lists, vault, current, undefined, undefined, "marked");
+	assert.deepEqual(marked.map((entry) => [entry.name, entry.current === true]), [["current", true], ["out", false]]);
+	assert.deepEqual(buildJumpList(lists, vault, undefined, undefined, undefined, "marked").map((entry) => entry.current), [undefined, undefined]);
 });

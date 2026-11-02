@@ -17,7 +17,7 @@ Move to the notes related to the note in focus, or to any list you define. Group
 ![A navigation picker on a daily note, with the previous and next day, its outbound links, a note from the same day, this week, month and year, the active projects and the people](docs/images/jump-to-note.png)
 
 - See the adjacent date notes, outbound links, inbound links and notes from the same day in one list.
-- Add your own lists with filters on properties, folders, tags, links and dates.
+- Add your own lists with Bases-style filters on properties, file name, path, folder, tags, links, backlinks and dates.
 - Edit a row's properties without opening the note.
 - Type a trigger such as `@` while writing to insert a link to any note a picker lists.
 

@@ -29,8 +29,8 @@ The Navigation page lists your navigation pickers with the same add, reorder, sw
 | Section | Setting | What it does |
 | --- | --- | --- |
 | Navigation picker | Enabled, Name, Placeholder | Offers the picker as "Navigation: <name>" in the command palette and in "Select navigation picker". The placeholder is the text in the picker's search box, and it shows the name when left empty. |
-| Filter | Applies to every list below | A [filter](#filters) every note must match to show in this picker, on top of each list's own source and filter. Empty by default, so it hides nothing. |
-| Lists | List rows | The lists the picker shows, described under [Lists and property rows](#lists-and-property-rows) and [List pages](#list-pages). |
+| Filter | Main filter | The picker's main [filter](#filters). Every note must match it to show in this picker, on top of each list's own source and filter. Empty by default, so it hides nothing. |
+| Lists | List rows | Each list picks the notes of one source, such as a folder, the notes that link to a note, or a filter, and shows them with its own prefix. The picker shows every enabled list in order, so a note can appear under more than one list. See [Lists and property rows](#lists-and-property-rows) and [List pages](#list-pages). |
 
 Below the pickers, "Insert links while typing" switches on the link list described in [Inserting links while typing](navigation.md#inserting-links-while-typing), with its "Trigger" and the "Navigation picker" it uses. When that picker is off or removed, or the trigger is empty, the picker setting shows a warning and typing the trigger does nothing.
 
@@ -117,49 +117,69 @@ A missing adjacent note is created through Periodic Notes, with its template, wh
 
 ![The page of an Adjacent dates list, with Show notes that don't exist yet switched off, then Notes to list with Previous day, Next day, Previous week, Next week and the other periods, each with a switch and a drag handle](images/list-adjacent-dates.png)
 
-A list's row shows the filter's only condition, such as `status is active` or `Tagged project`, or counts its conditions, as in `All of 3 conditions`.
+A list's row shows the filter's only condition, such as `status is active` or `file has tag project`, or counts its conditions, as in `All of 3 conditions`.
 
 ### Filters
 
-A filter lists the notes that match a set of conditions. It works like the filters in Obsidian Bases and looks the same.
+A filter lists the notes that match a set of conditions. It offers the same fields, operators and groups as the filters in Obsidian Bases, and looks the same.
 
 1. Choose how the group matches: "All the following are true", "Any of the following are true" or "None of the following are true". A note is listed when it matches every filter in the group, at least one, or none of them.
 2. Choose "Add filter" to add a row to the group.
-3. Start the row with what it tests: type a property name, or pick `file name`, `file path`, `folder`, `tags`, `links`, `created time` or `modified time` from the suggestions.
-4. Choose the operator and the value, such as `folder is in projects`, `tags has tag client` or `modified time after 7 days ago`.
+3. Start the row with what it tests: type a property name, or pick one of the file fields below from the suggestions.
+4. Choose the operator and the value, such as `file in folder projects`, `file backlinks contains Weekly review` or `modified time after 7 days ago`.
 5. Choose "Add filter group" to add a group inside it with its own choice.
 
 Groups can sit inside groups up to three levels deep, counting the filter itself. The trash button on a row or on an inner group removes it, and removing the last row of an inner group removes the group too. A new filter has no rows and lists nothing until you add one, and an empty group inside a filter is left out of the matching.
 
-| Condition | Matches |
+| Field | Holds | Operators |
+| --- | --- | --- |
+| `file` | The note itself. | is, links to, in folder, has tag, has property, and their negations. |
+| `file name`, `file base name` | The note's name without `.md`. | Text operators. |
+| `file full name` | The note's name with `.md`. | Text operators. |
+| `file path` | The note's path from the vault root, with `.md`. | Text operators. |
+| `folder` | The folder the note is in, or `/` at the vault root. | Text operators. |
+| `file extension` | `md`. | Text operators. |
+| `created time`, `modified time` | The day the note was created or last changed. | Date operators. |
+| `file size` | The note's size in bytes. | Number operators. |
+| `file links` | The notes this note links to. | List operators. |
+| `file backlinks` | The notes that link to this note. | List operators. |
+| `file embeds` | The notes and files this note embeds, named by path, or by name for notes. | List operators. |
+| `file tags` | The note's tags, from its properties and its text, without `#`. | List operators. |
+
+The operators follow the value's type, in the order Bases offers them:
+
+| Type | Operators |
 | --- | --- |
-| Property | A property checked against a condition offered for its type, below. |
-| File name, File path | The note's name, or its path from the vault root, both without `.md`, that starts with, contains or ends with a text, or does not. Case does not matter, and a row with no text lists nothing. |
-| Folder | The notes in a folder and its subfolders with "is in", or every other note with "is not in". |
-| Tag | The notes with a tag in their properties or their text. "Does not have tag" matches the notes without it. |
-| Links to note | The notes that link to a chosen note, in their text or in a property. "Does not contain" matches the notes that do not. |
-| Created, Modified | The day the note was created or last changed, compared with a fixed date or one relative to today, using on, not on, before or after. |
+| Text | is, is not, starts with, ends with, is empty, contains, contains any of, contains all of, and the negations. |
+| List | is exactly, is not exactly, is empty, contains, contains any of, contains all of, and the negations. |
+| Number | =, ≠, <, ≤, >, ≥, is empty, is not empty. |
+| Date | on, not on, before, on or before, after, on or after, is empty, is not empty. A date is a fixed day, today, or a number of days ago or from now, worked out each time the picker opens. |
+| Checkbox | is, is not, with a checkbox for true or false. |
 
-A tag also matches its subtags, so `project` matches `#project/website`, and the case and a leading `#` do not matter.
-
-### Property conditions
-
-A property condition asks for the property, suggesting the vault's properties with their types, then a condition offered for that type.
-
-| Property type | Conditions |
-| --- | --- |
-| Checkbox | True, false, set, not set. "Is false" needs an explicit `false`. |
-| Text | Equal or not equal to a value, contains or does not contain it, set, not set. |
-| List, tag, alias | Has or does not have an item equal to the value, set, not set. Wiki-links are compared by their link text, so `[[Project]]` matches the value `Project`. |
-| Number | Equal to, not equal to, less than or greater than a number, set, not set. |
-| Date | On, not on, before or after a fixed date, today, or a number of days ago or from now, set, not set. A relative date is worked out each time the picker opens. |
+"Links to note" means `file links to <note>`, and "linked from note" means `file backlinks contains <note>`. For "contains any of" and "contains all of", type the values separated by commas.
 
 <details><summary>Details on matching</summary>
 
-- "Is not set" also matches a property left blank.
-- The negated conditions, such as "is not" or "does not contain", match every note the positive condition does not, including notes without the property.
-- Lists saved by earlier versions as "Notes with a property" open as a filter with that one property condition, and they list the same notes as before.
-- If a property changes type, a condition on it keeps its old condition and matches nothing until you pick a new one. The condition, its list's row and its page say that the condition no longer applies.
+- As in Bases, text "contains", "contains any of" and "contains all of" ignore case, while "is", "starts with" and "ends with" respect it.
+- List "contains" compares whole items. Wiki-links are compared by their link text, so `[[Project]]` matches the value `Project`, and notes in `file links`, `file backlinks` and `file embeds` can be named by name or path.
+- `file has tag` also matches subtags, so `project` matches `#project/website`, and the case and a leading `#` do not matter. `file tags contains` compares whole tags.
+- `file in folder` includes the folder's subfolders.
+- A row with no value lists nothing, and its negation lists every note.
+- "Is empty" also matches a property left blank or missing.
+- The negated operators, such as "is not" or "does not contain", match every note the positive operator does not, including notes without the property.
+
+</details>
+
+### Property conditions
+
+A property condition asks for the property, suggesting the vault's properties with their types, then offers the operators for that type: text for text, list for list, tags and aliases, number, date for date and datetime, and checkbox.
+
+<details><summary>Filters saved by earlier versions</summary>
+
+- Filters saved before the Bases operators open with the matching new operator, and they list the same notes: "is set" becomes "is not empty", "has item" becomes "contains", "is true" becomes "is" with the checkbox ticked, `folder is in` becomes `file in folder`, `tags has tag` becomes `file has tag`, and `links contains` becomes `file links to`.
+- File name and path rows now follow the Bases rules above, so "starts with" and "ends with" respect case, and a path includes `.md`. A saved path row that ended with a text gets `.md` added, so it still matches.
+- Lists saved by earlier versions as "Notes with a property" open as a filter with that one property condition.
+- If a property changes type, a condition on it keeps its old operator and matches nothing until you pick a new one. The condition, its list's row and its page say that the condition no longer applies.
 
 </details>
 
