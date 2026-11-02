@@ -119,8 +119,8 @@ A list's row shows the filter's only condition, such as `status is active` or `f
 
 A filter lists the notes that match a set of conditions. It offers the same fields, operators and groups as the filters in Obsidian Bases, and looks the same.
 
-1. Choose how the group matches: "All the following are true", "Any of the following are true" or "None of the following are true". A note is listed when it matches every filter in the group, at least one, or none of them.
-2. Choose "Add filter" to add a row to the group. The new row starts on the first field, `file`.
+1. Choose "Add filter" to add a row to the group. The new row starts on the first field, `file`.
+2. Choose how the group matches: "All the following are true", "Any of the following are true" or "None of the following are true". A note is listed when it matches every filter in the group, at least one, or none of them. This choice appears once the group holds a row.
 3. Choose what the row tests from its first selector, which lists the file fields below and then the vault's properties, each with its type's icon. Type in its search box to narrow the list, or to use a property no note has yet.
 4. Choose the operator from the second selector, which offers only the operators for that field's type, then the value, such as `file in folder projects`, `file backlinks contains Weekly review` or `modified time after 7 days ago`.
 5. Choose "Add filter group" to add a group inside it with its own choice.

@@ -152,15 +152,20 @@ interface GroupPlace {
 function renderGroup(parentEl: HTMLElement, group: FilterGroup, place: GroupPlace): void {
 	const { editing } = place;
 	const groupEl = parentEl.createDiv({ cls: "filter-group" });
-	const headerEl = groupEl.createDiv({ cls: "filter-group-header" });
-	const modeEl = headerEl.createEl("select", { cls: ["conjunction", "dropdown"] });
-	for (const [mode, label] of Object.entries(filterModeOptions())) {
-		modeEl.createEl("option", { text: label, attr: { value: mode } }).selected = mode === group.mode;
-	}
-	modeEl.addEventListener("change", () => editing.change(() => writeMode(group, modeEl.value)));
-	const headerActionsEl = headerEl.createDiv({ cls: "filter-group-header-actions" });
 	const { parent } = place;
-	if (parent) iconButton(headerActionsEl, "trash-2", t("removeFilterGroup"), () => editing.change(() => removeFrom(parent, group)));
+	const hasItems = group.items.length > 0;
+	if (hasItems || parent) {
+		const headerEl = groupEl.createDiv({ cls: "filter-group-header" });
+		if (hasItems) {
+			const modeEl = headerEl.createEl("select", { cls: ["conjunction", "dropdown"] });
+			for (const [mode, label] of Object.entries(filterModeOptions())) {
+				modeEl.createEl("option", { text: label, attr: { value: mode } }).selected = mode === group.mode;
+			}
+			modeEl.addEventListener("change", () => editing.change(() => writeMode(group, modeEl.value)));
+		}
+		const headerActionsEl = headerEl.createDiv({ cls: "filter-group-header-actions" });
+		if (parent) iconButton(headerActionsEl, "trash-2", t("removeFilterGroup"), () => editing.change(() => removeFrom(parent, group)));
+	}
 	const statementsEl = groupEl.createDiv({ cls: "filter-group-statements" });
 	const here = { ...place, group };
 	group.items.forEach((item, index) => {
