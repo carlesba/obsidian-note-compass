@@ -1,10 +1,11 @@
 export function sortableRows(listEl: HTMLElement, rowSelector: string, handleSelector: string, moved: (from: number, to: number) => void): void {
 	const rows = () => Array.from(listEl.children).filter((child): child is HTMLElement => child.instanceOf(HTMLElement) && child.matches(rowSelector));
 	listEl.addEventListener("pointerdown", (event) => {
-		if (!event.isPrimary || event.button !== 0 || !(event.target instanceof Element)) return;
-		const handleEl = event.target.closest(handleSelector);
+		const target = event.targetNode;
+		if (!event.isPrimary || event.button !== 0 || !target?.instanceOf(Element)) return;
+		const handleEl = target.closest(handleSelector);
 		const rowEl = handleEl?.closest(rowSelector);
-		if (!(handleEl instanceof HTMLElement) || !(rowEl instanceof HTMLElement) || rowEl.parentElement !== listEl) return;
+		if (!handleEl?.instanceOf(HTMLElement) || !rowEl?.instanceOf(HTMLElement) || rowEl.parentElement !== listEl) return;
 		event.preventDefault();
 		const { pointerId } = event;
 		const from = rows().indexOf(rowEl);

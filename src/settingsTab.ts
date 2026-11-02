@@ -366,7 +366,7 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 	private listenForTab(): void {
 		const modal = this.settingModal();
 		const containerEl = modal?.tabContentContainer;
-		if (!modal || !(containerEl instanceof Node) || !containerEl.instanceOf(HTMLElement)) return;
+		if (!modal || !isHTMLElement(containerEl)) return;
 		const leaveBefore = () => {
 			if (typeof modal.focusSidebar !== "function") return false;
 			modal.focusSidebar();
@@ -500,4 +500,10 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 		};
 		return page;
 	}
+}
+
+function isHTMLElement(value: unknown): value is HTMLElement {
+	if (typeof value !== "object" || value === null) return false;
+	const node: { instanceOf?: Node["instanceOf"] } = value;
+	return typeof node.instanceOf === "function" && node.instanceOf(HTMLElement);
 }

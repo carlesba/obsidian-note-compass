@@ -61,11 +61,11 @@ function pillElement(segment: Extract<PlaceholderSegment, { kind: "pill" }>, kno
 }
 
 function isPill(node: Node | null | undefined): node is HTMLElement {
-	return node instanceof Node && node.instanceOf(HTMLElement) && node.hasAttribute(PILL_ATTRIBUTE);
+	return !!node?.instanceOf(HTMLElement) && node.hasAttribute(PILL_ATTRIBUTE);
 }
 
 function isBreak(node: Node | null | undefined): node is HTMLElement {
-	return node instanceof Node && node.instanceOf(HTMLElement) && node.tagName === "BR";
+	return !!node?.instanceOf(HTMLElement) && node.tagName === "BR";
 }
 
 export function pillInput(parentEl: HTMLElement, options: PillInputOptions): PillInput {

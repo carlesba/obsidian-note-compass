@@ -131,8 +131,8 @@ class ComboboxPopover {
 		this.search.inputEl.addEventListener("blur", () => this.suggestEl.removeClass("has-input-focus"));
 		this.search.inputEl.addEventListener("keydown", (event) => this.onKey(event));
 		const onOutside = (event: MouseEvent) => {
-			const target = event.target;
-			if (target instanceof Node && (this.suggestEl.contains(target) || anchorEl.contains(target))) return;
+			const target = event.targetNode;
+			if (target && (this.suggestEl.contains(target) || anchorEl.contains(target))) return;
 			actions.dismiss();
 		};
 		doc.addEventListener("mousedown", onOutside, true);

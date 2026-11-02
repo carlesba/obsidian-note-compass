@@ -76,7 +76,8 @@ export class JumpModal extends SuggestModal<JumpListEntry> {
 	}
 
 	onClose(): void {
-		if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+		const focusedEl = this.containerEl.doc.activeElement;
+		if (focusedEl?.instanceOf(HTMLElement)) focusedEl.blur();
 	}
 
 	private editPropertiesOf(entry: JumpListEntry): void {

@@ -30,8 +30,8 @@ function wraps(outer: HTMLElement, inner: HTMLElement): boolean {
 
 export function tabPastRows(event: KeyboardEvent, containerEl: HTMLElement, leaveBefore: () => boolean): void {
 	if (event.key !== "Tab" || event.isComposing || event.defaultPrevented || event.ctrlKey || event.altKey || event.metaKey) return;
-	const target = event.target;
-	if (!(target instanceof Node) || !target.instanceOf(HTMLElement) || !containerEl.contains(target)) return;
+	const target = event.targetNode;
+	if (!target?.instanceOf(HTMLElement) || !containerEl.contains(target)) return;
 	const current = target === containerEl ? undefined : target;
 	const move = tabMove(tabSequence(containerEl), current, event.shiftKey, wraps);
 	if (move.kind === "native") return;
