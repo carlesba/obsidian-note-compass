@@ -64,11 +64,11 @@ export function canAddGroup(depth: number): boolean {
 }
 
 export function addCondition(group: FilterGroup): void {
-	group.items.push(newRule("property"));
+	group.items.push(newRule(FILE_FIELDS[0]));
 }
 
 export function addGroup(group: FilterGroup): void {
-	group.items.push({ kind: "group", mode: "all", items: [newRule("property")] });
+	group.items.push({ kind: "group", mode: "all", items: [newRule(FILE_FIELDS[0])] });
 }
 
 export function removeNode(group: FilterGroup, node: FilterNode): void {

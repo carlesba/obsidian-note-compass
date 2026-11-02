@@ -258,8 +258,6 @@
 .note-compass-filter .filter-expression {
 	flex-wrap: wrap;
 	min-width: 0;
-	border-radius: var(--input-radius);
-	box-shadow: 0 0 0 1px var(--background-modifier-border);
 }
 
 .note-compass-filter .filter-expression input,
