@@ -160,7 +160,8 @@ export const zhTW: Translation = {
 	newNoteFolderDesc: "新筆記會存放在這裡。留空則使用新筆記的預設位置。",
 	prefixColour: "前綴顏色",
 	removeColour: "移除顏色",
-	editPrefix: "編輯前綴…",
+	editPrefix: "編輯前綴",
+	savePrefix: "儲存前綴",
 	prefixPlaceholder: "前綴",
 	noPrefix: "無前綴",
 	prefixRowCountOne: "{count} 列",
@@ -528,7 +529,6 @@ export const zhTW: Translation = {
 	fixedLinksDesc: "加入清單的筆記。其他連結會保留。",
 	clearedValue: "已清除",
 	newPrefix: "新增前綴…",
-	choosePrefix: "選擇前綴",
 
 	noTaskCommandsYet: "尚無任務命令。新增一個，即可從命令面板處理筆記中的任務。",
 	addTaskCommand: "新增任務命令",

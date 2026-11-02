@@ -160,7 +160,8 @@ export const ja: Translation = {
 	newNoteFolderDesc: "新しいノートはここに作成されます。空の場合は新規ノートの作成場所の設定に従います。",
 	prefixColour: "プレフィックスの色",
 	removeColour: "色を削除",
-	editPrefix: "プレフィックスを編集…",
+	editPrefix: "プレフィックスを編集",
+	savePrefix: "プレフィックスを保存",
 	prefixPlaceholder: "プレフィックス",
 	noPrefix: "プレフィックスなし",
 	prefixRowCountOne: "{count} 行",
@@ -528,7 +529,6 @@ export const ja: Translation = {
 	fixedLinksDesc: "リストに追加するノート。ほかのリンクは残ります。",
 	clearedValue: "クリア",
 	newPrefix: "新しいプレフィックス…",
-	choosePrefix: "プレフィックスを選択",
 
 	noTaskCommandsYet: "タスクコマンドはまだありません。追加すると、コマンドパレットからノート内のタスクを処理できます。",
 	addTaskCommand: "タスクコマンドを追加",

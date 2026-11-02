@@ -166,8 +166,7 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 			openPage: (pageId: string) => this.openPage(pageId),
 			change: (change: () => unknown) => this.changeLists(change),
 			prefixes: this.prefixes,
-			prefixChanged: () => void this.savePrefixes(true),
-			prefixTyped: () => void this.savePrefixes(false),
+			prefixChanged: () => void this.savePrefixes(),
 			showPrefixes: true,
 		};
 		const formContext: FormPageContext = {
@@ -433,9 +432,8 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 		this.update();
 	}
 
-	private async savePrefixes(rerender: boolean): Promise<void> {
+	private async savePrefixes(): Promise<void> {
 		await this.plugin.saveSettings();
-		if (!rerender) return;
 		this.refreshDomState();
 		this.update();
 	}

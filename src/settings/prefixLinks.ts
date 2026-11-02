@@ -21,11 +21,6 @@ export interface PrefixChoice extends PrefixValue {
 	checked: boolean;
 }
 
-export interface PrefixMenu {
-	choices: PrefixChoice[];
-	clears: boolean;
-}
-
 export interface PrefixChange {
 	prefix?: string;
 	color?: string;
@@ -67,7 +62,7 @@ export function linkedPrefixKeys(rows: readonly PrefixRow[], key: string): strin
 	return rows.filter((row) => row.key !== key && samePrefix(row, own)).map((row) => row.key);
 }
 
-export function prefixMenu(rows: readonly PrefixRow[], key: string): PrefixMenu {
+export function prefixChoices(rows: readonly PrefixRow[], key: string): PrefixChoice[] {
 	const own = rows.find((row) => row.key === key);
 	const choices: PrefixChoice[] = [];
 	for (const row of rows) {
@@ -82,7 +77,7 @@ export function prefixMenu(rows: readonly PrefixRow[], key: string): PrefixMenu 
 		choices.push(row.prefixColor === undefined ? { prefix, count: 1, checked } : { prefix, color: row.prefixColor, count: 1, checked });
 	}
 	choices.sort((a, b) => b.count - a.count || a.prefix.localeCompare(b.prefix));
-	return { choices, clears: own !== undefined && own.prefix.trim() !== "" };
+	return choices;
 }
 
 export function applyPrefixChange(settings: JumpSettings, keys: readonly string[], change: PrefixChange): boolean {
@@ -109,15 +104,16 @@ export function linkedRowsText(labels: readonly string[], shown = 3): string {
 	return labels.length > shown ? `${listed}, …` : listed;
 }
 
-interface PrefixPage {
-	linked: string[];
-	edited: boolean;
-	holds: number;
+export type PrefixDraftKind = "shared" | "new";
+
+export interface PrefixDraft extends PrefixValue {
+	kind: PrefixDraftKind;
 }
 
 export class PrefixPages {
 	private readonly settings: () => JumpSettings;
-	private readonly pages = new Map<string, PrefixPage>();
+	private readonly drafts = new Map<string, PrefixDraft>();
+	private readonly holds = new Map<string, number>();
 	private focusing: string | undefined;
 
 	constructor(settings: () => JumpSettings) {
@@ -128,68 +124,69 @@ export class PrefixPages {
 		return prefixRows(this.settings());
 	}
 
-	private page(key: string): PrefixPage {
-		const known = this.pages.get(key);
-		if (known) return known;
-		const page: PrefixPage = { linked: linkedPrefixKeys(this.rows(), key), edited: false, holds: 0 };
-		this.pages.set(key, page);
-		return page;
-	}
-
-	hold(key: string): void {
-		this.page(key).holds++;
-	}
-
-	release(key: string): void {
-		const page = this.pages.get(key);
-		if (page) page.holds = Math.max(0, page.holds - 1);
-	}
-
-	closeUnheld(key: string): boolean {
-		const page = this.pages.get(key);
-		if (!page || page.holds > 0) return false;
-		this.pages.delete(key);
-		return page.edited;
-	}
-
 	linkedRows(key: string): PrefixRow[] {
 		const rows = this.rows();
-		const linked = this.pages.get(key)?.linked ?? linkedPrefixKeys(rows, key);
+		const linked = linkedPrefixKeys(rows, key);
 		return rows.filter((row) => linked.includes(row.key));
 	}
 
-	edit(key: string, change: PrefixChange): boolean {
-		const page = this.page(key);
-		if (!applyPrefixChange(this.settings(), [key, ...page.linked], change)) return false;
-		page.edited = true;
-		return true;
-	}
-
-	assign(key: string, value: PrefixValue): boolean {
-		return this.unlinked(key, assignPrefix(this.settings(), key, value));
-	}
-
-	clearPrefix(key: string): boolean {
-		return this.unlinked(key, clearPrefix(this.settings(), key));
-	}
-
-	startNew(key: string): boolean {
-		const cleared = clearPrefix(this.settings(), key);
-		const page = this.page(key);
-		page.linked = [];
-		page.edited = page.edited || cleared;
-		return cleared;
-	}
-
-	private unlinked(key: string, changed: boolean): boolean {
-		const page = this.pages.get(key);
-		if (changed && page) page.linked = linkedPrefixKeys(this.rows(), key);
-		return changed;
+	draft(key: string): PrefixDraft | undefined {
+		return this.drafts.get(key);
 	}
 
 	startEditing(key: string): void {
-		this.pages.delete(key);
+		const own = this.rows().find((row) => row.key === key);
+		if (!own) return;
+		this.drafts.set(key, own.prefixColor === undefined ? { kind: "shared", prefix: own.prefix } : { kind: "shared", prefix: own.prefix, color: own.prefixColor });
 		this.focusing = key;
+	}
+
+	startNew(key: string): void {
+		this.drafts.set(key, { kind: "new", prefix: "" });
+		this.focusing = key;
+	}
+
+	editDraft(key: string, change: PrefixChange): void {
+		const draft = this.drafts.get(key);
+		if (!draft) return;
+		if (change.prefix !== undefined) draft.prefix = change.prefix;
+		if (change.color === "") delete draft.color;
+		else if (change.color !== undefined) draft.color = change.color;
+	}
+
+	save(key: string): boolean {
+		const draft = this.drafts.get(key);
+		if (!draft) return false;
+		this.drafts.delete(key);
+		const prefix = draft.prefix.trim();
+		const settings = this.settings();
+		if (prefix === "") return clearPrefix(settings, key);
+		if (draft.kind === "new") return assignPrefix(settings, key, { prefix, color: draft.color });
+		return applyPrefixChange(settings, [key, ...linkedPrefixKeys(this.rows(), key)], { prefix, color: draft.color ?? "" });
+	}
+
+	assign(key: string, value: PrefixValue): boolean {
+		this.drafts.delete(key);
+		return assignPrefix(this.settings(), key, value);
+	}
+
+	clearPrefix(key: string): boolean {
+		this.drafts.delete(key);
+		return clearPrefix(this.settings(), key);
+	}
+
+	hold(key: string): void {
+		this.holds.set(key, (this.holds.get(key) ?? 0) + 1);
+	}
+
+	release(key: string): void {
+		this.holds.set(key, Math.max(0, (this.holds.get(key) ?? 0) - 1));
+	}
+
+	discardUnheld(key: string): void {
+		if ((this.holds.get(key) ?? 0) > 0) return;
+		this.holds.delete(key);
+		this.drafts.delete(key);
 	}
 
 	takeFocus(key: string): boolean {
@@ -199,7 +196,8 @@ export class PrefixPages {
 	}
 
 	clear(): void {
-		this.pages.clear();
+		this.drafts.clear();
+		this.holds.clear();
 		this.focusing = undefined;
 	}
 }

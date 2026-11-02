@@ -160,7 +160,8 @@ export const ko: Translation = {
 	newNoteFolderDesc: "새 노트가 저장될 폴더입니다. 비워 두면 새 노트의 기본 위치를 사용합니다.",
 	prefixColour: "접두사 색상",
 	removeColour: "색상 제거",
-	editPrefix: "접두사 편집…",
+	editPrefix: "접두사 편집",
+	savePrefix: "접두사 저장",
 	prefixPlaceholder: "접두사",
 	noPrefix: "접두사 없음",
 	prefixRowCountOne: "{count}개 행",
@@ -528,7 +529,6 @@ export const ko: Translation = {
 	fixedLinksDesc: "목록에 추가할 노트. 다른 링크는 유지됩니다.",
 	clearedValue: "지움",
 	newPrefix: "새 접두사…",
-	choosePrefix: "접두사 선택",
 
 	noTaskCommandsYet: "아직 작업 명령이 없습니다. 하나를 추가하면 명령 팔레트에서 노트의 작업을 처리할 수 있습니다.",
 	addTaskCommand: "작업 명령 추가",

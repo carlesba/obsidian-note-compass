@@ -5,6 +5,7 @@ export interface ComboboxItem {
 	label: string;
 	icon?: string;
 	detail?: string;
+	render?: (titleEl: HTMLElement) => void;
 }
 
 export interface ComboboxOptions {
@@ -14,6 +15,8 @@ export interface ComboboxOptions {
 	onSelect: (item: ComboboxItem) => void;
 	extraItem?: (query: string, items: readonly ComboboxItem[]) => ComboboxItem | undefined;
 }
+
+export type ComboboxListOptions = Pick<ComboboxOptions, "items" | "searchPlaceholder" | "extraItem">;
 
 const POPOVER_GAP = 5;
 
@@ -51,7 +54,9 @@ export class Combobox {
 
 	setValue(item: ComboboxItem | undefined): this {
 		this.selected = item;
-		this.labelEl.setText(item?.label ?? "");
+		this.labelEl.empty();
+		if (item?.render) item.render(this.labelEl);
+		else this.labelEl.setText(item?.label ?? "");
 		this.iconEl.empty();
 		if (item?.icon) {
 			setIcon(this.iconEl, item.icon);
@@ -99,12 +104,12 @@ export class Combobox {
 	}
 }
 
-interface PopoverActions {
+export interface PopoverActions {
 	choose: (item: ComboboxItem) => void;
 	dismiss: () => void;
 }
 
-class ComboboxPopover {
+export class ComboboxPopover {
 	private readonly suggestEl: HTMLElement;
 	private readonly listEl: HTMLElement;
 	private readonly search: SearchComponent;
@@ -114,7 +119,7 @@ class ComboboxPopover {
 
 	constructor(
 		private readonly anchorEl: HTMLElement,
-		private readonly options: ComboboxOptions,
+		private readonly options: ComboboxListOptions,
 		private readonly selectedValue: string | undefined,
 		query: string,
 		private readonly actions: PopoverActions,
@@ -184,7 +189,9 @@ class ComboboxPopover {
 			const flairEl = itemEl.createDiv({ cls: "suggestion-icon" }).createSpan({ cls: "suggestion-flair" });
 			setIcon(flairEl, item.icon);
 		}
-		itemEl.createDiv({ cls: "suggestion-content" }).createDiv({ cls: "suggestion-title", text: item.label });
+		const titleEl = itemEl.createDiv({ cls: "suggestion-content" }).createDiv({ cls: "suggestion-title" });
+		if (item.render) item.render(titleEl);
+		else titleEl.setText(item.label);
 		if (item.detail) itemEl.createDiv({ cls: "suggestion-aux" }).createSpan({ cls: ["suggestion-flair", "u-small"], text: item.detail });
 		itemEl.addEventListener("mousemove", () => this.highlight(index, false));
 		itemEl.addEventListener("click", (event) => {

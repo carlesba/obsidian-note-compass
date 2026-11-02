@@ -1,6 +1,5 @@
 import type {
 	App,
-	ColorComponent,
 	Setting,
 	SettingDefinition,
 	SettingDefinitionGroup,
@@ -9,7 +8,6 @@ import type {
 	SettingDefinitionPage,
 	SettingDefinitionRender,
 	SettingGroupItem,
-	TextComponent,
 } from "obsidian";
 import { t, tCount } from "../i18n";
 import type { TranslationKey } from "../i18n";
@@ -56,7 +54,8 @@ import {
 	rowNamePlaceholder,
 } from "./setPropertiesForm";
 import type { LinkProperty, PropertyField } from "./setPropertiesForm";
-import { prefixMenuFor, renderChip, renderPrefixedName } from "./prefixField";
+import { NEW_PREFIX, choosePrefix, prefixItems, renderChip, renderPrefixedName, selectedPrefixItem } from "./prefixField";
+import { Combobox } from "./combobox";
 import { linkedRowsText } from "./prefixLinks";
 import type { PrefixChange, PrefixPages } from "./prefixLinks";
 
@@ -69,7 +68,6 @@ export interface ListPageContext {
 	change: (change: () => unknown) => void;
 	prefixes: PrefixPages;
 	prefixChanged: () => void;
-	prefixTyped: () => void;
 	showPrefixes: boolean;
 }
 
@@ -234,10 +232,10 @@ export function editableRow(row: EditableRow, context: ListPageContext): Setting
 						prefix: row.prefix ?? "",
 						prefixColor: row.prefixColor,
 						label: row.label,
-						editPrefix: row.broken
+						newPrefix: row.broken
 							? undefined
 							: () => {
-									context.prefixes.startEditing(prefixKey);
+									context.prefixes.startNew(prefixKey);
 									context.openPage(row.pageId);
 								},
 					},
@@ -492,8 +490,6 @@ function prefixGroup(
 	};
 }
 
-type PrefixEditing = "shared" | "own";
-
 function prefixItem(
 	target: { prefix: string; prefixColor?: string },
 	prefixKey: string,
@@ -509,95 +505,99 @@ function prefixItem(
 			const win = setting.settingEl.win;
 			prefixes.hold(prefixKey);
 			setting.settingEl.addClass("note-compass-prefix-setting");
-			const focusesInput = prefixes.takeFocus(prefixKey);
-			setting.addExtraButton((button) => {
-				button
-					.setIcon("settings")
-					.setTooltip(t("choosePrefix"))
-					.onClick(() => {
-						const rect = button.extraSettingsEl.getBoundingClientRect();
-						menu().showAtPosition({ x: rect.left, y: rect.bottom, width: rect.width }, button.extraSettingsEl.doc);
-					});
-				button.extraSettingsEl.setAttribute("aria-haspopup", "menu");
-			});
-			const previewEl = setting.controlEl.createSpan({ cls: "note-compass-prefix-preview-chip" });
-			let editing: PrefixEditing = "shared";
-			let resetEl: HTMLElement | undefined;
-			let textInput: TextComponent | undefined;
-			let colourPicker: ColorComponent | undefined;
-			const showPreview = () => renderChip(previewEl, target.prefix, target.prefixColor);
-			const showReset = () => resetEl?.toggle(target.prefixColor !== undefined);
-			const showDesc = () => {
-				const linked = prefixes.linkedRows(prefixKey).map((row) => row.label);
-				setting.setDesc(editing === "shared" && linked.length > 0 ? `${desc} ${usedByOtherRows(linked)}.` : desc);
-			};
-			const startNewPrefix = () => {
-				editing = "own";
-				if (prefixes.startNew(prefixKey)) context.prefixTyped();
-				textInput?.setValue(target.prefix);
-				colourPicker?.setValue(target.prefixColor ?? NEUTRAL_PREFIX_COLOR);
-				showPreview();
-				showReset();
-				showDesc();
-				textInput?.inputEl.focus();
-			};
-			const edit = (change: PrefixChange) => {
-				if (!prefixes.edit(prefixKey, change)) return;
-				context.prefixTyped();
-				showPreview();
-			};
-			const menu = () =>
-				prefixMenuFor(
-					{
-						key: prefixKey,
-						prefix: target.prefix,
-						prefixColor: target.prefixColor,
-						label: "",
-						newPrefix: target.prefix.trim() === "" ? undefined : startNewPrefix,
-					},
-					context,
-				);
-			showPreview();
-			setting.addText((text) => {
-				textInput = text;
-				text.setPlaceholder(t("prefixPlaceholder")).setValue(target.prefix);
-				text.onChange((typed) => edit({ prefix: typed }));
-				if (focusesInput) text.inputEl.win.setTimeout(() => text.inputEl.focus(), 0);
-			});
-			setting.addColorPicker((picker) => {
-				colourPicker = picker;
-				picker.setValue(target.prefixColor ?? NEUTRAL_PREFIX_COLOR).onChange((color) => {
-					edit({ color });
-					showReset();
-				});
-				setting.addExtraButton((button) => {
-					resetEl = button.extraSettingsEl;
-					button
-						.setIcon("rotate-ccw")
-						.setTooltip(t("removeColour"))
-						.onClick(() => {
-							edit({ color: "" });
-							picker.setValue(NEUTRAL_PREFIX_COLOR);
-							showReset();
-						});
-				});
-			});
-			const colourInput = setting.controlEl.querySelector<HTMLInputElement>('input[type="color"]');
-			colourInput?.setAttribute("aria-label", t("prefixColour"));
-			colourInput?.addEventListener("input", () => {
-				edit({ color: colourInput.value });
-				showReset();
-			});
-			showReset();
-			showDesc();
+			const draft = prefixes.draft(prefixKey);
+			const linked = draft?.kind === "new" ? [] : prefixes.linkedRows(prefixKey).map((row) => row.label);
+			setting.setDesc(linked.length > 0 ? `${desc} ${usedByOtherRows(linked)}.` : desc);
+			if (draft) renderPrefixEditor(setting, prefixKey, context);
+			else renderPrefixSelector(setting, target, prefixKey, context);
 			return () => {
 				prefixes.release(prefixKey);
-				win.setTimeout(() => {
-					if (prefixes.closeUnheld(prefixKey)) context.prefixChanged();
-				}, 0);
+				win.setTimeout(() => prefixes.discardUnheld(prefixKey), 0);
 			};
 		},
 	};
+}
+
+function renderPrefixSelector(
+	setting: Setting,
+	target: { prefix: string; prefixColor?: string },
+	prefixKey: string,
+	context: ListPageContext,
+): void {
+	const { prefixes } = context;
+	const combobox = new Combobox(setting.controlEl, {
+		items: () => prefixItems(prefixes.rows(), prefixKey, true),
+		placeholder: t("noPrefix"),
+		searchPlaceholder: t("comboboxSearch"),
+		onSelect: (item) => {
+			if (item.value === NEW_PREFIX) {
+				prefixes.startNew(prefixKey);
+				context.prefixChanged();
+			} else if (choosePrefix(item, prefixKey, prefixes)) {
+				context.prefixChanged();
+			}
+		},
+	});
+	combobox.buttonEl.addClass("note-compass-prefix-select");
+	combobox.setValue(selectedPrefixItem(prefixes.rows(), prefixKey));
+	if (target.prefix.trim() === "") return;
+	setting.addExtraButton((button) =>
+		button
+			.setIcon("pencil")
+			.setTooltip(t("editPrefix"))
+			.onClick(() => {
+				prefixes.startEditing(prefixKey);
+				context.prefixChanged();
+			}),
+	);
+}
+
+function renderPrefixEditor(setting: Setting, prefixKey: string, context: ListPageContext): void {
+	const { prefixes } = context;
+	const draft = () => prefixes.draft(prefixKey);
+	const focusesInput = prefixes.takeFocus(prefixKey);
+	const previewEl = setting.controlEl.createSpan({ cls: "note-compass-prefix-preview-chip" });
+	let resetEl: HTMLElement | undefined;
+	const showPreview = () => renderChip(previewEl, draft()?.prefix ?? "", draft()?.color);
+	const showReset = () => resetEl?.toggle(draft()?.color !== undefined);
+	const edit = (change: PrefixChange) => {
+		prefixes.editDraft(prefixKey, change);
+		showPreview();
+		showReset();
+	};
+	const save = () => {
+		prefixes.save(prefixKey);
+		context.prefixChanged();
+	};
+	showPreview();
+	setting.addText((text) => {
+		text.setPlaceholder(t("prefixPlaceholder")).setValue(draft()?.prefix ?? "");
+		text.onChange((typed) => edit({ prefix: typed }));
+		text.inputEl.addEventListener("keydown", (event) => {
+			if (event.key !== "Enter" || event.isComposing) return;
+			event.preventDefault();
+			save();
+		});
+		if (focusesInput) text.inputEl.win.setTimeout(() => text.inputEl.focus(), 0);
+	});
+	setting.addColorPicker((picker) => {
+		picker.setValue(draft()?.color ?? NEUTRAL_PREFIX_COLOR).onChange((color) => edit({ color }));
+		setting.addExtraButton((button) => {
+			resetEl = button.extraSettingsEl;
+			button
+				.setIcon("rotate-ccw")
+				.setTooltip(t("removeColour"))
+				.onClick(() => {
+					edit({ color: "" });
+					picker.setValue(NEUTRAL_PREFIX_COLOR);
+				});
+		});
+	});
+	const colourInput = setting.controlEl.querySelector<HTMLInputElement>('input[type="color"]');
+	colourInput?.setAttribute("aria-label", t("prefixColour"));
+	colourInput?.addEventListener("input", () => edit({ color: colourInput.value }));
+	setting.addExtraButton((button) => button.setIcon("check").setTooltip(t("savePrefix")).onClick(save));
+	showReset();
 }
 
 function usedByOtherRows(labels: readonly string[]): string {

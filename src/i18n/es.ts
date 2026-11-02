@@ -160,7 +160,8 @@ export const es: Translation = {
 	newNoteFolderDesc: "Las notas nuevas van aquí. Si está vacío, se usa la ubicación predeterminada para notas nuevas.",
 	prefixColour: "Color del prefijo",
 	removeColour: "Quitar color",
-	editPrefix: "Editar prefijo…",
+	editPrefix: "Editar prefijo",
+	savePrefix: "Guardar prefijo",
 	prefixPlaceholder: "prefijo",
 	noPrefix: "Sin prefijo",
 	prefixRowCountOne: "{count} fila",
@@ -527,7 +528,6 @@ export const es: Translation = {
 	fixedLinksDesc: "La nota que se añade a la lista. Los demás enlaces se mantienen.",
 	clearedValue: "borrada",
 	newPrefix: "Nuevo prefijo…",
-	choosePrefix: "Elegir un prefijo",
 
 	noTaskCommandsYet: "Aún no hay comandos de tareas. Añade uno para procesar las tareas de una nota desde la paleta de comandos.",
 	addTaskCommand: "Añadir comando de tareas",

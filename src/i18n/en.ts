@@ -158,7 +158,8 @@ export const en = {
 	newNoteFolderDesc: "New notes go here. Empty uses the default location for new notes.",
 	prefixColour: "Prefix colour",
 	removeColour: "Remove colour",
-	editPrefix: "Edit prefix…",
+	editPrefix: "Edit prefix",
+	savePrefix: "Save prefix",
 	prefixPlaceholder: "prefix",
 	noPrefix: "No prefix",
 	prefixRowCountOne: "{count} row",
@@ -526,7 +527,6 @@ export const en = {
 	fixedLinksDesc: "The note added to the list. The other links are kept.",
 	clearedValue: "cleared",
 	newPrefix: "New prefix…",
-	choosePrefix: "Choose a prefix",
 
 	noTaskCommandsYet: "No task commands yet. Add one to process the tasks in a note from the command palette.",
 	addTaskCommand: "Add task command",

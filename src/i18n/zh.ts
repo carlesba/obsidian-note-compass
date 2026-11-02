@@ -160,7 +160,8 @@ export const zh: Translation = {
 	newNoteFolderDesc: "新笔记存放在这里。留空则使用新笔记的默认位置。",
 	prefixColour: "前缀颜色",
 	removeColour: "移除颜色",
-	editPrefix: "编辑前缀…",
+	editPrefix: "编辑前缀",
+	savePrefix: "保存前缀",
 	prefixPlaceholder: "前缀",
 	noPrefix: "无前缀",
 	prefixRowCountOne: "{count} 行",
@@ -528,7 +529,6 @@ export const zh: Translation = {
 	fixedLinksDesc: "添加到列表的笔记。其他链接会保留。",
 	clearedValue: "已清除",
 	newPrefix: "新建前缀…",
-	choosePrefix: "选择前缀",
 
 	noTaskCommandsYet: "还没有任务命令。添加一个，即可从命令面板处理笔记中的任务。",
 	addTaskCommand: "添加任务命令",

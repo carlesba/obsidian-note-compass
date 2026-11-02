@@ -66,35 +66,31 @@ A row this version of Note Compass cannot read, such as one saved by a newer ver
 
 A prefix is the short chip at the start of a row, such as `👤 peop` or `📅 due`, which tells you which list a row comes from. Rows share a prefix when its text and its colour are the same, so `👤 peop` in red and `👤 peop` with no colour are two prefixes.
 
-### The prefix menu
+### The prefix selector
 
-The prefix menu reuses a prefix you already have on another row.
+The prefix selector gives a row a prefix you already have on another row, or starts a new one.
 
 ![The prefix menu of a row, listing each prefix in use as its chip with how many rows use it, the row's own prefix ticked, then Edit prefix… and No prefix](images/prefix-menu.png)
 
-1. Click a prefix chip, tap it, or focus it and press Enter. A phone shows the menu as a sheet from the bottom.
-2. The menu lists every prefix in use across every navigation picker and the Properties page, each as its chip followed by how many rows use it, such as a `📅 due` chip with `· 3 rows`, most used first. The row's own prefix is ticked.
-3. Pick one to give this row its text and its colour. No other row changes.
+1. Click a prefix chip, tap it, or focus it and press Enter.
+2. The selector opens with a search field. Type to filter it, use the arrow keys to move, and press Enter to pick.
+3. "No prefix" and "New prefix…" come first. Then every prefix in use across every navigation picker and the Properties page follows, each as its chip with how many rows use it, such as a `📅 due` chip with `3 rows`, most used first. The row's current prefix is ticked.
 
-| Menu item | Does |
+| Option | Does |
 | --- | --- |
-| A prefix | Gives this row that text and colour. |
-| Edit prefix… | Opens the row's page with the cursor in "Prefix". |
-| No prefix | Shown when the row has one. Clears its text and colour. |
+| No prefix | Clears this row's text and colour. It is ticked when the row has no prefix. |
+| New prefix… | Opens the row's page with an empty prefix editor, so the prefix you save changes this row only. |
+| A prefix | Gives this row that text and colour. No other row changes. |
 
 An empty prefix shows as a faint `prefix` chip and is never listed.
 
 ### The prefix setting on a row's page
 
-On a list's or property's page, "Prefix" shows the settings button, the chip's preview, its text and its colour. What you type and pick changes this row and every row that shared the prefix as the page opened, and the description names those rows, as in "Used by 2 other rows: people · links, Outbound links". They stay together even while the text is briefly empty. The circular arrow removes the colour.
+On a list's or property's page, "Prefix" shows the same selector, and a pencil when the row has a prefix. When the prefix is shared, the description names the other rows, as in "Used by 2 other rows: people · links, Outbound links".
 
-The settings button opens the prefix menu.
+The pencil opens the editor: the chip's preview, its text, its colour and a check button. Nothing changes until you click the check or press Enter, and then the new text and colour change this row and every row that shared the prefix. The circular arrow removes the colour. Saving an empty text clears this row's prefix only.
 
-| Menu item | Does |
-| --- | --- |
-| A prefix | Gives this row that text and colour. No other row changes. |
-| New prefix… | Shown when the row has a prefix. Empties it, so what you type and pick next changes this row only. |
-| No prefix | Shown when the row has one. Clears its text and colour. |
+Picking "New prefix…" opens the same editor, empty, and saving it changes this row only.
 
 ## List pages
 
