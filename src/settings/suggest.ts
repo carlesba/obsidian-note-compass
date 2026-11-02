@@ -12,15 +12,15 @@ export interface TextSuggestion {
 }
 
 export class PropertySuggest extends AbstractInputSuggest<PropertySuggestion> {
-	private readonly suggestions: () => PropertySuggestion[];
+	private readonly candidates: () => PropertySuggestion[];
 
 	constructor(app: App, inputEl: HTMLInputElement, suggestions: () => PropertySuggestion[]) {
 		super(app, inputEl);
-		this.suggestions = suggestions;
+		this.candidates = suggestions;
 	}
 
 	protected getSuggestions(query: string): PropertySuggestion[] {
-		return matchingSuggestions(this.suggestions(), query);
+		return matchingSuggestions(this.candidates(), query);
 	}
 
 	renderSuggestion(suggestion: PropertySuggestion, el: HTMLElement): void {
@@ -30,16 +30,16 @@ export class PropertySuggest extends AbstractInputSuggest<PropertySuggestion> {
 }
 
 export class TextSuggest extends AbstractInputSuggest<TextSuggestion> {
-	private readonly suggestions: () => TextSuggestion[];
+	private readonly candidates: () => TextSuggestion[];
 
 	constructor(app: App, inputEl: HTMLInputElement, suggestions: () => TextSuggestion[]) {
 		super(app, inputEl);
-		this.suggestions = suggestions;
+		this.candidates = suggestions;
 	}
 
 	protected getSuggestions(query: string): TextSuggestion[] {
 		const typed = query.trim().toLowerCase();
-		return this.suggestions().filter((suggestion) => (suggestion.label ?? suggestion.value).toLowerCase().includes(typed) || suggestion.value.toLowerCase().includes(typed));
+		return this.candidates().filter((suggestion) => (suggestion.label ?? suggestion.value).toLowerCase().includes(typed) || suggestion.value.toLowerCase().includes(typed));
 	}
 
 	renderSuggestion(suggestion: TextSuggestion, el: HTMLElement): void {
