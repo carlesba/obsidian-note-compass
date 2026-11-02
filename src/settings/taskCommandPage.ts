@@ -1,6 +1,7 @@
 import { DropdownComponent, ExtraButtonComponent, Menu, Notice, Platform, TextComponent } from "obsidian";
 import type { Setting, SettingDefinition, SettingDefinitionItem, SettingDefinitionList, SettingDefinitionPage } from "obsidian";
 import { t } from "../i18n";
+import { nameAndPlaceholderItems } from "./namedEntryFields";
 import type { TranslationKey } from "../i18n";
 import { createObsidianVault } from "../lists/obsidianVault";
 import { actionName, taskKeyLabel } from "../tasks/picker";
@@ -157,16 +158,23 @@ export function taskCommandPage(command: TaskCommand, context: ExpandingPageCont
 					heading: t("taskCommandSection"),
 					items: [
 						{ name: t("enabled"), desc: t("taskCommandEnabledDesc"), control: { type: "toggle", key: key("enabled") } },
-						{
-							name: t("taskCommandName"),
-							desc: t("taskCommandNameDesc"),
-							control: { type: "text", key: key("name"), placeholder: t("defaultTaskCommandName") },
-						},
-						{
-							name: t("pickerPlaceholder"),
-							desc: t("taskCommandPlaceholderDesc"),
-							control: { type: "text", key: key("placeholder"), placeholder: taskCommandName(command) },
-						},
+						...nameAndPlaceholderItems({
+							write: context.write,
+							name: {
+								key: key("name"),
+								label: t("taskCommandName"),
+								desc: t("taskCommandNameDesc"),
+								placeholder: t("defaultTaskCommandName"),
+								value: () => command.name,
+							},
+							placeholder: {
+								key: key("placeholder"),
+								label: t("pickerPlaceholder"),
+								desc: t("taskCommandPlaceholderDesc"),
+								value: () => command.placeholder,
+								shownWhenEmpty: () => taskCommandName(command),
+							},
+						}),
 					],
 				},
 				sourceList(command, context),

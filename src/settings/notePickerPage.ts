@@ -1,5 +1,6 @@
 import type { SettingDefinition, SettingDefinitionItem, SettingDefinitionList, SettingDefinitionPage } from "obsidian";
 import { t } from "../i18n";
+import { nameAndPlaceholderItems } from "./namedEntryFields";
 import { newListId, notePickerName } from "../settings";
 import type { NotePicker } from "../settings";
 import { notePickerKey } from "./controlKeys";
@@ -60,16 +61,23 @@ export function notePickerPage(picker: NotePicker, context: NotePickerPageContex
 					heading: t("notePickerSection"),
 					items: [
 						{ name: t("enabled"), desc: t("notePickerEnabledDesc"), control: { type: "toggle", key: notePickerKey(picker.id, "enabled") } },
-						{
-							name: t("notePickerName"),
-							desc: t("notePickerNameDesc"),
-							control: { type: "text", key: notePickerKey(picker.id, "name"), placeholder: t("defaultNotePickerName") },
-						},
-						{
-							name: t("pickerPlaceholder"),
-							desc: t("notePickerPlaceholderDesc"),
-							control: { type: "text", key: notePickerKey(picker.id, "placeholder"), placeholder: notePickerName(picker) },
-						},
+						...nameAndPlaceholderItems({
+							write: context.write,
+							name: {
+								key: notePickerKey(picker.id, "name"),
+								label: t("notePickerName"),
+								desc: t("notePickerNameDesc"),
+								placeholder: t("defaultNotePickerName"),
+								value: () => picker.name,
+							},
+							placeholder: {
+								key: notePickerKey(picker.id, "placeholder"),
+								label: t("pickerPlaceholder"),
+								desc: t("notePickerPlaceholderDesc"),
+								value: () => picker.placeholder,
+								shownWhenEmpty: () => notePickerName(picker),
+							},
+						}),
 					],
 				},
 				{
