@@ -162,6 +162,11 @@ export function taskCommandPage(command: TaskCommand, context: ExpandingPageCont
 							desc: t("taskCommandNameDesc"),
 							control: { type: "text", key: key("name"), placeholder: t("defaultTaskCommandName") },
 						},
+						{
+							name: t("pickerPlaceholder"),
+							desc: t("taskCommandPlaceholderDesc"),
+							control: { type: "text", key: key("placeholder"), placeholder: taskCommandName(command) },
+						},
 					],
 				},
 				sourceList(command, context),

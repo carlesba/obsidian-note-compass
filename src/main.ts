@@ -11,7 +11,7 @@ import type { VaultNote } from "./lists/vault";
 import { MentionSuggest } from "./mentions/suggest";
 import { JumpModal, SET_PROPERTIES_ICON } from "./modal";
 import { setProperties } from "./setProperties/modal";
-import { JumpSettings, defaultSettings, isRunnableNotePicker, mergeSettings, notePickerName, storedSettings } from "./settings";
+import { JumpSettings, defaultSettings, isRunnableNotePicker, mergeSettings, notePickerName, notePickerPlaceholder, storedSettings } from "./settings";
 import type { NotePicker } from "./settings";
 import { NoteCompassSettingTab } from "./settingsTab";
 import { runTaskCommand } from "./tasks/modal";
@@ -140,7 +140,7 @@ export default class NoteCompassPlugin extends Plugin {
 			new Notice(t("noNotesToJumpTo"));
 			return;
 		}
-		new JumpModal(this.app, entries, (note, typed) =>
+		new JumpModal(this.app, notePickerPlaceholder(picker), entries, (note, typed) =>
 			setProperties(this.app, createObsidianVault(this.app), this.settings, note, () => this.openJumpModal(picker, typed)),
 		).openWithQuery(query);
 	}

@@ -28,7 +28,7 @@ The Navigation page lists your navigation pickers with the same add, reorder, sw
 
 | Section | Setting | What it does |
 | --- | --- | --- |
-| Navigation picker | Enabled, Name | Offers the picker as "Navigation: <name>" in the command palette and in "Select navigation picker". |
+| Navigation picker | Enabled, Name, Placeholder | Offers the picker as "Navigation: <name>" in the command palette and in "Select navigation picker". The placeholder is the text in the picker's search box, and it shows the name when left empty. |
 | Filter | Applies to every list below | A [filter](#filters) every note must match to show in this picker, on top of each list's own source and filter. Empty by default, so it hides nothing. |
 | Lists | List rows | The lists the picker shows, described under [Lists and property rows](#lists-and-property-rows) and [List pages](#list-pages). |
 

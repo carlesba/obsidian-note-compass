@@ -31,7 +31,7 @@ import type {
 	TaskKeyBinding,
 } from "../tasks/taskCommand.ts";
 
-export type TaskCommandSetting = "enabled" | "name" | "statuses" | "skippedStatuses" | "selectAll" | "batch" | "bindingKey" | "bindingAction";
+export type TaskCommandSetting = "enabled" | "name" | "placeholder" | "statuses" | "skippedStatuses" | "selectAll" | "batch" | "bindingKey" | "bindingAction";
 
 export type TaskActionSetting =
 	| "prefix"
@@ -45,7 +45,7 @@ export type TaskActionSetting =
 	| "mentionDestination"
 	| "mentionSource";
 
-const TASK_COMMAND_SETTINGS: readonly TaskCommandSetting[] = ["enabled", "name", "statuses", "skippedStatuses", "selectAll", "batch", "bindingKey", "bindingAction"];
+const TASK_COMMAND_SETTINGS: readonly TaskCommandSetting[] = ["enabled", "name", "placeholder", "statuses", "skippedStatuses", "selectAll", "batch", "bindingKey", "bindingAction"];
 
 export const NOTE_DESTINATION_OPTION = "note";
 
@@ -174,7 +174,7 @@ export function writeTaskCommandSetting(command: TaskCommand, setting: TaskComma
 	if (command.unreadable || !TASK_COMMAND_SETTINGS.includes(setting)) return false;
 	const text = typeof value === "string" ? value : "";
 	if (setting === "bindingKey" || setting === "bindingAction") return writeKeyBinding(command, setting, value, index);
-	if (setting === "name") command.name = text;
+	if (setting === "name" || setting === "placeholder") command[setting] = text;
 	else if (setting === "statuses" || setting === "skippedStatuses") command[setting] = uniqueStatuses(text);
 	else command[setting] = value === true;
 	return true;

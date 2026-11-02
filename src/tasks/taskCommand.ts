@@ -73,6 +73,7 @@ export interface TaskCommand {
 	id: string;
 	enabled: boolean;
 	name: string;
+	placeholder: string;
 	sources: TaskSource[];
 	statuses: string;
 	skippedStatuses: string;
@@ -151,6 +152,7 @@ export function newTaskCommand(commands: readonly TaskCommand[]): TaskCommand {
 		id: newNumericId(commands),
 		enabled: true,
 		name: t("defaultTaskCommandName"),
+		placeholder: "",
 		sources: [currentNoteSource()],
 		statuses: OPEN_STATUS,
 		skippedStatuses: "",
@@ -221,6 +223,7 @@ function readTaskCommand(entry: unknown, id: string): TaskCommand {
 		id,
 		enabled: typeof data.enabled === "boolean" ? data.enabled : false,
 		name: typeof data.name === "string" ? data.name : "",
+		placeholder: typeof data.placeholder === "string" ? data.placeholder : "",
 		sources: Array.isArray(data.sources) ? readTaskSources(data.sources) : [currentNoteSource()],
 		statuses: typeof data.statuses === "string" ? uniqueStatuses(data.statuses) : OPEN_STATUS,
 		skippedStatuses: typeof data.skippedStatuses === "string" ? uniqueStatuses(data.skippedStatuses) : "",
@@ -334,4 +337,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export function taskCommandName(command: TaskCommand): string {
 	return command.name.trim() || t("untitledTaskCommand");
+}
+
+export function taskCommandPlaceholder(command: TaskCommand): string {
+	return command.placeholder.trim() || taskCommandName(command);
 }

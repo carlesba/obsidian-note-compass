@@ -59,7 +59,7 @@ const setPropertiesDefaults = (): SetPropertiesSettings => ({
 
 test("defaultSettings enables every relation list in picker order and reads date notes automatically", () => {
 	assert.deepEqual(defaultSettings(), {
-		notePickers: [{ id: "1", enabled: true, name: "Default", filter: { kind: "group", mode: "all", items: [] }, lists: relationLists() }],
+		notePickers: [{ id: "1", enabled: true, name: "Default", placeholder: "", filter: { kind: "group", mode: "all", items: [] }, lists: relationLists() }],
 		dateNotes: defaultDateNoteSettings(),
 		setProperties: setPropertiesDefaults(),
 		forms: [],
@@ -331,7 +331,7 @@ test("mergeSettings keeps saved lists in their order and round-trips its own out
 	};
 	const merged = mergeSettings(saved);
 	const { lists, ...rest } = saved;
-	assert.deepEqual(merged, { ...rest, notePickers: [{ id: "1", enabled: true, name: "Default", filter: { kind: "group", mode: "all", items: [] }, lists }], setProperties: setPropertiesDefaults(), forms: [], customFields: [], taskCommands: [], mention: { enabled: false, trigger: "@", pickerId: "1" } });
+	assert.deepEqual(merged, { ...rest, notePickers: [{ id: "1", enabled: true, name: "Default", placeholder: "", filter: { kind: "group", mode: "all", items: [] }, lists }], setProperties: setPropertiesDefaults(), forms: [], customFields: [], taskCommands: [], mention: { enabled: false, trigger: "@", pickerId: "1" } });
 	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(storedSettings(merged)))), merged);
 });
 

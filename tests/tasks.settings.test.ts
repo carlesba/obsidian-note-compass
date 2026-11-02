@@ -22,7 +22,7 @@ import {
 	taskActionWarning,
 	taskCommandWarning,
 } from "../src/settings/taskCommandsForm.ts";
-import { isRunnableTaskCommand, keyBehavior, keysRunning, newTaskCommand, noteDestination, periodicDestination } from "../src/tasks/taskCommand.ts";
+import { isRunnableTaskCommand, keyBehavior, keysRunning, newTaskCommand, noteDestination, periodicDestination, taskCommandPlaceholder } from "../src/tasks/taskCommand.ts";
 import type { CopyAction } from "../src/tasks/taskCommand.ts";
 
 function settingsWithCommand() {
@@ -396,4 +396,16 @@ test("task sources are edited through their own control keys", () => {
 	assert.equal(taskCommandWarning(command), "Turn on a source so the command has notes to read tasks from.");
 	assert.equal(writeControl(settings, taskSourceKey(command.id, "99", "enabled"), true), false);
 	assert.equal(writeControl(settings, taskSourceKey("99", source.id, "enabled"), true), false);
+});
+
+test("the task picker's search box shows the command's name until a placeholder is set, and the placeholder is saved", () => {
+	const { settings, command } = settingsWithCommand();
+	assert.equal(writeControl(settings, taskCommandKey(command.id, "name"), "Weekly review"), true);
+	assert.equal(taskCommandPlaceholder(command), "Weekly review");
+	assert.equal(writeControl(settings, taskCommandKey(command.id, "placeholder"), "Which task did you finish?"), true);
+	assert.equal(readControl(settings, taskCommandKey(command.id, "placeholder")), "Which task did you finish?");
+	const [restored] = mergeSettings(JSON.parse(JSON.stringify(storedSettings(settings)))).taskCommands;
+	assert.equal(taskCommandPlaceholder(restored), "Which task did you finish?");
+	assert.equal(writeControl(settings, taskCommandKey(command.id, "placeholder"), "  "), true);
+	assert.equal(taskCommandPlaceholder(command), "Weekly review");
 });

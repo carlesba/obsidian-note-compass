@@ -21,7 +21,7 @@ Each command has its own page under Settings → Note Compass → Tasks.
 
 | Section | Setting | What it does |
 | --- | --- | --- |
-| Command | Enabled, Name | Offers the command under this name in the command palette. |
+| Command | Enabled, Name, Placeholder | Offers the command under this name in the command palette. The placeholder is the text in the task picker's search box, and it shows the name when left empty. |
 | Sources | Source list | The notes whose tasks are listed. A new command reads the current note. Add, drag to reorder, switch, duplicate or delete sources. |
 | Tasks to list | Status pills | Lists tasks with these checkbox characters. Empty means every task. |
 | Tasks to skip | Status pills | Excludes these statuses even when listed above. Empty means none. |

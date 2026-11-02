@@ -9,6 +9,7 @@ import {
 	mergeSettings,
 	newNotePicker,
 	notePickerName,
+	notePickerPlaceholder,
 	storedSettings,
 } from "../src/settings.ts";
 import { listKey, notePickerKey, readControl, writeControl } from "../src/settings/controlKeys.ts";
@@ -21,7 +22,7 @@ test("saved lists from before navigation pickers become one Default picker with 
 	const lists = [{ id: "list-4", enabled: true, prefix: "🔗", source: linksIn }];
 	const [picker, ...others] = mergeSettings({ lists }).notePickers;
 	assert.deepEqual(others, []);
-	assert.deepEqual(picker, { id: "1", enabled: true, name: "Default", filter: { kind: "group", mode: "all", items: [] }, lists });
+	assert.deepEqual(picker, { id: "1", enabled: true, name: "Default", placeholder: "", filter: { kind: "group", mode: "all", items: [] }, lists });
 	const stored = storedSettings(mergeSettings({ lists })) as Record<string, unknown>;
 	assert.equal("lists" in stored, false);
 	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(stored))).notePickers, [picker]);
@@ -53,7 +54,7 @@ test("a new note picker starts empty and untitled, and duplicating one copies it
 	const settings = defaultSettings();
 	const [related] = settings.notePickers;
 	const added = newNotePicker(settings.notePickers);
-	assert.deepEqual(added, { id: "2", enabled: true, name: "", filter: { kind: "group", mode: "all", items: [] }, lists: [] });
+	assert.deepEqual(added, { id: "2", enabled: true, name: "", placeholder: "", filter: { kind: "group", mode: "all", items: [] }, lists: [] });
 	assert.equal(notePickerName(added), "Untitled navigation picker");
 	const copy = duplicateNotePicker(settings.notePickers, related, "Default copy");
 	assert.ok(copy);
@@ -87,4 +88,18 @@ test("Select navigation picker offers every picker by name and filters them by t
 	});
 	assert.deepEqual(notePickerChoices(settings.notePickers, "").map((choice) => choice.label), ["Daily", "Untitled navigation picker"]);
 	assert.deepEqual(notePickerChoices(settings.notePickers, "dly").map((choice) => choice.label), ["Daily"]);
+});
+
+test("a navigation picker's search box shows its name until a placeholder is set, and the placeholder is saved", () => {
+	const settings = defaultSettings();
+	const [picker] = settings.notePickers;
+	assert.equal(notePickerPlaceholder(picker), "Default");
+	assert.equal(writeControl(settings, notePickerKey(picker.id, "placeholder"), "Open which book?"), true);
+	assert.equal(readControl(settings, notePickerKey(picker.id, "placeholder")), "Open which book?");
+	const [restored] = mergeSettings(JSON.parse(JSON.stringify(storedSettings(settings)))).notePickers;
+	assert.equal(notePickerPlaceholder(restored), "Open which book?");
+	const copy = duplicateNotePicker(settings.notePickers, picker, "Copy");
+	assert.equal(copy && notePickerPlaceholder(copy), "Open which book?");
+	assert.equal(writeControl(settings, notePickerKey(picker.id, "placeholder"), ""), true);
+	assert.equal(notePickerPlaceholder(picker), "Default");
 });

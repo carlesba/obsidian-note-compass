@@ -13,7 +13,7 @@ import { actionDestinations } from "./destinations";
 import type { ResolvedDestination } from "./destinations";
 import { actionChoices, choiceTargets, destinationChoices, keyInstructions, planAction, spansNotes, taskChoices } from "./picker";
 import type { ActionChoice, DestinationChoice, TaskChoice } from "./picker";
-import { keyBehavior } from "./taskCommand";
+import { keyBehavior, taskCommandPlaceholder } from "./taskCommand";
 import type { TaskAction, TaskCommand, TaskKey } from "./taskCommand";
 
 const MODIFIED_KEYS: readonly [Modifier[], TaskKey][] = [
@@ -90,7 +90,7 @@ export function runTaskCommand(
 			if (behavior.behavior === "run") runAction(behavior.action, choiceTargets(action), back(typed), action.action === "all");
 			else openActions(choiceTargets(action), back(typed), action.action === "all");
 		};
-		new ChoiceModal<TaskChoice>(app, t("pickATask"), (typed) => taskChoices(command, tasks, typed, batch.changes.length, showsNotes), {
+		new ChoiceModal<TaskChoice>(app, taskCommandPlaceholder(command), (typed) => taskChoices(command, tasks, typed, batch.changes.length, showsNotes), {
 			choose: press("enter"),
 			shortcuts: MODIFIED_KEYS.map(([modifiers, key]) => ({ modifiers, run: press(key) })),
 			dismiss: () => { if (command.batch) cancel(); },

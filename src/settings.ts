@@ -79,6 +79,7 @@ export interface NotePicker {
 	id: string;
 	enabled: boolean;
 	name: string;
+	placeholder: string;
 	filter: FilterGroup;
 	lists: NoteList[];
 	unreadable?: { stored: unknown };
@@ -277,6 +278,10 @@ export function notePickerName(picker: NotePicker): string {
 	return picker.name.trim() || t("untitledNotePicker");
 }
 
+export function notePickerPlaceholder(picker: NotePicker): string {
+	return picker.placeholder.trim() || notePickerName(picker);
+}
+
 export function isRunnableNotePicker(picker: NotePicker): boolean {
 	return picker.enabled && picker.unreadable === undefined;
 }
@@ -286,7 +291,7 @@ export function newNotePickerId(pickers: readonly { id: string }[]): string {
 }
 
 export function newNotePicker(pickers: readonly NotePicker[]): NotePicker {
-	return { id: newNotePickerId(pickers), enabled: true, name: "", filter: emptyFilter(), lists: [] };
+	return { id: newNotePickerId(pickers), enabled: true, name: "", placeholder: "", filter: emptyFilter(), lists: [] };
 }
 
 export function duplicateNotePicker(pickers: NotePicker[], picker: NotePicker, name: string): NotePicker | undefined {
@@ -298,7 +303,7 @@ export function duplicateNotePicker(pickers: NotePicker[], picker: NotePicker, n
 		taken.push(copy);
 		return copy;
 	});
-	const copy: NotePicker = { id: newNotePickerId(pickers), enabled: picker.enabled, name, filter: structuredClone(picker.filter), lists };
+	const copy: NotePicker = { id: newNotePickerId(pickers), enabled: picker.enabled, name, placeholder: picker.placeholder, filter: structuredClone(picker.filter), lists };
 	pickers.splice(index + 1, 0, copy);
 	return copy;
 }
@@ -308,6 +313,7 @@ function migratedNotePicker(data: Record<string, unknown>): NotePicker {
 		id: "1",
 		enabled: true,
 		name: t("defaultNotePickerName"),
+		placeholder: "",
 		filter: emptyFilter(),
 		lists: Array.isArray(data.lists) ? readLists(data.lists, () => ({})) : migrateLegacyLists(data),
 	};
@@ -327,7 +333,7 @@ function readNotePickers(stored: unknown[]): NotePicker[] {
 				: newNotePickerId([...storedIds, ...pickers]);
 		const filter = isRecord(entry) ? (entry.filter === undefined ? emptyFilter() : readFilter(entry.filter)) : undefined;
 		if (!isRecord(entry) || !Array.isArray(entry.lists) || !filter) {
-			pickers.push({ id, enabled: false, name: isRecord(entry) && typeof entry.name === "string" ? entry.name : "", filter: emptyFilter(), lists: [], unreadable: { stored: entry } });
+			pickers.push({ id, enabled: false, name: isRecord(entry) && typeof entry.name === "string" ? entry.name : "", placeholder: "", filter: emptyFilter(), lists: [], unreadable: { stored: entry } });
 			continue;
 		}
 		const lists = readLists(entry.lists, () => ({})).map((list) => {
@@ -339,6 +345,7 @@ function readNotePickers(stored: unknown[]): NotePicker[] {
 			id,
 			enabled: typeof entry.enabled === "boolean" ? entry.enabled : false,
 			name: typeof entry.name === "string" ? entry.name : "",
+			placeholder: typeof entry.placeholder === "string" ? entry.placeholder : "",
 			filter,
 			lists,
 		});

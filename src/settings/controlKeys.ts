@@ -57,7 +57,7 @@ export function taskSourceKey(commandId: string, sourceId: string, field: ListFi
 	return `taskSource/${commandId}.${sourceId}/${field}`;
 }
 
-export type NotePickerField = "enabled" | "name";
+export type NotePickerField = "enabled" | "name" | "placeholder";
 
 export function notePickerKey(id: string, field: NotePickerField): string {
 	return `notePicker/${id}/${field}`;
@@ -139,7 +139,7 @@ export function readControl(settings: JumpSettings, key: string): unknown {
 	if (scope === "taskCommand" || scope === "taskAction") return readTaskControl(settings, scope, name, field, index);
 	if (scope === "notePicker") {
 		const picker = settings.notePickers.find((candidate) => candidate.id === name && !candidate.unreadable);
-		return picker && (field === "enabled" || field === "name") ? picker[field] : undefined;
+		return picker && (field === "enabled" || field === "name" || field === "placeholder") ? picker[field] : undefined;
 	}
 	if (scope === "list") {
 		const list = allLists(settings).find((candidate) => candidate.id === name);
@@ -196,7 +196,7 @@ export function writeControl(settings: JumpSettings, key: string, value: unknown
 		const picker = settings.notePickers.find((candidate) => candidate.id === name && !candidate.unreadable);
 		if (!picker) return false;
 		if (field === "enabled") picker.enabled = value === true;
-		else if (field === "name") picker.name = typeof value === "string" ? value : "";
+		else if (field === "name" || field === "placeholder") picker[field] = typeof value === "string" ? value : "";
 		else return false;
 		return true;
 	}

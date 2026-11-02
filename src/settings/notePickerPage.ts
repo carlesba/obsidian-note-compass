@@ -65,6 +65,11 @@ export function notePickerPage(picker: NotePicker, context: NotePickerPageContex
 							desc: t("notePickerNameDesc"),
 							control: { type: "text", key: notePickerKey(picker.id, "name"), placeholder: t("defaultNotePickerName") },
 						},
+						{
+							name: t("pickerPlaceholder"),
+							desc: t("notePickerPlaceholderDesc"),
+							control: { type: "text", key: notePickerKey(picker.id, "placeholder"), placeholder: notePickerName(picker) },
+						},
 					],
 				},
 				{

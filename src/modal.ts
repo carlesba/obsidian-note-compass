@@ -14,6 +14,7 @@ export class JumpModal extends SuggestModal<JumpListEntry> {
 
 	constructor(
 		app: App,
+		placeholder: string,
 		entries: JumpListEntry[],
 		editProperties: (note: VaultNote, query: string) => void,
 	) {
@@ -22,7 +23,7 @@ export class JumpModal extends SuggestModal<JumpListEntry> {
 		this.editProperties = editProperties;
 		this.limit = entries.length;
 		this.resultContainerEl.addClass(RESULTS_CLASS);
-		this.setPlaceholder(t("pickOne"));
+		this.setPlaceholder(placeholder);
 		this.scope.register(["Alt"], "Enter", (evt) => {
 			if (evt.isComposing) return;
 			evt.preventDefault();

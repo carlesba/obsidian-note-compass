@@ -10,6 +10,7 @@ const picker = (id: string, enabled = true): NotePicker => ({
 	id,
 	enabled,
 	name: `Picker ${id}`,
+	placeholder: "",
 	filter: { kind: "group", mode: "all", items: [] },
 	lists: [],
 });
