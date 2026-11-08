@@ -313,3 +313,17 @@ test("each preset value has its own main menu switch, which follows the value wh
 	writePropertyField(status, "mainMenuPreset", false, "0");
 	assert.deepEqual(status.mainMenuPresets, ["doing"]);
 });
+
+test("a newly added preset value starts shown in the main menu and stays shown once it is typed", () => {
+	const settings = mergeSettings({
+		setProperties: { properties: [{ id: "p", enabled: true, prefix: "", property: "status", type: "text", presetValues: ["todo"] }] },
+	});
+	const [status] = settings.setProperties.properties;
+	addPresetValue(status);
+	assert.equal(readPropertyField(status, "mainMenuPreset", "0"), false);
+	assert.equal(readPropertyField(status, "mainMenuPreset", "1"), true);
+	writePropertyField(status, "presetValues", "blocked", "1");
+	assert.deepEqual(status.mainMenuPresets, ["blocked"]);
+	writePropertyField(status, "mainMenuPreset", false, "1");
+	assert.equal(status.mainMenuPresets, undefined);
+});

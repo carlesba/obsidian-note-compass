@@ -159,14 +159,14 @@ function writeFlag(entry: EditableProperty, flag: "keepsEmpty", on: boolean): vo
 
 export function isMainMenuPreset(entry: EditableProperty, index: number): boolean {
 	const value = entry.presetValues?.[index];
-	return value !== undefined && value !== "" && (entry.mainMenuPresets ?? []).includes(value);
+	return value !== undefined && (entry.mainMenuPresets ?? []).includes(value);
 }
 
 function writeMainMenuPreset(entry: EditableProperty, index: number, shown: boolean): boolean {
 	const value = entry.presetValues?.[index];
 	if (value === undefined) return false;
 	const others = (entry.mainMenuPresets ?? []).filter((preset) => preset !== value);
-	setMainMenuPresets(entry, shown && value !== "" ? [...others, value] : others);
+	setMainMenuPresets(entry, shown ? [...others, value] : others);
 	return true;
 }
 
@@ -178,6 +178,7 @@ function setMainMenuPresets(entry: EditableProperty, values: string[]): void {
 
 export function addPresetValue(entry: EditableProperty): void {
 	entry.presetValues = [...(entry.presetValues ?? []), ""];
+	setMainMenuPresets(entry, [...(entry.mainMenuPresets ?? []), ""]);
 }
 
 export function deletePresetValue(entry: EditableProperty, index: number): void {
