@@ -258,7 +258,7 @@
 	min-width: 0;
 }
 
-.note-compass-filter .filter-expression input,
+.note-compass-filter .filter-expression input:not([type="checkbox"]),
 .note-compass-filter .filter-expression select {
 	background: transparent;
 	border: none;
@@ -282,7 +282,7 @@
 	gap: var(--size-2-2);
 }
 
-.note-compass-filter .filter-rhs-container input {
+.note-compass-filter .filter-rhs-container input:not([type="checkbox"]) {
 	flex: 1 1 6em;
 	min-width: 3em;
 	width: 100%;
