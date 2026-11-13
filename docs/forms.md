@@ -151,7 +151,7 @@ An asked field becomes one question when the form runs. Its data type says what 
 
 | Setting | What it does |
 | --- | --- |
-| Question | The prompt. When empty, the field's key is used. |
+| Question | The prompt. When empty, entry confirmation variables use their confirmation label; other fields use the key. |
 | Source | Only for text, number and list. Changing the data type to one that cannot use the source resets it to "Typed input". |
 | Optional | Puts `⏭️ Skip` first in the question. A skipped property is not written at all, and a skipped variable is empty. |
 
@@ -212,6 +212,8 @@ Add "Confirm entry date" and/or "Confirm entry time" to confirm when the note is
 - Type `YYYYMMDD` for a date or `HHmm` for a time. Options underneath preview the full `YYYY-MM-DD HH:mm`; Enter keeps the shown value.
 - Changing the date preserves the time; changing the time preserves the date, including a previously confirmed date. Both fields can be edited again from the final review.
 - The combined timestamp fills `{{date}}`, `{{time}}`, the note name and fields set "At creation". Fields that change the same component show a warning.
+- An empty Question uses "Confirm entry date", "Confirm entry time" or "Confirm entry date and time" in both the editor placeholder and the running prompt. Set Question to override the prompt. The Keep option still previews the timestamp.
+- In the fields list the row reads "Confirm entry date", "Confirm entry time" or "Confirm entry date and time" instead of a key, and the editor explains what it confirms instead of offering a Key input. Storing it as a property brings the key back, since the key then names the property.
 
 ### Details
 

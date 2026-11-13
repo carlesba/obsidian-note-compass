@@ -444,6 +444,8 @@ export const ko: Translation = {
 	formSummaryEntryTime: "항목 시간",
 	fieldPresetEntryDate: "항목 날짜 확인",
 	fieldPresetEntryTime: "항목 시간 확인",
+	fieldPresetEntryDateTime: "항목 날짜와 시간 확인",
+	formEntryConfirmationDesc: "노트가 언제의 것인지 지금부터 시작해 묻습니다. 답은 {{date}}, {{time}}, 노트 이름과 \"만들 때\"로 설정한 필드에서 생성 시간을 대신합니다.",
 	formValue: "값",
 	formStaticValueDesc: "양식을 실행할 때마다 기록됩니다.",
 	formListItems: "항목",

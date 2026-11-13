@@ -444,6 +444,8 @@ export const zh: Translation = {
 	formSummaryEntryTime: "条目时间",
 	fieldPresetEntryDate: "确认条目日期",
 	fieldPresetEntryTime: "确认条目时间",
+	fieldPresetEntryDateTime: "确认条目日期和时间",
+	formEntryConfirmationDesc: "从现在开始，询问笔记对应的时间。答案会替代 {{date}}、{{time}}、笔记名称和设为“创建时”的字段中的创建时间。",
 	formValue: "值",
 	formStaticValueDesc: "每次运行表单时都会写入。",
 	formListItems: "项目",

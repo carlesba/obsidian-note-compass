@@ -442,6 +442,8 @@ export const en = {
 	formSummaryEntryTime: "entry time",
 	fieldPresetEntryDate: "Confirm entry date",
 	fieldPresetEntryTime: "Confirm entry time",
+	fieldPresetEntryDateTime: "Confirm entry date and time",
+	formEntryConfirmationDesc: "Asks when the note is for, starting from now. The answer replaces the creation time in {{date}}, {{time}}, the note name and fields set to \"At creation\".",
 	formValue: "Value",
 	formStaticValueDesc: "Written every time the form runs.",
 	formListItems: "Items",

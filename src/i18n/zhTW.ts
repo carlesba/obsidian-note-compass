@@ -444,6 +444,8 @@ export const zhTW: Translation = {
 	formSummaryEntryTime: "條目時間",
 	fieldPresetEntryDate: "確認條目日期",
 	fieldPresetEntryTime: "確認條目時間",
+	fieldPresetEntryDateTime: "確認條目日期與時間",
+	formEntryConfirmationDesc: "從現在開始，詢問筆記對應的時間。答案會取代 {{date}}、{{time}}、筆記名稱與設為「建立時」的欄位中的建立時間。",
 	formValue: "值",
 	formStaticValueDesc: "每次執行表單時都會寫入。",
 	formListItems: "項目",

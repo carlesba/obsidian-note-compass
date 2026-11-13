@@ -7,7 +7,7 @@ import { parseNumber, sameValue } from "../setProperties/values.ts";
 import { confirmedTime, DIGIT_DATE_FORMATS, typedTime } from "./dateInput.ts";
 
 export { typedTime };
-import { fieldSource, isDateType, picksSeveral, questionText } from "./form.ts";
+import { fieldSource, isDateType, isEntryConfirmation, picksSeveral, questionText } from "./form.ts";
 import type { DateFieldType, Form, FormChoice as FieldOption, FormField } from "./form.ts";
 import type { NoteOption } from "./notes.ts";
 import { answered, skippedAnswer } from "./resolve.ts";
@@ -65,7 +65,7 @@ export function formName(form: Form): string {
 }
 
 export function questionPlaceholder(field: FormField, now: number, moment: MomentFactory): string {
-	if (field.entryTime && isDateType(field.type)) return moment(now).format(DIGIT_DATE_FORMATS[field.type]);
+	if (field.entryTime && isDateType(field.type) && !isEntryConfirmation(field)) return moment(now).format(DIGIT_DATE_FORMATS[field.type]);
 	return questionText(field) || t("untitledField");
 }
 

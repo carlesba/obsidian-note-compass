@@ -117,10 +117,10 @@ test("the confirm view offers creating the named note, each field with its value
 	assert.deepEqual(labels(formChoices([shape, { ...shape, name: "" }], "")), ["Meeting", "Untitled form"]);
 });
 
-test("an entry time question shows the time it keeps as its placeholder and offers Keep first", () => {
-	const entry = question({ type: "time", entryTime: true, question: "When?" });
-	assert.equal(questionPlaceholder(entry.field, NOW, moment), moment(NOW).format("HHmm"));
-	assert.equal(questionPlaceholder({ ...entry.field, type: "datetime" }, NOW, moment), moment(NOW).format("YYYYMMDDHHmm"));
+test("an entry time question uses its explicit question and still offers Keep first", () => {
+	const entry = question({ type: "time", saveAs: "variable", entryTime: true, question: "When?" });
+	assert.equal(questionPlaceholder(entry.field, NOW, moment), "When?");
+	assert.equal(questionPlaceholder({ ...entry.field, type: "datetime" }, NOW, moment), "When?");
 	const [first] = questionChoices(entry, undefined, "");
 	assert.ok(first);
 	assert.equal(first.parts.content, "Keep");
@@ -149,7 +149,7 @@ test("date and time confirmations compose, survive saving, and can be edited fro
 		const choose = (type: string, query: string, preview: string) => {
 			const field = formFields(form).find((field) => field.type === type)!;
 			const current = entryClock(form, answers, clock);
-			assert.equal(questionPlaceholder(field, current.now, moment), moment(current.now).format(type === "date" ? "YYYYMMDD" : "HHmm"));
+			assert.equal(questionPlaceholder(field, current.now, moment), type === "date" ? "Confirm entry date" : "Confirm entry time");
 			const [choice] = questionChoices({ field, now: current.now, moment, vaultValues: [], notes: [] }, answers.get(field.id), query);
 			assert.equal(choice.parts.content, `Use "${preview}"`);
 			assert.equal(choice.action.action, "answer");
@@ -174,4 +174,15 @@ test("date and time confirmations compose, survive saving, and can be edited fro
 		const current = entryClock(form, answers, clock);
 		assert.equal(questionChoices({ field: date, now: current.now, moment, vaultValues: [], notes: [] }, undefined, "")[0].parts.value, "2028-11-03 08:10");
 	}
+});
+
+test("entry confirmation prompts default to human labels and respect explicit questions", () => {
+	for (const [type, label] of [["date", "Confirm entry date"], ["time", "Confirm entry time"], ["datetime", "Confirm entry date and time"]] as const) {
+		const field = question({ type, key: "internal-key", saveAs: "variable", entryTime: true }).field;
+		for (const text of [undefined, "", "   "]) assert.equal(questionPlaceholder({ ...field, question: text }, NOW, moment), label);
+		assert.equal(questionPlaceholder({ ...field, question: "Which entry?" }, NOW, moment), "Which entry?");
+		assert.equal(questionPlaceholder({ ...field, saveAs: "property" }, NOW, moment), moment(NOW).format(type === "date" ? "YYYYMMDD" : type === "time" ? "HHmm" : "YYYYMMDDHHmm"));
+		assert.equal(questionPlaceholder({ ...field, entryTime: undefined }, NOW, moment), "internal-key");
+	}
+	assert.equal(questionPlaceholder(question({}).field, NOW, moment), "topic");
 });

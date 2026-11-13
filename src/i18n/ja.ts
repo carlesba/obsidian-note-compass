@@ -444,6 +444,8 @@ export const ja: Translation = {
 	formSummaryEntryTime: "エントリーの日時",
 	fieldPresetEntryDate: "エントリーの日付を確認",
 	fieldPresetEntryTime: "エントリーの時刻を確認",
+	fieldPresetEntryDateTime: "エントリーの日時を確認",
+	formEntryConfirmationDesc: "ノートがいつのものかを、現在時刻から確認します。回答は {{date}}、{{time}}、ノート名、「作成時」の項目で作成日時の代わりに使われます。",
 	formValue: "値",
 	formStaticValueDesc: "フォームを実行するたびに書き込まれます。",
 	formListItems: "項目",

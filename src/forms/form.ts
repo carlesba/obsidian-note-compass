@@ -1,3 +1,5 @@
+import { t } from "../i18n/index.ts";
+import type { TranslationKey } from "../i18n/index.ts";
 import { readListSource } from "../settings.ts";
 import type { ListSource } from "../settings.ts";
 
@@ -155,8 +157,23 @@ export function takesValue(operator: BlockOperator): boolean {
 	return !VALUELESS_BLOCK_OPERATORS.includes(operator);
 }
 
+const ENTRY_CONFIRMATION_LABELS: Record<DateFieldType, TranslationKey> = {
+	date: "fieldPresetEntryDate",
+	time: "fieldPresetEntryTime",
+	datetime: "fieldPresetEntryDateTime",
+};
+
+export function isEntryConfirmation(field: FormField): boolean {
+	return field.mode === "ask" && field.saveAs === "variable" && field.entryTime === true && isDateType(field.type);
+}
+
+export function entryConfirmationLabel(field: FormField): string | undefined {
+	if (!isEntryConfirmation(field) || !isDateType(field.type)) return undefined;
+	return t(ENTRY_CONFIRMATION_LABELS[field.type]);
+}
+
 export function questionText(field: FormField): string {
-	return field.question?.trim() || field.key;
+	return field.question?.trim() || entryConfirmationLabel(field) || field.key;
 }
 
 export function newFormId(forms: readonly { id: string }[]): string {

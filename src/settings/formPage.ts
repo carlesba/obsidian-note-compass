@@ -1,6 +1,6 @@
 import { ExtraButtonComponent, DropdownComponent, TextComponent, moment } from "obsidian";
 import type { Setting, SettingDefinition, SettingDefinitionItem, SettingDefinitionList, SettingDefinitionPage, SettingDefinitionRender } from "obsidian";
-import { fieldSource, hasSources, isBlock, isDateType, newBlock, newCustomField, newFormId, takesValue, templateField } from "../forms/form";
+import { entryConfirmationLabel, isEntryConfirmation, fieldSource, hasSources, isBlock, isDateType, newBlock, newCustomField, newFormId, takesValue, templateField } from "../forms/form";
 import type { FormClock } from "../forms/resolve";
 import { SET_DATE_PLACEHOLDERS, typedTime } from "../forms/dateInput";
 import { presetField } from "../forms/presets";
@@ -578,10 +578,10 @@ function fieldEditorRows(editorEl: HTMLElement, editor: FieldEditor, draw: Redra
 	const { field } = editor;
 	const asks = field.mode === "ask";
 	const redraws = (setting: FieldSetting) => () => draw(setting);
-	const questionInput = keyRow(editorEl, editor);
+	const questionInput = isEntryConfirmation(field) ? entryConfirmationRow(editorEl, field) : keyRow(editorEl, editor);
 	dropdownRow(editorEl, editor, "saveAs", t("formSaveAs"), t("formSaveAsDesc"), saveAsOptions(), redraws("saveAs"));
 	dropdownRow(editorEl, editor, "mode", t("formMode"), t("formModeDesc"), fieldModeOptions(), redraws("mode"));
-	if (asks) questionInput.placeholderOf = textRow(editorEl, editor, "question", t("formQuestion"), t("formQuestionDesc"), field.key).text;
+	if (asks) questionInput.placeholderOf = textRow(editorEl, editor, "question", t("formQuestion"), t("formQuestionDesc"), entryConfirmationLabel(field) ?? field.key).text;
 	dropdownRow(editorEl, editor, "type", t("formFieldType"), t("formTypeDesc"), fieldTypeOptions(), redraws("type"));
 	if (asks && hasSources(field.type)) {
 		dropdownRow(editorEl, editor, "source", t("formSource"), t("formSourceDesc"), fieldSourceOptions(field.type), redraws("source"));
@@ -627,6 +627,11 @@ function notesSourceRows(parentEl: HTMLElement, editor: FieldEditor, draw: Redra
 function write(editor: FieldEditor, setting: FieldSetting, value: unknown, index?: number): void {
 	editor.context.write(editor.key(setting, index), value);
 	editor.changed();
+}
+
+function entryConfirmationRow(parentEl: HTMLElement, field: FormField): { placeholderOf?: TextComponent } {
+	editorRow(parentEl, fieldRowName(field), t("formEntryConfirmationDesc"));
+	return {};
 }
 
 function keyRow(parentEl: HTMLElement, editor: FieldEditor): { placeholderOf?: TextComponent } {

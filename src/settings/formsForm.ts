@@ -8,6 +8,8 @@ import {
 	FIELD_TYPES,
 	SAVE_AS,
 	blockOf,
+	entryConfirmationLabel,
+	isEntryConfirmation,
 	fieldSource,
 	formFields,
 	formIds,
@@ -172,6 +174,8 @@ export function formRowName(form: Form): string {
 }
 
 export function fieldRowName(field: FormField): string {
+	const confirmation = entryConfirmationLabel(field);
+	if (confirmation !== undefined) return confirmation;
 	return field.key.trim() || t("newField");
 }
 
@@ -203,7 +207,7 @@ export function fieldSummary(field: FormField): string {
 }
 
 export function fieldWarning(form: Form, field: FormField): string | undefined {
-	if (field.key.trim() === "") return t("formFieldNeedsKey");
+	if (field.key.trim() === "" && !isEntryConfirmation(field)) return t("formFieldNeedsKey");
 	if (field.mode === "static" && field.from !== undefined && !formFields(form).some((other) => other !== field && other.key === field.from && isDateType(other.type))) {
 		return t("formFromMissingField", { key: field.from });
 	}

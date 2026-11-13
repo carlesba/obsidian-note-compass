@@ -443,6 +443,8 @@ export const es: Translation = {
 	formSummaryEntryTime: "hora de la entrada",
 	fieldPresetEntryDate: "Confirmar fecha de la entrada",
 	fieldPresetEntryTime: "Confirmar hora de la entrada",
+	fieldPresetEntryDateTime: "Confirmar fecha y hora de la entrada",
+	formEntryConfirmationDesc: "Pregunta para cuándo es la nota, empezando por ahora. La respuesta sustituye la hora de creación en {{date}}, {{time}}, el nombre de la nota y los campos con \"Al crear\".",
 	formValue: "Valor",
 	formStaticValueDesc: "Se escribe cada vez que se ejecuta el formulario.",
 	formListItems: "Elementos",

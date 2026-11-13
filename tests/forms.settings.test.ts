@@ -8,6 +8,7 @@ import {
 	addChoice,
 	dateSourceOptions,
 	fieldBadges,
+	fieldRowName,
 	fieldSourceOptions,
 	fieldSummary,
 	fieldWarning,
@@ -26,6 +27,21 @@ function settingsWithForm() {
 	form.fields.push(field);
 	return { settings, form, field };
 }
+
+test("an entry confirmation is named after what it confirms, whatever its key, until it writes a property", () => {
+	const { settings, form } = settingsWithForm();
+	const date = presetField(form, "entryDate");
+	form.fields.push(date);
+	const key = (setting: Parameters<typeof formFieldKey>[2]) => formFieldKey(form.id, date.id, setting);
+	writeControl(settings, key("key"), "");
+	assert.equal(fieldRowName(date), "Confirm entry date");
+	assert.equal(fieldWarning(form, date), undefined);
+	assert.equal(fieldRowName(presetField(form, "entryTime")), "Confirm entry time");
+	assert.equal(fieldRowName({ ...date, type: "datetime" }), "Confirm entry date and time");
+	writeControl(settings, key("saveAs"), "property");
+	writeControl(settings, key("key"), "day");
+	assert.equal(fieldRowName(date), "day");
+});
 
 test("a new form starts enabled, opens its note and has no fields, with the next free id", () => {
 	const form = newForm([{ ...newForm([]), id: "4" }]);
