@@ -71,7 +71,6 @@ export type TaskSource = NoteList;
 
 export interface TaskCommand {
 	id: string;
-	enabled: boolean;
 	name: string;
 	placeholder: string;
 	sources: TaskSource[];
@@ -115,11 +114,11 @@ export function newCopyAction(
 }
 
 export function currentNoteSource(sources: readonly TaskSource[] = []): TaskSource {
-	return { id: newNumericId(sources), enabled: true, prefix: "", source: { kind: "currentNote" } };
+	return { id: newNumericId(sources), prefix: "", source: { kind: "currentNote" } };
 }
 
 export function newTaskSource(sources: readonly TaskSource[]): TaskSource {
-	return { id: newNumericId(sources), enabled: true, prefix: "", source: { kind: "filter", filter: emptyFilter() } };
+	return { id: newNumericId(sources), prefix: "", source: { kind: "filter", filter: emptyFilter() } };
 }
 
 export function newTaskCommand(commands: readonly TaskCommand[]): TaskCommand {
@@ -150,7 +149,6 @@ export function newTaskCommand(commands: readonly TaskCommand[]): TaskCommand {
 	);
 	return {
 		id: newNumericId(commands),
-		enabled: true,
 		name: t("defaultTaskCommandName"),
 		placeholder: "",
 		sources: [currentNoteSource()],
@@ -164,7 +162,7 @@ export function newTaskCommand(commands: readonly TaskCommand[]): TaskCommand {
 }
 
 export function isRunnableTaskCommand(command: TaskCommand): boolean {
-	return command.enabled && command.unreadable === undefined && command.actions.length > 0;
+	return command.unreadable === undefined && command.actions.length > 0;
 }
 
 export function keyBehavior(command: TaskCommand, key: TaskKey): TaskKeyBehavior {
@@ -213,6 +211,7 @@ export function storedTaskCommands(commands: readonly TaskCommand[]): unknown[] 
 
 function withoutUnreadable(command: TaskCommand): unknown {
 	const stored: Partial<TaskCommand> = { ...command, sources: command.sources.map(withStoredSource) as TaskSource[] };
+	delete (stored as { enabled?: unknown }).enabled;
 	delete stored.unreadable;
 	return stored;
 }
@@ -221,7 +220,6 @@ function readTaskCommand(entry: unknown, id: string): TaskCommand {
 	const data = isRecord(entry) ? entry : {};
 	const command: TaskCommand = {
 		id,
-		enabled: typeof data.enabled === "boolean" ? data.enabled : false,
 		name: typeof data.name === "string" ? data.name : "",
 		placeholder: typeof data.placeholder === "string" ? data.placeholder : "",
 		sources: Array.isArray(data.sources) ? readTaskSources(data.sources) : [currentNoteSource()],
@@ -233,7 +231,7 @@ function readTaskCommand(entry: unknown, id: string): TaskCommand {
 		actions: [],
 	};
 	const actions = readActions(data.actions);
-	if (!isRecord(entry) || actions === undefined) return { ...command, enabled: false, unreadable: { stored: entry } };
+	if (!isRecord(entry) || actions === undefined) return { ...command, unreadable: { stored: entry } };
 	const keymap = Array.isArray(data.keymap) ? readKeymap(data.keymap) : readLegacyPrimary(data.primary, actions);
 	return { ...command, actions, keymap };
 }
@@ -245,7 +243,6 @@ function readTaskSources(stored: readonly unknown[]): TaskSource[] {
 		const id = typeof entry.id === "string" && /^\d+$/.test(entry.id) && !sources.some((source) => source.id === entry.id) ? entry.id : newNumericId(sources);
 		const source: TaskSource = {
 			id,
-			enabled: typeof entry.enabled === "boolean" ? entry.enabled : false,
 			prefix: typeof entry.prefix === "string" ? entry.prefix : "",
 			source: readSourceOrKeep(entry.source),
 		};

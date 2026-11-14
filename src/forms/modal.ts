@@ -37,7 +37,7 @@ export function pickForm(
 }
 
 export function isRunnable(form: Form): boolean {
-	return form.enabled && form.unreadable === undefined;
+	return form.unreadable === undefined;
 }
 
 export function formClock(vault: JumpListVault & NewNoteVault, dateNotes: DateNoteSettings): FormClock {

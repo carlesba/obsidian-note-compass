@@ -16,7 +16,7 @@ export interface OfferedEntry {
 
 export function offeredProperties(settings: SetPropertiesSettings): EditableProperty[] {
 	return settings.properties.filter(
-		(entry) => entry.enabled && !isMultiRow(entry) && entry.property.trim() !== "" && !isUnreadable(entry.source),
+		(entry) => !isMultiRow(entry) && entry.property.trim() !== "" && !isUnreadable(entry.source),
 	);
 }
 
@@ -56,7 +56,7 @@ function pickableNotes(
 	entry: EditableProperty,
 ): PickableNote[] {
 	if (!entry.source) return [];
-	const list = { id: entry.id, enabled: true, prefix: "", source: entry.source };
+	const list = { id: entry.id, prefix: "", source: entry.source };
 	const excludedFolders = (entry.excludedFolders ?? [])
 		.map((folder) => folder.trim().replace(/^\/+|\/+$/g, ""))
 		.filter((folder) => folder !== "");

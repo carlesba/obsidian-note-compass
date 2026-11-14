@@ -395,17 +395,17 @@ test("literal affixes change only copied bodies in immediate and batch execution
 	assert.equal(copiedLine(task("- [ ] Alpha"), undefined, "(", ")"), "- [ ] (Alpha)");
 });
 
-test("task sources gather notes in source order, without repeats, and only read the current note when asked", () => {
+test("task sources preserve order and deduplicate; filters can find the current note without an explicit currentNote target", () => {
 	const vault = fakeVault([{ path: "projects/Beta.md" }, { path: "projects/Alpha.md" }, { path: "Today.md" }]);
 	const current = vault.note("Today.md");
 	const sources: TaskSource[] = [
-		{ id: "1", enabled: true, prefix: "", source: { kind: "currentNote" } },
-		{ id: "2", enabled: true, prefix: "", source: { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "file", field: "file", condition: { operator: "in folder", value: "projects" } }] } } },
-		{ id: "3", enabled: true, prefix: "", source: { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "file", field: "name", condition: { operator: "starts with", value: "Alp" } }] } } },
-		{ id: "4", enabled: false, prefix: "", source: { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "file", field: "file", condition: { operator: "is not in folder", value: "" } }] } } },
+		{ id: "1", prefix: "", source: { kind: "currentNote" } },
+		{ id: "2", prefix: "", source: { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "file", field: "file", condition: { operator: "in folder", value: "projects" } }] } } },
+		{ id: "3", prefix: "", source: { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "file", field: "name", condition: { operator: "starts with", value: "Alp" } }] } } },
+		{ id: "4", prefix: "", source: { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "file", field: "file", condition: { operator: "is not in folder", value: "" } }] } } },
 	];
 	assert.deepEqual(notesFromLists(sources, vault, current, defaultDateNoteSettings()).map((note) => note.path), ["Today.md", "projects/Alpha.md", "projects/Beta.md"]);
-	assert.deepEqual(notesFromLists(sources, vault, undefined, defaultDateNoteSettings()).map((note) => note.path), ["projects/Alpha.md", "projects/Beta.md"]);
+	assert.deepEqual(notesFromLists(sources, vault, undefined, defaultDateNoteSettings()).map((note) => note.path), ["projects/Alpha.md", "projects/Beta.md", "Today.md"]);
 	assert.equal(readsCurrentNote(sources[0].source), true);
 	assert.equal(readsCurrentNote(sources[1].source), false);
 });

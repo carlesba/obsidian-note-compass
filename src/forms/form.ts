@@ -92,7 +92,6 @@ export interface CustomField extends FormField {
 
 export interface Form {
 	id: string;
-	enabled: boolean;
 	name: string;
 	namePattern: string;
 	contentPattern: string;
@@ -183,7 +182,6 @@ export function newFormId(forms: readonly { id: string }[]): string {
 export function newForm(forms: readonly Form[]): Form {
 	return {
 		id: newFormId(forms),
-		enabled: true,
 		name: "",
 		namePattern: "",
 		contentPattern: "",
@@ -251,6 +249,7 @@ export function storedCustomFields(fields: readonly CustomField[]): unknown[] {
 
 function withoutUnreadable<Entry extends { unreadable?: unknown }>(entry: Entry): Entry {
 	const stored = { ...entry };
+	delete (stored as { enabled?: unknown }).enabled;
 	delete stored.unreadable;
 	return stored;
 }
@@ -263,7 +262,6 @@ function readForm(entry: unknown, id: string): Form {
 	const data = isRecord(entry) ? entry : {};
 	const form: Form = {
 		id,
-		enabled: typeof data.enabled === "boolean" ? data.enabled : false,
 		name: text(data.name),
 		namePattern: text(data.namePattern),
 		contentPattern: text(data.contentPattern),
@@ -272,7 +270,7 @@ function readForm(entry: unknown, id: string): Form {
 		fields: [],
 	};
 	const fields = readItems(storedFields(data));
-	if (!isRecord(entry) || fields === undefined) return { ...form, enabled: false, unreadable: { stored: entry } };
+	if (!isRecord(entry) || fields === undefined) return { ...form, unreadable: { stored: entry } };
 	return { ...form, fields };
 }
 

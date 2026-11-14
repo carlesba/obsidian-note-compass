@@ -21,7 +21,6 @@ import type { PropertyRule } from "../src/lists/filters.ts";
 import {
 	fixedDateError,
 	inapplicableCondition,
-	listDisplayValue,
 	listName,
 	matchingSuggestions,
 	moveSourceChoice,
@@ -63,8 +62,8 @@ function fakeVault(fakes: FakeVault = {}): JumpListVault {
 	};
 }
 
-function propertyList(property: string, condition: Condition, enabled = true): NoteList {
-	return { id: "list-5", enabled, prefix: "⭐", source: { kind: "filter", filter: { kind: "group", mode: "all", items: [propertyRule(property, condition)] } } };
+function propertyList(property: string, condition: Condition): NoteList {
+	return { id: "list-5", prefix: "⭐", source: { kind: "filter", filter: { kind: "group", mode: "all", items: [propertyRule(property, condition)] } } };
 }
 
 function propertyRule(property: string, condition: Condition): PropertyRule {
@@ -91,7 +90,7 @@ test("operator options keep a stored operator that the type does not offer", () 
 	assert.equal(Object.keys(operatorOptions("boolean", "is")).length, 2);
 });
 
-test("a row is named by its prefix and a summary of its source, and says off when disabled", () => {
+test("a row is named by its prefix and a summary of its source", () => {
 	const lists = defaultSettings().notePickers[0].lists;
 	assert.equal(listName(lists[0]), "📅 day Adjacent dates");
 	assert.equal(listName(propertyList("favorite", { operator: "is", value: true })), "⭐ favorite is true");
@@ -107,14 +106,11 @@ test("a row is named by its prefix and a summary of its source, and says off whe
 	assert.equal(listName({ ...lists[0], prefix: "👤", source: { kind: "linksToNote", note: "" } }), "👤 Note not chosen");
 	assert.equal(listName({ ...lists[0], prefix: "📂", source: { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "file", field: "file", condition: { operator: "in folder", value: "areas/categories" } }] } } }), "📂 file in folder areas/categories");
 	assert.equal(listName({ ...lists[0], prefix: "🔅", source: { kind: "modifiedToday" } }), "🔅 Modified today");
-	assert.equal(listDisplayValue(propertyList("favorite", { operator: "is", value: true }, false)), "off");
-	assert.equal(listDisplayValue(lists[0]), "");
 });
 
-test("a new list is an enabled filter list with no conditions, the next id and no prefix", () => {
+test("a new list is a filter list with no conditions, the next id and no prefix", () => {
 	assert.deepEqual(newList(defaultSettings().notePickers[0].lists), {
 		id: "list-5",
-		enabled: true,
 		prefix: "",
 		source: { kind: "filter", filter: { kind: "group", mode: "all", items: [] } },
 	});
@@ -235,9 +231,9 @@ test("property suggestions keep the vault's spelling and show each property's ty
 
 test("control keys read and write the list they name and ignore unknown ones", () => {
 	const settings = defaultSettings();
-	assert.equal(writeControl(settings, listKey("list-1", "enabled"), false), true);
-	assert.equal(settings.notePickers[0].lists[0].enabled, false);
-	assert.equal(writeControl(settings, listKey("list-9", "enabled"), true), false);
+	assert.equal(writeControl(settings, listKey("list-1", "prefix"), "Related"), true);
+	assert.equal(settings.notePickers[0].lists[0].prefix, "Related");
+	assert.equal(writeControl(settings, listKey("list-99", "prefix"), "Missing"), false);
 	assert.equal(writeControl(settings, "theme", "dark"), false);
 	assert.equal(writeControl(settings, DATE_NOTE_SOURCE_KEY, "custom"), true);
 	assert.equal(readControl(settings, DATE_NOTE_SOURCE_KEY), "custom");
@@ -317,7 +313,7 @@ test("a list's prefix colour key reads blank until set, keeps valid hex and clea
 });
 
 test("a current date notes list toggles each period and names the chosen ones", () => {
-	const list: NoteList = { id: "list-1", enabled: true, prefix: "🗓️", source: { kind: "linksOut" } };
+	const list: NoteList = { id: "list-1", prefix: "🗓️", source: { kind: "linksOut" } };
 	writeListField(list, "source", "currentPeriods");
 	assert.deepEqual(list.source, { kind: "currentPeriods", periods: ["day", "week", "month", "quarter", "year"] });
 	writeListField(list, "currentWeek", false);
@@ -332,7 +328,7 @@ test("a current date notes list toggles each period and names the chosen ones", 
 });
 
 test("a current date notes list keeps the dragged order and names its periods in that order", () => {
-	const list: NoteList = { id: "list-1", enabled: true, prefix: "🗓️", source: { kind: "currentPeriods", periods: ["day", "week", "month", "quarter", "year"] } };
+	const list: NoteList = { id: "list-1", prefix: "🗓️", source: { kind: "currentPeriods", periods: ["day", "week", "month", "quarter", "year"] } };
 	moveSourceChoice(list.source, 2, 0);
 	assert.deepEqual(sourceChoiceOrder(list.source), ["month", "day", "week", "quarter", "year"]);
 	writeListField(list, "currentWeek", false);
@@ -341,7 +337,7 @@ test("a current date notes list keeps the dragged order and names its periods in
 });
 
 test("an adjacent dates list offers every period in both directions, all on, and switches each one off", () => {
-	const list: NoteList = { id: "list-1", enabled: true, prefix: "📅", source: { kind: "adjacentDates" } };
+	const list: NoteList = { id: "list-1", prefix: "📅", source: { kind: "adjacentDates" } };
 	assert.deepEqual(sourceChoiceOrder(list.source), [
 		"previous-day",
 		"next-day",
@@ -365,13 +361,13 @@ test("an adjacent dates list offers every period in both directions, all on, and
 });
 
 test("date lists switch missing notes on and off, keeping each source's default unsaved", () => {
-	const adjacent: NoteList = { id: "list-1", enabled: true, prefix: "📅", source: { kind: "adjacentDates" } };
+	const adjacent: NoteList = { id: "list-1", prefix: "📅", source: { kind: "adjacentDates" } };
 	assert.equal(readListField(adjacent, "showsMissing"), false);
 	writeListField(adjacent, "showsMissing", true);
 	assert.deepEqual(adjacent.source, { kind: "adjacentDates", showsMissing: true });
 	writeListField(adjacent, "showsMissing", false);
 	assert.deepEqual(adjacent.source, { kind: "adjacentDates" });
-	const current: NoteList = { id: "list-2", enabled: true, prefix: "🗓️", source: { kind: "currentPeriods", periods: ["day"] } };
+	const current: NoteList = { id: "list-2", prefix: "🗓️", source: { kind: "currentPeriods", periods: ["day"] } };
 	assert.equal(readListField(current, "showsMissing"), true);
 	writeListField(current, "showsMissing", false);
 	assert.deepEqual(current.source, { kind: "currentPeriods", periods: ["day"], showsMissing: false });

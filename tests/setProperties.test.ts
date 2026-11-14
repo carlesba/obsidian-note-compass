@@ -42,7 +42,6 @@ function entry(property: string, type: EditablePropertyType, extra: Partial<Edit
 	const linked = type === "link" || type === "links";
 	return {
 		id: property + type + (extra.prefix ?? ""),
-		enabled: true,
 		prefix: "",
 		property,
 		type,
@@ -97,7 +96,7 @@ test("the main picker lists save, cancel, the set values and then each entry's c
 		entry("due", "date", { prefix: "📅" }),
 		entry("people", "links", { prefix: "👤" }),
 		entry("status", "text", { prefix: "📝" }),
-		entry("hidden", "text", { enabled: false }),
+		entry("hidden", "text"),
 	]);
 	assert.deepEqual(labels(choicesFor()), [
 		saveLabel(),
@@ -110,6 +109,7 @@ test("the main picker lists save, cancel, the set values and then each entry's c
 		"👤 Bob",
 		"👤 Cy",
 		"👤 Today too",
+		"hidden",
 	]);
 });
 
@@ -233,9 +233,9 @@ test("use rows come after every row the query matches and a typed name offers no
 	assert.deepEqual(labels(choicesFor(undefined, "Zed")), ['✏️ 📌 status: use "Zed"']);
 });
 
-test("the first enabled entry decides the type of a shared property", () => {
-	const { settings } = setup([entry("due", "text", { enabled: false }), entry("due", "date"), entry("due", "text")]);
-	assert.equal(propertyType(settings.setProperties, settings.setProperties.properties[2]), "date");
+test("the first readable entry decides the type of a shared property", () => {
+	const { settings } = setup([entry("due", "text"), entry("due", "date"), entry("due", "text")]);
+	assert.equal(propertyType(settings.setProperties, settings.setProperties.properties[2]), "text");
 });
 
 const valueLabels = (choices: readonly ValueChoice[]) => labels(choices);

@@ -31,7 +31,7 @@ import type {
 	TaskKeyBinding,
 } from "../tasks/taskCommand.ts";
 
-export type TaskCommandSetting = "enabled" | "name" | "placeholder" | "statuses" | "skippedStatuses" | "selectAll" | "batch" | "bindingKey" | "bindingAction";
+export type TaskCommandSetting = "name" | "placeholder" | "statuses" | "skippedStatuses" | "selectAll" | "batch" | "bindingKey" | "bindingAction";
 
 export type TaskActionSetting =
 	| "prefix"
@@ -45,7 +45,7 @@ export type TaskActionSetting =
 	| "mentionDestination"
 	| "mentionSource";
 
-const TASK_COMMAND_SETTINGS: readonly TaskCommandSetting[] = ["enabled", "name", "placeholder", "statuses", "skippedStatuses", "selectAll", "batch", "bindingKey", "bindingAction"];
+const TASK_COMMAND_SETTINGS: readonly TaskCommandSetting[] = ["name", "placeholder", "statuses", "skippedStatuses", "selectAll", "batch", "bindingKey", "bindingAction"];
 
 export const NOTE_DESTINATION_OPTION = "note";
 
@@ -144,7 +144,7 @@ export function taskActionWarning(action: TaskAction): string | undefined {
 
 export function taskCommandWarning(command: TaskCommand): string | undefined {
 	if (command.unreadable) return t("unreadableTaskCommandWarning");
-	if (!command.sources.some((source) => source.enabled && source.source.kind !== "unreadable")) return t("taskCommandNeedsSource");
+	if (!command.sources.some((source) => source.source.kind !== "unreadable")) return t("taskCommandNeedsSource");
 	if (command.actions.length === 0) return t("taskCommandNeedsAction");
 	if (command.actions.some((action) => taskActionWarning(action) !== undefined)) return t("taskActionsNeedAttention");
 	if (command.keymap.some((_binding, index) => keyBindingWarning(command, index) !== undefined)) return t("taskKeymapNeedsAttention");

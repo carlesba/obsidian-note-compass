@@ -14,9 +14,8 @@ const asFilter = (source: { kind: string; property?: string; condition?: unknown
 
 const v2Data = () => JSON.parse(readFileSync(new URL("./fixtures/data.v2.json", import.meta.url), "utf8"));
 
-const entry = (id: string, property: string, type: EditableProperty["type"], enabled = true): EditableProperty => ({
+const entry = (id: string, property: string, type: EditableProperty["type"]): EditableProperty => ({
 	id,
-	enabled,
 	prefix: "",
 	property,
 	type,
@@ -35,8 +34,8 @@ test("the test vault's v2 data migrates to properties and keeps its jump setting
 	);
 	assert.deepEqual(
 		merged.notePickers[0].lists,
-		data.lists.map((list: { prefix: string; source: { kind: string } }, index: number) => ({
-			...list,
+		data.lists.map((list: { id: string; prefix: string; source: { kind: string } }, index: number) => ({
+			id: list.id,
 			prefix: merged.notePickers[0].lists[index].prefix,
 			source: asFilter(list.source),
 		})),
@@ -63,7 +62,7 @@ test("the test vault's v2 data migrates to properties and keeps its jump setting
 		related.map((property) => property.source),
 		data.setProperties.linkLists.slice(4).map((list: { source: { kind: string } }) => asFilter(list.source)),
 	);
-	assert.ok(merged.setProperties.properties.every((property) => property.enabled));
+	assert.ok(merged.setProperties.properties.every((property) => !("enabled" in property)));
 	assert.deepEqual(related.map((property) => property.excludedFolders), related.map(() => ["templates"]));
 	assert.deepEqual(merged.setProperties.properties.map((property) => property.prefix), [
 		"🎛️ meta",
@@ -104,24 +103,24 @@ test("the defaults are the old defaults in the new shape", () => {
 	assert.deepEqual(linked.map((entry) => entry.excludedFolders), linked.map(() => ["templates"]));
 });
 
-test("the first enabled entry for a property decides its type", () => {
+test("the first readable entry for a property decides its type", () => {
 	const properties = [
-		entry("a", "status", "links", false),
+		entry("a", "status", "links"),
 		entry("b", "status", "text"),
 		entry("c", "status", "links"),
 		entry("d", "done", "checkbox"),
 	];
-	assert.equal(decidedPropertyType(properties, "status"), "text");
+	assert.equal(decidedPropertyType(properties, "status"), "links");
 	assert.equal(decidedPropertyType(properties, "done"), "checkbox");
 	assert.equal(decidedPropertyType(properties, "missing"), undefined);
-	assert.equal(decidedPropertyType([entry("a", "off", "date", false)], "off"), undefined);
+	assert.equal(decidedPropertyType([entry("a", "off", "date")], "off"), "date");
 });
 
 test("properties whose entries disagree on type are found, and shared ones that agree are not", () => {
 	const properties = [
 		entry("a", "status", "text"),
 		entry("b", "related", "links"),
-		entry("c", "status", "links", false),
+		entry("c", "status", "links"),
 		entry("d", "related", "links"),
 		entry("e", "due", "date"),
 		entry("f", "due", "datetime"),

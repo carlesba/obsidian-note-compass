@@ -23,7 +23,7 @@ const fixed = (id: string, property: string, type: FixedValue["type"], extra: Pa
 });
 
 function multiRow(id: string, fixedValues: FixedValue[], extra: Partial<EditableProperty> = {}): EditableProperty {
-	return { id, enabled: true, prefix: "", property: "", type: "checkbox", mode: "multiple", fixedValues, ...extra };
+	return { id, prefix: "", property: "", type: "checkbox", mode: "multiple", fixedValues, ...extra };
 }
 
 const DONE_ROW = multiRow(
@@ -50,14 +50,14 @@ test("a multiple properties row round-trips through storage and existing single 
 	const stored = {
 		setProperties: {
 			properties: [
-				{ id: "list-1", enabled: true, prefix: "🏁", property: "status", type: "text", presetValues: ["doing"] },
+				{ id: "list-1", prefix: "🏁", property: "status", type: "text", presetValues: ["doing"] },
 				{ ...DONE_ROW, name: "Finish" },
 			],
 		},
 	};
 	const settings = mergeSettings(stored);
 	const [single, multiple] = settings.setProperties.properties;
-	assert.deepEqual(single, { id: "list-1", enabled: true, prefix: "🏁", property: "status", type: "text", presetValues: ["doing"] });
+	assert.deepEqual(single, { id: "list-1", prefix: "🏁", property: "status", type: "text", presetValues: ["doing"] });
 	assert.equal(multiple.mode, "multiple");
 	assert.equal(multiple.name, "Finish");
 	assert.notEqual(multiple.id, "list-1");
@@ -102,7 +102,7 @@ test("fixed values keep their typed value and drop entries whose value does not 
 
 test("switching a row to multiple properties and back keeps its single property setup", () => {
 	const settings = defaultSettings();
-	const entry: EditableProperty = { id: "list-9", enabled: true, prefix: "", property: "status", type: "text", presetValues: ["done"], keepsEmpty: true };
+	const entry: EditableProperty = { id: "list-9", prefix: "", property: "status", type: "text", presetValues: ["done"], keepsEmpty: true };
 	settings.setProperties.properties = [entry];
 	writeControl(settings, propertyKey("list-9", "mode"), "multiple");
 	assert.equal(readControl(settings, propertyKey("list-9", "mode")), "multiple");
@@ -114,7 +114,6 @@ test("switching a row to multiple properties and back keeps its single property 
 	assert.equal(readControl(settings, propertyKey("list-9", "mode")), "single");
 	assert.deepEqual(entry, {
 		id: "list-9",
-		enabled: true,
 		prefix: "",
 		property: "status",
 		type: "text",
@@ -189,7 +188,7 @@ test("an unnamed row shows each property plainly and its value muted, and a name
 });
 
 test("single property code paths ignore the property and type of multiple properties rows", () => {
-	const single: EditableProperty = { id: "list-2", enabled: true, prefix: "", property: "status", type: "text", keepsEmpty: true };
+	const single: EditableProperty = { id: "list-2", prefix: "", property: "status", type: "text", keepsEmpty: true };
 	const multiple = multiRow("list-1", [], { property: "status", type: "checkbox", keepsEmpty: true });
 	const settings = settingsWith([multiple, single]);
 	assert.deepEqual(offeredProperties(settings).map((entry) => entry.id), ["list-2"]);
@@ -244,10 +243,9 @@ test("applying a row sets every value at once, adding links and clearing what it
 	assert.equal(rowHolds(resolved, applied), true);
 });
 
-test("disabled rows and rows with no usable fixed values offer nothing", () => {
+test("rows with no usable fixed values offer nothing", () => {
 	const rows = multiRows(
 		settingsWith([
-			{ ...DONE_ROW, enabled: false },
 			multiRow("list-2", [fixed("v1", " ", "checkbox", { value: true }), fixed("v2", "status", "text")]),
 			multiRow("list-3", [fixed("v1", "archived", "checkbox", { value: true })], { mode: undefined }),
 		]),

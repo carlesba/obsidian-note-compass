@@ -44,7 +44,7 @@ export function buildJumpList(
 	const { dateNotes } = context;
 	const matchesPicker = noteMatcher(pickerFilter, context);
 	const lists: PrefixedList[] = noteLists
-		.filter((list) => list.enabled && list.source.kind !== "unreadable")
+		.filter((list) => list.source.kind !== "unreadable")
 		.map((list) => ({
 			prefix: list.prefix,
 			prefixColor: list.prefixColor,
@@ -71,7 +71,7 @@ export function notesFromLists(noteLists: readonly NoteList[], vault: JumpListVa
 	const seen = new Set<string>();
 	const notes: VaultNote[] = [];
 	for (const list of noteLists) {
-		if (!list.enabled || list.source.kind === "unreadable") continue;
+		if (list.source.kind === "unreadable") continue;
 		const listed = sourceNotes(list.source, context).filter((entry) => entry.missing === undefined);
 		for (const { file } of keepsOrder(list.source) ? listed : [...listed].sort(byName)) {
 			if (seen.has(file.path)) continue;

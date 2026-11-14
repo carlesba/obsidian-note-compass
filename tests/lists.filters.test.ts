@@ -38,12 +38,12 @@ const notes: FakeNote[] = [
 ];
 
 function listed(source: ListSource, fakes = notes): string[] {
-	const list: NoteList = { id: "list-1", enabled: true, prefix: "", source };
+	const list: NoteList = { id: "list-1", prefix: "", source };
 	return buildJumpList([list], fakeVault(fakes.map((fake) => ({ ...fake })), { propertyTypes: TYPES })).map((entry) => entry.name);
 }
 
 function reloadedSource(source: unknown): ListSource {
-	return mergeSettings({ lists: [{ id: "list-1", enabled: true, prefix: "", source }] }).notePickers[0].lists[0].source;
+	return mergeSettings({ lists: [{ id: "list-1", prefix: "", source }] }).notePickers[0].lists[0].source;
 }
 
 test("all, any and none combine a group's conditions", () => {
@@ -231,16 +231,16 @@ test("a filter with any node this version cannot read keeps the whole list as br
 		{ kind: "filter", filter: all({ kind: "name", operator: "matches", value: "x" } as unknown as FilterRule) },
 		{ kind: "sorted", by: "name" },
 	];
-	const lists = mergeSettings({ lists: broken.map((source, index) => ({ id: `list-${index + 1}`, enabled: true, prefix: "x", source })) }).notePickers[0].lists;
+	const lists = mergeSettings({ lists: broken.map((source, index) => ({ id: `list-${index + 1}`, prefix: "x", source })) }).notePickers[0].lists;
 	assert.deepEqual(lists.map((list) => list.source), broken.map((stored) => ({ kind: "unreadable", stored })));
-	const readable = mergeSettings({ lists: [{ id: "list-1", enabled: true, prefix: "", source: filter(all(all(any(isTrue("active"))))) }] });
+	const readable = mergeSettings({ lists: [{ id: "list-1", prefix: "", source: filter(all(all(any(isTrue("active"))))) }] });
 	assert.equal(readable.notePickers[0].lists[0].source.kind, "filter");
 });
 
 test("saving keeps a broken list's and a broken property's stored source exactly as it was", () => {
 	const stored = {
-		lists: [{ id: "list-1", enabled: true, prefix: "?", source: unreadableFilter }],
-		setProperties: { properties: [{ id: "p-1", enabled: true, prefix: "", property: "related", type: "links", source: { kind: "nowhere", deep: [1] } }] },
+		lists: [{ id: "list-1", prefix: "?", source: unreadableFilter }],
+		setProperties: { properties: [{ id: "p-1", prefix: "", property: "related", type: "links", source: { kind: "nowhere", deep: [1] } }] },
 	};
 	const saved = JSON.parse(JSON.stringify(storedSettings(mergeSettings(stored))));
 	assert.deepEqual(saved.notePickers[0].lists, stored.lists);
@@ -251,11 +251,11 @@ test("saving keeps a broken list's and a broken property's stored source exactly
 
 test("broken lists and properties never contribute notes", () => {
 	const settings = mergeSettings({
-		lists: [{ id: "list-1", enabled: true, prefix: "?", source: unreadableFilter }],
+		lists: [{ id: "list-1", prefix: "?", source: unreadableFilter }],
 		setProperties: {
 			properties: [
-				{ id: "p-1", enabled: true, prefix: "", property: "related", type: "links", source: unreadableFilter },
-				{ id: "p-2", enabled: true, prefix: "", property: "seen", type: "links", source: { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "file", field: "file", condition: { operator: "in folder", value: "projects" } }] } } },
+				{ id: "p-1", prefix: "", property: "related", type: "links", source: unreadableFilter },
+				{ id: "p-2", prefix: "", property: "seen", type: "links", source: { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "file", field: "file", condition: { operator: "in folder", value: "projects" } }] } } },
 			],
 		},
 	});
@@ -301,7 +301,7 @@ test("new conditions survive a reload unchanged", () => {
 		),
 	);
 	const settings = defaultSettings();
-	settings.notePickers[0].lists = [{ id: "list-1", enabled: true, prefix: "", source }];
+	settings.notePickers[0].lists = [{ id: "list-1", prefix: "", source }];
 	const reloaded = mergeSettings(JSON.parse(JSON.stringify(storedSettings(settings))));
 	assert.deepEqual(reloaded.notePickers[0].lists[0].source, source);
 });
@@ -309,8 +309,8 @@ test("new conditions survive a reload unchanged", () => {
 test("a navigation picker's filter narrows every list on top of each list's own filter", () => {
 	const vault = fakeVault(notes.map((fake) => ({ ...fake })), { propertyTypes: TYPES });
 	const lists: NoteList[] = [
-		{ id: "list-1", enabled: true, prefix: "a", source: filter(all(property("status", { operator: "is", value: "doing" }))) },
-		{ id: "list-2", enabled: true, prefix: "b", source: { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "file", field: "file", condition: { operator: "in folder", value: "projects" } }] } } },
+		{ id: "list-1", prefix: "a", source: filter(all(property("status", { operator: "is", value: "doing" }))) },
+		{ id: "list-2", prefix: "b", source: { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "file", field: "file", condition: { operator: "in folder", value: "projects" } }] } } },
 	];
 	const names = (pickerFilter?: FilterGroup) => buildJumpList(lists, vault, undefined, undefined, pickerFilter).map((entry) => `${entry.prefix} ${entry.name}`);
 	assert.deepEqual(names(), ["a Alpha", "a Delta", "b Alpha", "b Beta"]);
@@ -319,14 +319,14 @@ test("a navigation picker's filter narrows every list on top of each list's own 
 	assert.deepEqual(names(none(inFolder("projects"))), ["a Delta"]);
 });
 
-test("a navigation picker's filter round-trips, defaults to empty, and an unreadable one keeps the picker saved but switched off", () => {
+test("a navigation picker's filter round-trips, defaults to empty, and an unreadable one keeps the picker saved but unavailable", () => {
 	const pickerFilter = all(isTrue("active"));
-	const settings = mergeSettings({ notePickers: [{ id: "1", enabled: true, name: "Work", filter: pickerFilter, lists: [] }, { id: "2", enabled: true, name: "Old", lists: [] }] });
+	const settings = mergeSettings({ notePickers: [{ id: "1", name: "Work", filter: pickerFilter, lists: [] }, { id: "2", name: "Old", lists: [] }] });
 	assert.deepEqual(settings.notePickers.map((picker) => picker.filter), [pickerFilter, all()]);
 	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(storedSettings(settings)))).notePickers, settings.notePickers);
-	const broken = { id: "3", enabled: true, name: "Broken", filter: { kind: "group", mode: "sometimes", items: [] }, lists: [] };
+	const broken = { id: "3", name: "Broken", filter: { kind: "group", mode: "sometimes", items: [] }, lists: [] };
 	const [picker] = mergeSettings({ notePickers: [broken] }).notePickers;
-	assert.equal(picker.enabled, false);
+	assert.ok(picker.unreadable);
 	assert.deepEqual(picker.unreadable, { stored: broken });
 	assert.deepEqual((storedSettings(mergeSettings({ notePickers: [broken] })) as { notePickers: unknown[] }).notePickers, [broken]);
 });

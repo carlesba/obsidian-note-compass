@@ -97,7 +97,6 @@ test("date questions parse typed dates and offer now, today and tomorrow", () =>
 test("the confirm view offers creating the named note, each field with its value, then Cancel", () => {
 	const shape = {
 		id: "1",
-		enabled: true,
 		name: "Meeting",
 		namePattern: "Meeting {{topic}}",
 		contentPattern: "",

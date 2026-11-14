@@ -11,7 +11,6 @@ import { readListField, writeListField } from "./listForm.ts";
 import type { ListField } from "./listForm.ts";
 
 export type PropertyField =
-	| "enabled"
 	| "prefix"
 	| "prefixColor"
 	| "name"
@@ -90,7 +89,7 @@ export function propertyLabel(entry: EditableProperty): string {
 }
 
 export function newProperty(properties: readonly EditableProperty[]): EditableProperty {
-	return { id: newListId(properties), enabled: true, prefix: "", property: "", type: "checkbox" };
+	return { id: newListId(properties), prefix: "", property: "", type: "checkbox" };
 }
 
 export function rowNamePlaceholder(entry: EditableProperty): string {
@@ -111,7 +110,6 @@ export function readPropertyField(entry: EditableProperty, field: PropertyField,
 	if (field === "presetValues") return entry.presetValues?.[Number(index)];
 	if (field === "mainMenuPreset") return isMainMenuPreset(entry, Number(index));
 	if (field === "removesEmpty") return entry.keepsEmpty !== true;
-	if (field === "enabled") return entry.enabled;
 	if (field === "prefix") return entry.prefix;
 	if (field === "prefixColor") return entry.prefixColor ?? "";
 	if (field === "name") return entry.property;
@@ -127,7 +125,6 @@ export function writePropertyField(entry: EditableProperty, field: PropertyField
 	if (field === "presetValues") return writePresetValue(entry, Number(index), text);
 	if (field === "mainMenuPreset") return writeMainMenuPreset(entry, Number(index), value === true);
 	if (field === "removesEmpty") writeFlag(entry, "keepsEmpty", value !== true);
-	else if (field === "enabled") entry.enabled = value === true;
 	else if (field === "prefix") entry.prefix = text;
 	else if (field === "prefixColor") writePrefixColor(entry, value);
 	else if (field === "name") entry.property = text.trim();

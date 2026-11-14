@@ -68,7 +68,6 @@ export interface UnreadableSource {
 
 export interface NoteList {
 	id: string;
-	enabled: boolean;
 	prefix: string;
 	prefixColor?: string;
 	source: ListSource;
@@ -76,7 +75,6 @@ export interface NoteList {
 
 export interface NotePicker {
 	id: string;
-	enabled: boolean;
 	name: string;
 	placeholder: string;
 	filter: FilterGroup;
@@ -118,7 +116,6 @@ export const CHECKBOX_MODES: readonly CheckboxMode[] = ["picker", "toggle", "cyc
 
 export interface EditableProperty {
 	id: string;
-	enabled: boolean;
 	prefix: string;
 	prefixColor?: string;
 	property: string;
@@ -181,7 +178,7 @@ const DEFAULT_FLAGS = ["active", "someday", "evergreen", "blocked", "archived"];
 
 const DEFAULT_TEMPLATES_FOLDER = "templates";
 
-function defaultLinkListFields(): Omit<LinkList, "id" | "enabled">[] {
+function defaultLinkListFields(): Omit<LinkList, "id">[] {
 	return [
 		{ prefix: "👤 peop", source: { kind: "linksToNote", note: "Person 👤" }, property: "people", mode: "multi" },
 		{ prefix: "📍 trak", source: { kind: "linksToNote", note: "Tracker 📍" }, property: "trackers", mode: "multi" },
@@ -235,12 +232,16 @@ export function storedSettings(settings: JumpSettings): unknown {
 function storedNotePicker(picker: NotePicker): unknown {
 	if (picker.unreadable) return picker.unreadable.stored;
 	const stored: Partial<NotePicker> = { ...picker, lists: picker.lists.map(withStoredSource) as NoteList[] };
+	delete (stored as { enabled?: unknown }).enabled;
 	delete stored.unreadable;
 	return stored;
 }
 
 export function withStoredSource(entry: { source?: ListSource }): object {
-	return isUnreadable(entry.source) ? { ...entry, source: entry.source.stored } : entry;
+	if (isUnreadable(entry.source)) return { ...entry, source: entry.source.stored };
+	const stored = { ...entry };
+	delete (stored as { enabled?: unknown }).enabled;
+	return stored;
 }
 
 export function defaultSettings(): JumpSettings {
@@ -286,7 +287,7 @@ export function notePickerPlaceholder(picker: NotePicker): string {
 }
 
 export function isRunnableNotePicker(picker: NotePicker): boolean {
-	return picker.enabled && picker.unreadable === undefined;
+	return picker.unreadable === undefined;
 }
 
 export function newNotePickerId(pickers: readonly { id: string }[]): string {
@@ -294,7 +295,7 @@ export function newNotePickerId(pickers: readonly { id: string }[]): string {
 }
 
 export function newNotePicker(pickers: readonly NotePicker[]): NotePicker {
-	return { id: newNotePickerId(pickers), enabled: true, name: "", placeholder: "", filter: emptyFilter(), lists: [] };
+	return { id: newNotePickerId(pickers), name: "", placeholder: "", filter: emptyFilter(), lists: [] };
 }
 
 export function duplicateNotePicker(pickers: NotePicker[], picker: NotePicker, name: string): NotePicker | undefined {
@@ -306,7 +307,7 @@ export function duplicateNotePicker(pickers: NotePicker[], picker: NotePicker, n
 		taken.push(copy);
 		return copy;
 	});
-	const copy: NotePicker = { id: newNotePickerId(pickers), enabled: picker.enabled, name, placeholder: picker.placeholder, filter: structuredClone(picker.filter), lists };
+	const copy: NotePicker = { id: newNotePickerId(pickers), name, placeholder: picker.placeholder, filter: structuredClone(picker.filter), lists };
 	pickers.splice(index + 1, 0, copy);
 	return copy;
 }
@@ -314,7 +315,6 @@ export function duplicateNotePicker(pickers: NotePicker[], picker: NotePicker, n
 function migratedNotePicker(data: Record<string, unknown>): NotePicker {
 	return {
 		id: "1",
-		enabled: true,
 		name: t("defaultNotePickerName"),
 		placeholder: "",
 		filter: emptyFilter(),
@@ -336,7 +336,7 @@ function readNotePickers(stored: unknown[]): NotePicker[] {
 				: newNotePickerId([...storedIds, ...pickers]);
 		const filter = isRecord(entry) ? (entry.filter === undefined ? emptyFilter() : readFilter(entry.filter)) : undefined;
 		if (!isRecord(entry) || !Array.isArray(entry.lists) || !filter) {
-			pickers.push({ id, enabled: false, name: isRecord(entry) && typeof entry.name === "string" ? entry.name : "", placeholder: "", filter: emptyFilter(), lists: [], unreadable: { stored: entry } });
+			pickers.push({ id, name: isRecord(entry) && typeof entry.name === "string" ? entry.name : "", placeholder: "", filter: emptyFilter(), lists: [], unreadable: { stored: entry } });
 			continue;
 		}
 		const lists = readLists(entry.lists, () => ({})).map((list) => {
@@ -346,7 +346,6 @@ function readNotePickers(stored: unknown[]): NotePicker[] {
 		});
 		pickers.push({
 			id,
-			enabled: typeof entry.enabled === "boolean" ? entry.enabled : false,
 			name: typeof entry.name === "string" ? entry.name : "",
 			placeholder: typeof entry.placeholder === "string" ? entry.placeholder : "",
 			filter,
@@ -376,7 +375,6 @@ function readLegacySetProperties(data: Record<string, unknown>): LegacySetProper
 function migrateLegacySetProperties(legacy: LegacySetPropertiesSettings): EditableProperty[] {
 	const links: EditableProperty[] = legacy.linkLists.map((list) => ({
 		id: list.id,
-		enabled: list.enabled,
 		prefix: withoutSeparator(list.prefix),
 		property: list.property,
 		type: list.mode === "single" ? "link" : "links",
@@ -386,7 +384,7 @@ function migrateLegacySetProperties(legacy: LegacySetPropertiesSettings): Editab
 	const checkboxes: EditableProperty[] = [];
 	for (const flag of legacy.flags) {
 		const id = newListId([...links, ...checkboxes]);
-		checkboxes.push({ id, enabled: true, prefix: withoutSeparator(legacy.flagsPrefix), property: flag, type: "checkbox" });
+		checkboxes.push({ id, prefix: withoutSeparator(legacy.flagsPrefix), property: flag, type: "checkbox" });
 	}
 	return [...checkboxes, ...links];
 }
@@ -409,7 +407,6 @@ function readProperties(stored: unknown[]): EditableProperty[] {
 				: newListId([...storedIds, ...properties]);
 		const property: EditableProperty = {
 			id,
-			enabled: typeof entry.enabled === "boolean" ? entry.enabled : false,
 			prefix: typeof entry.prefix === "string" ? withoutSeparator(entry.prefix) : "",
 			property: entry.property,
 			type,
@@ -477,7 +474,7 @@ function folderList(folder: string): string[] {
 }
 
 function defaultLinkLists(): LinkList[] {
-	return defaultLinkListFields().map((list, index) => ({ id: `list-${index + 1}`, enabled: true, ...list }));
+	return defaultLinkListFields().map((list, index) => ({ id: `list-${index + 1}`, ...list }));
 }
 
 function readLinkListFields(entry: Record<string, unknown>): Omit<LinkList, keyof NoteList> | undefined {
@@ -506,7 +503,6 @@ function readLists<Fields extends object>(
 		const list: NoteList & Fields = {
 			...fields,
 			id,
-			enabled: typeof entry.enabled === "boolean" ? entry.enabled : false,
 			prefix: typeof entry.prefix === "string" ? withoutSeparator(entry.prefix) : "",
 			source,
 		};
@@ -590,14 +586,13 @@ export function currentPeriodsInOrder(source: CurrentPeriodsSource): Period[] {
 function migrateLegacyLists(data: Record<string, unknown>): NoteList[] {
 	const builtIns = isRecord(data.builtIns) ? data.builtIns : {};
 	const lists: NoteList[] = [];
-	const add = (enabled: boolean, prefix: string, source: ListSource) =>
-		lists.push({ id: newListId(lists), enabled, prefix, source });
+	const add = (prefix: string, source: ListSource) =>
+		lists.push({ id: newListId(lists), prefix, source });
 
 	for (const kind of RELATION_SOURCE_KINDS) {
 		const legacy = builtIns[LEGACY_BUILT_IN_KEYS[kind]];
 		const list = isRecord(legacy) ? legacy : {};
 		add(
-			typeof list.enabled === "boolean" ? list.enabled : true,
 			typeof list.prefix === "string" ? list.prefix.trim() : DEFAULT_PREFIXES[kind],
 			{ kind },
 		);
@@ -609,7 +604,7 @@ function migrateLegacyLists(data: Record<string, unknown>): NoteList[] {
 		const toCondition = LEGACY_OPERATORS[legacy.operator];
 		const value = typeof legacy.value === "string" ? legacy.value : "";
 		const prefix = typeof legacy.prefix === "string" ? legacy.prefix.trim() : "";
-		add(true, prefix, propertyFilter(legacy.property, toCondition(value)));
+		add(prefix, propertyFilter(legacy.property, toCondition(value)));
 	}
 	return lists;
 }

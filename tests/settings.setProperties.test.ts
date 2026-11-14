@@ -46,7 +46,6 @@ function fakeVault(frontmatter: Record<string, Frontmatter>, propertyTypes: Reco
 
 const entry = (fields: Partial<EditableProperty>): EditableProperty => ({
 	id: "list-1",
-	enabled: true,
 	prefix: "",
 	property: "",
 	type: "checkbox",
@@ -94,11 +93,10 @@ test("a property row's label leaves the prefix to its chip", () => {
 	assert.equal(propertyLabel(entry({ prefix: "🎛️ meta", property: " ", type: "date" })), "New property");
 });
 
-test("adding a property appends an enabled checkbox entry with the next id", () => {
+test("adding a property appends a checkbox entry with the next id", () => {
 	const { properties } = defaultSettings().setProperties;
 	assert.deepEqual(newProperty(properties), {
 		id: "list-14",
-		enabled: true,
 		prefix: "",
 		property: "",
 		type: "checkbox",
@@ -109,7 +107,7 @@ test("adding a property appends an enabled checkbox entry with the next id", () 
 test("entries that write one property with different types carry a warning, and agreeing ones do not", () => {
 	const properties = [
 		entry({ id: "a", property: "status", type: "text" }),
-		entry({ id: "b", property: "status", type: "links", enabled: false }),
+		entry({ id: "b", property: "status", type: "links" }),
 		entry({ id: "c", property: "related", type: "links" }),
 		entry({ id: "d", property: "related", type: "links" }),
 		entry({ id: "e", property: "", type: "text" }),
@@ -131,11 +129,9 @@ test("property keys read and write the entry's fields and ignore unknown ids", (
 	assert.equal(readControl(settings, propertyKey("list-9", "type")), "checkbox");
 	assert.equal(writeControl(settings, propertyKey("list-9", "name"), " pinned "), true);
 	assert.equal(writeControl(settings, propertyKey("list-9", "prefix"), "📌"), true);
-	assert.equal(writeControl(settings, propertyKey("list-9", "enabled"), false), true);
 	assert.equal(writeControl(settings, propertyKey("list-9", "type"), "nonsense"), true);
 	assert.deepEqual(settings.setProperties.properties[0], {
 		id: "list-9",
-		enabled: false,
 		prefix: "📌",
 		property: "pinned",
 		type: "checkbox",
@@ -178,7 +174,6 @@ test("a link type gets a source and excluded folders, and other types drop them"
 	writeControl(settings, key("type"), "text");
 	assert.deepEqual(settings.setProperties.properties[0], {
 		id: "list-9",
-		enabled: true,
 		prefix: "🎛️ meta",
 		property: "active",
 		type: "text",
@@ -220,7 +215,6 @@ test("excluded folder rows are added empty, edited by index and deleted", () => 
 test("stored excluded folders are cleaned and an old single folder becomes a list", () => {
 	const link = (fields: Record<string, unknown>) => ({
 		id: "a",
-		enabled: true,
 		prefix: "",
 		property: "people",
 		type: "links",
@@ -239,7 +233,7 @@ test("stored excluded folders are cleaned and an old single folder becomes a lis
 
 test("preset values are kept trimmed and without blanks or repeats, and the form adds, edits, moves and removes them", () => {
 	const settings = mergeSettings({
-		setProperties: { properties: [{ id: "p", enabled: true, prefix: "", property: "status", type: "text", presetValues: [" todo ", "", "done", "todo", 3] }] },
+		setProperties: { properties: [{ id: "p", prefix: "", property: "status", type: "text", presetValues: [" todo ", "", "done", "todo", 3] }] },
 	});
 	const [status] = settings.setProperties.properties;
 	assert.deepEqual(status.presetValues, ["todo", "done"]);
@@ -258,8 +252,8 @@ test("keeping empty values is read and written per property and stored only when
 	const settings = mergeSettings({
 		setProperties: {
 			properties: [
-				{ id: "a", enabled: true, prefix: "", property: "done", type: "checkbox", keepsEmpty: true },
-				{ id: "b", enabled: true, prefix: "", property: "status", type: "text", presetValues: ["todo", "done"], presetsInMainMenu: true },
+				{ id: "a", prefix: "", property: "done", type: "checkbox", keepsEmpty: true },
+				{ id: "b", prefix: "", property: "status", type: "text", presetValues: ["todo", "done"], presetsInMainMenu: true },
 			],
 		},
 	});
@@ -279,7 +273,7 @@ test("keeping empty values is read and written per property and stored only when
 test("the checkbox mode is one Set properties setting, taken from an earlier per-property mode when there is one", () => {
 	assert.equal(defaultSettings().setProperties.checkboxMode, "picker");
 	const earlier = mergeSettings({
-		setProperties: { properties: [{ id: "a", enabled: true, prefix: "", property: "done", type: "checkbox", checkboxMode: "cycle" }] },
+		setProperties: { properties: [{ id: "a", prefix: "", property: "done", type: "checkbox", checkboxMode: "cycle" }] },
 	});
 	assert.equal(earlier.setProperties.checkboxMode, "cycle");
 	assert.equal("checkboxMode" in earlier.setProperties.properties[0], false);
@@ -294,7 +288,7 @@ test("each preset value has its own main menu switch, which follows the value wh
 	const settings = mergeSettings({
 		setProperties: {
 			properties: [
-				{ id: "p", enabled: true, prefix: "", property: "status", type: "text", presetValues: ["todo", "doing", "done"], mainMenuPresets: ["done", "ghost", "todo"] },
+				{ id: "p", prefix: "", property: "status", type: "text", presetValues: ["todo", "doing", "done"], mainMenuPresets: ["done", "ghost", "todo"] },
 			],
 		},
 	});
@@ -316,7 +310,7 @@ test("each preset value has its own main menu switch, which follows the value wh
 
 test("a newly added preset value starts shown in the main menu and stays shown once it is typed", () => {
 	const settings = mergeSettings({
-		setProperties: { properties: [{ id: "p", enabled: true, prefix: "", property: "status", type: "text", presetValues: ["todo"] }] },
+		setProperties: { properties: [{ id: "p", prefix: "", property: "status", type: "text", presetValues: ["todo"] }] },
 	});
 	const [status] = settings.setProperties.properties;
 	addPresetValue(status);

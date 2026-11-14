@@ -6,9 +6,8 @@ import { readControl, writeControl, MENTION_TRIGGER_KEY } from "../src/settings/
 import { defaultSettings } from "../src/settings.ts";
 import type { NotePicker } from "../src/settings.ts";
 
-const picker = (id: string, enabled = true): NotePicker => ({
+const picker = (id: string): NotePicker => ({
 	id,
-	enabled,
 	name: `Picker ${id}`,
 	placeholder: "",
 	filter: { kind: "group", mode: "all", items: [] },
@@ -55,12 +54,12 @@ test("stored mention settings drop whitespace from the trigger", () => {
 	});
 });
 
-test("a mention only runs with a trigger and a navigation picker that is on", () => {
-	const pickers = [picker("1"), picker("2", false)];
+test("a mention only runs with a trigger and a readable navigation picker", () => {
+	const pickers = [picker("1"), picker("2")];
 	assert.equal(mentionPicker({ enabled: true, trigger: "@", pickerId: "1" }, pickers)?.id, "1");
 	assert.equal(mentionPicker({ enabled: false, trigger: "@", pickerId: "1" }, pickers), undefined);
 	assert.equal(mentionPicker({ enabled: true, trigger: "", pickerId: "1" }, pickers), undefined);
-	assert.equal(mentionPicker({ enabled: true, trigger: "@", pickerId: "2" }, pickers), undefined);
+	assert.equal(mentionPicker({ enabled: true, trigger: "@", pickerId: "2" }, pickers)?.id, "2");
 	assert.equal(mentionPicker({ enabled: true, trigger: "@", pickerId: "9" }, pickers), undefined);
 });
 

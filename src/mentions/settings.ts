@@ -23,5 +23,5 @@ export function withoutWhitespace(trigger: string): string {
 
 export function mentionPicker(mention: MentionSettings, pickers: readonly NotePicker[]): NotePicker | undefined {
 	if (!mention.enabled || !mention.trigger) return undefined;
-	return pickers.find((picker) => picker.id === mention.pickerId && picker.enabled && !picker.unreadable);
+	return pickers.find((picker) => picker.id === mention.pickerId && !picker.unreadable);
 }

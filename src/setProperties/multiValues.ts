@@ -27,7 +27,7 @@ const UNCHECKED_MARK = "✗";
 
 export function multiRows(settings: SetPropertiesSettings, now: number): MultiRow[] {
 	return settings.properties
-		.filter((entry) => entry.enabled && isMultiRow(entry) && !isUnreadable(entry.source))
+		.filter((entry) => isMultiRow(entry) && !isUnreadable(entry.source))
 		.map((entry) => ({ entry, values: usableFixedValues(entry).map((fixed) => appliedValue(fixed, now)) }))
 		.filter((row) => row.values.length > 0);
 }

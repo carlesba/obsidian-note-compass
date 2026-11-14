@@ -41,7 +41,7 @@ import type { SourceChoice } from "./listForm.ts";
 import { filterRules } from "../lists/filters.ts";
 import type { ListSource, NoteList } from "../settings.ts";
 
-export type FormSetting = "enabled" | "name" | "namePattern" | "contentPattern" | "folder" | "opensNote";
+export type FormSetting = "name" | "namePattern" | "contentPattern" | "folder" | "opensNote";
 
 export type BlockSetting = "key" | "operator" | "value";
 
@@ -73,7 +73,7 @@ export const AT_CREATION = "";
 
 export const SET_DATE = "@set";
 
-const FORM_SETTINGS: readonly FormSetting[] = ["enabled", "name", "namePattern", "contentPattern", "folder", "opensNote"];
+const FORM_SETTINGS: readonly FormSetting[] = ["name", "namePattern", "contentPattern", "folder", "opensNote"];
 
 const FIELD_TYPE_KEYS: Record<FieldType, TranslationKey> = {
 	text: "typeText",
@@ -448,7 +448,7 @@ export function readFormSetting(form: Form, setting: FormSetting): unknown {
 export function writeFormSetting(form: Form, setting: FormSetting, value: unknown): boolean {
 	if (form.unreadable || !FORM_SETTINGS.includes(setting)) return false;
 	const text = typeof value === "string" ? value : "";
-	if (setting === "enabled" || setting === "opensNote") form[setting] = value === true;
+	if (setting === "opensNote") form[setting] = value === true;
 	else if (setting === "folder") form.folder = text.trim();
 	else form[setting] = text;
 	return true;
@@ -647,7 +647,7 @@ function writeChoice(field: FormField, setting: "choiceValue" | "choiceLabel", i
 }
 
 function notesList(field: FormField, source: ListSource): NoteList {
-	return { id: field.id, enabled: true, prefix: "", source };
+	return { id: field.id, prefix: "", source };
 }
 
 function writeNotesSource(field: FormField, setting: "notesSource" | "notesNote", value: unknown): boolean {

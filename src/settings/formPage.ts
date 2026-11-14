@@ -120,9 +120,6 @@ export function formRow(form: Form, context: FormPageContext, duplicate?: () => 
 		label: formRowName(form),
 		warning: formWarning(form),
 		broken: form.unreadable !== undefined,
-		enabled: form.enabled,
-		enabledKey: formKey(form.id, "enabled"),
-		enabledTooltip: t("offerFormAsCommand"),
 		pageId: formPageId(form),
 		editTooltip: t("editForm"),
 		duplicate,
@@ -159,7 +156,6 @@ export function formPage(form: Form, context: FormPageContext): SettingDefinitio
 				},
 			]
 		: [
-				{ name: t("enabled"), desc: t("formEnabledDesc"), control: { type: "toggle", key: key("enabled") } },
 				{ name: t("formName"), desc: t("formNameDesc"), control: { type: "text", key: key("name"), placeholder: t("formNamePlaceholder") } },
 				patternRow(form, context, "namePattern", t("formNamePattern"), t("formNamePatternDesc"), NAME_PATTERN_EXAMPLE),
 				patternRow(form, context, "contentPattern", t("formContentPattern"), t("formContentPatternDesc"), ""),
@@ -173,7 +169,6 @@ export function formPage(form: Form, context: FormPageContext): SettingDefinitio
 		get name() {
 			return formRowName(form);
 		},
-		displayValue: () => (form.enabled && !form.unreadable ? "" : t("off")),
 		status: () => (formWarning(form) ? "warning" : null),
 		items,
 	};

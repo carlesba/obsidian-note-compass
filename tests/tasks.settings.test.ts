@@ -44,7 +44,7 @@ test("a new task command processes open tasks in batch with the Bullet Journal a
 	const command = newTaskCommand([{ ...newTaskCommand([]), id: "3" }]);
 	assert.equal(command.id, "4");
 	assert.equal(command.name, "Process open tasks");
-	assert.deepEqual([command.statuses, command.skippedStatuses, command.selectAll, command.batch, command.enabled], [" ", "", false, true, true]);
+	assert.deepEqual([command.statuses, command.skippedStatuses, command.selectAll, command.batch], [" ", "", false, true]);
 	assert.equal(isRunnableTaskCommand(command), true);
 	const [complete, cancel, migrate, schedule] = command.actions as [unknown, unknown, CopyAction, CopyAction];
 	assert.deepEqual(complete, { id: "1", label: "✅ Complete", kind: "status", status: "x", completionDate: "off" });
@@ -74,13 +74,13 @@ test("task commands round-trip through storedSettings and mergeSettings", () => 
 	assert.deepEqual(reloaded.taskCommands, settings.taskCommands);
 });
 
-test("task commands that can't be read are kept as saved and switched off", () => {
+test("task commands that can't be read are kept as saved and unavailable", () => {
 	const unreadable = { id: "1", name: "Future", actions: [{ id: "1", kind: "teleport", status: "x" }] };
 	const notARecord = "garbage";
 	const settings = mergeSettings({ taskCommands: [unreadable, notARecord] });
 	assert.equal(settings.taskCommands.length, 2);
 	assert.deepEqual(settings.taskCommands[0].unreadable, { stored: unreadable });
-	assert.equal(settings.taskCommands[0].enabled, false);
+	assert.ok(settings.taskCommands[0].unreadable);
 	assert.equal(isRunnableTaskCommand(settings.taskCommands[0]), false);
 	assert.equal(taskCommandWarning(settings.taskCommands[0]), "This task command can't be read by this version of Note Compass. Remove it and build a new one.");
 	const stored = storedSettings(settings) as { taskCommands: unknown[] };
@@ -92,7 +92,6 @@ test("mistyped task command fields fall back and a missing legacy primary binds 
 		taskCommands: [
 			{
 				id: "7",
-				enabled: true,
 				name: 3,
 				statuses: " xx/",
 				primary: "9",
@@ -115,7 +114,6 @@ test("destinations are read in order, keeping repeats and dropping entries that 
 		taskCommands: [
 			{
 				id: "1",
-				enabled: true,
 				skippedStatuses: "x-x",
 				actions: [
 					{
@@ -352,12 +350,12 @@ test("old saved destinations stay unchanged and absent copy affixes default to e
 
 test("task commands read the current note by default, and commands saved before sources existed keep doing so", () => {
 	const command = newTaskCommand([]);
-	assert.deepEqual(command.sources, [{ id: "1", enabled: true, prefix: "", source: { kind: "currentNote" } }]);
-	const legacy = mergeSettings({ taskCommands: [{ id: "1", enabled: true, name: "Old", actions: [] }] });
-	assert.deepEqual(legacy.taskCommands[0].sources, [{ id: "1", enabled: true, prefix: "", source: { kind: "currentNote" } }]);
-	const empty = mergeSettings({ taskCommands: [{ id: "1", enabled: true, name: "None", sources: [], actions: [{ id: "1", kind: "status", status: "x" }] }] });
+	assert.deepEqual(command.sources, [{ id: "1", prefix: "", source: { kind: "currentNote" } }]);
+	const legacy = mergeSettings({ taskCommands: [{ id: "1", name: "Old", actions: [] }] });
+	assert.deepEqual(legacy.taskCommands[0].sources, [{ id: "1", prefix: "", source: { kind: "currentNote" } }]);
+	const empty = mergeSettings({ taskCommands: [{ id: "1", name: "None", sources: [], actions: [{ id: "1", kind: "status", status: "x" }] }] });
 	assert.deepEqual(empty.taskCommands[0].sources, []);
-	assert.equal(taskCommandWarning(empty.taskCommands[0]), "Turn on a source so the command has notes to read tasks from.");
+	assert.equal(taskCommandWarning(empty.taskCommands[0]), "Add a readable source so the command has notes to read tasks from.");
 });
 
 test("task sources round-trip, keep sources that can't be read as saved and mint missing ids", () => {
@@ -366,19 +364,18 @@ test("task sources round-trip, keep sources that can't be read as saved and mint
 		taskCommands: [
 			{
 				id: "1",
-				enabled: true,
 				name: "Projects",
 				sources: [
-					{ id: "2", enabled: true, source: { kind: "inFolder", folder: "projects" } },
-					{ id: "2", enabled: false, source: future },
-					{ enabled: true, source: { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "name", operator: "starts with", value: "Weekly" }] } } },
+					{ id: "2", source: { kind: "inFolder", folder: "projects" } },
+					{ id: "2", source: future },
+					{ source: { kind: "filter", filter: { kind: "group", mode: "all", items: [{ kind: "name", operator: "starts with", value: "Weekly" }] } } },
 				],
 				actions: [{ id: "1", kind: "status", status: "x" }],
 			},
 		],
 	});
 	const [command] = settings.taskCommands;
-	assert.deepEqual(command.sources.map((source) => [source.id, source.enabled, source.source.kind]), [["2", true, "filter"], ["3", false, "unreadable"], ["4", true, "filter"]]);
+	assert.deepEqual(command.sources.map((source) => [source.id, source.source.kind]), [["2", "filter"], ["3", "unreadable"], ["4", "filter"]]);
 	const stored = JSON.parse(JSON.stringify(storedSettings(settings)));
 	assert.deepEqual(stored.taskCommands[0].sources[1].source, future);
 	assert.deepEqual(mergeSettings(stored).taskCommands, settings.taskCommands);
@@ -387,15 +384,15 @@ test("task sources round-trip, keep sources that can't be read as saved and mint
 test("task sources are edited through their own control keys", () => {
 	const { settings, command } = settingsWithCommand();
 	const [source] = command.sources;
-	const key = (field: "source" | "note" | "enabled") => taskSourceKey(command.id, source.id, field);
+	const key = (field: "source" | "note") => taskSourceKey(command.id, source.id, field);
 	assert.equal(readControl(settings, key("source")), "currentNote");
 	assert.equal(writeControl(settings, key("source"), "linksToNote"), true);
 	assert.equal(writeControl(settings, key("note"), " projects/Hub.md "), true);
 	assert.deepEqual(source.source, { kind: "linksToNote", note: "projects/Hub.md" });
-	assert.equal(writeControl(settings, key("enabled"), false), true);
-	assert.equal(taskCommandWarning(command), "Turn on a source so the command has notes to read tasks from.");
-	assert.equal(writeControl(settings, taskSourceKey(command.id, "99", "enabled"), true), false);
-	assert.equal(writeControl(settings, taskSourceKey("99", source.id, "enabled"), true), false);
+	assert.equal(writeControl(settings, taskSourceKey(command.id, "99", "prefix"), "Missing"), false);
+	assert.equal(writeControl(settings, taskSourceKey("99", source.id, "prefix"), "Missing"), false);
+	command.sources = [];
+	assert.equal(taskCommandWarning(command), "Add a readable source so the command has notes to read tasks from.");
 });
 
 test("the task picker's search box shows the command's name until a placeholder is set, and the placeholder is saved", () => {

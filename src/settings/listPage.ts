@@ -23,7 +23,6 @@ import {
 	moveSourceChoice,
 	sourceChoiceOrder,
 	inapplicableCondition,
-	listDisplayValue,
 	listName,
 	sourceOptions,
 	sourceSummary,
@@ -100,9 +99,6 @@ export interface EditableRow {
 	warning?: string;
 	desc?: string;
 	broken: boolean;
-	enabled: boolean;
-	enabledKey: string;
-	enabledTooltip: string;
 	pageId: string;
 	editTooltip: string;
 	duplicate?: () => void;
@@ -111,8 +107,6 @@ export interface EditableRow {
 export interface ListRole {
 	key: (field: ListField) => string;
 	pageId: string;
-	enabledTooltip: string;
-	enabledDesc: string;
 	sourceHeading: string;
 	offersCurrentNote: boolean;
 	offersMissingNotes: boolean;
@@ -122,8 +116,6 @@ export function navigationListRole(list: NoteList): ListRole {
 	return {
 		key: (field) => listKey(list.id, field),
 		pageId: listPageId(list),
-		enabledTooltip: t("showListInPicker"),
-		enabledDesc: t("showListInPickerDesc"),
 		sourceHeading: t("offerNotesFrom"),
 		offersCurrentNote: false,
 		offersMissingNotes: true,
@@ -159,9 +151,6 @@ export function listRow(list: NoteList, context: ListPageContext, duplicate?: ()
 			prefixKey: role.key("prefix"),
 			warning: sourceWarning(list.source, context),
 			broken: isUnreadable(list.source),
-			enabled: list.enabled,
-			enabledKey: role.key("enabled"),
-			enabledTooltip: role.enabledTooltip,
 			pageId: role.pageId,
 			editTooltip: t("editList"),
 			duplicate,
@@ -184,9 +173,6 @@ export function propertyRow(
 		prefixKey: propertyKey(entry.id, "prefix"),
 		warning: propertyWarning(entry, properties, context),
 		broken: isUnreadable(entry.source),
-		enabled: entry.enabled,
-		enabledKey: propertyKey(entry.id, "enabled"),
-		enabledTooltip: t("offerPropertyInPicker"),
 		pageId: propertyPageId(entry),
 		editTooltip: t("editProperty"),
 		duplicate,
@@ -243,13 +229,6 @@ export function editableRow(row: EditableRow, context: ListPageContext): Setting
 				);
 			}
 			if (row.warning) warningDescription(setting.descEl, row.warning);
-			setting.addToggle((toggle) =>
-				toggle
-					.setTooltip(row.enabledTooltip)
-					.setValue(row.enabled && !row.broken)
-					.setDisabled(row.broken)
-					.onChange((enabled) => context.write(row.enabledKey, enabled)),
-			);
 			if (row.broken) return;
 			const duplicate = row.duplicate;
 			if (duplicate) {
@@ -276,7 +255,6 @@ export function propertyPage(
 	const items: SettingDefinitionItem[] = isUnreadable(entry.source)
 		? [unreadableItem()]
 		: [
-				{ name: t("enabled"), desc: t("offerPropertyInPickerDesc"), control: { type: "toggle", key: key("enabled") } },
 				{
 					type: "group",
 					heading: t("label"),
@@ -299,7 +277,6 @@ export function propertyPage(
 		get name() {
 			return propertyRowName(entry);
 		},
-		displayValue: entry.enabled && !isUnreadable(entry.source) ? "" : t("off"),
 		status: propertyWarning(entry, properties, context) ? "warning" : null,
 		items,
 	};
@@ -433,7 +410,6 @@ function excludedFoldersList(entry: LinkProperty, context: ListPageContext): Set
 export function listPageItems(list: NoteList, context: ListPageContext, role: ListRole = navigationListRole(list)): SettingDefinitionItem[] {
 	const { key } = role;
 	return [
-		{ name: t("enabled"), desc: role.enabledDesc, control: { type: "toggle", key: key("enabled") } },
 		prefixGroup(list, key("prefix"), t("listPrefixDesc"), context),
 		{ type: "group", heading: role.sourceHeading, items: sourceItems(list, context, key, role.offersCurrentNote) },
 		...sourceChoices(list.source, context, key, role.offersMissingNotes),
@@ -643,7 +619,6 @@ function pageEntry(
 		get name() {
 			return name();
 		},
-		displayValue: listDisplayValue(list),
 		status,
 		items,
 	};

@@ -66,8 +66,6 @@ function taskSourceRole(command: TaskCommand, source: TaskSource): ListRole {
 	return {
 		key: (field) => taskSourceKey(command.id, source.id, field),
 		pageId: taskSourcePageId(command, source),
-		enabledTooltip: t("readTasksFromSource"),
-		enabledDesc: t("readTasksFromSourceDesc"),
 		sourceHeading: t("readTasksFrom"),
 		offersCurrentNote: true,
 		offersMissingNotes: false,
@@ -113,9 +111,6 @@ export function taskCommandRow(command: TaskCommand, context: ExpandingPageConte
 		label: taskCommandName(command),
 		warning: taskCommandWarning(command),
 		broken: command.unreadable !== undefined,
-		enabled: command.enabled,
-		enabledKey: taskCommandKey(command.id, "enabled"),
-		enabledTooltip: t("offerTaskCommand"),
 		pageId: taskCommandPageId(command),
 		editTooltip: t("editTaskCommand"),
 		duplicate,
@@ -157,7 +152,6 @@ export function taskCommandPage(command: TaskCommand, context: ExpandingPageCont
 					type: "group",
 					heading: t("taskCommandSection"),
 					items: [
-						{ name: t("enabled"), desc: t("taskCommandEnabledDesc"), control: { type: "toggle", key: key("enabled") } },
 						...nameAndPlaceholderItems({
 							write: context.write,
 							name: {
@@ -209,7 +203,6 @@ export function taskCommandPage(command: TaskCommand, context: ExpandingPageCont
 		get name() {
 			return taskCommandName(command);
 		},
-		displayValue: () => (command.enabled && !command.unreadable ? "" : t("off")),
 		status: () => (taskCommandWarning(command) ? "warning" : null),
 		items,
 	};

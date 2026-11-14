@@ -28,7 +28,6 @@ const kind = field("1", "kind", { source: "options", choices: [{ value: "book" }
 
 const readingLog = (): Form => ({
 	id: "1",
-	enabled: true,
 	name: "Reading log",
 	namePattern: "{{kind}} {{categories}}",
 	contentPattern: "",
@@ -119,7 +118,7 @@ test("blocks round-trip through storage, and a block with an unknown operator ma
 	const [read] = readForms(storedForms([form]));
 	assert.deepEqual(read, form);
 	const [broken] = readForms([{ ...form, fields: [block("1", [{ key: "x", operator: "maybe" } as unknown as BlockCondition], [])] }]);
-	assert.equal(broken.enabled, false);
+	assert.ok(broken.unreadable);
 	assert.notEqual(broken.unreadable, undefined);
 });
 
@@ -153,7 +152,6 @@ test("conditions on fields saved as select or multiselect keep holding after the
 	const [form] = readForms([
 		{
 			id: "1",
-			enabled: true,
 			fields: [
 				{ id: "1", key: "kind", mode: "ask", type: "select", storeAs: "text", choices: [{ value: "book" }, { value: "article" }] },
 				{ id: "2", key: "rating", mode: "ask", type: "select", storeAs: "number", choices: [{ value: "4" }, { value: "2" }] },

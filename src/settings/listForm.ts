@@ -93,7 +93,6 @@ export function directionOptions(): Record<"ago" | "today" | "fromNow", string> 
 }
 
 export type ListField =
-	| "enabled"
 	| "prefix"
 	| "prefixColor"
 	| "source"
@@ -110,7 +109,7 @@ export interface PropertySuggestion {
 const FIXED_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export function newList(lists: readonly { id: string }[]): NoteList {
-	return { id: newListId(lists), enabled: true, prefix: "", source: { kind: "filter", filter: emptyFilter() } };
+	return { id: newListId(lists), prefix: "", source: { kind: "filter", filter: emptyFilter() } };
 }
 
 export function listName(list: NoteList): string {
@@ -131,10 +130,6 @@ export function sourceSummary(source: ListSource): string {
 	if (source.kind === "filter") return filterSummary(source.filter);
 	if (source.kind === "unreadable") return t("unreadableList");
 	return t(SOURCE_KEYS[source.kind]);
-}
-
-export function listDisplayValue(list: NoteList): string {
-	return list.enabled && list.source.kind !== "unreadable" ? "" : t("off");
 }
 
 export function inapplicableCondition(source: ListSource, types: Record<string, string>): string | undefined {
@@ -161,7 +156,6 @@ export function matchingSuggestions(suggestions: readonly PropertySuggestion[], 
 }
 
 export function readListField(list: NoteList, field: ListField): unknown {
-	if (field === "enabled") return list.enabled;
 	if (field === "prefix") return list.prefix;
 	if (field === "prefixColor") return list.prefixColor ?? "";
 	if (field === "source") return list.source.kind;
@@ -180,8 +174,7 @@ export function readListField(list: NoteList, field: ListField): unknown {
 }
 
 export function writeListField(list: NoteList, field: ListField, value: unknown): void {
-	if (field === "enabled") list.enabled = value === true;
-	else if (field === "prefix") list.prefix = typeof value === "string" ? value : "";
+	if (field === "prefix") list.prefix = typeof value === "string" ? value : "";
 	else if (field === "prefixColor") writePrefixColor(list, value);
 	else if (field === "source") list.source = sourceFor(value, list.source);
 	else if (field === "note" && list.source.kind === "linksToNote") list.source.note = typeof value === "string" ? value.trim() : "";

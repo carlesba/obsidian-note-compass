@@ -43,10 +43,10 @@ test("an entry confirmation is named after what it confirms, whatever its key, u
 	assert.equal(fieldRowName(date), "day");
 });
 
-test("a new form starts enabled, opens its note and has no fields, with the next free id", () => {
+test("a new form opens its note and has no fields, with the next free id", () => {
 	const form = newForm([{ ...newForm([]), id: "4" }]);
 	assert.equal(form.id, "5");
-	assert.equal(form.enabled, true);
+	assert.equal(form.unreadable, undefined);
 	assert.equal(form.opensNote, true);
 	assert.deepEqual(form.fields, []);
 });

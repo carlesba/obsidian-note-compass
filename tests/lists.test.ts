@@ -4,7 +4,7 @@ import { defaultDateNoteSettings } from "../src/lists/dateNotes.ts";
 import { buildJumpList } from "../src/lists/jumpList.ts";
 import type { Frontmatter, JumpListVault, VaultNote } from "../src/lists/vault.ts";
 import type { Condition } from "../src/lists/conditions.ts";
-import { defaultSettings } from "../src/settings.ts";
+import { defaultSettings, mergeSettings } from "../src/settings.ts";
 import type { ListSource, NoteList, RelationSourceKind } from "../src/settings.ts";
 import { moment } from "./moment.ts";
 
@@ -54,11 +54,11 @@ function fakeVault(fakes: FakeNote[], plugins: FakePlugins = {}): JumpListVault 
 }
 
 function onlyList(kind: RelationSourceKind): NoteList[] {
-	return defaultSettings().notePickers[0].lists.map((list) => ({ ...list, enabled: list.source.kind === kind }));
+	return defaultSettings().notePickers[0].lists.filter((list) => list.source.kind === kind);
 }
 
 function propertyList(prefix: string, property: string, condition: Condition): NoteList {
-	return { id: `list-${prefix}`, enabled: true, prefix, source: propertyFilter(property, condition) };
+	return { id: `list-${prefix}`, prefix, source: propertyFilter(property, condition) };
 }
 
 function propertyFilter(property: string, condition: Condition): ListSource {
@@ -66,7 +66,7 @@ function propertyFilter(property: string, condition: Condition): ListSource {
 }
 
 function sourceList(source: ListSource): NoteList[] {
-	return [{ id: "list-1", enabled: true, prefix: "src", source }];
+	return [{ id: "list-1", prefix: "src", source }];
 }
 
 const describe = (entries: { name: string; prefix: string; suffix?: string }[]) =>
@@ -251,18 +251,16 @@ test("the lists run in order, a note appears in every list that holds it and the
 	]);
 });
 
-test("disabled lists are skipped", () => {
+test("legacy disabled lists contribute notes", () => {
 	const vault = fakeVault([
-		{ path: "current.md", ctime: MARCH_5, links: ["out.md"] },
-		{ path: "out.md", ctime: MARCH_5, links: ["current.md"] },
-		{ path: "in.md", links: ["current.md"] },
+		{ path: "current.md", links: ["out.md"] },
+		{ path: "out.md", links: ["current.md"] },
 	]);
-	const lists = defaultSettings().notePickers[0].lists.map((list) => ({
-		...list,
-		enabled: list.source.kind !== "linksOut" && list.source.kind !== "sameDay",
-	}));
-	lists.push({ ...propertyList("🏠 home", "area", { operator: "is not empty" }), enabled: false });
-	assert.deepEqual(describe(buildJumpList(lists, vault, vault.note("current.md"))), ["🔗 in in", "🔗 in out"]);
+	const lists = mergeSettings({ lists: [
+		{ id: "list-1", enabled: false, prefix: "out", source: { kind: "linksOut" } },
+		{ id: "list-2", prefix: "in", source: { kind: "linksIn" } },
+	] }).notePickers[0].lists;
+	assert.deepEqual(describe(buildJumpList(lists, vault, vault.note("current.md"))), ["out out", "in out"]);
 });
 
 test("a note held by two lists appears under each, in the user's order", () => {
@@ -270,7 +268,7 @@ test("a note held by two lists appears under each, in the user's order", () => {
 		{ path: "current.md", links: ["shared.md"] },
 		{ path: "shared.md", frontmatter: { area: "home" } },
 	]);
-	const linksOut = onlyList("linksOut").filter((list) => list.enabled);
+	const linksOut = onlyList("linksOut");
 	const home = propertyList("🏠 home", "area", { operator: "is", value: "home" });
 	assert.deepEqual(describe(buildJumpList([...linksOut, home], vault, vault.note("current.md"))), ["🔗 out shared", "🏠 home shared"]);
 	assert.deepEqual(describe(buildJumpList([home, ...linksOut], vault, vault.note("current.md"))), ["🏠 home shared", "🔗 out shared"]);
@@ -337,8 +335,8 @@ test("modified today lists notes changed since local midnight of the vault's clo
 test("each entry carries its list's prefix colour, and lists without one leave it out", () => {
 	const vault = fakeVault([{ path: "current.md", links: ["Alpha.md", "Beta.md"] }, { path: "Alpha.md" }, { path: "Beta.md", links: ["current.md"] }]);
 	const lists: NoteList[] = [
-		{ id: "list-1", enabled: true, prefix: "🔗 out", prefixColor: "#e0a030", source: { kind: "linksOut" } },
-		{ id: "list-2", enabled: true, prefix: "🔗 in", source: { kind: "linksIn" } },
+		{ id: "list-1", prefix: "🔗 out", prefixColor: "#e0a030", source: { kind: "linksOut" } },
+		{ id: "list-2", prefix: "🔗 in", source: { kind: "linksIn" } },
 	];
 	const entries = buildJumpList(lists, vault, vault.note("current.md"));
 	assert.deepEqual(

@@ -15,7 +15,6 @@ const clock: FormClock = { now: NOW, moment, coreTemplatesOptions: undefined };
 function form(extra: Partial<Form> = {}): Form {
 	return {
 		id: "1",
-		enabled: true,
 		name: "Reading log",
 		namePattern: "",
 		contentPattern: "",
@@ -64,12 +63,12 @@ test("saved forms round-trip through storedSettings and mergeSettings", () => {
 	assert.deepEqual(mergeSettings(stored).forms, settings.forms);
 });
 
-test("an unreadable saved form is kept as it was, switched off and flagged", () => {
-	const broken = { id: "2", enabled: true, name: "Future", fields: [{ key: "x", mode: "guess", type: "text" }] };
-	const [readable, unreadable, notAnObject] = readForms([{ id: "1", enabled: true, name: "Ok" }, broken, "text"]);
+test("an unreadable saved form is kept as it was, unavailable and flagged", () => {
+	const broken = { id: "2", name: "Future", fields: [{ key: "x", mode: "guess", type: "text" }] };
+	const [readable, unreadable, notAnObject] = readForms([{ id: "1", name: "Ok" }, broken, "text"]);
 	assert.equal(readable.unreadable, undefined);
 	assert.equal(readable.opensNote, true);
-	assert.equal(unreadable.enabled, false);
+	assert.ok(unreadable.unreadable);
 	assert.deepEqual(unreadable.unreadable, { stored: broken });
 	assert.deepEqual(notAnObject.unreadable, { stored: "text" });
 	const settings = defaultSettings();
@@ -92,14 +91,13 @@ test("forms saved with separate variables and properties read as one fields list
 	const [converted, broken] = readForms([
 		{
 			id: "1",
-			enabled: true,
 			variables: [{ id: "1", key: "book", mode: "ask", type: "text" }],
 			properties: [{ id: "2", key: "author", mode: "ask", type: "text" }, { id: "3", key: "kind", mode: "static", type: "text", value: "book" }],
 		},
-		{ id: "2", enabled: true, variables: "book" },
+		{ id: "2", variables: "book" },
 	]);
 	assert.deepEqual(converted.fields, [variable("1", "book", { source: "typed" }), field("2", "author", { source: "typed" }), field("3", "kind", { mode: "static", value: "book" })]);
-	assert.deepEqual(broken.unreadable, { stored: { id: "2", enabled: true, variables: "book" } });
+	assert.deepEqual(broken.unreadable, { stored: { id: "2", variables: "book" } });
 	const settings = defaultSettings();
 	settings.forms = [converted];
 	const stored = storedSettings(settings) as { forms: Record<string, unknown>[] };
@@ -250,7 +248,6 @@ test("saved entryTime markers and date types round-trip without migration", () =
 test("saved select and multiselect fields read as a data type with fixed options, and are saved in the new shape only", () => {
 	const saved = {
 		id: "1",
-		enabled: true,
 		fields: [
 			{ id: "1", key: "rating", mode: "ask", type: "select", storeAs: "number", choices: [{ value: "4", label: "4 · Great" }] },
 			{ id: "2", key: "kind", mode: "ask", type: "select", storeAs: "text", choices: [{ value: "book" }] },
@@ -303,9 +300,9 @@ test("a saved source that does not fit its data type reads as typed input, and a
 		field("4", "people", { type: "list", source: "notes", notesFrom: { kind: "filter", filter: { kind: "group", mode: "all", items: [] } } }),
 		field("5", "kind", { mode: "static", value: "book" }),
 	]);
-	const broken = { id: "2", enabled: true, fields: [{ id: "1", key: "book", mode: "ask", type: "text", source: "notes", notesFrom: { kind: "someday" } }] };
+	const broken = { id: "2", fields: [{ id: "1", key: "book", mode: "ask", type: "text", source: "notes", notesFrom: { kind: "someday" } }] };
 	const [unreadable] = readForms([broken]);
-	assert.equal(unreadable.enabled, false);
+	assert.ok(unreadable.unreadable);
 	assert.deepEqual(unreadable.unreadable, { stored: broken });
 	const settings = defaultSettings();
 	settings.forms = [read, unreadable];

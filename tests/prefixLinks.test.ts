@@ -18,7 +18,6 @@ import type { PrefixRow } from "../src/settings/prefixLinks.ts";
 
 const list = (id: string, prefix: string, prefixColor?: string): NoteList => ({
 	id,
-	enabled: true,
 	prefix,
 	...(prefixColor === undefined ? {} : { prefixColor }),
 	source: { kind: "linksOut" },
@@ -26,7 +25,6 @@ const list = (id: string, prefix: string, prefixColor?: string): NoteList => ({
 
 const property = (id: string, prefix: string, prefixColor?: string): EditableProperty => ({
 	id,
-	enabled: true,
 	prefix,
 	...(prefixColor === undefined ? {} : { prefixColor }),
 	property: id,

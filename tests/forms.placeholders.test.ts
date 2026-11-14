@@ -20,7 +20,7 @@ import { moment } from "./moment.ts";
 const clock: FormClock = { now: NOW, moment, coreTemplatesOptions: undefined };
 
 function form(extra: Partial<Form> = {}): Form {
-	return { id: "1", enabled: true, name: "Log", namePattern: "", contentPattern: "", folder: "", opensNote: true, fields: [], ...extra };
+	return { id: "1", name: "Log", namePattern: "", contentPattern: "", folder: "", opensNote: true, fields: [], ...extra };
 }
 
 function field(id: string, key: string, extra: Partial<FormField> = {}): FormField {

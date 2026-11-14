@@ -104,7 +104,7 @@ export default class NoteCompassPlugin extends Plugin {
 				icon: "list-checks",
 				checkCallback: (checking) => {
 					const target = this.currentNote();
-					if (!target && command.sources.some((source) => source.enabled && readsCurrentNote(source.source))) return false;
+					if (!target && command.sources.some((source) => readsCurrentNote(source.source))) return false;
 					if (!checking) runTaskCommand(this.app, createObsidianVault(this.app), this.settings, command, target);
 					return true;
 				},

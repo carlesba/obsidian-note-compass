@@ -34,9 +34,6 @@ export function notePickerRow(picker: NotePicker, context: ListPageContext, dupl
 			label: notePickerName(picker),
 			warning: notePickerWarning(picker),
 			broken: picker.unreadable !== undefined,
-			enabled: picker.enabled,
-			enabledKey: notePickerKey(picker.id, "enabled"),
-			enabledTooltip: t("offerNotePicker"),
 			pageId: notePickerPageId(picker),
 			editTooltip: t("editNotePicker"),
 			duplicate,
@@ -60,7 +57,6 @@ export function notePickerPage(picker: NotePicker, context: NotePickerPageContex
 					type: "group",
 					heading: t("notePickerSection"),
 					items: [
-						{ name: t("enabled"), desc: t("notePickerEnabledDesc"), control: { type: "toggle", key: notePickerKey(picker.id, "enabled") } },
 						...nameAndPlaceholderItems({
 							write: context.write,
 							name: {
@@ -106,7 +102,6 @@ export function notePickerPage(picker: NotePicker, context: NotePickerPageContex
 		get name() {
 			return notePickerName(picker);
 		},
-		displayValue: () => (picker.enabled && !picker.unreadable ? "" : t("off")),
 		status: () => (notePickerWarning(picker) ? "warning" : null),
 		items,
 	};
