@@ -37,6 +37,7 @@ import { moment } from "./moment.ts";
 interface FakeVault {
 	frontmatter?: Record<string, Frontmatter>;
 	propertyTypes?: Record<string, string>;
+	dateCompass?: unknown;
 	periodicNotes?: unknown;
 	dailyNotes?: unknown;
 }
@@ -53,6 +54,7 @@ function fakeVault(fakes: FakeVault = {}): JumpListVault {
 		embeds: () => [],
 		size: () => 0,
 		mtime: () => 0,
+		dateCompassPeriods: () => fakes.dateCompass,
 		periodicNotesSettings: () => fakes.periodicNotes,
 		dailyNotesOptions: () => fakes.dailyNotes,
 		propertyTypes: () => fakes.propertyTypes ?? {},
@@ -257,6 +259,14 @@ test("the date notes row says where each period comes from and which formats are
 	const periodic = fakeVault({ periodicNotes: { weekly: { enabled: true, folder: "/weeks/", format: "" } }, dailyNotes: {} });
 	assert.equal(dateNoteSourceDescription(settings, periodic).endsWith("Every period comes from Periodic Notes."), true);
 	assert.deepEqual(customPeriods(settings, periodic), []);
+
+	const compassPeriod = { enabled: true, folder: "", format: "YYYY", template: "" };
+	const compass = fakeVault({
+		dateCompass: { day: compassPeriod, week: compassPeriod, month: compassPeriod, quarter: compassPeriod, year: compassPeriod },
+		periodicNotes: { weekly: { enabled: true, folder: "", format: "" } },
+	});
+	assert.equal(dateNoteSourceDescription(settings, compass).endsWith("Every period comes from Date Compass."), true);
+	assert.deepEqual(customPeriods(settings, compass), []);
 
 	settings.from = "periodicNotes";
 	assert.match(dateNoteSourceDescription(settings, fakeVault()), /^Periodic Notes is not enabled\. Edit each period's/);

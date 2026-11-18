@@ -12,7 +12,7 @@ export interface PeriodFormat {
 
 export type DateNoteFormats = Record<Period, PeriodFormat>;
 
-export type DateNoteSource = "periodicNotes" | "dailyNotes" | "custom";
+export type DateNoteSource = "dateCompass" | "periodicNotes" | "dailyNotes" | "custom";
 
 export interface DateNoteSettings {
 	from: "auto" | DateNoteSource;
@@ -50,7 +50,7 @@ const PERIODIC_NOTES_DEFAULT_FORMATS: Record<Period, string> = {
 
 const DAILY_NOTES_DEFAULT_FORMAT = "YYYY-MM-DD";
 
-type DateNoteVault = Pick<JumpListVault, "periodicNotesSettings" | "dailyNotesOptions">;
+type DateNoteVault = Pick<JumpListVault, "dateCompassPeriods" | "periodicNotesSettings" | "dailyNotesOptions">;
 
 export function defaultDateNoteSettings(): DateNoteSettings {
 	return { from: "auto", custom: mapPeriods((period) => ({ ...DEFAULT_CUSTOM_DATE_NOTES[period] })) };
@@ -58,7 +58,7 @@ export function defaultDateNoteSettings(): DateNoteSettings {
 
 export function resolveDateNotes(settings: DateNoteSettings, vault: DateNoteVault): ResolvedDateNotes {
 	const custom = mapPeriods((period) => ({ ...settings.custom[period], folder: normalizeFolder(settings.custom[period].folder) }));
-	const candidates: DateNoteSource[] = settings.from === "auto" ? ["periodicNotes", "dailyNotes"] : [settings.from];
+	const candidates: DateNoteSource[] = settings.from === "auto" ? ["dateCompass", "periodicNotes", "dailyNotes"] : [settings.from];
 	for (const source of candidates) {
 		const periods = readSource(source, custom, vault);
 		if (periods) return { from: source, periods };
@@ -72,9 +72,23 @@ export function dailyNoteFormat(resolved: ResolvedDateNotes): string | undefined
 }
 
 function readSource(source: DateNoteSource, custom: DateNoteFormats, vault: DateNoteVault): DateNoteFormats | undefined {
+	if (source === "dateCompass") return readDateCompass(vault.dateCompassPeriods());
 	if (source === "periodicNotes") return readPeriodicNotes(vault.periodicNotesSettings());
 	if (source === "dailyNotes") return readDailyNotes(vault.dailyNotesOptions(), custom);
 	return custom;
+}
+
+function readDateCompass(periods: unknown): DateNoteFormats | undefined {
+	if (!isRecord(periods)) return undefined;
+	if (!PERIODS.every((period) => isRecord(periods[period]))) return undefined;
+	return mapPeriods((period) => {
+		const entry = periods[period] as Record<string, unknown>;
+		return {
+			enabled: entry.enabled === true,
+			folder: normalizeFolder(entry.folder),
+			format: formatOrDefault(entry.format, DEFAULT_CUSTOM_DATE_NOTES[period].format),
+		};
+	});
 }
 
 function readPeriodicNotes(settings: unknown): DateNoteFormats | undefined {

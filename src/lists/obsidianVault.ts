@@ -6,10 +6,15 @@ import type { JumpListVault, MomentDate, MomentFactory, NewNoteVault, NoteBodyVa
 
 interface PluginRegistries {
 	metadataTypeManager?: { getAllProperties(): Record<string, { widget?: unknown } | undefined> };
-	plugins?: { getPlugin(id: string): { settings?: unknown; createPeriodicNote?: unknown } | null | undefined };
+	plugins?: { getPlugin(id: string): { settings?: unknown; createPeriodicNote?: unknown; api?: DateCompassApi } | null | undefined };
 	internalPlugins?: {
 		getPluginById(id: string): { enabled?: boolean; instance?: { options?: unknown } } | null | undefined;
 	};
+}
+
+interface DateCompassApi {
+	periods(): unknown;
+	ensureNote(date: MomentDate, period: Period): Promise<string | undefined>;
 }
 
 type PeriodicNoteCreator = (period: Period, date: MomentDate) => Promise<unknown>;
@@ -58,6 +63,7 @@ export function createObsidianVault(app: App): JumpListVault & NewNoteVault & No
 		},
 		size: (path) => app.vault.getFileByPath(path)?.stat.size ?? 0,
 		mtime: (path) => app.vault.getFileByPath(path)?.stat.mtime ?? 0,
+		dateCompassPeriods: () => readSafely(() => dateCompassApi(registries)?.periods()),
 		periodicNotesSettings: () => readSafely(() => registries.plugins?.getPlugin("periodic-notes")?.settings),
 		dailyNotesOptions: () =>
 			readSafely(() => {
@@ -86,13 +92,25 @@ export function createObsidianVault(app: App): JumpListVault & NewNoteVault & No
 			return fallbackLinkText(path, app.vault.getMarkdownFiles().map((note) => note.path));
 		},
 		createPeriodNote: async (path, period, date, from) => {
-			const creator = from === "periodicNotes" ? periodicNoteCreator(registries) : undefined;
+			const creator = from === "dateCompass" ? dateCompassCreator(registries) : from === "periodicNotes" ? periodicNoteCreator(registries) : undefined;
 			if (creator) await creator(period, date).catch(() => undefined);
 			if (!app.vault.getFileByPath(path)) await createNote(path, "");
 		},
 		coreTemplatesOptions: () => readSafely(() => registries.internalPlugins?.getPluginById("templates")?.instance?.options),
 		now: () => Date.now(),
 		moment: asMomentFactory(moment),
+	};
+}
+
+function dateCompassApi(registries: PluginRegistries): DateCompassApi | undefined {
+	return readSafely(() => registries.plugins?.getPlugin("date-compass")?.api) ?? undefined;
+}
+
+function dateCompassCreator(registries: PluginRegistries): PeriodicNoteCreator | undefined {
+	const api = dateCompassApi(registries);
+	if (!api) return undefined;
+	return async (period, date) => {
+		await api.ensureNote(date, period);
 	};
 }
 

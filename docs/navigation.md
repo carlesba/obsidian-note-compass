@@ -55,7 +55,7 @@ These lists do not depend on the note in focus.
 
 - The rows keep the order set on the list's page, today to this year by default, instead of being sorted by name.
 - Each row says which period it is, such as `this week - week 10`.
-- A note that does not exist yet shows as `create this week`, unless "Show notes that don't exist yet" is off on the list's page. Choosing it creates and opens it the way your date notes plugin does, with the same template: Periodic Notes, or core Daily notes for days.
+- A note that does not exist yet shows as `create this week`, unless "Show notes that don't exist yet" is off on the list's page. Choosing it creates and opens it the way your date notes plugin does, with the same template: Date Compass, Periodic Notes, or core Daily notes for days.
 - Periods that come from the Custom formats start as an empty note.
 - A link property in "Set properties" with this source only offers the notes that exist.
 
@@ -108,7 +108,8 @@ The "Read from" setting under "Date notes" chooses where those formats come from
 
 | Read from | Formats used |
 | --- | --- |
-| Automatic | The Periodic Notes plugin when it is enabled, then the core Daily notes plugin, then the plugin's own Custom formats. |
+| Automatic | The Date Compass plugin when it is enabled, then the Periodic Notes plugin, then the core Daily notes plugin, then the plugin's own Custom formats. |
+| Date Compass | The Date Compass plugin. |
 | Periodic Notes | The Periodic Notes plugin. |
 | Daily notes | The core Daily notes plugin, for days only. The other periods come from Custom. |
 | Custom | The plugin's own formats. |

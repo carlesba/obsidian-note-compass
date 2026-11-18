@@ -20,6 +20,7 @@ const MARCH_5 = new Date(2024, 2, 5, 10).getTime();
 const MARCH_9 = new Date(2024, 2, 9, 10).getTime();
 
 interface FakePlugins {
+	dateCompass?: unknown;
 	periodicNotes?: unknown;
 	dailyNotes?: unknown;
 	propertyTypes?: Record<string, string>;
@@ -43,6 +44,7 @@ function fakeVault(fakes: FakeNote[], plugins: FakePlugins = {}): JumpListVault 
 		embeds: () => [],
 		size: () => 0,
 		mtime: (path) => byPath.get(path)?.mtime ?? MARCH_5,
+		dateCompassPeriods: () => plugins.dateCompass,
 		periodicNotesSettings: () => plugins.periodicNotes,
 		dailyNotesOptions: () => plugins.dailyNotes,
 		propertyTypes: () => plugins.propertyTypes ?? {},

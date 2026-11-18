@@ -14,7 +14,16 @@ const periodicNotes = {
 
 const dailyNotes = { folder: "daily", format: "DD.MM.YYYY", template: "" };
 
-const plugins = (periodic: unknown, daily: unknown) => ({
+const dateCompass = {
+	day: { enabled: true, folder: "/journal/", format: "YYYY-MM-DD", template: "templates/day.md" },
+	week: { enabled: true, folder: "journal", format: "GGGG-[W]WW", template: "" },
+	month: { enabled: false, folder: "", format: "YYYY-MM", template: "" },
+	quarter: { enabled: false, folder: "", format: "YYYY-[Q]Q", template: "" },
+	year: { enabled: true, folder: "journal", format: " ", template: "" },
+};
+
+const plugins = (periodic: unknown, daily: unknown, compass?: unknown) => ({
+	dateCompassPeriods: () => compass,
 	periodicNotesSettings: () => periodic,
 	dailyNotesOptions: () => daily,
 });
@@ -85,4 +94,26 @@ test("Custom ignores the installed plugins and uses the plugin's own formats wit
 	const resolved = resolveDateNotes(settings, plugins(periodicNotes, dailyNotes));
 	assert.equal(resolved.from, "custom");
 	assert.deepEqual(resolved.periods.quarter, { enabled: true, folder: "journal", format: "YYYY-[Q]Q" });
+});
+
+test("Date Compass supplies every period with trimmed folders and comes first in Automatic", () => {
+	for (const from of ["auto", "dateCompass"] as const) {
+		assert.deepEqual(resolveDateNotes(readFrom(from), plugins(periodicNotes, dailyNotes, dateCompass)), {
+			from: "dateCompass",
+			periods: {
+				day: { enabled: true, folder: "journal", format: "YYYY-MM-DD" },
+				week: { enabled: true, folder: "journal", format: "GGGG-[W]WW" },
+				month: { enabled: false, folder: "", format: "YYYY-MM" },
+				quarter: { enabled: false, folder: "", format: "YYYY-[Q]Q" },
+				year: { enabled: true, folder: "journal", format: "YYYY" },
+			},
+		});
+	}
+});
+
+test("Automatic skips Date Compass when its periods cannot be read", () => {
+	for (const compass of [undefined, null, "periods", { day: dateCompass.day }]) {
+		assert.equal(resolveDateNotes(readFrom("auto"), plugins(periodicNotes, dailyNotes, compass)).from, "periodicNotes");
+	}
+	assert.equal(resolveDateNotes(readFrom("dateCompass"), plugins(periodicNotes, dailyNotes)).from, "custom");
 });

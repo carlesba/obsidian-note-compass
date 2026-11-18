@@ -48,6 +48,7 @@ export interface JumpListVault {
 	embeds(path: string): string[];
 	size(path: string): number;
 	mtime(path: string): number;
+	dateCompassPeriods(): unknown;
 	periodicNotesSettings(): unknown;
 	dailyNotesOptions(): unknown;
 	propertyTypes(): Record<string, string>;

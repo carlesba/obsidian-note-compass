@@ -77,7 +77,7 @@ Destinations can be Today, Tomorrow, This week, Next week, This month, Next mont
 - Periods are relative to today, not the source note's date, and use the enabled periods, folders and formats in "Date notes".
 - One available destination runs directly; several open "Copy to which note?" in the configured order, marking any note still to be created as `new note`. The source note and duplicate destinations are never offered.
 - Missing specific notes are skipped with a notice. If no destination remains, nothing changes.
-- Missing periodic notes are created when changes are saved. When "Date notes" uses Periodic Notes, Note Compass first asks that plugin to create the note with its template. If that API is unavailable, fails or leaves the expected path missing, an empty note is created instead. Other sources, including core Daily notes and Custom, start empty before the task is appended.
+- Missing periodic notes are created when changes are saved. When "Date notes" uses Date Compass or Periodic Notes, Note Compass first asks that plugin to create the note with its template. If that API is unavailable, fails or leaves the expected path missing, an empty note is created instead. Other sources, including core Daily notes and Custom, start empty before the task is appended.
 
 ## Picker and batch mode
 

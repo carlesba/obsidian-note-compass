@@ -170,7 +170,7 @@ const LEGACY_OPERATORS: Record<string, (value: string) => Condition> = {
 	exists: () => ({ operator: "is not empty" }),
 };
 
-const DATE_NOTE_SOURCES: readonly DateNoteSettings["from"][] = ["auto", "periodicNotes", "dailyNotes", "custom"];
+const DATE_NOTE_SOURCES: readonly DateNoteSettings["from"][] = ["auto", "dateCompass", "periodicNotes", "dailyNotes", "custom"];
 
 const DEFAULT_FLAGS_PREFIX = "🎛️ meta";
 

@@ -61,6 +61,7 @@ export function fakeVault(fakes: FakeNote[], options: FakeVaultOptions = {}): Fa
 		embeds: (path) => byPath(path)?.embeds ?? [],
 		size: (path) => byPath(path)?.size ?? 0,
 		mtime: (path) => byPath(path)?.mtime ?? HOURS_AGO(48),
+		dateCompassPeriods: () => undefined,
 		periodicNotesSettings: () => undefined,
 		dailyNotesOptions: () => undefined,
 		propertyTypes: () => options.propertyTypes ?? {},
