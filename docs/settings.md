@@ -32,7 +32,7 @@ The Navigation page lists your navigation pickers with the same add, reorder, sw
 | Filter | Main filter | The picker's main [filter](#filters). Every note must match it to show in this picker, on top of each list's own source and filter. Empty by default, so it hides nothing. |
 | Lists | List rows | Each list picks the notes of one source, such as a folder, the notes that link to a note, or a filter, and shows them with its own prefix. The picker shows every enabled list in order, so a note can appear under more than one list. See [Lists and property rows](#lists-and-property-rows) and [List pages](#list-pages). |
 
-Below the pickers, "Insert links while typing" switches on the link list described in [Inserting links while typing](navigation.md#inserting-links-while-typing), with its "Trigger" and the "Navigation picker" it uses. When that picker is off or removed, or the trigger is empty, the picker setting shows a warning and typing the trigger does nothing.
+Below the pickers, "Insert links while typing" lists the triggers described in [Inserting links while typing](navigation.md#inserting-links-while-typing). Each row is named after its trigger and picker, such as `@ → People`, and has a navigation picker and the trigger that opens it; + adds a row, the handle reorders rows and the cross deletes one. A new row takes the shortest unused run of `@`, such as `@` or `@@`. Typing a trigger another row already uses shows an error and is not saved. A row shows a warning, and its trigger does nothing, when its trigger is empty or its picker is off or removed.
 
 ## Forms and Tasks
 

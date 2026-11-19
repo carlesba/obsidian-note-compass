@@ -29,7 +29,7 @@ for (const legacy of [{ enabled: false }, {}]) {
 		const command = settings.taskCommands[0];
 		const vault = fakeVault([{ path: "current.md", links: ["other.md"] }, { path: "other.md" }]);
 		assert.equal(isRunnableNotePicker(picker), true);
-		assert.equal(mentionPicker({ enabled: true, trigger: "@", pickerId: "7" }, settings.notePickers), picker);
+		assert.equal(mentionPicker({ id: "1", trigger: "@", pickerId: "7" }, settings.notePickers), picker);
 		assert.deepEqual(buildJumpList(picker.lists, vault, vault.note("current.md")).map((item) => item.file.path), ["other.md"]);
 		assert.equal(settings.forms[0].unreadable, undefined);
 		assert.equal(settings.forms[0].namePattern, "Daily");

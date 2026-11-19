@@ -90,13 +90,15 @@ Escape, `🛑 Cancel` and `🏁 Save & back to list` in that "Set properties" al
 
 You can insert a link to any note a navigation picker lists without leaving the editor.
 
-1. Open Settings → Note Compass → Navigation, switch on "Insert links while typing", and choose the navigation picker it uses.
-2. In a note, type the trigger, `@` by default, at the start of a line or after a space.
+1. Open Settings → Note Compass → Navigation and press + under "Insert links while typing". Each row pairs a navigation picker with the trigger that opens it.
+2. In a note, type a trigger, such as `@`, at the start of a line or after a space.
 3. The picker's notes open in a list under the cursor. Type to filter them as you would in the picker, then press Enter or tap a row.
 
 The trigger and what you typed after it become a link to the note, written the way Obsidian's own link settings say. A date note that does not exist yet is created first.
 
-To keep the trigger as plain text, press Space or Escape. Escape keeps the list closed until you type a space or start another trigger. The trigger can be several characters, such as `;;`, and spaces in it are ignored. The list never opens inside a word, so an email address is safe, and never inside code or frontmatter. Rows in this list have no properties icon.
+To keep the trigger as plain text, press Space or Escape. Escape keeps the list closed until you type a space or start another trigger. The trigger can be several characters, such as `;;`, and spaces in it are ignored.
+
+Add a row for each picker you want to reach while typing, for example `@` for people and `!` for projects. When one trigger starts another, such as `@` and `@@`, typing the longer one opens its picker. Each trigger can be used by one row only. Delete every row to stop inserting links while typing. The list never opens inside a word, so an email address is safe, and never inside code or frontmatter. Rows in this list have no properties icon.
 
 ## Date notes
 

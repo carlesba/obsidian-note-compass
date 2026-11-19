@@ -5,19 +5,18 @@ import type {
 	SettingDefinitionList,
 	SettingDefinitionPage,
 	SettingDefinitionRender,
+	Setting,
 } from "obsidian";
 import { t } from "./i18n";
 import { createObsidianVault } from "./lists/obsidianVault";
 import type { JumpListVault } from "./lists/vault";
 import type NoteCompassPlugin from "./main";
-import { mentionPicker } from "./mentions/settings";
+import { DEFAULT_MENTION_TRIGGER, isTriggerTaken, mentionWarning, newMention } from "./mentions/settings";
 import { allLists, defaultSettings, duplicateNotePicker, newListId, newNotePicker, notePickerName } from "./settings";
 import {
 	CHECKBOX_MODE_KEY,
 	DATE_NOTE_SOURCE_KEY,
-	MENTION_ENABLED_KEY,
-	MENTION_PICKER_KEY,
-	MENTION_TRIGGER_KEY,
+	mentionKey,
 	periodKey,
 	readControl,
 	writeControl,
@@ -58,6 +57,7 @@ const TYPED_FIELDS = [
 	"excludedFolders",
 	"presetValues",
 	"rowName",
+	"trigger",
 ];
 
 const QUIETLY_SAVED_SCOPES = ["form", "formField", "formBlock", "customField", "fixedValue", "taskCommand", "taskAction"];
@@ -274,7 +274,7 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 				items: [
 					sectionPage(NAVIGATION_PAGE_ID, t("navigationSection"), t("navigationSectionDesc"), [
 						notePickersList,
-						this.mentionGroup(),
+						...this.mentionItems(),
 						hiddenPages(notePickers.map((picker) => notePickerPage(picker, pickerContext))),
 					]),
 					sectionPage(PROPERTIES_PAGE_ID, t("propertiesSection"), t("propertiesSectionDesc"), [
@@ -324,32 +324,53 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 		];
 	}
 
-	private mentionGroup(): SettingDefinitionGroup {
-		const { mention, notePickers } = this.plugin.settings;
-		const pickerWarning = !mention.trigger ? t("mentionTriggerEmpty") : mentionPicker(mention, notePickers) ? undefined : t("mentionPickerOff");
+	private mentionItems(): SettingDefinitionItem[] {
+		const { mentions, notePickers } = this.plugin.settings;
 		const pickerOptions = Object.fromEntries(
 			notePickers.filter((picker) => !picker.unreadable).map((picker) => [picker.id, notePickerName(picker)]),
 		);
-		const isOn = () => this.plugin.settings.mention.enabled;
-		return {
-			type: "group",
+		const list: SettingDefinitionList = {
+			type: "list",
 			heading: t("mentionSection"),
-			items: [
-				{ name: t("enabled"), desc: t("mentionEnabledDesc"), control: { type: "toggle", key: MENTION_ENABLED_KEY } },
-				{
-					name: t("mentionTrigger"),
-					desc: t("mentionTriggerDesc"),
-					visible: isOn,
-					control: { type: "text", key: MENTION_TRIGGER_KEY, placeholder: "@" },
-				},
-				{
-					name: t("mentionPicker"),
-					desc: pickerWarning ? createFragment((fragment) => warningDescription(fragment.createDiv(), pickerWarning)) : t("mentionPickerDesc"),
-					visible: isOn,
-					control: { type: "dropdown", key: MENTION_PICKER_KEY, options: pickerOptions },
-				},
-			],
+			cls: SORTABLE_LIST_CLASS,
+			emptyState: t("noMentionsYet"),
+			items: mentions.map((mention) => {
+				const warning = mentionWarning(mention, mentions, notePickers);
+				const picker = notePickers.find((candidate) => candidate.id === mention.pickerId && !candidate.unreadable);
+				return {
+					name: t("mentionRowName", {
+						trigger: mention.trigger || t("mentionNoTrigger"),
+						picker: picker ? notePickerName(picker) : t("mentionNoPicker"),
+					}),
+					desc: warning ? createFragment((fragment) => warningDescription(fragment.createDiv(), warning)) : undefined,
+					searchable: false,
+					render: (setting: Setting) => {
+						setting.settingEl.addClass("note-compass-mention-row");
+						setting.addDropdown((dropdown) => {
+							dropdown.addOptions(pickerOptions).setValue(mention.pickerId);
+							dropdown.selectEl.setAttribute("aria-label", t("mentionPicker"));
+							dropdown.onChange((pickerId) => void this.setControlValue(mentionKey(mention.id, "picker"), pickerId));
+						});
+						setting.addText((text) => {
+							text.setPlaceholder(DEFAULT_MENTION_TRIGGER).setValue(mention.trigger);
+							text.inputEl.setAttribute("aria-label", t("mentionTrigger"));
+							text.onChange((typed) => {
+								const taken = isTriggerTaken(typed, mention, this.plugin.settings.mentions);
+								setting.settingEl.toggleClass("has-error", taken);
+								if (taken) setting.setDesc(t("mentionTriggerTaken"));
+								else void this.setControlValue(mentionKey(mention.id, "trigger"), typed);
+							});
+						});
+					},
+				};
+			}),
+			...this.editableEntries(mentions),
+			addItem: {
+				name: t("addMention"),
+				action: () => this.changeLists(() => mentions.push(newMention(mentions, notePickers))),
+			},
 		};
+		return [list, { name: t("mentionHowItWorks"), desc: t("mentionDesc"), searchable: false, render: () => undefined }];
 	}
 
 	hide(): void {
@@ -424,7 +445,7 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 			this.refreshDomState();
 			return;
 		}
-		if (TYPED_FIELDS.includes(field) || key === MENTION_TRIGGER_KEY) {
+		if (TYPED_FIELDS.includes(field)) {
 			this.refreshAfterTyping();
 			return;
 		}

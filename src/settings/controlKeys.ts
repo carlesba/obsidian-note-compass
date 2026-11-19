@@ -1,5 +1,5 @@
 import type { Period } from "../lists/dateNotes.ts";
-import { withoutWhitespace } from "../mentions/settings.ts";
+import { isTriggerTaken, withoutWhitespace } from "../mentions/settings.ts";
 import { CHECKBOX_MODES, allLists } from "../settings.ts";
 import type { JumpSettings } from "../settings.ts";
 import { isPeriod, readPeriodField, writeDateNoteSource, writePeriodField } from "./dateNotesForm.ts";
@@ -43,11 +43,11 @@ export const DATE_NOTE_SOURCE_KEY = "dateNotes/from";
 
 export const CHECKBOX_MODE_KEY = "setProperties/checkboxMode";
 
-export const MENTION_ENABLED_KEY = "mention/enabled";
+export type MentionField = "trigger" | "picker";
 
-export const MENTION_TRIGGER_KEY = "mention/trigger";
-
-export const MENTION_PICKER_KEY = "mention/picker";
+export function mentionKey(id: string, field: MentionField): string {
+	return `mention/${id}/${field}`;
+}
 
 export function listKey(id: string, field: ListField): string {
 	return `list/${id}/${field}`;
@@ -126,10 +126,12 @@ export function periodKey(period: Period, field: PeriodField): string {
 export function readControl(settings: JumpSettings, key: string): unknown {
 	if (key === DATE_NOTE_SOURCE_KEY) return settings.dateNotes.from;
 	if (key === CHECKBOX_MODE_KEY) return settings.setProperties.checkboxMode;
-	if (key === MENTION_ENABLED_KEY) return settings.mention.enabled;
-	if (key === MENTION_TRIGGER_KEY) return settings.mention.trigger;
-	if (key === MENTION_PICKER_KEY) return settings.mention.pickerId;
 	const [scope, name, field, index] = key.split("/");
+	if (scope === "mention") {
+		const mention = settings.mentions.find((candidate) => candidate.id === name);
+		if (field === "trigger") return mention?.trigger;
+		return field === "picker" ? mention?.pickerId : undefined;
+	}
 	if (scope === "form" || scope === "formField") return readFormControl(settings, scope, name, field, index);
 	if (scope === "formBlock") return readBlockControl(settings, name, field, index);
 	if (scope === "customField") {
@@ -171,20 +173,19 @@ export function writeControl(settings: JumpSettings, key: string, value: unknown
 		if (mode) settings.setProperties.checkboxMode = mode;
 		return mode !== undefined;
 	}
-	if (key === MENTION_ENABLED_KEY) {
-		settings.mention.enabled = value === true;
-		return true;
-	}
-	if (key === MENTION_TRIGGER_KEY) {
-		settings.mention.trigger = typeof value === "string" ? withoutWhitespace(value) : "";
-		return true;
-	}
-	if (key === MENTION_PICKER_KEY) {
-		if (typeof value !== "string") return false;
-		settings.mention.pickerId = value;
-		return true;
-	}
 	const [scope, name, field, index] = key.split("/");
+	if (scope === "mention") {
+		const mention = settings.mentions.find((candidate) => candidate.id === name);
+		if (!mention) return false;
+		if (field === "trigger") {
+			const trigger = typeof value === "string" ? withoutWhitespace(value) : "";
+			if (isTriggerTaken(trigger, mention, settings.mentions)) return false;
+			mention.trigger = trigger;
+		}
+		else if (field === "picker" && typeof value === "string") mention.pickerId = value;
+		else return false;
+		return true;
+	}
 	if (scope === "form" || scope === "formField") return writeFormControl(settings, scope, name, field, index, value);
 	if (scope === "formBlock") return writeBlockControl(settings, name, field, index, value);
 	if (scope === "customField") {

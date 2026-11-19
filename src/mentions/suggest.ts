@@ -6,8 +6,10 @@ import { createObsidianVault } from "../lists/obsidianVault";
 import type { JumpListEntry } from "../lists/vault";
 import { RESULTS_CLASS, entryLabel, entryParts, matchesInOrder, renderRow } from "../render";
 import type { JumpSettings } from "../settings";
-import { mentionPicker } from "./settings";
-import { isInCode, mentionAt } from "./trigger";
+import { activeMentions } from "./settings";
+import type { ActiveMention } from "./settings";
+import { closestMentionAt, isInCode } from "./trigger";
+import type { MentionMatch } from "./trigger";
 
 export class MentionSuggest extends EditorSuggest<JumpListEntry> {
 	private readonly settings: () => JumpSettings;
@@ -22,10 +24,9 @@ export class MentionSuggest extends EditorSuggest<JumpListEntry> {
 
 	onTrigger(cursor: EditorPosition, editor: Editor, file: TFile | null): EditorSuggestTriggerInfo | null {
 		const settings = this.settings();
-		const picker = mentionPicker(settings.mention, settings.notePickers);
-		if (!picker || !file) return null;
+		if (!file) return null;
 		const lineBeforeCaret = editor.getLine(cursor.line).slice(0, cursor.ch);
-		const match = mentionAt(lineBeforeCaret, settings.mention.trigger);
+		const match = this.typedMention(lineBeforeCaret);
 		if (!match) {
 			this.dismissedAt = undefined;
 			return null;
@@ -34,16 +35,18 @@ export class MentionSuggest extends EditorSuggest<JumpListEntry> {
 		const position = positionKey(file, start);
 		if (position === this.dismissedAt) return null;
 		if (isInCode(linesAbove(editor, cursor.line), lineBeforeCaret)) return null;
-		if (position !== this.entriesFor) {
+		const mention = match.candidate;
+		const entriesKey = `${position}:${mention.id}`;
+		if (entriesKey !== this.entriesFor) {
 			this.entries = buildJumpList(
-				picker.lists,
+				mention.picker.lists,
 				createObsidianVault(this.app),
 				{ path: file.path, basename: file.basename, ctime: file.stat.ctime },
 				settings.dateNotes,
-				picker.filter,
+				mention.picker.filter,
 			);
-			this.entriesFor = position;
-			this.showInstructions(settings.mention.trigger);
+			this.entriesFor = entriesKey;
+			this.showInstructions(mention.trigger);
 		}
 		return { start, end: cursor, query: match.query };
 	}
@@ -78,8 +81,13 @@ export class MentionSuggest extends EditorSuggest<JumpListEntry> {
 	private isStillTyped({ editor, file, start }: EditorSuggestContext): boolean {
 		const cursor = editor.getCursor();
 		if (cursor.line !== start.line || this.app.workspace.getActiveFile() !== file) return false;
-		const match = mentionAt(editor.getLine(cursor.line).slice(0, cursor.ch), this.settings().mention.trigger);
+		const match = this.typedMention(editor.getLine(cursor.line).slice(0, cursor.ch));
 		return match?.start === start.ch;
+	}
+
+	private typedMention(lineBeforeCaret: string): (MentionMatch & { candidate: ActiveMention }) | undefined {
+		const { mentions, notePickers } = this.settings();
+		return closestMentionAt(lineBeforeCaret, activeMentions(mentions, notePickers));
 	}
 
 	private async insertLink(entry: JumpListEntry, { editor, file, start, end }: EditorSuggestContext): Promise<void> {

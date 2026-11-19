@@ -344,6 +344,10 @@
 	color: var(--text-error);
 }
 
+.setting-item.note-compass-mention-row.has-error .setting-item-description {
+	color: var(--text-error);
+}
+
 .setting-item.note-compass-preset-value .setting-item-control {
 	flex: 1 1 auto;
 }

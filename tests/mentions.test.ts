@@ -1,8 +1,8 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
-import { mentionPicker, readMention } from "../src/mentions/settings.ts";
-import { isInCode, mentionAt } from "../src/mentions/trigger.ts";
-import { readControl, writeControl, MENTION_TRIGGER_KEY } from "../src/settings/controlKeys.ts";
+import { activeMentions, mentionPicker, mentionWarning, newMention, readMentions } from "../src/mentions/settings.ts";
+import { closestMentionAt, isInCode, mentionAt } from "../src/mentions/trigger.ts";
+import { mentionKey, readControl, writeControl } from "../src/settings/controlKeys.ts";
 import { defaultSettings } from "../src/settings.ts";
 import type { NotePicker } from "../src/settings.ts";
 
@@ -42,29 +42,73 @@ test("a mention inside code or frontmatter is ignored", () => {
 	assert.equal(isInCode(["---", "tags: x", "---"], "@"), false);
 });
 
-test("mention settings start off with @ and the first navigation picker", () => {
-	assert.deepEqual(defaultSettings().mention, { enabled: false, trigger: "@", pickerId: "1" });
+test("a fresh install has no triggers", () => {
+	assert.deepEqual(defaultSettings().mentions, []);
 });
 
-test("stored mention settings drop whitespace from the trigger", () => {
-	assert.deepEqual(readMention({ enabled: true, trigger: " ; ; ", pickerId: "2" }, [picker("1")]), {
-		enabled: true,
-		trigger: ";;",
-		pickerId: "2",
-	});
+test("a switched-on single trigger becomes the first row and a switched-off one leaves no rows", () => {
+	const pickers = [picker("1")];
+	assert.deepEqual(readMentions({ mention: { enabled: true, trigger: " ; ; ", pickerId: "2" } }, pickers), [{ id: "1", trigger: ";;", pickerId: "2" }]);
+	assert.deepEqual(readMentions({ mention: { enabled: false, trigger: "@", pickerId: "1" } }, pickers), []);
 });
 
-test("a mention only runs with a trigger and a readable navigation picker", () => {
+test("stored trigger rows keep their order and drop whitespace from each trigger", () => {
+	const stored = { mentions: [{ id: "4", trigger: "@ ", pickerId: "1" }, { id: "2", trigger: ";;", pickerId: "2" }] };
+	assert.deepEqual(readMentions(stored, [picker("1")]), [
+		{ id: "4", trigger: "@", pickerId: "1" },
+		{ id: "2", trigger: ";;", pickerId: "2" },
+	]);
+});
+
+test("a trigger row only runs with a trigger and a readable navigation picker", () => {
 	const pickers = [picker("1"), picker("2")];
-	assert.equal(mentionPicker({ enabled: true, trigger: "@", pickerId: "1" }, pickers)?.id, "1");
-	assert.equal(mentionPicker({ enabled: false, trigger: "@", pickerId: "1" }, pickers), undefined);
-	assert.equal(mentionPicker({ enabled: true, trigger: "", pickerId: "1" }, pickers), undefined);
-	assert.equal(mentionPicker({ enabled: true, trigger: "@", pickerId: "2" }, pickers)?.id, "2");
-	assert.equal(mentionPicker({ enabled: true, trigger: "@", pickerId: "9" }, pickers), undefined);
+	assert.equal(mentionPicker({ id: "1", trigger: "@", pickerId: "1" }, pickers)?.id, "1");
+	assert.equal(mentionPicker({ id: "1", trigger: "", pickerId: "1" }, pickers), undefined);
+	assert.equal(mentionPicker({ id: "1", trigger: "@", pickerId: "9" }, pickers), undefined);
+});
+
+test("each trigger opens its own navigation picker", () => {
+	const pickers = [picker("1"), picker("2")];
+	const active = activeMentions([{ id: "1", trigger: "@", pickerId: "1" }, { id: "2", trigger: "!", pickerId: "2" }], pickers);
+	assert.equal(closestMentionAt("Met @pro", active)?.candidate.picker.id, "1");
+	assert.equal(closestMentionAt("Met !pro", active)?.candidate.picker.id, "2");
+	assert.equal(closestMentionAt("Met !pro @jo", active)?.candidate.picker.id, "1");
+});
+
+test("a longer trigger that starts with a shorter one wins where both are typed", () => {
+	const active = activeMentions([{ id: "1", trigger: "@", pickerId: "1" }, { id: "2", trigger: "@@", pickerId: "2" }], [picker("1"), picker("2")]);
+	assert.deepEqual(closestMentionAt("@@pro", active)?.candidate.id, "2");
+	assert.deepEqual(closestMentionAt("@pro", active)?.candidate.id, "1");
+});
+
+test("stored rows that repeat a trigger only open the first row's picker and warn on the later row", () => {
+	const pickers = [picker("1"), picker("2")];
+	const mentions = [{ id: "1", trigger: "@", pickerId: "1" }, { id: "2", trigger: "@", pickerId: "2" }];
+	assert.deepEqual(activeMentions(mentions, pickers).map((mention) => mention.id), ["1"]);
+	assert.equal(mentionWarning(mentions[0], mentions, pickers), undefined);
+	assert.notEqual(mentionWarning(mentions[1], mentions, pickers), undefined);
+});
+
+test("a new row takes the shortest free run of @ and the first readable picker", () => {
+	const pickers = [{ ...picker("1"), unreadable: { stored: {} } } as NotePicker, picker("2")];
+	assert.deepEqual(newMention([], pickers), { id: "1", trigger: "@", pickerId: "2" });
+	assert.deepEqual(newMention([{ id: "3", trigger: "@", pickerId: "2" }], pickers), { id: "4", trigger: "@@", pickerId: "2" });
+});
+
+test("settings refuse a trigger another row already uses", () => {
+	const settings = defaultSettings();
+	settings.mentions.push({ id: "1", trigger: "@", pickerId: "1" }, { id: "2", trigger: "!", pickerId: "1" });
+	assert.equal(writeControl(settings, mentionKey("2", "trigger"), " @"), false);
+	assert.equal(readControl(settings, mentionKey("2", "trigger")), "!");
+	assert.equal(writeControl(settings, mentionKey("2", "trigger"), ""), true);
+	assert.equal(writeControl(settings, mentionKey("1", "trigger"), ""), true);
 });
 
 test("typing a trigger in settings drops its spaces", () => {
 	const settings = defaultSettings();
-	assert.equal(writeControl(settings, MENTION_TRIGGER_KEY, "@ @"), true);
-	assert.equal(readControl(settings, MENTION_TRIGGER_KEY), "@@");
+	settings.mentions.push({ id: "1", trigger: "@", pickerId: "1" });
+	assert.equal(writeControl(settings, mentionKey("1", "trigger"), "@ @"), true);
+	assert.equal(readControl(settings, mentionKey("1", "trigger")), "@@");
+	assert.equal(writeControl(settings, mentionKey("1", "picker"), "2"), true);
+	assert.equal(readControl(settings, mentionKey("1", "picker")), "2");
 });

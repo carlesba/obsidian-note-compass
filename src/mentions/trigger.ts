@@ -20,6 +20,20 @@ export function mentionAt(lineBeforeCaret: string, trigger: string): MentionMatc
 	return { start, query };
 }
 
+export function closestMentionAt<T extends { trigger: string }>(
+	lineBeforeCaret: string,
+	candidates: readonly T[],
+): (MentionMatch & { candidate: T }) | undefined {
+	let closest: (MentionMatch & { candidate: T }) | undefined;
+	for (const candidate of candidates) {
+		const match = mentionAt(lineBeforeCaret, candidate.trigger);
+		if (!match) continue;
+		const wins = !closest || match.start > closest.start || (match.start === closest.start && candidate.trigger.length > closest.candidate.trigger.length);
+		if (wins) closest = { ...match, candidate };
+	}
+	return closest;
+}
+
 export function isInCode(linesAbove: readonly string[], lineBeforeCaret: string): boolean {
 	if (isInFrontmatter(linesAbove)) return true;
 	const fences = linesAbove.filter((line) => CODE_FENCE.test(line)).length;
