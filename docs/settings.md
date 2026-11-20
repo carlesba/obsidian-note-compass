@@ -15,7 +15,7 @@ The main page opens with a short note on what each of its four pages holds, then
 | Navigation | Your [navigation pickers](navigation.md#navigation-pickers), each offered in the command palette as "Navigation: <name>". |
 | Properties | The properties of the [Set properties](set-properties.md) picker, and "Checkbox behaviour". |
 | Forms | Your [forms](forms.md) and [custom fields](forms.md#custom-fields). |
-| Tasks | Your [task commands](task-commands.md), each offered under its name in the command palette. |
+| Tasks | Your [task commands](task-commands.md), each offered under its name in the command palette, and the [statuses](task-commands.md#statuses) a click or a status command applies. |
 | Integrations → Date notes source | Where date note formats come from, described in [Date notes](navigation.md#date-notes). The pencil edits the custom formats. |
 
 Click anywhere on one of the four rows to open its page, and use the back arrow at the top to return. A row's own page opens inside its section, so going back from a list's page lands on its navigation picker's page, and going back again lands on the Navigation page.

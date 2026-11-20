@@ -43,6 +43,7 @@ import { PrefixPages } from "./settings/prefixLinks";
 import { ResetSettingsModal } from "./settings/resetModal";
 import { checkboxModeOptions, newProperty } from "./settings/setPropertiesForm";
 import { warningDescription } from "./settings/suggest";
+import { taskStatusItems } from "./settings/taskStatusPages";
 import { tabPastRows } from "./settings/tabOrder";
 import { taskCommandPage, taskCommandPageId, taskCommandRow, taskDestinationsPages } from "./settings/taskCommandPage";
 import { newNumericId, newTaskCommand } from "./tasks/taskCommand";
@@ -58,6 +59,8 @@ const TYPED_FIELDS = [
 	"presetValues",
 	"rowName",
 	"trigger",
+	"symbol",
+	"color",
 ];
 
 const QUIETLY_SAVED_SCOPES = ["form", "formField", "formBlock", "customField", "fixedValue", "taskCommand", "taskAction"];
@@ -238,6 +241,7 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 		};
 		const taskCommandsList: SettingDefinitionList = {
 			type: "list",
+			heading: t("taskCommands"),
 			cls: SORTABLE_LIST_CLASS,
 			emptyState: t("noTaskCommandsYet"),
 			items: taskCommands.map((command) =>
@@ -298,6 +302,7 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 					]),
 					sectionPage(TASKS_PAGE_ID, t("tasksSection"), t("tasksSectionDesc"), [
 						taskCommandsList,
+						...taskStatusItems(this.plugin.settings.taskStatuses, context),
 						hiddenPages(taskCommands.flatMap((command) => [taskCommandPage(command, formContext), ...taskDestinationsPages(command, formContext)])),
 					]),
 				],

@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { defaultDateNoteSettings } from "../src/lists/dateNotes.ts";
+import { defaultTaskStatuses } from "../src/tasks/taskStatuses.ts";
 import { defaultSettings, mergeSettings, newListId, storedSettings } from "../src/settings.ts";
 import type { Condition } from "../src/lists/conditions.ts";
 import type { EditableProperty, EditablePropertyType, ListSource, NoteList, SetPropertiesSettings } from "../src/settings.ts";
@@ -64,6 +65,7 @@ test("defaultSettings enables every relation list in picker order and reads date
 		forms: [],
 		customFields: [],
 		taskCommands: [],
+		taskStatuses: defaultTaskStatuses(),
 		mentions: [],
 	});
 });
@@ -245,6 +247,7 @@ test("mergeSettings migrates the old shape into lists in picker order with custo
 		forms: [],
 		customFields: [],
 		taskCommands: [],
+		taskStatuses: defaultTaskStatuses(),
 		mentions: [],
 	});
 });
@@ -326,7 +329,7 @@ test("mergeSettings keeps saved lists in their order and round-trips its own out
 	};
 	const merged = mergeSettings(saved);
 	const { lists, ...rest } = saved;
-	assert.deepEqual(merged, { ...rest, notePickers: [{ id: "1", name: "Default", placeholder: "", filter: { kind: "group", mode: "all", items: [] }, lists }], setProperties: setPropertiesDefaults(), forms: [], customFields: [], taskCommands: [], mentions: [] });
+	assert.deepEqual(merged, { ...rest, notePickers: [{ id: "1", name: "Default", placeholder: "", filter: { kind: "group", mode: "all", items: [] }, lists }], setProperties: setPropertiesDefaults(), forms: [], customFields: [], taskCommands: [], taskStatuses: defaultTaskStatuses(), mentions: [] });
 	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(storedSettings(merged)))), merged);
 });
 

@@ -243,6 +243,46 @@ Cada comando nuevo empieza con una configuración Bullet Journal llamada "Proces
 
 Estos destinos predeterminados solo se aplican a comandos nuevos; los guardados no cambian.
 
+### Estados
+
+Define los estados que usan tus tareas, recorre los básicos con un clic y elige cualquiera desde un comando, en escritorio y en el móvil.
+
+1. Abre Ajustes → Note Compass → Tareas → Estados y elige un estado para abrir su página.
+2. Dale un "Símbolo", el carácter entre corchetes, y un "Nombre". Deja el símbolo vacío para un elemento de lista sin casilla.
+3. Activa "En el ciclo" en los estados que recorre un clic y arrastra las filas para ordenarlas.
+4. Activa "Ciclar al hacer clic".
+
+| Tú | Qué pasa |
+| --- | --- |
+| Haces clic o tocas una casilla en Vista previa en vivo o en Vista de lectura | La tarea pasa al siguiente estado del ciclo. Después del último vuelve al primero. |
+| Ejecutas "Ciclar estado de la tarea" | Cada tarea y elemento de lista de la selección, o de la línea del cursor, pasa a su siguiente estado del ciclo. |
+| Ejecutas "Establecer estado de la tarea" | Un selector lista todos los estados, con ➡️ en el actual. El estado elegido se aplica a cada tarea y elemento de lista de la selección, o de la línea del cursor. |
+
+Una instalación nueva tiene Pendiente `[ ]`, En curso `[/]`, Completada `[x]` y Cancelada `[-]` en el ciclo, además de Migrada `[>]` y Programada `[<]`.
+
+- Una tarea cuyo estado no está en el ciclo pasa al primer estado.
+- Un elemento de lista en el ciclo pierde la casilla; un clic no puede recuperarla, así que sigue con un comando.
+- Un símbolo no válido o repetido muestra un aviso y el estado se omite.
+- Solo cambia la casilla; no se añade fecha de finalización. Las líneas que no son elementos de lista no cambian.
+- Con "Ciclar al hacer clic" desactivado, un clic alterna la casilla como hace Obsidian, y los dos comandos siguen funcionando.
+- Las casillas dentro de una nota incrustada mantienen el comportamiento de Obsidian.
+- Asigna atajos a los comandos en Ajustes → Atajos de teclado.
+
+#### Iconos de estado
+
+El tema predeterminado de Obsidian dibuja todos los estados salvo `[ ]` como una casilla marcada, así que `[/]` y `[-]` se ven igual que `[x]`. "Dibujar iconos de estado" lo resuelve, y el "Tipo" de cada estado decide cómo se dibuja.
+
+| Tipo | Se dibuja como |
+| --- | --- |
+| Pendiente, Hecha | La casilla de tu tema, sin redibujar. |
+| En curso | Una casilla medio llena. |
+| Cancelada | Una casilla con un guion, y la línea tachada como una tarea hecha. |
+| Otro | El "Icono" que elijas: cualquier icono Lucide de Obsidian, buscado por nombre con vista previa, o "Predeterminado del tema". |
+
+- "Dibujar iconos de estado" está desactivado por defecto. Déjalo así si tu tema ya da estilo a estos estados, como hace Minimal.
+- "Color" fija el color del dibujo para En curso, Cancelada y Otro, con un selector de color y un campo HEX. Vacío usa el color de casilla del tema.
+- Una instalación nueva tiene Pendiente como Pendiente, En curso como En curso, Completada como Hecha, Cancelada como Cancelada, y Migrada y Programada como Otro con `arrow-right` y `calendar`.
+
 ### Comportamiento conocido
 - Las escrituras en varias notas no son atómicas: un fallo puede dejar algunas actualizadas y otras sin cambiar.
 - La copia conserva el texto de la línea, incluidos sufijos existentes e identificadores de bloque; estos se duplican, no se regeneran.

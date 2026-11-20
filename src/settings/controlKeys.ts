@@ -37,11 +37,25 @@ import {
 	writeTaskCommandSetting,
 } from "./taskCommandsForm.ts";
 import type { TaskActionSetting, TaskCommandSetting } from "./taskCommandsForm.ts";
+import { readTaskStatusField, writeTaskStatusField } from "../tasks/taskStatuses.ts";
+import type { TaskStatusField } from "../tasks/taskStatuses.ts";
 
 export const DATE_NOTE_SOURCE_KEY = "dateNotes/from";
 
 
 export const CHECKBOX_MODE_KEY = "setProperties/checkboxMode";
+
+export const CYCLE_ON_CLICK_KEY = "taskStatuses/cycleOnClick";
+
+export const DRAW_STATUS_ICONS_KEY = "taskStatuses/drawIcons";
+
+export function taskStatusKey(id: string, field: TaskStatusField): string {
+	return `taskStatus/${id}/${field}`;
+}
+
+function taskStatusField(field: string | undefined): TaskStatusField | undefined {
+	return field === "symbol" || field === "name" || field === "inCycle" || field === "type" || field === "icon" || field === "color" ? field : undefined;
+}
 
 export type MentionField = "trigger" | "picker";
 
@@ -126,7 +140,14 @@ export function periodKey(period: Period, field: PeriodField): string {
 export function readControl(settings: JumpSettings, key: string): unknown {
 	if (key === DATE_NOTE_SOURCE_KEY) return settings.dateNotes.from;
 	if (key === CHECKBOX_MODE_KEY) return settings.setProperties.checkboxMode;
+	if (key === CYCLE_ON_CLICK_KEY) return settings.taskStatuses.cycleOnClick;
+	if (key === DRAW_STATUS_ICONS_KEY) return settings.taskStatuses.drawIcons;
 	const [scope, name, field, index] = key.split("/");
+	if (scope === "taskStatus") {
+		const status = settings.taskStatuses.statuses.find((candidate) => candidate.id === name);
+		const statusField = taskStatusField(field);
+		return status && statusField ? readTaskStatusField(status, statusField) : undefined;
+	}
 	if (scope === "mention") {
 		const mention = settings.mentions.find((candidate) => candidate.id === name);
 		if (field === "trigger") return mention?.trigger;
@@ -173,7 +194,20 @@ export function writeControl(settings: JumpSettings, key: string, value: unknown
 		if (mode) settings.setProperties.checkboxMode = mode;
 		return mode !== undefined;
 	}
+	if (key === CYCLE_ON_CLICK_KEY) {
+		settings.taskStatuses.cycleOnClick = value === true;
+		return true;
+	}
+	if (key === DRAW_STATUS_ICONS_KEY) {
+		settings.taskStatuses.drawIcons = value === true;
+		return true;
+	}
 	const [scope, name, field, index] = key.split("/");
+	if (scope === "taskStatus") {
+		const status = settings.taskStatuses.statuses.find((candidate) => candidate.id === name);
+		const statusField = taskStatusField(field);
+		return status && statusField ? writeTaskStatusField(status, statusField, value) : false;
+	}
 	if (scope === "mention") {
 		const mention = settings.mentions.find((candidate) => candidate.id === name);
 		if (!mention) return false;

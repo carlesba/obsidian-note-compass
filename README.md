@@ -56,6 +56,7 @@ Complete, cancel, migrate or schedule tasks in the active note, or in the notes 
 
 - Choose which task statuses to list or skip.
 - Change status, add a completion date, or copy tasks to periodic or specific notes.
+- Click or tap a checkbox to step through your basic statuses, such as `[ ]` → `[/]` → `[x]`, and pick any other status from a command, for one task or a whole selection.
 - Stage a batch and finish when ready, or cancel without writing.
 
 [Read more about Task commands](docs/task-commands.md)
@@ -88,7 +89,7 @@ The defaults give you the four relation lists in the "Default" navigation picker
 - [Navigation](docs/navigation.md): lists, relation lists, date notes and filtering.
 - [Set properties](docs/set-properties.md): picker rows, value pickers, presets and checkboxes.
 - [Forms](docs/forms.md): running a form, form settings, fields, custom fields and placeholders.
-- [Task commands](docs/task-commands.md): status filters, actions, destinations and batch processing.
+- [Task commands](docs/task-commands.md): status filters, actions, destinations, batch processing and statuses.
 - [Settings](docs/settings.md): the main page and its Navigation, Properties, Forms and Tasks pages, rows, prefixes, list filters and property pages.
 - [Tips and known behaviour](docs/tips.md)
 - [Development](docs/development.md)

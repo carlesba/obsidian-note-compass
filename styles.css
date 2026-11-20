@@ -822,3 +822,35 @@
 .note-compass-status-pills input.note-compass-status-input {
 	width: 4em;
 }
+
+.note-compass-status-icon {
+	display: inline-flex;
+	align-items: center;
+	flex-shrink: 0;
+	width: var(--icon-size);
+	height: var(--icon-size);
+	color: var(--note-compass-status-color, var(--checkbox-color));
+}
+
+.setting-item-name .note-compass-status-icon {
+	margin-inline-end: var(--size-4-2);
+	vertical-align: middle;
+}
+
+.note-compass-status-icon-name {
+	color: var(--text-muted);
+}
+
+.note-compass-icon-suggestion {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2);
+}
+
+input.note-compass-status-hex {
+	width: 7em;
+}
+
+input.note-compass-status-hex.is-invalid {
+	border-color: var(--text-error);
+}

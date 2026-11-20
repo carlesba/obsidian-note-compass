@@ -1,6 +1,6 @@
 # Task commands
 
-Process the tasks in the active Markdown note, or in any notes you choose, with your own command-palette commands.
+Process the tasks in the active Markdown note, or in any notes you choose, with your own command-palette commands, and cycle a task through your own statuses with a click.
 
 [← Back to the README](../README.md)
 
@@ -108,6 +108,46 @@ A new command starts with a Bullet Journal setup named "Process open tasks": ena
 | 🚫 Cancel | `[-]` | Completion date Off. |
 | ➡️ Migrate | `[>]` | Tomorrow, This week, Next week, This month; links the destination only. |
 | 📅 Schedule | `[<]` | Next month, Next quarter, Next year; links both destination and source. |
+
+## Statuses
+
+Define the statuses your tasks use, step through the basic ones with a click, and pick any of them from a command, on desktop and on mobile.
+
+1. Open Settings → Note Compass → Tasks → Statuses, and choose a status to open its page.
+2. Give it a "Symbol", the character between the brackets, and a "Name". Leave the symbol empty for a plain list item without a checkbox.
+3. Turn on "In the cycle" for the statuses a click steps through, and drag the rows into order.
+4. Turn on "Cycle on click".
+
+| You | What happens |
+| --- | --- |
+| Click or tap a checkbox in Live Preview or Reading view | The task moves to the next status in the cycle. After the last one, it starts again at the first. |
+| Run "Cycle task status" | Every task and list item in the selection, or on the cursor's line, moves to its next status in the cycle. |
+| Run "Set task status" | A picker lists every status, with ➡️ on the current one. The chosen status applies to every task and list item in the selection, or on the cursor's line. |
+
+A new install has Open `[ ]`, In progress `[/]`, Completed `[x]` and Cancelled `[-]` in the cycle, plus Migrated `[>]` and Scheduled `[<]`.
+
+- A task whose status is not in the cycle moves to the first status.
+- A list item in the cycle loses its checkbox; a click cannot bring it back, so continue with a command.
+- An invalid or repeated symbol shows a warning, and the status is skipped.
+- Only the checkbox changes; no completion date is added. Lines that are not list items are left alone.
+- With "Cycle on click" off, a click toggles the checkbox as Obsidian does, and both commands still work.
+- Checkboxes inside an embedded note keep Obsidian's own toggle.
+- Give the commands hotkeys under Settings → Hotkeys.
+
+### Status icons
+
+Obsidian's default theme draws every status except `[ ]` as a checked box, so `[/]` and `[-]` look the same as `[x]`. "Draw status icons" fixes that, and each status's "Type" decides how it is drawn.
+
+| Type | Drawn as |
+| --- | --- |
+| Todo, Done | Your theme's own checkbox, never redrawn. |
+| In progress | A half-filled box. |
+| Cancelled | A box with a dash, and the line struck through like a done task. |
+| Other | The "Icon" you choose: any Lucide icon Obsidian ships, searched by name with a preview, or "Theme default". |
+
+- "Draw status icons" is off by default. Leave it off when your theme already styles these statuses, as Minimal does.
+- "Colour" sets the drawing's colour for In progress, Cancelled and Other, with a colour picker and a HEX field. Empty uses the theme's checkbox colour.
+- A new install has Open as Todo, In progress as In progress, Completed as Done, Cancelled as Cancelled, and Migrated and Scheduled as Other with `arrow-right` and `calendar`.
 
 ## Known behaviour
 

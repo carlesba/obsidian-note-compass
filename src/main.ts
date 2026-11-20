@@ -1,4 +1,5 @@
 import { MarkdownView, Notice, Plugin, getLanguage } from "obsidian";
+import type { Editor } from "obsidian";
 import { ChoiceModal } from "./choiceModal";
 import { fillForm, isRunnable, pickForm } from "./forms/modal";
 import { formName } from "./forms/questions";
@@ -14,7 +15,11 @@ import { setProperties } from "./setProperties/modal";
 import { JumpSettings, defaultSettings, isRunnableNotePicker, mergeSettings, notePickerName, notePickerPlaceholder, storedSettings } from "./settings";
 import type { NotePicker } from "./settings";
 import { NoteCompassSettingTab } from "./settingsTab";
+import { CheckboxCycler, cursorSymbol, cycleSelectedTasks, selectsListLines, setSelectedStatus } from "./tasks/statusEditing";
 import { runTaskCommand } from "./tasks/modal";
+import { StatusIconStyles } from "./tasks/statusIconStyles";
+import { taskStatusChoices } from "./tasks/taskStatuses";
+import type { TaskStatusChoice } from "./tasks/taskStatuses";
 import { isRunnableTaskCommand, taskCommandName } from "./tasks/taskCommand";
 
 export default class NoteCompassPlugin extends Plugin {
@@ -23,6 +28,7 @@ export default class NoteCompassPlugin extends Plugin {
 	private formCommandIds: string[] = [];
 	private taskCommandIds: string[] = [];
 	private notePickerCommandIds: string[] = [];
+	private readonly statusIconStyles = new StatusIconStyles(this.app);
 
 	async onload(): Promise<void> {
 		try {
@@ -60,6 +66,27 @@ export default class NoteCompassPlugin extends Plugin {
 			callback: () => pickForm(this.app, createObsidianVault(this.app), this.settings.forms, this.settings.dateNotes, this.currentNote()?.path),
 		});
 
+		this.addCommand({
+			id: "cycle-task-status",
+			name: t("cycleTaskStatus"),
+			icon: "refresh-cw",
+			editorCheckCallback: (checking, editor) => cycleSelectedTasks(editor, this.settings.taskStatuses, checking),
+		});
+
+		this.addCommand({
+			id: "set-task-status",
+			name: t("setTaskStatus"),
+			icon: "list-todo",
+			editorCheckCallback: (checking, editor) => {
+				if (!selectsListLines(editor)) return false;
+				if (!checking) this.pickTaskStatus(editor);
+				return true;
+			},
+		});
+
+		new CheckboxCycler(this.app, () => this.settings.taskStatuses).register(this);
+		this.statusIconStyles.register(this);
+		this.statusIconStyles.update(this.settings.taskStatuses);
 		this.registerEditorSuggest(new MentionSuggest(this.app, () => this.settings));
 		this.registerNotePickerCommands();
 		this.registerFormCommands();
@@ -78,6 +105,7 @@ export default class NoteCompassPlugin extends Plugin {
 	}
 
 	private applySettings(): void {
+		this.statusIconStyles.update(this.settings.taskStatuses);
 		this.registerNotePickerCommands();
 		this.registerFormCommands();
 		this.registerTaskCommands();
@@ -101,6 +129,14 @@ export default class NoteCompassPlugin extends Plugin {
 		}
 		new ChoiceModal<NotePickerChoice>(this.app, t("pickANotePicker"), (query) => notePickerChoices(pickers, query), {
 			choose: ({ picker }) => this.openJumpModal(picker),
+			dismiss: () => undefined,
+		}).open();
+	}
+
+	private pickTaskStatus(editor: Editor): void {
+		const current = cursorSymbol(editor);
+		new ChoiceModal<TaskStatusChoice>(this.app, t("pickTaskStatus"), (query) => taskStatusChoices(this.settings.taskStatuses.statuses, current, query), {
+			choose: ({ status }) => setSelectedStatus(editor, status.symbol),
 			dismiss: () => undefined,
 		}).open();
 	}

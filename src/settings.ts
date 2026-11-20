@@ -11,6 +11,8 @@ import { readFixedValues } from "./setProperties/fixedValues.ts";
 import type { FixedValue } from "./setProperties/fixedValues.ts";
 import { readTaskCommands, storedTaskCommands } from "./tasks/taskCommand.ts";
 import type { TaskCommand } from "./tasks/taskCommand.ts";
+import { readTaskStatuses } from "./tasks/taskStatuses.ts";
+import type { TaskStatusSettings } from "./tasks/taskStatuses.ts";
 import { readMentions } from "./mentions/settings.ts";
 import type { Mention } from "./mentions/settings.ts";
 
@@ -146,6 +148,7 @@ export interface JumpSettings {
 	forms: Form[];
 	customFields: CustomField[];
 	taskCommands: TaskCommand[];
+	taskStatuses: TaskStatusSettings;
 	mentions: Mention[];
 }
 
@@ -270,6 +273,7 @@ export function mergeSettings(stored: unknown): JumpSettings {
 		forms: readForms(data.forms),
 		customFields: readCustomFields(data.customFields),
 		taskCommands: readTaskCommands(data.taskCommands),
+		taskStatuses: readTaskStatuses(data.taskStatuses),
 		mentions: readMentions(data, notePickers),
 	};
 }
