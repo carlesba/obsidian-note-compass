@@ -96,7 +96,18 @@ export function heroiconSvg(icon: string): string | undefined {
 function statusRules(status: TaskStatus): string[] {
 	const color = statusColorValue(status.color);
 	const box = (border: string) =>
-		rule(selectors(status.symbol), { appearance: "none", "-webkit-appearance": "none", position: "relative", "background-color": "transparent", "border-color": border });
+		rule(selectors(status.symbol), {
+			appearance: "none",
+			"-webkit-appearance": "none",
+			position: "relative",
+			transform: "none",
+			"background-color": "transparent",
+			"background-image": "none",
+			border: `1px solid ${border}`,
+			"border-radius": "var(--checkbox-radius)",
+			"-webkit-mask-image": "none",
+			"mask-image": "none",
+		});
 	const drawing = (svg: string) => rule(selectors(status.symbol, "::after"), maskDeclarations(color, svg, "100%"));
 	switch (status.type) {
 		case "todo":

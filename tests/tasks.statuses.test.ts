@@ -221,3 +221,11 @@ test("a click steps only through the cycle's checkbox statuses, so a task never 
 	assert.deepEqual(clickCycleSymbols(statuses), [" ", "x"]);
 	assert.equal(changed("- [x] Done", cycleChange(clickCycleSymbols(statuses), "- [x] Done")), "- [ ] Done");
 });
+
+test("a drawn status clears the theme's own mask, rotation and fill, so a theme like Minimal cannot clip or turn the drawing", () => {
+	const css = statusIconCss({ cycleOnClick: false, drawIcons: true, statuses: [status("1", "<", "Scheduled", false, "calendar", "red")] });
+	assert.match(css, /-webkit-mask-image: none !important/);
+	assert.match(css, /transform: none !important/);
+	assert.match(css, /background-color: transparent !important/);
+	assert.match(css, /border: 1px solid transparent !important/);
+});
