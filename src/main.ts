@@ -19,6 +19,7 @@ import { isRunnableTaskCommand, taskCommandName } from "./tasks/taskCommand";
 
 export default class NoteCompassPlugin extends Plugin {
 	settings: JumpSettings = defaultSettings();
+	private settingTab?: NoteCompassSettingTab;
 	private formCommandIds: string[] = [];
 	private taskCommandIds: string[] = [];
 	private notePickerCommandIds: string[] = [];
@@ -30,7 +31,8 @@ export default class NoteCompassPlugin extends Plugin {
 			setLanguage(DEFAULT_LANGUAGE);
 		}
 		this.settings = mergeSettings(await this.loadData());
-		this.addSettingTab(new NoteCompassSettingTab(this.app, this));
+		this.settingTab = new NoteCompassSettingTab(this.app, this);
+		this.addSettingTab(this.settingTab);
 
 		this.addCommand({
 			id: "select-navigation-picker",
@@ -64,8 +66,18 @@ export default class NoteCompassPlugin extends Plugin {
 		this.registerTaskCommands();
 	}
 
+	async onExternalSettingsChange(): Promise<void> {
+		this.settings = mergeSettings(await this.loadData());
+		this.applySettings();
+		this.settingTab?.update();
+	}
+
 	async saveSettings(): Promise<void> {
 		await this.saveData(storedSettings(this.settings));
+		this.applySettings();
+	}
+
+	private applySettings(): void {
 		this.registerNotePickerCommands();
 		this.registerFormCommands();
 		this.registerTaskCommands();
