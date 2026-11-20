@@ -1,3 +1,4 @@
+import { HEROICONS } from "./heroicons.ts";
 import { BULLET_SYMBOL, isThemeDrawn, usableStatuses } from "./taskStatuses.ts";
 import type { StatusColor, TaskStatus, TaskStatusSettings, TaskStatusType } from "./taskStatuses.ts";
 
@@ -85,12 +86,14 @@ function maskDeclarations(color: string, svg: string, size: string): Record<stri
 	};
 }
 
-export function maskSvg(svg: string): string {
-	const withNamespace = /xmlns=/.test(svg) ? svg : svg.replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"');
-	return withNamespace.replace(/currentColor/g, "black");
+export function heroiconSvg(icon: string): string | undefined {
+	const paths = HEROICONS[icon];
+	if (!paths) return undefined;
+	const shapes = paths.map(([d, evenOdd]) => (evenOdd ? `<path fill-rule="evenodd" clip-rule="evenodd" d="${d}"/>` : `<path d="${d}"/>`)).join("");
+	return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="black">${shapes}</svg>`;
 }
 
-function statusRules(status: TaskStatus, iconSvg: (icon: string) => string | undefined): string[] {
+function statusRules(status: TaskStatus): string[] {
 	const color = statusColorValue(status.color);
 	const box = (border: string) =>
 		rule(selectors(status.symbol), { appearance: "none", "-webkit-appearance": "none", position: "relative", "background-color": "transparent", "border-color": border });
@@ -108,16 +111,16 @@ function statusRules(status: TaskStatus, iconSvg: (icon: string) => string | und
 				rule(lineSelectors(status.symbol), { "text-decoration": "var(--checklist-done-decoration)", color: "var(--checklist-done-color)" }),
 			];
 		case "other": {
-			const svg = status.icon === "" ? undefined : iconSvg(status.icon);
-			return svg ? [box("transparent"), drawing(maskSvg(svg))] : [];
+			const svg = heroiconSvg(status.icon);
+			return svg ? [box("transparent"), drawing(svg)] : [];
 		}
 	}
 }
 
-export function statusIconCss(settings: TaskStatusSettings, iconSvg: (icon: string) => string | undefined): string {
+export function statusIconCss(settings: TaskStatusSettings): string {
 	if (!settings.drawIcons) return "";
 	return usableStatuses(settings.statuses)
 		.filter((status) => status.symbol !== BULLET_SYMBOL && !isThemeDrawn(status))
-		.flatMap((status) => statusRules(status, iconSvg))
+		.flatMap(statusRules)
 		.join("\n\n");
 }

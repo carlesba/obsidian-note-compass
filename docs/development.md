@@ -23,6 +23,7 @@ npm run lint
 | `npm run build` | Typechecks and writes the production bundle. |
 | `npm test` | Runs the unit tests. |
 | `npm run lint` | Runs the same Obsidian lint rules the community review applies. |
+| `npm run icons` | Regenerates `src/tasks/heroicons.ts` from the installed `heroicons` package. |
 
 ## Trying the plugin in a test vault
 

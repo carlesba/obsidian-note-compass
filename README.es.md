@@ -261,9 +261,9 @@ Define los estados que usan tus tareas, recorre los básicos con un clic y elige
 Una instalación nueva tiene Pendiente `[ ]`, En curso `[/]`, Completada `[x]` y Cancelada `[-]` en el ciclo, además de Migrada `[>]` y Programada `[<]`.
 
 - Una tarea cuyo estado no está en el ciclo pasa al primer estado.
-- Un elemento de lista en el ciclo pierde la casilla; un clic no puede recuperarla, así que sigue con un comando.
+- Un clic se salta el elemento de lista, así que la tarea conserva la casilla y pasa del último estado con casilla al primero. Los comandos sí incluyen el elemento de lista.
 - Un símbolo no válido o repetido muestra un aviso y el estado se omite.
-- Solo cambia la casilla; no se añade fecha de finalización. Las líneas que no son elementos de lista no cambian.
+- Solo cambia la casilla; no se añade fecha de finalización. Una línea de texto o vacía se convierte en elemento de lista o tarea cuando un comando se ejecuta solo sobre ella, o dentro de una selección si tiene texto; las líneas vacías de una selección se omiten, y un clic nunca convierte una línea.
 - Con "Ciclar al hacer clic" desactivado, un clic alterna la casilla como hace Obsidian, y los dos comandos siguen funcionando.
 - Las casillas dentro de una nota incrustada mantienen el comportamiento de Obsidian.
 - Asigna atajos a los comandos en Ajustes → Atajos de teclado.
@@ -277,11 +277,11 @@ El tema predeterminado de Obsidian dibuja todos los estados salvo `[ ]` como una
 | Pendiente, Hecha | La casilla de tu tema, sin redibujar. |
 | En curso | Una casilla medio llena. |
 | Cancelada | Una casilla con un guion, y la línea tachada como una tarea hecha. |
-| Otro | El "Icono" que elijas: cualquier icono Lucide de Obsidian, buscado por nombre con vista previa, o "Predeterminado del tema". |
+| Otro | El "Icono" que elijas: cualquiera de los 324 [Heroicons](https://heroicons.com) sólidos que incluye el complemento, el conjunto que usa Minimal, buscado por nombre con vista previa, o "Predeterminado del tema". |
 
 - "Dibujar iconos de estado" está desactivado por defecto. Déjalo así si tu tema ya da estilo a estos estados, como hace Minimal.
 - "Color" fija el color del dibujo para En curso, Cancelada y Otro: Predeterminado del tema, Acento, Gris, o uno de los colores del tema (rojo, naranja, amarillo, verde, cian, azul, morado y rosa), así que sigue el modo claro y el oscuro.
-- Una instalación nueva tiene Pendiente como Pendiente, En curso como En curso, Completada como Hecha, Cancelada como Cancelada, y Migrada y Programada como Otro con `arrow-right` y `calendar`.
+- Una instalación nueva tiene Pendiente como Pendiente, En curso como En curso, Completada como Hecha, Cancelada como Cancelada, y Migrada y Programada como Otro con `paper-airplane` y `calendar`.
 
 ### Comportamiento conocido
 - Las escrituras en varias notas no son atómicas: un fallo puede dejar algunas actualizadas y otras sin cambiar.
@@ -452,4 +452,4 @@ ln -s "$PWD" "<vault>/.obsidian/plugins/note-compass"
 
 ## Licencia
 
-MIT, consulta [LICENSE](LICENSE).
+MIT, consulta [LICENSE](LICENSE). Los iconos de estado son [Heroicons](https://heroicons.com) de Tailwind Labs, con licencia MIT; su aviso está en `src/tasks/heroicons.ts`.

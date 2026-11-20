@@ -616,6 +616,8 @@ export const es: Translation = {
 	statusTypeDone: "Hecha",
 	statusTypeCancelled: "Cancelada",
 	statusTypeOther: "Otro",
+	statusDrawingOff: "Icono y color ocultos",
+	statusDrawingOffDesc: "Activa \"Dibujar iconos de estado\" en Tareas para dar a este estado un icono y un color. Mientras esté desactivado, tu tema dibuja todos los estados.",
 	statusIconDesc: "Lo que muestra la casilla cuando \"Dibujar iconos de estado\" está activado. \"Predeterminado del tema\" deja este estado al tema.",
 	statusIcon: "Icono",
 	chooseIcon: "Elegir icono",

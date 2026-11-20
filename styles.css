@@ -839,6 +839,7 @@
 
 .note-compass-status-icon-name {
 	color: var(--text-muted);
+	white-space: nowrap;
 }
 
 .note-compass-icon-suggestion {

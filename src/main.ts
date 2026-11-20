@@ -15,7 +15,7 @@ import { setProperties } from "./setProperties/modal";
 import { JumpSettings, defaultSettings, isRunnableNotePicker, mergeSettings, notePickerName, notePickerPlaceholder, storedSettings } from "./settings";
 import type { NotePicker } from "./settings";
 import { NoteCompassSettingTab } from "./settingsTab";
-import { CheckboxCycler, cursorSymbol, cycleSelectedTasks, selectsListLines, setSelectedStatus } from "./tasks/statusEditing";
+import { CheckboxCycler, cursorSymbol, cycleSelectedTasks, setSelectedStatus } from "./tasks/statusEditing";
 import { runTaskCommand } from "./tasks/modal";
 import { StatusIconStyles } from "./tasks/statusIconStyles";
 import { taskStatusChoices } from "./tasks/taskStatuses";
@@ -77,11 +77,7 @@ export default class NoteCompassPlugin extends Plugin {
 			id: "set-task-status",
 			name: t("setTaskStatus"),
 			icon: "list-todo",
-			editorCheckCallback: (checking, editor) => {
-				if (!selectsListLines(editor)) return false;
-				if (!checking) this.pickTaskStatus(editor);
-				return true;
-			},
+			editorCallback: (editor) => this.pickTaskStatus(editor),
 		});
 
 		new CheckboxCycler(this.app, () => this.settings.taskStatuses).register(this);

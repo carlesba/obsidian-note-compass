@@ -1,6 +1,6 @@
 import type { EditorView } from "@codemirror/view";
 import type { App, Editor, EditorChange, MarkdownPostProcessorContext, Plugin } from "obsidian";
-import { BULLET_SYMBOL, applyLineChange, changedContent, cycleChange, cycleSymbols, lineSymbol, symbolChange } from "./taskStatuses";
+import { BULLET_SYMBOL, applyLineChange, changedContent, convertsPlainLine, clickCycleSymbols, cursorAfterChange, cycleChange, cycleSymbols, lineSymbol, symbolChange } from "./taskStatuses";
 import type { LineChange, TaskStatusSettings } from "./taskStatuses";
 
 const CHECKBOX_CLASS = "task-list-item-checkbox";
@@ -26,28 +26,33 @@ function selectedLines(editor: Editor): number[] {
 	return [...lines].sort((a, b) => a - b);
 }
 
-function changeSelectedLines(editor: Editor, change: (text: string) => LineChange | undefined, checking: boolean): boolean {
+function changeSelectedLines(editor: Editor, change: (text: string, convertsPlainText: boolean) => LineChange | undefined, checking: boolean): boolean {
+	const lines = selectedLines(editor);
 	const changes: EditorChange[] = [];
-	for (const line of selectedLines(editor)) {
-		const edit = change(editor.getLine(line));
-		if (edit) changes.push({ from: { line, ch: edit.from }, to: { line, ch: edit.to }, text: edit.insert });
+	let cursorEdit: LineChange | undefined;
+	for (const line of lines) {
+		const text = editor.getLine(line);
+		const edit = change(text, convertsPlainLine(text, lines.length));
+		if (!edit) continue;
+		changes.push({ from: { line, ch: edit.from }, to: { line, ch: edit.to }, text: edit.insert });
+		cursorEdit = edit;
 	}
 	if (changes.length === 0) return false;
-	if (!checking) editor.transaction({ changes });
+	if (checking) return true;
+	const cursor = editor.getCursor("head");
+	if (lines.length === 1 && !editor.somethingSelected() && cursorEdit) {
+		editor.transaction({ changes, selection: { from: { line: cursor.line, ch: cursorAfterChange(cursor.ch, cursorEdit) } } });
+	} else editor.transaction({ changes });
 	return true;
 }
 
 export function cycleSelectedTasks(editor: Editor, settings: TaskStatusSettings, checking: boolean): boolean {
 	const cycle = cycleSymbols(settings.statuses);
-	return changeSelectedLines(editor, (text) => cycleChange(cycle, text), checking);
-}
-
-export function selectsListLines(editor: Editor): boolean {
-	return selectedLines(editor).some((line) => lineSymbol(editor.getLine(line)) !== undefined);
+	return changeSelectedLines(editor, (text, convertsPlainText) => cycleChange(cycle, text, undefined, convertsPlainText), checking);
 }
 
 export function setSelectedStatus(editor: Editor, symbol: string): void {
-	changeSelectedLines(editor, (text) => symbolChange(text, symbol), false);
+	changeSelectedLines(editor, (text, convertsPlainText) => symbolChange(text, symbol, convertsPlainText), false);
 }
 
 export function cursorSymbol(editor: Editor): string | undefined {
@@ -75,7 +80,7 @@ export class CheckboxCycler {
 
 	private onClick(event: MouseEvent): void {
 		const settings = this.settings();
-		const cycle = cycleSymbols(settings.statuses);
+		const cycle = clickCycleSymbols(settings.statuses);
 		if (!settings.cycleOnClick || cycle.length === 0 || event.button !== 0) return;
 		const checkbox = event.targetNode;
 		if (!checkbox?.instanceOf(HTMLInputElement) || !checkbox.hasClass(CHECKBOX_CLASS) || checkbox.closest(EMBED_SELECTOR)) return;

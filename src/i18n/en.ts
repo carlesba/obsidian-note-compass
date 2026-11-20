@@ -615,6 +615,8 @@ export const en = {
 	statusTypeDone: "Done",
 	statusTypeCancelled: "Cancelled",
 	statusTypeOther: "Other",
+	statusDrawingOff: "Icon and colour are hidden",
+	statusDrawingOffDesc: "Turn on \"Draw status icons\" under Tasks to give this status an icon and a colour. While it is off, your theme draws every status.",
 	statusIconDesc: "What the checkbox shows when \"Draw status icons\" is on. \"Theme default\" leaves this status to your theme.",
 	statusIcon: "Icon",
 	chooseIcon: "Choose icon",

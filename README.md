@@ -112,4 +112,4 @@ See [Development](docs/development.md) for what each command does and how to try
 
 ## License
 
-MIT, see [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE). The status icons are [Heroicons](https://heroicons.com) by Tailwind Labs, MIT licensed; their notice is in `src/tasks/heroicons.ts`.

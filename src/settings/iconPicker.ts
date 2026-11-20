@@ -1,29 +1,34 @@
-import { SuggestModal, getIconIds, setIcon } from "obsidian";
+import { SuggestModal, setIcon } from "obsidian";
 import type { App } from "obsidian";
 import { t } from "../i18n";
 import { matchesInOrder } from "../render";
+import { HEROICONS } from "../tasks/heroicons";
 
 const SUGGESTED_ICONS = [
-	"arrow-right",
+	"paper-airplane",
 	"calendar",
-	"circle-slash-2",
-	"info",
-	"triangle-alert",
-	"ban",
-	"octagon-x",
-	"trending-up",
-	"trending-down",
-	"map-pin",
-	"bookmark",
-	"thumbs-up",
-	"thumbs-down",
-	"key-round",
-	"flame",
+	"arrow-right",
+	"information-circle",
+	"exclamation-triangle",
+	"exclamation-circle",
+	"no-symbol",
+	"x-circle",
+	"question-mark-circle",
 	"star",
-	"circle-help",
+	"bookmark",
+	"fire",
+	"key",
+	"light-bulb",
+	"map-pin",
+	"flag",
+	"clock",
+	"hand-thumb-up",
+	"hand-thumb-down",
+	"arrow-trending-up",
+	"arrow-trending-down",
+	"chat-bubble-left",
+	"currency-dollar",
 ];
-
-const SUGGESTION_LIMIT = 200;
 
 export function iconName(icon: string): string {
 	return icon === "" ? t("iconThemeDefault") : icon;
@@ -33,31 +38,34 @@ export function renderIconPreview(el: HTMLElement, icon: string, color: string):
 	el.empty();
 	el.addClass("note-compass-status-icon");
 	el.setCssProps({ "--note-compass-status-color": color });
-	if (icon !== "") setIcon(el, icon);
+	const paths = HEROICONS[icon];
+	if (!paths) {
+		if (icon !== "") setIcon(el, icon);
+		return;
+	}
+	const svg = el.createSvg("svg", { attr: { viewBox: "0 0 20 20", fill: "currentColor", width: "100%", height: "100%" } });
+	for (const [d, evenOdd] of paths) svg.createSvg("path", { attr: evenOdd ? { d, "fill-rule": "evenodd", "clip-rule": "evenodd" } : { d } });
 }
 
-function lucideIds(): string[] {
-	return [...new Set(getIconIds().map((id) => id.replace(/^lucide-/, "")))].sort();
-}
+const ALL_ICONS = Object.keys(HEROICONS);
 
 export class IconPickerModal extends SuggestModal<string> {
 	private readonly color: string;
 	private readonly choose: (icon: string) => void;
-	private allIcons?: string[];
 
 	constructor(app: App, color: string, choose: (icon: string) => void) {
 		super(app);
 		this.color = color;
 		this.choose = choose;
-		this.limit = SUGGESTION_LIMIT;
+		this.limit = Number.MAX_SAFE_INTEGER;
 		this.setPlaceholder(t("searchIcons"));
 	}
 
 	getSuggestions(query: string): string[] {
 		const fixed = [""];
-		const allIcons = (this.allIcons = this.allIcons ?? lucideIds());
-		if (query.trim() === "") return [...fixed, ...SUGGESTED_ICONS.filter((icon) => allIcons.includes(icon))];
-		return [...fixed, ...allIcons].filter((icon) => matchesInOrder(query, iconName(icon)));
+		const suggested = SUGGESTED_ICONS.filter((icon) => ALL_ICONS.includes(icon));
+		const ordered = [...fixed, ...suggested, ...ALL_ICONS.filter((icon) => !suggested.includes(icon))];
+		return query.trim() === "" ? ordered : ordered.filter((icon) => matchesInOrder(query, iconName(icon)));
 	}
 
 	renderSuggestion(icon: string, el: HTMLElement): void {

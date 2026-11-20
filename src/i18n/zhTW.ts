@@ -617,6 +617,8 @@ export const zhTW: Translation = {
 	statusTypeDone: "完成",
 	statusTypeCancelled: "已取消",
 	statusTypeOther: "其他",
+	statusDrawingOff: "圖示和顏色已隱藏",
+	statusDrawingOffDesc: "在「任務」中開啟「繪製狀態圖示」，即可為此狀態設定圖示和顏色。關閉時，所有狀態都由佈景主題繪製。",
 	statusIconDesc: "開啟「繪製狀態圖示」時核取方塊顯示的內容。「佈景主題預設」表示由佈景主題決定此狀態的外觀。",
 	statusIcon: "圖示",
 	chooseIcon: "選擇圖示",

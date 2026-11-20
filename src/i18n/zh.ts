@@ -617,6 +617,8 @@ export const zh: Translation = {
 	statusTypeDone: "完成",
 	statusTypeCancelled: "已取消",
 	statusTypeOther: "其他",
+	statusDrawingOff: "图标和颜色已隐藏",
+	statusDrawingOffDesc: "在“任务”中打开“绘制状态图标”，即可为此状态设置图标和颜色。关闭时，所有状态都由主题绘制。",
 	statusIconDesc: "开启“绘制状态图标”时复选框显示的内容。“主题默认”表示由主题决定此状态的外观。",
 	statusIcon: "图标",
 	chooseIcon: "选择图标",

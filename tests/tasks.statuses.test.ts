@@ -2,15 +2,19 @@ import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import { defaultSettings, mergeSettings, storedSettings } from "../src/settings.ts";
 import { CYCLE_ON_CLICK_KEY, DRAW_STATUS_ICONS_KEY, readControl, taskStatusKey, writeControl } from "../src/settings/controlKeys.ts";
-import { maskSvg, statusIconCss } from "../src/tasks/statusIcons.ts";
+import { heroiconSvg, statusIconCss } from "../src/tasks/statusIcons.ts";
 import {
 	applyLineChange,
 	changedContent,
+	clickCycleSymbols,
+	convertsPlainLine,
+	cursorAfterChange,
 	cycleChange,
 	cycleSymbols,
 	lineSymbol,
 	newTaskStatus,
 	nextCycleSymbol,
+	readIcon,
 	readTaskStatuses,
 	typeForSymbol,
 	symbolChange,
@@ -40,14 +44,14 @@ test("a fresh install cycles open, in progress, completed and cancelled, also of
 			["/", "In progress", true, "inProgress", ""],
 			["x", "Completed", true, "done", ""],
 			["-", "Cancelled", true, "cancelled", ""],
-			[">", "Migrated", false, "other", "arrow-right"],
+			[">", "Migrated", false, "other", "paper-airplane"],
 			["<", "Scheduled", false, "other", "calendar"],
 		],
 	);
 });
 
 test("statuses keep their id, symbol, name and cycle mark through a save and reload, and broken entries are repaired", () => {
-	const statuses = [status("4", "i", "Info", false, "info", "blue"), status("7", "", "Note", true)];
+	const statuses = [status("4", "i", "Info", false, "information-circle", "blue"), status("7", "", "Note", true)];
 	const settings = mergeSettings({ taskStatuses: { cycleOnClick: true, drawIcons: true, statuses } });
 	assert.deepEqual(settings.taskStatuses, { cycleOnClick: true, drawIcons: true, statuses });
 	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(storedSettings(settings)))).taskStatuses, settings.taskStatuses);
@@ -67,11 +71,12 @@ test("the click toggle and each status's fields read and write through control k
 	assert.equal(writeControl(settings, taskStatusKey(id, "inCycle"), true), true);
 	assert.equal(writeControl(settings, taskStatusKey(id, "type"), "other"), true);
 	assert.equal(writeControl(settings, taskStatusKey(id, "type"), "unknown"), false);
-	assert.equal(writeControl(settings, taskStatusKey(id, "icon"), "ban"), true);
+	assert.equal(writeControl(settings, taskStatusKey(id, "icon"), "no-symbol"), true);
+	assert.equal(writeControl(settings, taskStatusKey(id, "icon"), "ban"), false);
 	assert.equal(writeControl(settings, taskStatusKey(id, "color"), "red"), true);
 	assert.equal(writeControl(settings, taskStatusKey(id, "color"), "#e5534b"), false);
 	assert.equal(writeControl(settings, DRAW_STATUS_ICONS_KEY, true), true);
-	assert.deepEqual(settings.taskStatuses.statuses[3], status(id, "c", "Dropped", true, "ban", "red", "other"));
+	assert.deepEqual(settings.taskStatuses.statuses[3], status(id, "c", "Dropped", true, "no-symbol", "red", "other"));
 	assert.equal(settings.taskStatuses.drawIcons, true);
 	assert.equal(readControl(settings, taskStatusKey(id, "inCycle")), true);
 	assert.equal(writeControl(settings, taskStatusKey("99", "name"), "Missing"), false);
@@ -153,17 +158,16 @@ test("a status saved without a type gets the one its symbol implies", () => {
 
 test("the theme keeps drawing todo and done; in progress and cancelled get the standard look; other draws its chosen icon", () => {
 	const statuses = [
-		status("1", " ", "Open", true, "info"),
-		status("2", "x", "Done", true, "info", "accent"),
+		status("1", " ", "Open", true, "information-circle"),
+		status("2", "x", "Done", true, "information-circle", "accent"),
 		status("3", "/", "In progress", true),
 		status("4", "-", "Cancelled", true, "", "red"),
-		status("5", "i", "Info", false, "info"),
+		status("5", "i", "Info", false, "information-circle"),
 		status("6", "?", "Question"),
-		status("7", "", "List item", false, "info", "", "other"),
+		status("7", "", "List item", false, "information-circle", "", "other"),
 	];
-	const icons: Record<string, string> = { info: '<svg viewBox="0 0 24 24" stroke="currentColor"><circle r="10"/></svg>' };
-	assert.equal(statusIconCss({ cycleOnClick: false, drawIcons: false, statuses }, (icon) => icons[icon]), "");
-	const css = statusIconCss({ cycleOnClick: false, drawIcons: true, statuses }, (icon) => icons[icon]);
+	assert.equal(statusIconCss({ cycleOnClick: false, drawIcons: false, statuses }), "");
+	const css = statusIconCss({ cycleOnClick: false, drawIcons: true, statuses });
 	assert.doesNotMatch(css, /data-task=" "/);
 	assert.doesNotMatch(css, /data-task="x"/);
 	assert.match(css, /body input\.task-list-item-checkbox\[data-task="\/"\]/);
@@ -175,6 +179,45 @@ test("the theme keeps drawing todo and done; in progress and cancelled get the s
 	assert.doesNotMatch(css, /data-task=""/);
 });
 
-test("a Lucide icon becomes a mask that keeps its shape whatever the current colour", () => {
-	assert.equal(maskSvg('<svg stroke="currentColor"></svg>'), '<svg xmlns="http://www.w3.org/2000/svg" stroke="black"></svg>');
+test("icons come from the bundled Heroicons, and icons saved from Obsidian's set move to their closest match or to the theme", () => {
+	assert.equal(readIcon("paper-airplane"), "paper-airplane");
+	assert.equal(readIcon("info"), "information-circle");
+	assert.equal(readIcon("send-horizontal"), "paper-airplane");
+	assert.equal(readIcon("calendar"), "calendar");
+	assert.equal(readIcon("lucide-only-icon"), "");
+	assert.equal(readIcon(3), "");
+	assert.match(heroiconSvg("paper-airplane") ?? "", /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" viewBox="0 0 20 20" fill="black"><path d="M3\.105/);
+	assert.match(heroiconSvg("check-circle") ?? "", /fill-rule="evenodd" clip-rule="evenodd"/);
+	assert.equal(heroiconSvg("missing"), undefined);
+});
+
+test("a plain or empty line becomes a list item or a task when the command converts it, keeping its indent and quote", () => {
+	assert.equal(changed("", symbolChange("", " ", true)), "- [ ] ");
+	assert.equal(changed("\tBuy milk", symbolChange("\tBuy milk", "", true)), "\t- Buy milk");
+	assert.equal(changed("> Note", symbolChange("> Note", "x", true)), "> - [x] Note");
+	assert.equal(symbolChange("Paragraph", " "), undefined);
+	assert.equal(changed("", cycleChange(["", " ", "x"], "", undefined, true)), "- ");
+	assert.equal(changed("Idea", cycleChange([" ", "x"], "Idea", undefined, true)), "- [ ] Idea");
+	assert.equal(cycleChange([" ", "x"], "Idea"), undefined);
+	assert.equal(cycleChange([], "", undefined, true), undefined);
+});
+
+test("a lone line converts even when empty, while a selection of several lines skips its blank ones", () => {
+	assert.equal(convertsPlainLine("", 1), true);
+	assert.equal(convertsPlainLine("   ", 3), false);
+	assert.equal(convertsPlainLine("Text", 3), true);
+});
+
+test("the cursor stays with the text it was on after a status change", () => {
+	assert.equal(cursorAfterChange(0, { from: 0, to: 0, insert: "- [ ] " }), 6);
+	assert.equal(cursorAfterChange(9, { from: 3, to: 4, insert: "x" }), 9);
+	assert.equal(cursorAfterChange(10, { from: 2, to: 6, insert: "" }), 6);
+	assert.equal(cursorAfterChange(1, { from: 2, to: 6, insert: "" }), 1);
+});
+
+test("a click steps only through the cycle's checkbox statuses, so a task never loses its checkbox", () => {
+	const statuses = [status("1", "", "List item", true), status("2", " ", "Open", true), status("3", "x", "Done", true), status("4", "-", "Cancelled")];
+	assert.deepEqual(cycleSymbols(statuses), ["", " ", "x"]);
+	assert.deepEqual(clickCycleSymbols(statuses), [" ", "x"]);
+	assert.equal(changed("- [x] Done", cycleChange(clickCycleSymbols(statuses), "- [x] Done")), "- [ ] Done");
 });

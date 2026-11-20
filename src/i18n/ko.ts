@@ -617,6 +617,8 @@ export const ko: Translation = {
 	statusTypeDone: "완료",
 	statusTypeCancelled: "취소됨",
 	statusTypeOther: "기타",
+	statusDrawingOff: "아이콘과 색이 숨겨져 있습니다",
+	statusDrawingOffDesc: "작업에서 \"상태 아이콘 그리기\"를 켜면 이 상태에 아이콘과 색을 지정할 수 있습니다. 꺼져 있는 동안에는 테마가 모든 상태를 그립니다.",
 	statusIconDesc: "\"상태 아이콘 그리기\"가 켜져 있을 때 체크박스에 표시되는 것입니다. \"테마 기본값\"은 이 상태의 모양을 테마에 맡깁니다.",
 	statusIcon: "아이콘",
 	chooseIcon: "아이콘 선택",

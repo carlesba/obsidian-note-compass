@@ -67,11 +67,12 @@ export function taskStatusItems(settings: TaskStatusSettings, context: ListPageC
 				{ name: t("drawStatusIcons"), desc: t("drawStatusIconsDesc"), control: { type: "toggle", key: DRAW_STATUS_ICONS_KEY } },
 			],
 		},
-		{ type: "group", visible: false, items: statuses.map((status) => taskStatusPage(status, statuses, context)) },
+		{ type: "group", visible: false, items: statuses.map((status) => taskStatusPage(status, settings, context)) },
 	];
 }
 
-function taskStatusPage(status: TaskStatus, statuses: readonly TaskStatus[], context: ListPageContext): SettingDefinitionPage {
+function taskStatusPage(status: TaskStatus, settings: TaskStatusSettings, context: ListPageContext): SettingDefinitionPage {
+	const { statuses } = settings;
 	const page: IdentifiedPage = {
 		type: "page",
 		id: taskStatusPageId(status),
@@ -103,15 +104,22 @@ function taskStatusPage(status: TaskStatus, statuses: readonly TaskStatus[], con
 				items: [
 					{ name: t("statusType"), desc: t("statusTypeDesc"), control: { type: "dropdown", key: taskStatusKey(status.id, "type"), options: typeOptions() } },
 					{
+						name: t("statusDrawingOff"),
+						desc: t("statusDrawingOffDesc"),
+						visible: () => !settings.drawIcons && !isThemeDrawn(status),
+						searchable: false,
+						render: () => undefined,
+					},
+					{
 						name: t("statusIcon"),
 						desc: t("statusIconDesc"),
-						visible: () => status.type === "other",
+						visible: () => settings.drawIcons && status.type === "other",
 						render: (setting: Setting) => iconSetting(setting, status, context),
 					},
 					{
 						name: t("statusColour"),
 						desc: t("statusColourDesc"),
-						visible: () => !isThemeDrawn(status),
+						visible: () => settings.drawIcons && !isThemeDrawn(status),
 						control: { type: "dropdown", key: taskStatusKey(status.id, "color"), options: colorOptions() },
 					},
 				],

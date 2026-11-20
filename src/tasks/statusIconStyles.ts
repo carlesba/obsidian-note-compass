@@ -1,4 +1,3 @@
-import { getIcon } from "obsidian";
 import type { App, Plugin } from "obsidian";
 import { statusIconCss } from "./statusIcons";
 import type { TaskStatusSettings } from "./taskStatuses";
@@ -27,7 +26,7 @@ export class StatusIconStyles {
 	}
 
 	update(settings: TaskStatusSettings): void {
-		this.css = statusIconCss(settings, (icon) => getIcon(icon)?.outerHTML);
+		this.css = statusIconCss(settings);
 		for (const { sheet } of this.sheets) sheet.replaceSync(this.css);
 	}
 

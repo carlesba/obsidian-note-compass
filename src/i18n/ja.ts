@@ -617,6 +617,8 @@ export const ja: Translation = {
 	statusTypeDone: "完了",
 	statusTypeCancelled: "キャンセル済み",
 	statusTypeOther: "その他",
+	statusDrawingOff: "アイコンと色は非表示です",
+	statusDrawingOffDesc: "「タスク」で「ステータスのアイコンを描画」をオンにすると、このステータスにアイコンと色を設定できます。オフの間は、すべてのステータスをテーマが描画します。",
 	statusIconDesc: "「ステータスのアイコンを描画」がオンのときにチェックボックスに表示されるものです。「テーマの既定」ではこのステータスの見た目をテーマに任せます。",
 	statusIcon: "アイコン",
 	chooseIcon: "アイコンを選択",

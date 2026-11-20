@@ -127,9 +127,9 @@ Define the statuses your tasks use, step through the basic ones with a click, an
 A new install has Open `[ ]`, In progress `[/]`, Completed `[x]` and Cancelled `[-]` in the cycle, plus Migrated `[>]` and Scheduled `[<]`.
 
 - A task whose status is not in the cycle moves to the first status.
-- A list item in the cycle loses its checkbox; a click cannot bring it back, so continue with a command.
+- A click skips the list item, so a task keeps its checkbox and goes from the last checkbox status back to the first. The commands include the list item.
 - An invalid or repeated symbol shows a warning, and the status is skipped.
-- Only the checkbox changes; no completion date is added. Lines that are not list items are left alone.
+- Only the checkbox changes; no completion date is added. A plain or empty line becomes a list item or a task when a command runs on it alone, or as part of a selection when it has text; blank lines in a selection are skipped, and a click never converts a line.
 - With "Cycle on click" off, a click toggles the checkbox as Obsidian does, and both commands still work.
 - Checkboxes inside an embedded note keep Obsidian's own toggle.
 - Give the commands hotkeys under Settings → Hotkeys.
@@ -143,11 +143,12 @@ Obsidian's default theme draws every status except `[ ]` as a checked box, so `[
 | Todo, Done | Your theme's own checkbox, never redrawn. |
 | In progress | A half-filled box. |
 | Cancelled | A box with a dash, and the line struck through like a done task. |
-| Other | The "Icon" you choose: any Lucide icon Obsidian ships, searched by name with a preview, or "Theme default". |
+| Other | The "Icon" you choose: any of the 324 solid [Heroicons](https://heroicons.com) bundled with the plugin, the set Minimal uses, searched by name with a preview, or "Theme default". |
 
 - "Draw status icons" is off by default. Leave it off when your theme already styles these statuses, as Minimal does.
+- "Icon" and "Colour" only show while "Draw status icons" is on.
 - "Colour" sets the drawing's colour for In progress, Cancelled and Other: Theme default, Accent, Grey, or one of the theme's red, orange, yellow, green, cyan, blue, purple and pink, so it follows light and dark mode.
-- A new install has Open as Todo, In progress as In progress, Completed as Done, Cancelled as Cancelled, and Migrated and Scheduled as Other with `arrow-right` and `calendar`.
+- A new install has Open as Todo, In progress as In progress, Completed as Done, Cancelled as Cancelled, and Migrated and Scheduled as Other with `paper-airplane` and `calendar`.
 
 ## Known behaviour
 

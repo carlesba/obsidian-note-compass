@@ -3,6 +3,7 @@ import type { TranslationKey } from "../i18n/index.ts";
 import { CURRENT_NOTE_MARK, matchesInOrder, rowLabel } from "../render.ts";
 import type { RowParts } from "../render.ts";
 import { newNumericId } from "./taskCommand.ts";
+import { HEROICONS } from "./heroicons.ts";
 import { parseTaskLine } from "./taskLines.ts";
 
 export const BULLET_SYMBOL = "";
@@ -44,9 +45,36 @@ const SUGGESTED_STATUSES: readonly [string, TranslationKey, boolean, TaskStatusT
 	["/", "taskStatusInProgress", true, "inProgress", ""],
 	["x", "taskStatusCompleted", true, "done", ""],
 	["-", "taskStatusCancelled", true, "cancelled", ""],
-	[">", "taskStatusMigrated", false, "other", "arrow-right"],
+	[">", "taskStatusMigrated", false, "other", "paper-airplane"],
 	["<", "taskStatusScheduled", false, "other", "calendar"],
 ];
+
+const RENAMED_ICONS: Readonly<Record<string, string>> = {
+	info: "information-circle",
+	"triangle-alert": "exclamation-triangle",
+	"circle-help": "question-mark-circle",
+	flame: "fire",
+	"key-round": "key",
+	"thumbs-up": "hand-thumb-up",
+	"thumbs-down": "hand-thumb-down",
+	"trending-up": "arrow-trending-up",
+	"trending-down": "arrow-trending-down",
+	ban: "no-symbol",
+	"circle-slash-2": "no-symbol",
+	"octagon-x": "x-circle",
+	send: "paper-airplane",
+	"send-horizontal": "paper-airplane",
+};
+
+export function isIcon(icon: string): boolean {
+	return Object.prototype.hasOwnProperty.call(HEROICONS, icon);
+}
+
+export function readIcon(stored: unknown): string {
+	if (typeof stored !== "string") return "";
+	const icon = RENAMED_ICONS[stored] ?? stored;
+	return isIcon(icon) ? icon : "";
+}
 
 export function typeForSymbol(symbol: string): TaskStatusType {
 	return SUGGESTED_STATUSES.find(([suggested]) => suggested === symbol)?.[3] ?? (symbol === "X" ? "done" : "other");
@@ -92,7 +120,7 @@ function readTaskStatus(entry: unknown, known: readonly TaskStatus[]): TaskStatu
 		name: typeof entry.name === "string" ? entry.name : "",
 		inCycle: entry.inCycle === true,
 		type: TASK_STATUS_TYPES.find((type) => type === entry.type) ?? typeForSymbol(symbol),
-		icon: typeof entry.icon === "string" ? entry.icon : "",
+		icon: readIcon(entry.icon),
 		color: isStatusColor(entry.color) ? entry.color : "",
 	};
 }
@@ -110,6 +138,10 @@ export function cycleSymbols(statuses: readonly TaskStatus[]): string[] {
 	return usableStatuses(statuses)
 		.filter((status) => status.inCycle)
 		.map((status) => status.symbol);
+}
+
+export function clickCycleSymbols(statuses: readonly TaskStatus[]): string[] {
+	return cycleSymbols(statuses).filter((symbol) => symbol !== BULLET_SYMBOL);
 }
 
 export function taskStatusWarning(statuses: readonly TaskStatus[], status: TaskStatus): string | undefined {
@@ -151,6 +183,7 @@ export function writeTaskStatusField(status: TaskStatus, field: TaskStatusField,
 		return true;
 	}
 	if (typeof value !== "string") return false;
+	if (field === "icon" && value !== "" && !isIcon(value)) return false;
 	status[field] = field === "symbol" ? [...value].slice(-1).join("") : value;
 	return true;
 }
@@ -180,7 +213,13 @@ export function lineSymbol(text: string): string | undefined {
 	return LIST_PATTERN.test(text) ? BULLET_SYMBOL : undefined;
 }
 
-export function symbolChange(text: string, symbol: string): LineChange | undefined {
+const LINE_START_PATTERN = /^(?:[ \t]*>)*[ \t]*/;
+
+function listPrefix(symbol: string): string {
+	return symbol === BULLET_SYMBOL ? "- " : `- [${symbol}] `;
+}
+
+export function symbolChange(text: string, symbol: string, convertsPlainText = false): LineChange | undefined {
 	const task = parseTaskLine(text, 0);
 	if (task) {
 		if (task.status === symbol) return undefined;
@@ -190,8 +229,10 @@ export function symbolChange(text: string, symbol: string): LineChange | undefin
 		return { from: task.statusIndex - 1, to, insert: "" };
 	}
 	const list = LIST_PATTERN.exec(text);
-	if (!list || symbol === BULLET_SYMBOL) return undefined;
-	return { from: list[0].length, to: list[0].length, insert: `[${symbol}] ` };
+	if (list) return symbol === BULLET_SYMBOL ? undefined : { from: list[0].length, to: list[0].length, insert: `[${symbol}] ` };
+	if (!convertsPlainText) return undefined;
+	const start = LINE_START_PATTERN.exec(text)?.[0].length ?? 0;
+	return { from: start, to: start, insert: listPrefix(symbol) };
 }
 
 export function nextCycleSymbol(cycle: readonly string[], current: string): string | undefined {
@@ -200,11 +241,22 @@ export function nextCycleSymbol(cycle: readonly string[], current: string): stri
 	return index < 0 ? cycle[0] : cycle[(index + 1) % cycle.length];
 }
 
-export function cycleChange(cycle: readonly string[], text: string, expectedSymbol?: string): LineChange | undefined {
+export function cycleChange(cycle: readonly string[], text: string, expectedSymbol?: string, convertsPlainText = false): LineChange | undefined {
 	const current = lineSymbol(text);
-	if (current === undefined || (expectedSymbol !== undefined && current !== expectedSymbol)) return undefined;
+	if (current === undefined) return convertsPlainText && cycle.length > 0 ? symbolChange(text, cycle[0], true) : undefined;
+	if (expectedSymbol !== undefined && current !== expectedSymbol) return undefined;
 	const next = nextCycleSymbol(cycle, current);
 	return next === undefined ? undefined : symbolChange(text, next);
+}
+
+export function convertsPlainLine(text: string, selectedLineCount: number): boolean {
+	return selectedLineCount === 1 || text.trim() !== "";
+}
+
+export function cursorAfterChange(ch: number, change: LineChange): number {
+	if (ch < change.from) return ch;
+	if (ch <= change.to) return change.from + change.insert.length;
+	return ch + change.insert.length - (change.to - change.from);
 }
 
 export function applyLineChange(text: string, change: LineChange): string {
