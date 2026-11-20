@@ -1,11 +1,27 @@
 import { BULLET_SYMBOL, isThemeDrawn, usableStatuses } from "./taskStatuses.ts";
-import type { TaskStatus, TaskStatusSettings, TaskStatusType } from "./taskStatuses.ts";
+import type { StatusColor, TaskStatus, TaskStatusSettings, TaskStatusType } from "./taskStatuses.ts";
 
 const HALF_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="5" height="10"/></svg>';
 
 const DASH_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect x="2" y="4" width="6" height="2" rx="1"/></svg>';
 
-const DEFAULT_COLOR = "var(--checkbox-color)";
+const COLOR_VALUES: Readonly<Record<StatusColor, string>> = {
+	"": "var(--checkbox-color)",
+	accent: "var(--color-accent)",
+	grey: "var(--text-muted)",
+	red: "var(--color-red)",
+	orange: "var(--color-orange)",
+	yellow: "var(--color-yellow)",
+	green: "var(--color-green)",
+	cyan: "var(--color-cyan)",
+	blue: "var(--color-blue)",
+	purple: "var(--color-purple)",
+	pink: "var(--color-pink)",
+};
+
+export function statusColorValue(color: StatusColor): string {
+	return COLOR_VALUES[color];
+}
 
 const TYPE_PREVIEWS: Readonly<Record<Exclude<TaskStatusType, "other">, string>> = {
 	todo: "square",
@@ -75,7 +91,7 @@ export function maskSvg(svg: string): string {
 }
 
 function statusRules(status: TaskStatus, iconSvg: (icon: string) => string | undefined): string[] {
-	const color = status.color || DEFAULT_COLOR;
+	const color = statusColorValue(status.color);
 	const box = (border: string) =>
 		rule(selectors(status.symbol), { appearance: "none", "-webkit-appearance": "none", position: "relative", "background-color": "transparent", "border-color": border });
 	const drawing = (svg: string) => rule(selectors(status.symbol, "::after"), maskDeclarations(color, svg, "100%"));

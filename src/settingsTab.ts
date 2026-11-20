@@ -60,7 +60,6 @@ const TYPED_FIELDS = [
 	"rowName",
 	"trigger",
 	"symbol",
-	"color",
 ];
 
 const QUIETLY_SAVED_SCOPES = ["form", "formField", "formBlock", "customField", "fixedValue", "taskCommand", "taskAction"];

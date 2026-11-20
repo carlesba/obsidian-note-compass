@@ -146,7 +146,7 @@ Obsidian's default theme draws every status except `[ ]` as a checked box, so `[
 | Other | The "Icon" you choose: any Lucide icon Obsidian ships, searched by name with a preview, or "Theme default". |
 
 - "Draw status icons" is off by default. Leave it off when your theme already styles these statuses, as Minimal does.
-- "Colour" sets the drawing's colour for In progress, Cancelled and Other, with a colour picker and a HEX field. Empty uses the theme's checkbox colour.
+- "Colour" sets the drawing's colour for In progress, Cancelled and Other: Theme default, Accent, Grey, or one of the theme's red, orange, yellow, green, cyan, blue, purple and pink, so it follows light and dark mode.
 - A new install has Open as Todo, In progress as In progress, Completed as Done, Cancelled as Cancelled, and Migrated and Scheduled as Other with `arrow-right` and `calendar`.
 
 ## Known behaviour

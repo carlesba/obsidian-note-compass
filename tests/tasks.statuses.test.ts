@@ -19,9 +19,9 @@ import {
 	taskStatusWarning,
 	usableStatuses,
 } from "../src/tasks/taskStatuses.ts";
-import type { TaskStatus, TaskStatusType } from "../src/tasks/taskStatuses.ts";
+import type { StatusColor, TaskStatus, TaskStatusType } from "../src/tasks/taskStatuses.ts";
 
-function status(id: string, symbol: string, name: string, inCycle = false, icon = "", color = "", type: TaskStatusType = typeForSymbol(symbol)): TaskStatus {
+function status(id: string, symbol: string, name: string, inCycle = false, icon = "", color: StatusColor = "", type: TaskStatusType = typeForSymbol(symbol)): TaskStatus {
 	return { id, symbol, name, inCycle, type, icon, color };
 }
 
@@ -47,11 +47,11 @@ test("a fresh install cycles open, in progress, completed and cancelled, also of
 });
 
 test("statuses keep their id, symbol, name and cycle mark through a save and reload, and broken entries are repaired", () => {
-	const statuses = [status("4", "i", "Info", false, "info", "#3a7bd5"), status("7", "", "Note", true)];
+	const statuses = [status("4", "i", "Info", false, "info", "blue"), status("7", "", "Note", true)];
 	const settings = mergeSettings({ taskStatuses: { cycleOnClick: true, drawIcons: true, statuses } });
 	assert.deepEqual(settings.taskStatuses, { cycleOnClick: true, drawIcons: true, statuses });
 	assert.deepEqual(mergeSettings(JSON.parse(JSON.stringify(storedSettings(settings)))).taskStatuses, settings.taskStatuses);
-	assert.deepEqual(readTaskStatuses({ statuses: [null, { id: "4", symbol: 3, color: "red" }, { id: "4", name: "Again" }] }).statuses, [
+	assert.deepEqual(readTaskStatuses({ statuses: [null, { id: "4", symbol: 3, color: "#e5534b" }, { id: "4", name: "Again" }] }).statuses, [
 		status("4", "", ""),
 		status("5", "", "Again"),
 	]);
@@ -68,10 +68,10 @@ test("the click toggle and each status's fields read and write through control k
 	assert.equal(writeControl(settings, taskStatusKey(id, "type"), "other"), true);
 	assert.equal(writeControl(settings, taskStatusKey(id, "type"), "unknown"), false);
 	assert.equal(writeControl(settings, taskStatusKey(id, "icon"), "ban"), true);
-	assert.equal(writeControl(settings, taskStatusKey(id, "color"), "#e5534b"), true);
-	assert.equal(writeControl(settings, taskStatusKey(id, "color"), "e5534b"), false);
+	assert.equal(writeControl(settings, taskStatusKey(id, "color"), "red"), true);
+	assert.equal(writeControl(settings, taskStatusKey(id, "color"), "#e5534b"), false);
 	assert.equal(writeControl(settings, DRAW_STATUS_ICONS_KEY, true), true);
-	assert.deepEqual(settings.taskStatuses.statuses[3], status(id, "c", "Dropped", true, "ban", "#e5534b", "other"));
+	assert.deepEqual(settings.taskStatuses.statuses[3], status(id, "c", "Dropped", true, "ban", "red", "other"));
 	assert.equal(settings.taskStatuses.drawIcons, true);
 	assert.equal(readControl(settings, taskStatusKey(id, "inCycle")), true);
 	assert.equal(writeControl(settings, taskStatusKey("99", "name"), "Missing"), false);
@@ -154,9 +154,9 @@ test("a status saved without a type gets the one its symbol implies", () => {
 test("the theme keeps drawing todo and done; in progress and cancelled get the standard look; other draws its chosen icon", () => {
 	const statuses = [
 		status("1", " ", "Open", true, "info"),
-		status("2", "x", "Done", true, "info", "#123456"),
+		status("2", "x", "Done", true, "info", "accent"),
 		status("3", "/", "In progress", true),
-		status("4", "-", "Cancelled", true, "", "#e5534b"),
+		status("4", "-", "Cancelled", true, "", "red"),
 		status("5", "i", "Info", false, "info"),
 		status("6", "?", "Question"),
 		status("7", "", "List item", false, "info", "", "other"),
@@ -168,7 +168,7 @@ test("the theme keeps drawing todo and done; in progress and cancelled get the s
 	assert.doesNotMatch(css, /data-task="x"/);
 	assert.match(css, /body input\.task-list-item-checkbox\[data-task="\/"\]/);
 	assert.match(css, /body li\[data-task="-"\] > input\.task-list-item-checkbox::after/);
-	assert.match(css, /background-color: #e5534b !important/);
+	assert.match(css, /background-color: var\(--color-red\) !important/);
 	assert.match(css, /\.HyperMD-task-line\[data-task="-"\][^{]*\{\n\ttext-decoration: var\(--checklist-done-decoration\)/);
 	assert.match(css, /data-task="i"/);
 	assert.doesNotMatch(css, /data-task="\?"/);

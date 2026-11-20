@@ -280,7 +280,7 @@ El tema predeterminado de Obsidian dibuja todos los estados salvo `[ ]` como una
 | Otro | El "Icono" que elijas: cualquier icono Lucide de Obsidian, buscado por nombre con vista previa, o "Predeterminado del tema". |
 
 - "Dibujar iconos de estado" está desactivado por defecto. Déjalo así si tu tema ya da estilo a estos estados, como hace Minimal.
-- "Color" fija el color del dibujo para En curso, Cancelada y Otro, con un selector de color y un campo HEX. Vacío usa el color de casilla del tema.
+- "Color" fija el color del dibujo para En curso, Cancelada y Otro: Predeterminado del tema, Acento, Gris, o uno de los colores del tema (rojo, naranja, amarillo, verde, cian, azul, morado y rosa), así que sigue el modo claro y el oscuro.
 - Una instalación nueva tiene Pendiente como Pendiente, En curso como En curso, Completada como Hecha, Cancelada como Cancelada, y Migrada y Programada como Otro con `arrow-right` y `calendar`.
 
 ### Comportamiento conocido

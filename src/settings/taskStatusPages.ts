@@ -1,8 +1,8 @@
-import type { Setting, SettingDefinitionItem, SettingDefinitionPage, TextComponent } from "obsidian";
+import type { Setting, SettingDefinitionItem, SettingDefinitionPage } from "obsidian";
 import { t } from "../i18n";
-import { TASK_STATUS_TYPES, isColor, isSymbol, isThemeDrawn, newTaskStatus, taskStatusLabel, taskStatusName, taskStatusWarning } from "../tasks/taskStatuses";
-import type { TaskStatus, TaskStatusSettings, TaskStatusType } from "../tasks/taskStatuses";
-import { statusPreviewIcon } from "../tasks/statusIcons";
+import { STATUS_COLORS, TASK_STATUS_TYPES, isSymbol, isThemeDrawn, newTaskStatus, taskStatusLabel, taskStatusName, taskStatusWarning } from "../tasks/taskStatuses";
+import type { StatusColor, TaskStatus, TaskStatusSettings, TaskStatusType } from "../tasks/taskStatuses";
+import { statusColorValue, statusPreviewIcon } from "../tasks/statusIcons";
 import type { TranslationKey } from "../i18n";
 import { CYCLE_ON_CLICK_KEY, DRAW_STATUS_ICONS_KEY, taskStatusKey } from "./controlKeys";
 import { IconPickerModal, iconName, renderIconPreview } from "./iconPicker";
@@ -10,8 +10,6 @@ import { editableRow } from "./listPage";
 import type { ListPageContext } from "./listPage";
 
 const SORTABLE_LIST_CLASS = "note-compass-sortable-list";
-
-const NEUTRAL_COLOR = "#888888";
 
 type IdentifiedPage = SettingDefinitionPage & { id: string };
 
@@ -45,7 +43,7 @@ export function taskStatusItems(settings: TaskStatusSettings, context: ListPageC
 					searchable: false,
 					render: (setting: Setting, group: unknown) => {
 						const rendered = row.render(setting, group as never);
-						renderIconPreview(setting.nameEl.createSpan(), statusPreviewIcon(status), status.color);
+						renderIconPreview(setting.nameEl.createSpan(), statusPreviewIcon(status), statusColorValue(status.color));
 						setting.nameEl.prepend(setting.nameEl.lastChild as Node);
 						return rendered;
 					},
@@ -114,7 +112,7 @@ function taskStatusPage(status: TaskStatus, statuses: readonly TaskStatus[], con
 						name: t("statusColour"),
 						desc: t("statusColourDesc"),
 						visible: () => !isThemeDrawn(status),
-						render: (setting: Setting) => colourSetting(setting, status, context),
+						control: { type: "dropdown", key: taskStatusKey(status.id, "color"), options: colorOptions() },
 					},
 				],
 			},
@@ -131,6 +129,24 @@ const TYPE_KEYS: Record<TaskStatusType, TranslationKey> = {
 	other: "statusTypeOther",
 };
 
+const COLOR_KEYS: Record<StatusColor, TranslationKey> = {
+	"": "colorThemeDefault",
+	accent: "colorAccent",
+	grey: "colorGrey",
+	red: "colorRed",
+	orange: "colorOrange",
+	yellow: "colorYellow",
+	green: "colorGreen",
+	cyan: "colorCyan",
+	blue: "colorBlue",
+	purple: "colorPurple",
+	pink: "colorPink",
+};
+
+function colorOptions(): Record<string, string> {
+	return Object.fromEntries(STATUS_COLORS.map((color) => [color, t(COLOR_KEYS[color])]));
+}
+
 function typeOptions(): Record<string, string> {
 	return Object.fromEntries(TASK_STATUS_TYPES.map((type) => [type, t(TYPE_KEYS[type])]));
 }
@@ -139,52 +155,16 @@ function iconSetting(setting: Setting, status: TaskStatus, context: ListPageCont
 	const previewEl = setting.controlEl.createSpan();
 	const nameEl = setting.controlEl.createSpan({ cls: "note-compass-status-icon-name" });
 	const show = () => {
-		renderIconPreview(previewEl, status.icon, status.color);
+		renderIconPreview(previewEl, status.icon, statusColorValue(status.color));
 		nameEl.setText(iconName(status.icon));
 	};
 	show();
 	setting.addButton((button) =>
 		button.setButtonText(t("chooseIcon")).onClick(() => {
-			new IconPickerModal(context.app, status.color, (icon) => {
+			new IconPickerModal(context.app, statusColorValue(status.color), (icon) => {
 				context.write(taskStatusKey(status.id, "icon"), icon);
 				show();
 			}).open();
 		}),
 	);
-}
-
-function colourSetting(setting: Setting, status: TaskStatus, context: ListPageContext): void {
-	const write = (color: string) => context.write(taskStatusKey(status.id, "color"), color);
-	let hexInput: TextComponent | undefined;
-	setting.addColorPicker((picker) => {
-		picker.setValue(status.color || NEUTRAL_COLOR).onChange((color) => {
-			write(color);
-			hexInput?.setValue(color);
-		});
-		setting.addText((text) => {
-			hexInput = text;
-			text.setPlaceholder(t("statusColourPlaceholder")).setValue(status.color);
-			text.inputEl.addClass("note-compass-status-hex");
-			text.inputEl.setAttribute("aria-label", t("statusColour"));
-			text.onChange((typed) => {
-				const color = typed.trim();
-				const valid = color === "" || isColor(color);
-				text.inputEl.toggleClass("is-invalid", !valid);
-				text.inputEl.setAttribute("aria-invalid", String(!valid));
-				if (!valid) return;
-				write(color);
-				if (color !== "") picker.setValue(color);
-			});
-		});
-		setting.addExtraButton((button) =>
-			button
-				.setIcon("rotate-ccw")
-				.setTooltip(t("removeColour"))
-				.onClick(() => {
-					write("");
-					hexInput?.setValue("");
-					picker.setValue(NEUTRAL_COLOR);
-				}),
-		);
-	});
 }

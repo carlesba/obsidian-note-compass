@@ -14,7 +14,15 @@ export interface TaskStatus {
 	inCycle: boolean;
 	type: TaskStatusType;
 	icon: string;
-	color: string;
+	color: StatusColor;
+}
+
+export type StatusColor = "" | "accent" | "grey" | "red" | "orange" | "yellow" | "green" | "cyan" | "blue" | "purple" | "pink";
+
+export const STATUS_COLORS: readonly StatusColor[] = ["", "accent", "grey", "red", "orange", "yellow", "green", "cyan", "blue", "purple", "pink"];
+
+export function isStatusColor(value: unknown): value is StatusColor {
+	return STATUS_COLORS.some((color) => color === value);
 }
 
 export type TaskStatusType = "todo" | "inProgress" | "done" | "cancelled" | "other";
@@ -30,8 +38,6 @@ export interface TaskStatusSettings {
 export type TaskStatusField = "symbol" | "name" | "inCycle" | "type" | "icon" | "color";
 
 const THEME_DRAWN_TYPES: readonly TaskStatusType[] = ["todo", "done"];
-
-const COLOR_PATTERN = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
 
 const SUGGESTED_STATUSES: readonly [string, TranslationKey, boolean, TaskStatusType, string][] = [
 	[" ", "taskStatusOpen", true, "todo", ""],
@@ -87,13 +93,10 @@ function readTaskStatus(entry: unknown, known: readonly TaskStatus[]): TaskStatu
 		inCycle: entry.inCycle === true,
 		type: TASK_STATUS_TYPES.find((type) => type === entry.type) ?? typeForSymbol(symbol),
 		icon: typeof entry.icon === "string" ? entry.icon : "",
-		color: typeof entry.color === "string" && isColor(entry.color) ? entry.color : "",
+		color: isStatusColor(entry.color) ? entry.color : "",
 	};
 }
 
-export function isColor(value: string): boolean {
-	return COLOR_PATTERN.test(value);
-}
 
 export function isSymbol(value: string): boolean {
 	return value === BULLET_SYMBOL || (value.length === 1 && !/[\n\r\]]/.test(value));
@@ -142,13 +145,12 @@ export function writeTaskStatusField(status: TaskStatus, field: TaskStatusField,
 		if (type) status.type = type;
 		return type !== undefined;
 	}
-	if (typeof value !== "string") return false;
 	if (field === "color") {
-		const color = value.trim();
-		if (color !== "" && !isColor(color)) return false;
-		status.color = color;
+		if (!isStatusColor(value)) return false;
+		status.color = value;
 		return true;
 	}
+	if (typeof value !== "string") return false;
 	status[field] = field === "symbol" ? [...value].slice(-1).join("") : value;
 	return true;
 }

@@ -846,11 +846,3 @@
 	align-items: center;
 	gap: var(--size-4-2);
 }
-
-input.note-compass-status-hex {
-	width: 7em;
-}
-
-input.note-compass-status-hex.is-invalid {
-	border-color: var(--text-error);
-}
