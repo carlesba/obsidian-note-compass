@@ -210,6 +210,14 @@ test("the task picker adds an apply-to-all row first and a finish row last when 
 	assert.deepEqual(two.map((choice) => choice.parts.content), ["Alpha"]);
 });
 
+test("the task picker lists its sections in the chosen order and keeps finish rows to batch mode", () => {
+	const tasks = [sourced("- [ ] Alpha", 1), sourced("- [ ] Beta", 2)];
+	const reordered = taskChoices(command({ selectAll: true, batch: true, sectionOrder: ["finish", "applyToAll", "tasks"] }), tasks, "");
+	assert.deepEqual(reordered.map((choice) => choice.parts.content), ["Finish processing", "Cancel", "Apply to all 2 tasks", "Alpha", "Beta"]);
+	const unbatched = taskChoices(command({ selectAll: true, batch: false, sectionOrder: ["finish", "tasks", "applyToAll"] }), tasks, "");
+	assert.deepEqual(unbatched.map((choice) => choice.parts.content), ["Alpha", "Beta", "Apply to all 2 tasks"]);
+});
+
 test("copy actions run directly with one destination and ask with several", () => {
 	const one = [{ path: "a.md", label: "A" }];
 	const two = [...one, { path: "b.md", label: "B" }];

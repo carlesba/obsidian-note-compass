@@ -5,8 +5,8 @@ import { nameAndPlaceholderItems } from "./namedEntryFields";
 import type { TranslationKey } from "../i18n";
 import { createObsidianVault } from "../lists/obsidianVault";
 import { actionName, taskKeyLabel } from "../tasks/picker";
-import { TASK_KEYS, keysRunning, newNumericId, newTaskSource, taskCommandName } from "../tasks/taskCommand";
-import type { TaskAction, TaskCommand, TaskSource } from "../tasks/taskCommand";
+import { TASK_KEYS, keysRunning, moveTaskSection, newNumericId, newTaskSource, shownTaskSections, taskCommandName } from "../tasks/taskCommand";
+import type { TaskAction, TaskCommand, TaskSection, TaskSource } from "../tasks/taskCommand";
 import { taskActionKey, taskCommandKey, taskSourceKey } from "./controlKeys";
 import { duplicateEntry } from "./duplicate";
 import { FOCUS_ATTRIBUTE, dropdownRow, editorRow, expandableRow, renderEditor, textRow, toggleRow } from "./fieldEditor";
@@ -178,21 +178,16 @@ export function taskCommandPage(command: TaskCommand, context: ExpandingPageCont
 					type: "group",
 					heading: t("taskOptionsSection"),
 					items: [
-						{ name: t("taskSelectAll"), desc: t("taskSelectAllDesc"), control: { type: "toggle", key: key("selectAll") } },
 						{
 							name: t("taskBatchMode"),
 							desc: t("taskBatchModeDesc"),
 							render: (setting) => {
-								setting.addToggle((toggle) =>
-									toggle.setValue(command.batch).onChange((batch) => {
-										context.write(key("batch"), batch);
-										for (const showHeader of headers.values()) showHeader();
-									}),
-								);
+								setting.addToggle((toggle) => toggle.setValue(command.batch).onChange((batch) => context.change(() => (command.batch = batch))));
 							},
 						},
 					],
 				},
+				sectionList(command, context, key),
 				actionList(command, context, headers),
 				keymapList(command, context, headers),
 				sourcePages(command, context),
@@ -207,6 +202,20 @@ export function taskCommandPage(command: TaskCommand, context: ExpandingPageCont
 		items,
 	};
 	return page;
+}
+
+function sectionList(command: TaskCommand, context: ExpandingPageContext, key: (setting: TaskCommandSetting) => string): SettingDefinitionList {
+	const row = (section: TaskSection): SettingDefinition => {
+		if (section === "applyToAll") return { name: t("taskApplyToAllRow"), desc: t("taskApplyToAllRowDesc"), control: { type: "toggle", key: key("selectAll") } };
+		if (section === "tasks") return { name: t("taskTasksRow"), desc: t("taskTasksRowDesc") };
+		return { name: t("taskFinishRow"), desc: t("taskFinishRowDesc") };
+	};
+	return {
+		type: "list",
+		heading: t("taskPickerRows"),
+		items: shownTaskSections(command).map(row),
+		onReorder: (from, to) => context.change(() => moveTaskSection(command, from, to)),
+	};
 }
 
 type StatusField = "statuses" | "skippedStatuses";

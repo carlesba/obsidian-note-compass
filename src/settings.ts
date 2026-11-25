@@ -567,7 +567,7 @@ function orderFromDirections(stored: unknown): AdjacentEntry[] | undefined {
 	return PERIODS.flatMap((period) => directions.map((direction): AdjacentEntry => `${direction}-${period}`));
 }
 
-function readOrder<T extends string>(stored: unknown, all: readonly T[]): T[] | undefined {
+export function readOrder<T extends string>(stored: unknown, all: readonly T[]): T[] | undefined {
 	if (!Array.isArray(stored)) return undefined;
 	const known = stored.filter((item, index): item is T => all.includes(item as T) && stored.indexOf(item) === index);
 	if (known.length === 0 && stored.length > 0) return undefined;

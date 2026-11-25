@@ -2,7 +2,7 @@ import { t, tCount } from "../i18n/index.ts";
 import { matchesInOrder, rowLabel } from "../render.ts";
 import type { RowParts } from "../render";
 import type { ResolvedDestination } from "./destinations.ts";
-import { OPEN_STATUS, TASK_KEYS, keyBehavior } from "./taskCommand.ts";
+import { OPEN_STATUS, TASK_KEYS, keyBehavior, shownTaskSections } from "./taskCommand.ts";
 import type { TaskAction, TaskCommand, TaskKey } from "./taskCommand.ts";
 import type { SourcedTask } from "./apply.ts";
 import type { TaskLine } from "./taskLines.ts";
@@ -41,16 +41,17 @@ export function taskText(task: TaskLine): string {
 
 export function taskChoices(command: TaskCommand, tasks: readonly SourcedTask[], query: string, stagedCount = 0, showsNotes = spansNotes(tasks)): TaskChoice[] {
 	const matching = query ? tasks.filter((task) => matchesInOrder(query, taskText(task))) : [...tasks];
-	const choices: TaskChoice[] = [];
-	if (command.selectAll && matching.length > 1) {
-		choices.push(choice({ mark: ALL_MARK, content: t("applyToAllTasks", { count: matching.length }) }, { action: "all", tasks: matching }));
-	}
-	for (const task of matching) choices.push(choice(taskParts(task, showsNotes), { action: "task", task }));
-	if (command.batch) {
-		choices.push(choice({ mark: FINISH_MARK, content: t("finishProcessing"), value: tCount("stagedChangeOne", "stagedChangeOther", stagedCount) }, { action: "finish" }));
-		choices.push(choice({ mark: CANCEL_MARK, content: t("cancelTaskProcessing") }, { action: "cancel" }));
-	}
-	return choices;
+	return shownTaskSections(command).flatMap((section): TaskChoice[] => {
+		if (section === "applyToAll") {
+			if (!command.selectAll || matching.length < 2) return [];
+			return [choice({ mark: ALL_MARK, content: t("applyToAllTasks", { count: matching.length }) }, { action: "all", tasks: matching })];
+		}
+		if (section === "tasks") return matching.map((task) => choice(taskParts(task, showsNotes), { action: "task", task }));
+		return [
+			choice({ mark: FINISH_MARK, content: t("finishProcessing"), value: tCount("stagedChangeOne", "stagedChangeOther", stagedCount) }, { action: "finish" }),
+			choice({ mark: CANCEL_MARK, content: t("cancelTaskProcessing") }, { action: "cancel" }),
+		];
+	});
 }
 
 export function spansNotes(tasks: readonly SourcedTask[]): boolean {

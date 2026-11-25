@@ -2,7 +2,7 @@ import { t } from "../i18n/index.ts";
 import { PERIODS } from "../lists/dateNotes.ts";
 import type { Period } from "../lists/dateNotes.ts";
 import { emptyFilter } from "../lists/filters.ts";
-import { readSourceOrKeep, withStoredSource, writePrefixColor } from "../settings.ts";
+import { readOrder, readSourceOrKeep, withStoredSource, writePrefixColor } from "../settings.ts";
 import type { NoteList } from "../settings.ts";
 
 export type CompletionDate = "off" | "text" | "link" | "timestamp";
@@ -69,6 +69,10 @@ export type TaskAction = StatusAction | CopyAction;
 
 export type TaskSource = NoteList;
 
+export type TaskSection = "applyToAll" | "tasks" | "finish";
+
+export const TASK_SECTIONS: readonly TaskSection[] = ["applyToAll", "tasks", "finish"];
+
 export interface TaskCommand {
 	id: string;
 	name: string;
@@ -78,6 +82,7 @@ export interface TaskCommand {
 	skippedStatuses: string;
 	selectAll: boolean;
 	batch: boolean;
+	sectionOrder?: TaskSection[];
 	keymap: TaskKeyBinding[];
 	actions: TaskAction[];
 	unreadable?: { stored: unknown };
@@ -165,6 +170,19 @@ export function isRunnableTaskCommand(command: TaskCommand): boolean {
 	return command.unreadable === undefined && command.actions.length > 0;
 }
 
+export function shownTaskSections(command: TaskCommand): TaskSection[] {
+	return (command.sectionOrder ?? TASK_SECTIONS).filter((section) => section !== "finish" || command.batch);
+}
+
+export function moveTaskSection(command: TaskCommand, from: number, to: number): void {
+	const order = [...(command.sectionOrder ?? TASK_SECTIONS)];
+	const shown = shownTaskSections(command);
+	shown.splice(to, 0, ...shown.splice(from, 1));
+	const hidden = order.filter((section) => !shown.includes(section));
+	for (const section of hidden) shown.splice(order.indexOf(section), 0, section);
+	command.sectionOrder = shown;
+}
+
 export function keyBehavior(command: TaskCommand, key: TaskKey): TaskKeyBehavior {
 	const binding = command.keymap.find((candidate) => candidate.key === key);
 	if (binding?.action === FINISH_PROCESSING && command.batch) return { behavior: "finish" };
@@ -218,6 +236,7 @@ function withoutUnreadable(command: TaskCommand): unknown {
 
 function readTaskCommand(entry: unknown, id: string): TaskCommand {
 	const data = isRecord(entry) ? entry : {};
+	const sectionOrder = readOrder(data.sectionOrder, TASK_SECTIONS);
 	const command: TaskCommand = {
 		id,
 		name: typeof data.name === "string" ? data.name : "",
@@ -227,6 +246,7 @@ function readTaskCommand(entry: unknown, id: string): TaskCommand {
 		skippedStatuses: typeof data.skippedStatuses === "string" ? uniqueStatuses(data.skippedStatuses) : "",
 		selectAll: data.selectAll === true,
 		batch: typeof data.batch === "boolean" ? data.batch : true,
+		...(sectionOrder ? { sectionOrder } : {}),
 		keymap: [],
 		actions: [],
 	};

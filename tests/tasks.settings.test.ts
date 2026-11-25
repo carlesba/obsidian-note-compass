@@ -22,7 +22,7 @@ import {
 	taskActionWarning,
 	taskCommandWarning,
 } from "../src/settings/taskCommandsForm.ts";
-import { isRunnableTaskCommand, keyBehavior, keysRunning, newTaskCommand, noteDestination, periodicDestination, taskCommandPlaceholder } from "../src/tasks/taskCommand.ts";
+import { isRunnableTaskCommand, keyBehavior, keysRunning, moveTaskSection, newTaskCommand, shownTaskSections, noteDestination, periodicDestination, taskCommandPlaceholder } from "../src/tasks/taskCommand.ts";
 import type { CopyAction } from "../src/tasks/taskCommand.ts";
 
 function settingsWithCommand() {
@@ -405,4 +405,29 @@ test("the task picker's search box shows the command's name until a placeholder 
 	assert.equal(taskCommandPlaceholder(restored), "Which task did you finish?");
 	assert.equal(writeControl(settings, taskCommandKey(command.id, "placeholder"), "  "), true);
 	assert.equal(taskCommandPlaceholder(command), "Weekly review");
+});
+
+test("picker sections reorder around the finish row that batch mode hides", () => {
+	const { command } = settingsWithCommand();
+	assert.deepEqual(shownTaskSections(command), ["applyToAll", "tasks", "finish"]);
+	moveTaskSection(command, 2, 0);
+	assert.deepEqual(command.sectionOrder, ["finish", "applyToAll", "tasks"]);
+	command.batch = false;
+	assert.deepEqual(shownTaskSections(command), ["applyToAll", "tasks"]);
+	moveTaskSection(command, 1, 0);
+	assert.deepEqual(command.sectionOrder, ["finish", "tasks", "applyToAll"]);
+	command.batch = true;
+	assert.deepEqual(shownTaskSections(command), ["finish", "tasks", "applyToAll"]);
+});
+
+test("picker section order survives a save and fills in sections it does not know", () => {
+	const { settings, command } = settingsWithCommand();
+	moveTaskSection(command, 0, 2);
+	const reloaded = mergeSettings(JSON.parse(JSON.stringify(storedSettings(settings))));
+	assert.deepEqual(reloaded.taskCommands[0].sectionOrder, ["tasks", "finish", "applyToAll"]);
+	const partial = mergeSettings({ taskCommands: [{ ...JSON.parse(JSON.stringify(command)), sectionOrder: ["finish"] }] });
+	assert.deepEqual(partial.taskCommands[0].sectionOrder, ["finish", "applyToAll", "tasks"]);
+	const legacy = mergeSettings({ taskCommands: [{ ...JSON.parse(JSON.stringify(command)), sectionOrder: undefined, selectAll: true }] });
+	assert.equal(legacy.taskCommands[0].sectionOrder, undefined);
+	assert.deepEqual(shownTaskSections(legacy.taskCommands[0]), ["applyToAll", "tasks", "finish"]);
 });

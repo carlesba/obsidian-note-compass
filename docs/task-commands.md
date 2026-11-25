@@ -25,8 +25,8 @@ Each command has its own page under Settings → Note Compass → Tasks.
 | Sources | Source list | The notes whose tasks are listed. A new command reads the current note. Add, drag to reorder, switch, duplicate or delete sources. |
 | Tasks to list | Status pills | Lists tasks with these checkbox characters. Empty means every task. |
 | Tasks to skip | Status pills | Excludes these statuses even when listed above. Empty means none. |
-| Options | Select all | Adds `⚡ Apply to all N tasks` when more than one task matches the typed search. |
 | Options | Batch mode | Stages changes until you finish instead of writing immediately. |
+| Picker rows | Row list | Drag `⚡ Apply to all`, Tasks and `🏁 Finish processing · 🛑 Cancel` into the order the task picker shows them, so the top row is selected when it opens. The toggle on `⚡ Apply to all` adds `⚡ Apply to all N tasks` when more than one task matches the typed search. The finish row is listed only in batch mode and keeps its place while batch mode is off. |
 | Actions | Action list | Add, drag to reorder, duplicate or delete actions; click a row to edit it inline. |
 | Keymap | Key, Runs | Binds Enter, Cmd+Enter (Ctrl+Enter on Windows and Linux), Alt+Enter or Shift+Enter to an action, "Show the actions menu" or, in batch mode, `🏁 Finish processing`. Add with `+`, remove with ×. |
 
@@ -100,7 +100,7 @@ With "Batch mode" off, one choice writes immediately and closes the picker. Esca
 
 ## New-command defaults
 
-A new command starts with a Bullet Journal setup named "Process open tasks": enabled, listing only Open `[ ]`, skipping none, "Select all" off and "Batch mode" on. Its "Keymap" binds Enter to "✅ Complete", so Alt+Enter, Cmd+Enter and Shift+Enter open the actions menu.
+A new command starts with a Bullet Journal setup named "Process open tasks": enabled, listing only Open `[ ]`, skipping none, "Batch mode" on, and "Picker rows" in the order `⚡ Apply to all` (off), Tasks, `🏁 Finish processing · 🛑 Cancel`. Its "Keymap" binds Enter to "✅ Complete", so Alt+Enter, Cmd+Enter and Shift+Enter open the actions menu.
 
 | Action | Source status | Other settings |
 | --- | --- | --- |
