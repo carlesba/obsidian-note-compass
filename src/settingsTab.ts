@@ -349,7 +349,7 @@ export class NoteCompassSettingTab extends PluginSettingTab {
 					desc: warning ? createFragment((fragment) => warningDescription(fragment.createDiv(), warning)) : undefined,
 					searchable: false,
 					render: (setting: Setting) => {
-						setting.settingEl.addClass("note-compass-mention-row");
+						setting.settingEl.addClass("note-compass-draggable-row", "note-compass-mention-row");
 						setting.addDropdown((dropdown) => {
 							dropdown.addOptions(pickerOptions).setValue(mention.pickerId);
 							dropdown.selectEl.setAttribute("aria-label", t("mentionPicker"));
