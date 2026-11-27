@@ -7,6 +7,7 @@ export const es: Translation = {
 	noNotesToJumpTo: "No hay notas a las que ir.",
 	couldNotCreate: 'No se pudo crear "{name}".',
 	instructionOpen: "para abrir",
+	instructionOpenInNewTab: "para abrir en una pestaña nueva",
 	instructionSetProperties: "para establecer propiedades",
 	instructionDismiss: "para descartar",
 

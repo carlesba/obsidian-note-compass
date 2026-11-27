@@ -7,6 +7,7 @@ export const ko: Translation = {
 	noNotesToJumpTo: "이동할 노트가 없습니다.",
 	couldNotCreate: '"{name}"을(를) 만들지 못했습니다.',
 	instructionOpen: "열기",
+	instructionOpenInNewTab: "새 탭에서 열기",
 	instructionSetProperties: "속성 설정하기",
 	instructionDismiss: "닫기",
 

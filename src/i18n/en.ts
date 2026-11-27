@@ -5,6 +5,7 @@ export const en = {
 	noNotesToJumpTo: "No notes to jump to.",
 	couldNotCreate: 'Could not create "{name}".',
 	instructionOpen: "to open",
+	instructionOpenInNewTab: "to open in a new tab",
 	instructionSetProperties: "to set properties",
 	instructionDismiss: "to dismiss",
 

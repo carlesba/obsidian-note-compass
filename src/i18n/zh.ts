@@ -7,6 +7,7 @@ export const zh: Translation = {
 	noNotesToJumpTo: "没有可跳转的笔记。",
 	couldNotCreate: "无法创建“{name}”。",
 	instructionOpen: "打开",
+	instructionOpenInNewTab: "在新标签页中打开",
 	instructionSetProperties: "设置属性",
 	instructionDismiss: "关闭",
 

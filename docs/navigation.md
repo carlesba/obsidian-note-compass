@@ -14,7 +14,7 @@ A picker's main filter, under Settings → Note Compass → Navigation → the p
 
 ## The picker
 
-The picker lets you choose a note to move to. Picking a row opens the note in the active tab, or in a new tab when none is open.
+The picker lets you choose a note to move to. Picking a row opens the note in the active tab, or in a new tab when none is open. Press ⌘↵ (Ctrl+Enter on Windows and Linux), or ⌘-click the row, to open it in a new tab next to the active one instead. The new tab joins the active tab's group, so stacked tabs stay stacked rather than splitting the pane.
 
 ![A navigation picker on a daily note, with the previous and next day, its outbound links, a note from the same day, this week, month and year, the active projects and the people](images/jump-to-note.png)
 

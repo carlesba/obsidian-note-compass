@@ -7,6 +7,7 @@ export const ja: Translation = {
 	noNotesToJumpTo: "移動できるノートがありません。",
 	couldNotCreate: "「{name}」を作成できませんでした。",
 	instructionOpen: "開く",
+	instructionOpenInNewTab: "新しいタブで開く",
 	instructionSetProperties: "プロパティを設定",
 	instructionDismiss: "閉じる",
 

@@ -7,6 +7,7 @@ export const zhTW: Translation = {
 	noNotesToJumpTo: "沒有可跳至的筆記。",
 	couldNotCreate: "無法建立「{name}」。",
 	instructionOpen: "開啟",
+	instructionOpenInNewTab: "在新分頁中開啟",
 	instructionSetProperties: "設定屬性",
 	instructionDismiss: "關閉",
 

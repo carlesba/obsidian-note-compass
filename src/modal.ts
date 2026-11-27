@@ -1,4 +1,4 @@
-import { App, Notice, Platform, SuggestModal } from "obsidian";
+import { App, Keymap, Notice, Platform, SuggestModal } from "obsidian";
 import { t } from "./i18n";
 import { createDateNote } from "./lists/openDateNote";
 import type { JumpListEntry, VaultNote } from "./lists/vault";
@@ -32,9 +32,18 @@ export class JumpModal extends SuggestModal<JumpListEntry> {
 			if (entry && !entry.missing) this.editPropertiesOf(entry);
 			return false;
 		});
+		this.scope.register(["Mod"], "Enter", (evt) => {
+			if (evt.isComposing) return;
+			evt.preventDefault();
+			const selected = selectedRow(this.resultContainerEl);
+			const entry = selected ? this.rowEntries.get(selected) : undefined;
+			if (entry) this.selectSuggestion(entry, evt);
+			return false;
+		});
 		if (!Platform.isMobile) {
 			this.setInstructions([
 				{ command: "↵", purpose: t("instructionOpen") },
+				{ command: "⌘ ↵", purpose: t("instructionOpenInNewTab") },
 				{ command: "⌥ ↵", purpose: t("instructionSetProperties") },
 				{ command: "esc", purpose: t("instructionDismiss") },
 			]);
@@ -66,13 +75,14 @@ export class JumpModal extends SuggestModal<JumpListEntry> {
 		super.selectSuggestion(entry, evt);
 	}
 
-	onChooseSuggestion(entry: JumpListEntry): void {
+	onChooseSuggestion(entry: JumpListEntry, evt: MouseEvent | KeyboardEvent): void {
+		const leaf = Keymap.isModEvent(evt) === "tab" ? "tab" : false;
 		if (entry.missing) {
-			createDateNote(this.app, entry, entry.missing).catch(() => new Notice(t("couldNotCreate", { name: entry.name })));
+			createDateNote(this.app, entry, entry.missing, leaf).catch(() => new Notice(t("couldNotCreate", { name: entry.name })));
 			return;
 		}
 		const file = this.app.vault.getFileByPath(entry.file.path);
-		if (file) void this.app.workspace.getLeaf(false).openFile(file);
+		if (file) void this.app.workspace.getLeaf(leaf).openFile(file);
 	}
 
 	onClose(): void {
